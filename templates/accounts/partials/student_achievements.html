@@ -1,0 +1,91 @@
+{% if achievements %}
+<section class="achievements-panel{% if unified_grid %} achievements-panel--unified{% endif %}" id="achievements">
+  <div class="achievements-head">
+    <div>
+      <h2 class="achievements-title">🏅 Achievements</h2>
+      <p class="achievements-subtitle">
+        {{ achievements.earned_count }} of {{ achievements.total_count }} unlocked
+      </p>
+    </div>
+  </div>
+
+  {% if unified_grid %}
+    {% if achievements.earned or achievements.locked %}
+    <div class="achievements-grid achievements-grid--three">
+      {% for item in achievements.earned %}
+      <div class="achievement-card achievement-card--earned">
+        <div class="achievement-icon" aria-hidden="true">{{ item.icon }}</div>
+        <div class="achievement-body">
+          <div class="achievement-title">{{ item.title }}</div>
+          <div class="achievement-desc">{{ item.description }}</div>
+          <div class="achievement-meta">Unlocked {{ item.earned_at|date:"d M Y" }}</div>
+        </div>
+      </div>
+      {% endfor %}
+      {% for item in achievements.locked %}
+      <div class="achievement-card achievement-card--locked">
+        <div class="achievement-icon achievement-icon--locked" aria-hidden="true">{{ item.icon }}</div>
+        <div class="achievement-body">
+          <div class="achievement-title">{{ item.title }}</div>
+          <div class="achievement-desc">{{ item.description }}</div>
+          <div class="achievement-progress-wrap">
+            <div class="achievement-progress-track">
+              <div class="achievement-progress-fill" style="width: {{ item.progress_pct }}%;"></div>
+            </div>
+            <span class="achievement-progress-label">{{ item.progress_label }}</span>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="achievements-empty">
+      <p>Complete exams to start earning achievements.</p>
+    </div>
+    {% endif %}
+  {% else %}
+    {% if achievements.earned %}
+    <div class="achievements-section-label">Earned</div>
+    <div class="achievements-grid">
+      {% for item in achievements.earned %}
+      <div class="achievement-card achievement-card--earned">
+        <div class="achievement-icon" aria-hidden="true">{{ item.icon }}</div>
+        <div class="achievement-body">
+          <div class="achievement-title">{{ item.title }}</div>
+          <div class="achievement-desc">{{ item.description }}</div>
+          <div class="achievement-meta">Unlocked {{ item.earned_at|date:"d M Y" }}</div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if achievements.locked %}
+    <div class="achievements-section-label">Next goals</div>
+    <div class="achievements-grid">
+      {% for item in achievements.locked %}
+      <div class="achievement-card achievement-card--locked">
+        <div class="achievement-icon achievement-icon--locked" aria-hidden="true">{{ item.icon }}</div>
+        <div class="achievement-body">
+          <div class="achievement-title">{{ item.title }}</div>
+          <div class="achievement-desc">{{ item.description }}</div>
+          <div class="achievement-progress-wrap">
+            <div class="achievement-progress-track">
+              <div class="achievement-progress-fill" style="width: {{ item.progress_pct }}%;"></div>
+            </div>
+            <span class="achievement-progress-label">{{ item.progress_label }}</span>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if not achievements.earned and not achievements.locked %}
+    <div class="achievements-empty">
+      <p>Complete exams to start earning achievements.</p>
+    </div>
+    {% endif %}
+  {% endif %}
+</section>
+{% endif %}

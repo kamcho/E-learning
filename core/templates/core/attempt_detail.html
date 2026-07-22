@@ -1,0 +1,827 @@
+{% extends "base.html" %}
+
+{% block title %}{{ quiz.title }} — Attempt Summary{% endblock %}
+
+{% block main_extra_class %}attempt-detail-main{% endblock %}
+
+{% block extra_head %}
+{% include 'core/partials/question_rich_styles.html' %}
+{% include 'core/partials/question_math_assets.html' %}
+<style>
+  .attempt-detail-main {
+    padding: var(--space-xl) var(--space-2xl);
+    display: flex;
+    justify-content: center;
+    background: var(--clr-bg);
+  }
+
+  .attempt-detail-wrap {
+    width: 100%;
+    max-width: 1100px;
+    animation: fadeIn 0.4s var(--ease-out);
+  }
+
+  @media (max-width: 768px) {
+    .attempt-detail-main {
+      padding: var(--space-lg) var(--space-md);
+    }
+  }
+
+  .attempt-back {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-xs);
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--clr-primary);
+    text-decoration: none;
+    margin-bottom: var(--space-lg);
+    transition: transform var(--transition-fast), color var(--transition-fast);
+  }
+
+  .attempt-back:hover {
+    color: var(--clr-primary-dark);
+    transform: translateX(-4px);
+  }
+
+  .attempt-summary-card {
+    background: var(--clr-surface);
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-xl);
+    padding: var(--space-xl);
+    box-shadow: var(--shadow-md);
+    margin-bottom: var(--space-lg);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--space-xl);
+    position: relative;
+    overflow: hidden;
+  }
+
+  @media (max-width: 650px) {
+    .attempt-summary-card {
+      flex-direction: column-reverse;
+      text-align: center;
+      padding: var(--space-lg);
+    }
+  }
+
+  .attempt-info-section {
+    flex: 1;
+  }
+
+  .attempt-title {
+    font-family: var(--font-heading);
+    font-size: 1.75rem;
+    font-weight: 800;
+    line-height: 1.25;
+    color: var(--clr-text);
+    margin-bottom: var(--space-sm);
+  }
+
+  .attempt-meta-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-xs);
+    margin-bottom: var(--space-lg);
+  }
+
+  @media (max-width: 650px) {
+    .attempt-meta-tags {
+      justify-content: center;
+    }
+  }
+
+  .meta-tag {
+    background: var(--clr-surface-alt);
+    color: var(--clr-text-muted);
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 0.35rem 0.75rem;
+    border-radius: var(--radius-full);
+    border: 1px solid var(--clr-border);
+  }
+
+  .meta-tag.student-tag {
+    background: rgba(13, 138, 78, 0.08);
+    color: var(--clr-primary);
+    border-color: rgba(13, 138, 78, 0.15);
+  }
+
+  .attempt-grid-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: var(--space-md);
+    border-top: 1px solid var(--clr-border);
+    padding-top: var(--space-md);
+  }
+
+  .peer-stats-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: var(--space-md);
+    margin-top: var(--space-md);
+    padding-top: var(--space-md);
+    border-top: 1px dashed var(--clr-border);
+  }
+
+  .grid-stat-hint {
+    font-size: 0.72rem;
+    color: var(--clr-text-light);
+    margin-top: 0.2rem;
+    line-height: 1.35;
+  }
+
+  .percentile-value {
+    color: var(--clr-primary);
+  }
+
+  .grid-stat-item {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .grid-stat-label {
+    font-size: 0.72rem;
+    color: var(--clr-text-light);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .grid-stat-value {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--clr-text);
+    margin-top: 2px;
+  }
+
+  /* Score Ring Indicator */
+  .score-ring-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .score-ring {
+    position: relative;
+    width: 140px;
+    height: 140px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--shadow-sm);
+    transition: transform var(--transition-base);
+  }
+
+  .score-ring:hover {
+    transform: scale(1.03);
+  }
+
+  .score-ring-inner {
+    position: absolute;
+    width: 110px;
+    height: 110px;
+    background: var(--clr-surface);
+    border-radius: 50%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    box-shadow: inset 0 2px 5px rgba(0,0,0,0.05);
+  }
+
+  .score-ring-pct {
+    font-family: var(--font-heading);
+    font-size: 2.2rem;
+    font-weight: 900;
+    line-height: 1;
+  }
+
+  .score-ring-label {
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--clr-text-light);
+    letter-spacing: 0.04em;
+    margin-top: 2px;
+  }
+
+  .status-badge-pill {
+    display: inline-block;
+    margin-top: var(--space-md);
+    padding: 0.3rem 0.8rem;
+    border-radius: var(--radius-full);
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .status-badge-pill.done { background: rgba(13,138,78,0.1); color: var(--clr-primary); }
+  .status-badge-pill.ongoing { background: rgba(212,160,23,0.12); color: var(--clr-accent); }
+
+  /* Actions */
+  .attempt-actions-bar {
+    display: flex;
+    gap: var(--space-md);
+    margin-bottom: var(--space-xl);
+  }
+
+  @media (max-width: 650px) {
+    .attempt-actions-bar {
+      flex-direction: column;
+    }
+  }
+
+  .btn-attempt-action {
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.8rem var(--space-lg);
+    border-radius: var(--radius-full);
+    font-family: var(--font-heading);
+    font-weight: 700;
+    font-size: 0.9rem;
+    text-align: center;
+    box-shadow: var(--shadow-sm);
+    transition: all var(--transition-base);
+  }
+
+  .btn-attempt-action.primary {
+    background: var(--clr-primary);
+    color: #fff;
+  }
+
+  .btn-attempt-action.primary:hover {
+    background: var(--clr-primary-dark);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+  }
+
+  .btn-attempt-action.secondary {
+    background: var(--clr-surface);
+    color: var(--clr-text);
+    border: 1.5px solid var(--clr-border);
+  }
+
+  .btn-attempt-action.secondary:hover {
+    background: var(--clr-surface-alt);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+  }
+
+  /* Review Breakdown */
+  .review-header {
+    border-bottom: 2px solid var(--clr-border);
+    padding-bottom: var(--space-sm);
+    margin-bottom: var(--space-lg);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .review-title {
+    font-family: var(--font-heading);
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: var(--clr-text);
+  }
+
+  .question-card {
+    background: var(--clr-surface);
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-lg);
+    margin-bottom: var(--space-md);
+    box-shadow: var(--shadow-sm);
+    position: relative;
+    transition: all var(--transition-base);
+  }
+
+  .question-card:hover {
+    border-color: rgba(13, 138, 78, 0.2);
+    box-shadow: var(--shadow-md);
+  }
+
+  .question-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-md);
+  }
+
+  .question-number-badge {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--clr-text-light);
+  }
+
+  .question-status-badge {
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 0.25rem 0.6rem;
+    border-radius: var(--radius-full);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .question-status-badge.correct { background: rgba(13, 138, 78, 0.1); color: var(--clr-primary); }
+  .question-status-badge.wrong { background: rgba(193, 39, 45, 0.08); color: var(--clr-danger); }
+  .question-status-badge.pending { background: var(--clr-surface-alt); color: var(--clr-text-muted); }
+
+  .question-text {
+    font-family: var(--font-heading);
+    font-size: 1.05rem;
+    font-weight: 700;
+    line-height: 1.45;
+    color: var(--clr-text);
+    margin-bottom: var(--space-md);
+  }
+
+  /* Choices Grid */
+  .options-grid {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+  }
+
+  .option-review-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    padding: 0.75rem var(--space-md);
+    border-radius: var(--radius-md);
+    border: 1.5px solid var(--clr-border);
+    transition: all var(--transition-fast);
+    background: var(--clr-bg);
+  }
+
+  .option-letter-badge {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-heading);
+    font-weight: 700;
+    font-size: 0.82rem;
+    background: var(--clr-surface);
+    border: 1.5px solid var(--clr-border);
+    color: var(--clr-text-muted);
+    flex-shrink: 0;
+  }
+
+  .option-text-content {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--clr-text);
+  }
+
+  .option-status-marker {
+    margin-left: auto;
+    font-weight: 700;
+    font-size: 0.85rem;
+  }
+
+  /* Option Review States */
+  .option-review-item.correct-selected {
+    border-color: var(--clr-primary);
+    background: rgba(13, 138, 78, 0.06);
+  }
+  .option-review-item.correct-selected .option-letter-badge {
+    border-color: var(--clr-primary);
+    background: var(--clr-primary);
+    color: #fff;
+  }
+  .option-review-item.correct-selected .option-status-marker {
+    color: var(--clr-primary);
+  }
+
+  .option-review-item.wrong-selected {
+    border-color: var(--clr-danger);
+    background: rgba(193, 39, 45, 0.04);
+  }
+  .option-review-item.wrong-selected .option-letter-badge {
+    border-color: var(--clr-danger);
+    background: var(--clr-danger);
+    color: #fff;
+  }
+  .option-review-item.wrong-selected .option-status-marker {
+    color: var(--clr-danger);
+  }
+
+  .option-review-item.correct-unselected {
+    border-color: var(--clr-primary-light);
+    border-style: dashed;
+    background: rgba(13, 138, 78, 0.02);
+  }
+  .option-review-item.correct-unselected .option-letter-badge {
+    border-color: var(--clr-primary-light);
+    color: var(--clr-primary);
+  }
+  .option-review-item.correct-unselected .option-status-marker {
+    color: var(--clr-primary-light);
+  }
+
+  /* AI explanation */
+  .ai-explain-wrap {
+    margin-top: var(--space-md);
+    padding-top: var(--space-md);
+    border-top: 1px dashed var(--clr-border);
+  }
+
+  .btn-ai-explain {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.5rem 1rem;
+    border: 1px solid rgba(13, 138, 78, 0.25);
+    border-radius: var(--radius-full);
+    background: rgba(13, 138, 78, 0.06);
+    color: var(--clr-primary);
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: var(--font-body);
+    transition: all var(--transition-fast);
+  }
+
+  .btn-ai-explain:hover:not(:disabled) {
+    background: rgba(13, 138, 78, 0.12);
+    border-color: var(--clr-primary);
+  }
+
+  .btn-ai-explain:disabled {
+    opacity: 0.65;
+    cursor: wait;
+  }
+
+  .ai-explanation-box {
+    display: none;
+    margin-top: var(--space-md);
+    padding: var(--space-md);
+    background: linear-gradient(135deg, rgba(13,138,78,0.06) 0%, rgba(13,138,78,0.02) 100%);
+    border: 1px solid rgba(13, 138, 78, 0.15);
+    border-radius: var(--radius-lg);
+    font-size: 0.9rem;
+    line-height: 1.55;
+    color: var(--clr-text);
+  }
+
+  .ai-explanation-box.visible { display: block; }
+
+  .ai-explanation-label {
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--clr-primary);
+    margin-bottom: var(--space-xs);
+  }
+
+  .ai-explanation-error {
+    color: var(--clr-danger);
+    font-size: 0.85rem;
+    margin-top: var(--space-sm);
+  }
+
+  /* Animations */
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="attempt-detail-wrap">
+  <a href="{% url 'core:exams_list' %}" class="attempt-back">
+    <span>&#8592;</span> Back to Exams
+  </a>
+
+  <!-- Banner Card -->
+  <div class="attempt-summary-card">
+    <div class="attempt-info-section">
+      <h1 class="attempt-title">{{ quiz.title }}</h1>
+      
+      <div class="attempt-meta-tags">
+        {% if quiz.subject %}
+          <span class="meta-tag">{{ quiz.subject.name }}</span>
+        {% endif %}
+        {% if quiz.subject.grade_level %}
+          <span class="meta-tag">{{ quiz.subject.grade_level.name }}</span>
+        {% endif %}
+        {% if attempt.student %}
+          <span class="meta-tag student-tag">Learner: {{ attempt.student.first_name }}</span>
+        {% endif %}
+      </div>
+
+      <div class="attempt-grid-stats">
+        <div class="grid-stat-item">
+          <span class="grid-stat-label">Correctness</span>
+          <span class="grid-stat-value">
+            {% if attempt.is_complete %}
+              {{ correct_count }} / {{ question_count }} Correct
+            {% else %}
+              {{ answered_count }} / {{ question_count }} Answered
+            {% endif %}
+          </span>
+        </div>
+        {% if attempt.is_complete and attempt.marks_possible %}
+        <div class="grid-stat-item">
+          <span class="grid-stat-label">Marks</span>
+          <span class="grid-stat-value">{{ attempt.marks_earned }} / {{ attempt.marks_possible }}</span>
+        </div>
+        {% endif %}
+        <div class="grid-stat-item">
+          <span class="grid-stat-label">Date Taken</span>
+          <span class="grid-stat-value">
+            {% if attempt.is_complete %}
+              {{ attempt.updated_at|date:"d M Y" }}
+            {% else %}
+              {{ attempt.created_at|date:"d M Y" }}
+            {% endif %}
+          </span>
+        </div>
+        <div class="grid-stat-item">
+          <span class="grid-stat-label">Status</span>
+          <div>
+            {% if attempt.is_complete %}
+              <span class="status-badge-pill done">Completed</span>
+            {% else %}
+              <span class="status-badge-pill ongoing">In Progress</span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      {% if attempt.is_complete %}
+      <div class="peer-stats-row">
+        <div class="grid-stat-item">
+          <span class="grid-stat-label">Class Average (others)</span>
+          <span class="grid-stat-value">
+            {% if peer_stats.peer_avg_score is not None %}
+              {{ peer_stats.peer_avg_score }}%
+            {% else %}
+              —
+            {% endif %}
+          </span>
+          <span class="grid-stat-hint">
+            {% if peer_stats.peer_count %}
+              Based on {{ peer_stats.peer_count }} other student{{ peer_stats.peer_count|pluralize }}
+            {% else %}
+              No other completed attempts yet
+            {% endif %}
+          </span>
+        </div>
+        <div class="grid-stat-item">
+          <span class="grid-stat-label">Percentile</span>
+          <span class="grid-stat-value percentile-value">
+            {% if peer_stats.percentile is not None %}
+              {{ peer_stats.percentile|floatformat:0 }}th
+            {% else %}
+              —
+            {% endif %}
+          </span>
+          <span class="grid-stat-hint">
+            {% if peer_stats.percentile is not None %}
+              Among {{ peer_stats.total_completed }} completed attempt{{ peer_stats.total_completed|pluralize }}
+            {% else %}
+              Need at least 2 completions to rank
+            {% endif %}
+          </span>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Score Ring Widget -->
+    <div class="score-ring-wrap">
+      {% if attempt.is_complete %}
+        <div class="score-ring" style="background: conic-gradient({% if attempt.score >= 70 %}var(--clr-primary){% elif attempt.score >= 40 %}var(--clr-accent){% else %}var(--clr-danger){% endif %} 0%, {% if attempt.score >= 70 %}var(--clr-primary){% elif attempt.score >= 40 %}var(--clr-accent){% else %}var(--clr-danger){% endif %} {{ attempt.score }}%, var(--clr-border) {{ attempt.score }}%, var(--clr-border) 100%);">
+          <div class="score-ring-inner">
+            <span class="score-ring-pct" style="color: {% if attempt.score >= 70 %}var(--clr-primary){% elif attempt.score >= 40 %}var(--clr-accent){% else %}var(--clr-danger){% endif %};">
+              {{ attempt.score }}%
+            </span>
+            <span class="score-ring-label">Score</span>
+          </div>
+        </div>
+      {% else %}
+        <div class="score-ring" style="background: conic-gradient(var(--clr-accent) 0%, var(--clr-accent) {% widthratio answered_count question_count 100 %}%, var(--clr-border) {% widthratio answered_count question_count 100 %}%, var(--clr-border) 100%);">
+          <div class="score-ring-inner">
+            <span class="score-ring-pct" style="color: var(--clr-accent); font-size: 1.8rem;">
+              {% widthratio answered_count question_count 100 %}%
+            </span>
+            <span class="score-ring-label">Progress</span>
+          </div>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Actions Bar -->
+  <div class="attempt-actions-bar">
+    {% if not attempt.is_complete %}
+      <a href="{% url 'core:test_take' quiz.uuid student.uuid %}" class="btn-attempt-action primary">
+        Continue Exam
+      </a>
+    {% else %}
+      <a href="{% url 'core:test_info' quiz.uuid student.uuid %}?next={% url 'core:exams_list' %}?student={{ student.uuid }}" class="btn-attempt-action primary">
+        Retake Exam
+      </a>
+    {% endif %}
+    <a href="{% url 'core:exams_list' %}" class="btn-attempt-action secondary">
+      Browse Other Exams
+    </a>
+  </div>
+
+  <!-- Question Reviews -->
+  {% if breakdown %}
+    <div class="review-header">
+      <h2 class="review-title">Questions Review</h2>
+    </div>
+
+    {% for row in breakdown %}
+      <div class="question-card">
+        <div class="question-header">
+          <span class="question-number-badge">Question {{ row.number }}</span>
+          {% if row.answered %}
+            <span class="question-status-badge" style="background: var(--clr-surface-alt); color: var(--clr-text-muted);">
+              {{ row.marks_awarded }}/{{ row.max_marks }} marks
+            </span>
+            {% if row.is_correct %}
+              <span class="question-status-badge correct">&#10003; Correct</span>
+            {% elif row.is_correct == False %}
+              <span class="question-status-badge wrong">&#10007; Incorrect</span>
+            {% endif %}
+          {% else %}
+            <span class="question-status-badge pending">Not Answered</span>
+          {% endif %}
+        </div>
+
+        {% if row.question %}
+          {% include 'core/partials/question_prompt.html' with question=row.question %}
+        {% else %}
+          <div class="question-text" data-math-content>{{ row.question_text }}</div>
+        {% endif %}
+
+        <div class="options-grid">
+          {% if row.options %}
+            {% for opt in row.options %}
+              {% if opt.is_selected and opt.is_correct %}
+                <div class="option-review-item correct-selected">
+                  <span class="option-letter-badge">
+                    {% if forloop.counter == 1 %}A{% elif forloop.counter == 2 %}B{% elif forloop.counter == 3 %}C{% elif forloop.counter == 4 %}D{% else %}E{% endif %}
+                  </span>
+                  <span class="option-text-content">
+                    {% if opt.option_image_url %}
+                      {% include 'core/partials/option_content.html' with text=opt.option image_url=opt.option_image_url %}
+                    {% else %}
+                      {% include 'core/partials/option_content.html' with text=opt.option image_url='' %}
+                    {% endif %}
+                  </span>
+                  <span class="option-status-marker">&#10003; Correct Answer (Your Choice)</span>
+                </div>
+              {% elif opt.is_selected and not opt.is_correct %}
+                <div class="option-review-item wrong-selected">
+                  <span class="option-letter-badge">
+                    {% if forloop.counter == 1 %}A{% elif forloop.counter == 2 %}B{% elif forloop.counter == 3 %}C{% elif forloop.counter == 4 %}D{% else %}E{% endif %}
+                  </span>
+                  <span class="option-text-content">
+                    {% if opt.option_image_url %}
+                      {% include 'core/partials/option_content.html' with text=opt.option image_url=opt.option_image_url %}
+                    {% else %}
+                      {% include 'core/partials/option_content.html' with text=opt.option image_url='' %}
+                    {% endif %}
+                  </span>
+                  <span class="option-status-marker">&#10007; Your Choice</span>
+                </div>
+              {% elif not opt.is_selected and opt.is_correct %}
+                <div class="option-review-item correct-unselected">
+                  <span class="option-letter-badge">
+                    {% if forloop.counter == 1 %}A{% elif forloop.counter == 2 %}B{% elif forloop.counter == 3 %}C{% elif forloop.counter == 4 %}D{% else %}E{% endif %}
+                  </span>
+                  <span class="option-text-content">
+                    {% if opt.option_image_url %}
+                      {% include 'core/partials/option_content.html' with text=opt.option image_url=opt.option_image_url %}
+                    {% else %}
+                      {% include 'core/partials/option_content.html' with text=opt.option image_url='' %}
+                    {% endif %}
+                  </span>
+                  <span class="option-status-marker">Correct Answer</span>
+                </div>
+              {% else %}
+                <div class="option-review-item">
+                  <span class="option-letter-badge">
+                    {% if forloop.counter == 1 %}A{% elif forloop.counter == 2 %}B{% elif forloop.counter == 3 %}C{% elif forloop.counter == 4 %}D{% else %}E{% endif %}
+                  </span>
+                  <span class="option-text-content">
+                    {% if opt.option_image_url %}
+                      {% include 'core/partials/option_content.html' with text=opt.option image_url=opt.option_image_url %}
+                    {% else %}
+                      {% include 'core/partials/option_content.html' with text=opt.option image_url='' %}
+                    {% endif %}
+                  </span>
+                </div>
+              {% endif %}
+            {% endfor %}
+          {% else %}
+            <!-- Non multiple choice review fallback -->
+            <div class="option-review-item {% if row.is_correct %}correct-selected{% elif row.is_correct == False %}wrong-selected{% endif %}">
+              <span class="option-text-content">
+                {% if row.answered %}
+                  Your Answer: <strong>{{ row.answer_text }}</strong>
+                {% else %}
+                  Not Answered Yet
+                {% endif %}
+              </span>
+              {% if row.answered %}
+                <span class="option-status-marker">
+                  {% if row.is_correct %}&#10003; Correct{% else %}&#10007; Incorrect{% endif %}
+                </span>
+              {% endif %}
+            </div>
+          {% endif %}
+        </div>
+
+        {% if row.answered and row.options %}
+          <div class="ai-explain-wrap" data-question-uuid="{{ row.question_uuid }}">
+            <button type="button" class="btn-ai-explain" data-attempt-uuid="{{ attempt.uuid }}" data-question-uuid="{{ row.question_uuid }}">
+              ✨ Explain answer
+            </button>
+            <div class="ai-explanation-box" id="ai-explanation-{{ row.question_uuid }}">
+              <div class="ai-explanation-label">AI Tutor</div>
+              <div class="ai-explanation-text"></div>
+            </div>
+          </div>
+        {% endif %}
+      </div>
+    {% endfor %}
+  {% endif %}
+</div>
+
+<script>
+(function () {
+  function getCookie(name) {
+    var match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+    return match ? decodeURIComponent(match[2]) : '';
+  }
+
+  document.querySelectorAll('.btn-ai-explain').forEach(function (btn) {
+    btn.addEventListener('click', async function () {
+      var attemptUuid = btn.dataset.attemptUuid;
+      var questionUuid = btn.dataset.questionUuid;
+      var box = document.getElementById('ai-explanation-' + questionUuid);
+      var textEl = box ? box.querySelector('.ai-explanation-text') : null;
+      if (!box || !textEl) return;
+
+      btn.disabled = true;
+      btn.textContent = 'Thinking…';
+      box.classList.add('visible');
+      textEl.textContent = '';
+
+      var errEl = box.querySelector('.ai-explanation-error');
+      if (errEl) errEl.remove();
+
+      try {
+        var res = await fetch('{% url "core:ai_explain_answer" %}', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken'),
+          },
+          body: JSON.stringify({
+            attempt_uuid: attemptUuid,
+            question_uuid: questionUuid,
+          }),
+        });
+        var data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error || 'Could not get explanation.');
+        }
+        textEl.textContent = data.explanation;
+        btn.textContent = '✨ Explain again';
+      } catch (err) {
+        var p = document.createElement('p');
+        p.className = 'ai-explanation-error';
+        p.textContent = err.message;
+        box.appendChild(p);
+        btn.textContent = '✨ Explain answer';
+      } finally {
+        btn.disabled = false;
+      }
+    });
+  });
+})();
+</script>
+{% endblock %}

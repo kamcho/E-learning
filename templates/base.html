@@ -1,0 +1,1018 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}SomaKenya — CBC Curriculum{% endblock %}</title>
+  <script>
+    (function () {
+      try {
+        var t = localStorage.getItem('somakenya-theme');
+        if (t !== 'light' && t !== 'dark') {
+          t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+        document.documentElement.setAttribute('data-theme', t);
+      } catch (e) {
+        document.documentElement.setAttribute('data-theme', 'light');
+      }
+    })();
+  </script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+  <style>
+    body.app-body {
+      margin: 0;
+      background: var(--clr-bg);
+      color: var(--clr-text);
+      font-family: var(--font-body);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .app-header {
+      height: 64px;
+      background: var(--clr-surface);
+      border-bottom: 1px solid var(--clr-border);
+      position: sticky;
+      top: 0;
+      z-index: 200;
+      flex-shrink: 0;
+    }
+
+    .app-header-inner {
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-md);
+      padding: 0 var(--space-xl);
+    }
+
+    .app-nav-toggle {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      border: 1px solid var(--clr-border);
+      border-radius: var(--radius-md);
+      background: var(--clr-surface);
+      cursor: pointer;
+      flex-shrink: 0;
+      padding: 0;
+    }
+
+    .app-nav-toggle span {
+      display: block;
+      width: 18px;
+      height: 2px;
+      background: var(--clr-text);
+      border-radius: 2px;
+      position: relative;
+      transition: background 0.2s ease;
+    }
+
+    .app-nav-toggle span::before,
+    .app-nav-toggle span::after {
+      content: '';
+      position: absolute;
+      left: 0;
+      width: 18px;
+      height: 2px;
+      background: var(--clr-text);
+      border-radius: 2px;
+      transition: transform 0.2s ease, top 0.2s ease;
+    }
+
+    .app-nav-toggle span::before { top: -6px; }
+    .app-nav-toggle span::after { top: 6px; }
+
+    body.sidebar-open .app-nav-toggle span { background: transparent; }
+    body.sidebar-open .app-nav-toggle span::before {
+      top: 0;
+      transform: rotate(45deg);
+    }
+    body.sidebar-open .app-nav-toggle span::after {
+      top: 0;
+      transform: rotate(-45deg);
+    }
+
+    .app-header-brand {
+      display: none;
+      align-items: center;
+      gap: var(--space-sm);
+      text-decoration: none;
+      color: inherit;
+      flex-shrink: 0;
+    }
+
+    .app-header-brand .logo-icon {
+      width: 34px;
+      height: 34px;
+      background: var(--grad-hero);
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.95rem;
+      font-weight: 800;
+      color: #fff;
+    }
+
+    .app-header-brand span:last-child {
+      font-family: var(--font-heading);
+      font-weight: 800;
+      font-size: 1rem;
+      color: var(--clr-text);
+    }
+
+    .app-search-wrap { flex: 1; max-width: 520px; min-width: 0; }
+
+    .app-search {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      background: var(--clr-surface-alt);
+      border: 1px solid var(--clr-border);
+      border-radius: var(--radius-full);
+      padding: 0.55rem 1rem;
+      transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+    }
+
+    .app-search:focus-within {
+      border-color: var(--clr-primary);
+      box-shadow: 0 0 0 3px rgba(13, 138, 78, 0.12);
+      background: var(--clr-surface);
+    }
+
+    .app-search-icon { color: var(--clr-text-light); font-size: 0.95rem; flex-shrink: 0; }
+
+    .app-search input {
+      flex: 1;
+      border: none;
+      background: transparent;
+      font-family: var(--font-body);
+      font-size: 0.9rem;
+      color: var(--clr-text);
+      outline: none;
+    }
+
+    .app-search input::placeholder { color: var(--clr-text-light); }
+
+    .app-header-actions {
+      display: flex;
+      align-items: center;
+      gap: var(--space-md);
+    }
+
+    .app-account { position: relative; }
+
+    .app-account-toggle {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      padding: 0.35rem 0.5rem 0.35rem 0.35rem;
+      border: 1px solid var(--clr-border);
+      border-radius: var(--radius-full);
+      background: var(--clr-surface);
+      cursor: pointer;
+      font-family: var(--font-body);
+      transition: all var(--transition-fast);
+    }
+
+    .app-account-toggle:hover,
+    .app-account.open .app-account-toggle {
+      border-color: var(--clr-primary);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .app-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: var(--radius-full);
+      background: var(--grad-hero);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 700;
+      font-family: var(--font-heading);
+    }
+
+    .app-account-name { font-size: 0.88rem; font-weight: 600; color: var(--clr-text); }
+
+    .app-account-chevron {
+      font-size: 0.65rem;
+      color: var(--clr-text-light);
+      transition: transform var(--transition-fast);
+    }
+
+    .app-account.open .app-account-chevron { transform: rotate(180deg); }
+
+    .app-account-dropdown {
+      position: absolute;
+      top: calc(100% + 8px);
+      right: 0;
+      min-width: 220px;
+      background: var(--clr-surface);
+      border: 1px solid var(--clr-border);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-lg);
+      padding: var(--space-xs);
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(-6px);
+      transition: all var(--transition-fast);
+    }
+
+    .app-account.open .app-account-dropdown {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+    }
+
+    .app-account-dropdown a {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      padding: 0.6rem 0.85rem;
+      border-radius: var(--radius-md);
+      font-size: 0.88rem;
+      font-weight: 500;
+      color: var(--clr-text-muted);
+      text-decoration: none;
+      transition: all var(--transition-fast);
+    }
+
+    .app-account-dropdown a:hover {
+      background: var(--clr-surface-alt);
+      color: var(--clr-primary);
+    }
+
+    .app-account-dropdown a.danger:hover {
+      background: rgba(193, 39, 45, 0.08);
+      color: var(--clr-danger);
+    }
+
+    .app-account-dropdown hr {
+      border: none;
+      border-top: 1px solid var(--clr-border);
+      margin: var(--space-xs) 0;
+    }
+
+    .app-role-switcher {
+      padding: 0.55rem 0.85rem 0.45rem;
+    }
+
+    .app-role-switcher-label {
+      display: block;
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--clr-text-light);
+      margin-bottom: 0.4rem;
+    }
+
+    .app-role-options {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .app-role-form { margin: 0; }
+
+    .app-role-option {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      padding: 0.5rem 0.65rem;
+      border: none;
+      border-radius: var(--radius-md);
+      background: transparent;
+      font-size: 0.86rem;
+      font-weight: 500;
+      color: var(--clr-text-muted);
+      cursor: pointer;
+      text-align: left;
+      transition: all var(--transition-fast);
+    }
+
+    .app-role-option:hover {
+      background: var(--clr-surface-alt);
+      color: var(--clr-primary);
+    }
+
+    .app-role-option.is-active {
+      background: rgba(13, 138, 78, 0.1);
+      color: var(--clr-primary);
+      font-weight: 700;
+    }
+
+    .app-role-check {
+      font-size: 0.75rem;
+      opacity: 0.9;
+    }
+
+    .app-header-link {
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--clr-text-muted);
+      text-decoration: none;
+    }
+
+    .app-header-link:hover { color: var(--clr-primary); }
+
+    .app-header-btn {
+      font-size: 0.85rem;
+      font-weight: 600;
+      padding: 0.45rem 1rem;
+      border-radius: var(--radius-md);
+      text-decoration: none;
+      background: var(--clr-primary);
+      color: #fff;
+    }
+
+    .app-header-btn:hover { background: var(--clr-primary-dark); }
+
+    .app-layout {
+      display: flex;
+      flex: 1;
+      min-height: 0;
+    }
+
+    /* ── Sidebar shell ── */
+    .admin-sidebar {
+      width: 256px;
+      flex-shrink: 0;
+      background: var(--clr-surface);
+      border-right: 1px solid var(--clr-border);
+      display: flex;
+      flex-direction: column;
+      position: sticky;
+      top: 64px;
+      height: calc(100vh - 64px);
+      overflow-y: auto;
+      overflow-x: hidden;
+      scrollbar-width: thin;
+      scrollbar-color: var(--clr-border) transparent;
+    }
+
+    .admin-sidebar::-webkit-scrollbar { width: 4px; }
+    .admin-sidebar::-webkit-scrollbar-track { background: transparent; }
+    .admin-sidebar::-webkit-scrollbar-thumb { background: var(--clr-border); border-radius: 4px; }
+
+    /* ── Brand ── */
+    .admin-sidebar-brand {
+      padding: 1.1rem var(--space-lg);
+      border-bottom: 1px solid var(--clr-border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: inherit;
+      flex-shrink: 0;
+      transition: background var(--transition-fast);
+    }
+
+    .admin-sidebar-brand:hover { background: var(--clr-surface-alt); }
+
+    .admin-sidebar-brand .logo-icon {
+      width: 34px;
+      height: 34px;
+      font-size: 0.9rem;
+      font-family: var(--font-heading);
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      flex-shrink: 0;
+    }
+
+    .sidebar-brand-text {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+    }
+
+    .sidebar-brand-name {
+      font-family: var(--font-heading);
+      font-weight: 800;
+      font-size: 0.95rem;
+      color: var(--clr-text);
+      line-height: 1.2;
+    }
+
+    .sidebar-brand-sub {
+      font-size: 0.67rem;
+      font-weight: 500;
+      color: var(--clr-text-light);
+      letter-spacing: 0.03em;
+    }
+
+    /* ── Nav ── */
+    .admin-nav {
+      padding: var(--space-sm) var(--space-sm);
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .admin-nav-label {
+      font-size: 0.63rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--clr-text-light);
+      padding: var(--space-md) var(--space-md) 0.35rem;
+      margin-top: var(--space-xs);
+      user-select: none;
+    }
+
+    .admin-nav a {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0.58rem var(--space-md);
+      border-radius: var(--radius-md);
+      font-size: 0.855rem;
+      font-weight: 500;
+      color: var(--clr-text-muted);
+      text-decoration: none;
+      transition: background var(--transition-fast), color var(--transition-fast);
+      position: relative;
+      margin-bottom: 1px;
+    }
+
+    .admin-nav a:hover {
+      background: var(--clr-surface-alt);
+      color: var(--clr-text);
+    }
+
+    .admin-nav a:hover .admin-nav-icon { color: var(--clr-primary); }
+
+    .admin-nav a.active {
+      background: rgba(13, 138, 78, 0.08);
+      color: var(--clr-primary);
+      font-weight: 600;
+    }
+
+    .admin-nav a.active::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 22%;
+      height: 56%;
+      width: 3px;
+      background: var(--clr-primary);
+      border-radius: 0 3px 3px 0;
+    }
+
+    .admin-nav a.active .admin-nav-icon { color: var(--clr-primary); }
+
+    .admin-nav-icon {
+      width: 16px;
+      height: 16px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--clr-text-light);
+      transition: color var(--transition-fast);
+    }
+
+    /* ── Sidebar footer (user profile) ── */
+    .sidebar-footer {
+      padding: var(--space-sm);
+      border-top: 1px solid var(--clr-border);
+      flex-shrink: 0;
+    }
+
+    .sidebar-user-card {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      padding: var(--space-sm) var(--space-md);
+      border-radius: var(--radius-md);
+    }
+
+    .sidebar-avatar {
+      width: 30px;
+      height: 30px;
+      border-radius: var(--radius-full);
+      background: var(--grad-hero);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.66rem;
+      font-weight: 700;
+      font-family: var(--font-heading);
+      flex-shrink: 0;
+      letter-spacing: 0.5px;
+    }
+
+    .sidebar-user-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .sidebar-user-name {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--clr-text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: block;
+      line-height: 1.25;
+    }
+
+    .sidebar-user-role {
+      font-size: 0.64rem;
+      font-weight: 600;
+      color: var(--clr-primary);
+      background: rgba(13, 138, 78, 0.1);
+      padding: 1px 7px;
+      border-radius: 20px;
+      display: inline-block;
+      margin-top: 2px;
+      text-transform: capitalize;
+      letter-spacing: 0.02em;
+    }
+
+    .sidebar-signout {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border-radius: var(--radius-md);
+      color: var(--clr-text-light);
+      text-decoration: none;
+      flex-shrink: 0;
+      transition: background var(--transition-fast), color var(--transition-fast);
+    }
+
+    .sidebar-signout:hover {
+      background: rgba(193, 39, 45, 0.1);
+      color: var(--clr-danger);
+    }
+
+    .app-sidebar-overlay {
+      display: none;
+      position: fixed;
+      inset: 64px 0 0 0;
+      background: rgba(15, 23, 42, 0.45);
+      z-index: 250;
+      opacity: 0;
+      transition: opacity 0.25s ease;
+    }
+
+    .app-sidebar-overlay.is-visible {
+      display: block;
+      opacity: 1;
+    }
+
+    .app-main-area {
+      flex: 1;
+      min-width: 0;
+      padding: var(--space-xl) var(--space-2xl);
+      overflow-x: hidden;
+    }
+
+    .messages-container { margin-bottom: var(--space-lg); }
+
+    .alert {
+      padding: var(--space-md) var(--space-lg);
+      border-radius: var(--radius-md);
+      font-weight: 500;
+      margin-bottom: var(--space-sm);
+    }
+
+    .alert-success {
+      background: rgba(13, 138, 78, 0.1);
+      color: var(--clr-primary-dark);
+      border: 1px solid rgba(13, 138, 78, 0.2);
+    }
+
+    .alert-danger {
+      background: rgba(193, 39, 45, 0.1);
+      color: var(--clr-danger);
+      border: 1px solid rgba(193, 39, 45, 0.2);
+    }
+
+    .page-header {
+      background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+      padding: var(--space-2xl);
+      border-radius: var(--radius-xl);
+      margin-bottom: var(--space-2xl);
+      border: 1px solid var(--clr-border);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .page-header-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: var(--space-md);
+    }
+
+    .page-title {
+      font-family: var(--font-heading);
+      font-size: 2rem;
+      font-weight: 800;
+      color: var(--clr-text);
+      letter-spacing: -0.02em;
+    }
+
+    .page-subtitle {
+      color: var(--clr-text-muted);
+      font-size: 0.95rem;
+      margin-top: var(--space-xs);
+    }
+
+    .breadcrumbs {
+      display: flex;
+      align-items: center;
+      gap: var(--space-xs);
+      font-size: 0.85rem;
+      color: var(--clr-text-light);
+      margin-bottom: var(--space-sm);
+    }
+
+    .breadcrumbs a { color: var(--clr-primary); }
+    .breadcrumbs a:hover { color: var(--clr-primary-dark); text-decoration: underline; }
+
+    .content-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: var(--space-2xl);
+    }
+
+    @media (max-width: 992px) { .content-grid { grid-template-columns: 1fr; } }
+
+    .card {
+      background: var(--clr-surface);
+      border-radius: var(--radius-xl);
+      border: 1px solid var(--clr-border);
+      padding: var(--space-xl);
+      box-shadow: var(--shadow-sm);
+      margin-bottom: var(--space-lg);
+    }
+
+    .card-title {
+      font-family: var(--font-heading);
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--clr-text);
+      margin-bottom: var(--space-lg);
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      border-bottom: 2px solid var(--clr-surface-alt);
+      padding-bottom: var(--space-sm);
+    }
+
+    .item-list { display: flex; flex-direction: column; gap: var(--space-md); }
+
+    .list-item {
+      background: var(--clr-surface-alt);
+      padding: var(--space-lg);
+      border-radius: var(--radius-lg);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: all var(--transition-base);
+      border: 1px solid transparent;
+    }
+
+    .list-item:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+      background: var(--clr-surface);
+      border-color: rgba(13,138,78,0.2);
+    }
+
+    .list-item-title {
+      font-family: var(--font-heading);
+      font-weight: 700;
+      color: var(--clr-text);
+      font-size: 1.05rem;
+    }
+
+    .list-item-meta {
+      font-size: 0.82rem;
+      color: var(--clr-text-light);
+      margin-top: var(--space-xs);
+    }
+
+    .form-group { margin-bottom: var(--space-lg); }
+
+    .form-label {
+      display: block;
+      font-weight: 600;
+      font-size: 0.88rem;
+      color: var(--clr-text);
+      margin-bottom: var(--space-sm);
+    }
+
+    .form-input, .form-select, .form-textarea {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      border: 1.5px solid var(--clr-border);
+      border-radius: var(--radius-md);
+      font-family: var(--font-body);
+      font-size: 0.95rem;
+      color: var(--clr-text);
+      background-color: var(--clr-surface);
+      transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+    }
+
+    .form-input:focus, .form-select:focus, .form-textarea:focus {
+      outline: none;
+      border-color: var(--clr-primary);
+      box-shadow: 0 0 0 3px rgba(13,138,78,0.15);
+    }
+
+    .form-checkbox { width: 18px; height: 18px; accent-color: var(--clr-primary); }
+
+    .form-checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      font-weight: 500;
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      border-radius: var(--radius-full);
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .badge-primary { background: rgba(13, 138, 78, 0.1); color: var(--clr-primary); }
+    .badge-gold { background: rgba(212, 160, 23, 0.1); color: var(--clr-accent); }
+    .badge-danger { background: rgba(193, 39, 45, 0.1); color: var(--clr-danger); }
+
+    .empty-state {
+      text-align: center;
+      padding: var(--space-3xl) var(--space-xl);
+      color: var(--clr-text-light);
+    }
+
+    .empty-state-icon { font-size: 3rem; margin-bottom: var(--space-md); }
+
+    .app-layout--auth .app-main-area {
+      max-width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    body.app-body--auth .app-header-brand {
+      display: flex;
+    }
+
+    body.app-body--auth .app-nav-toggle,
+    body.app-body--auth .app-search-wrap {
+      display: none;
+    }
+
+    @media (max-width: 992px) {
+      .app-nav-toggle { display: inline-flex; }
+      .app-header-brand { display: flex; }
+
+      .admin-sidebar {
+        position: fixed;
+        top: 64px;
+        left: 0;
+        width: min(280px, 88vw);
+        height: calc(100vh - 64px);
+        z-index: 300;
+        transform: translateX(-105%);
+        transition: transform 0.25s ease;
+        box-shadow: var(--shadow-lg);
+      }
+
+      body.sidebar-open .admin-sidebar {
+        transform: translateX(0);
+      }
+
+      body.sidebar-open { overflow: hidden; }
+
+      .app-main-area { padding: var(--space-lg); }
+      .app-account-name { display: none; }
+      .app-account-chevron { display: none; }
+    }
+
+    @media (max-width: 768px) {
+      .app-search input { font-size: 0.85rem; }
+      .app-search { padding: 0.5rem 0.85rem; }
+    }
+
+    @media (max-width: 576px) {
+      .app-header-inner {
+        padding: 0 var(--space-md);
+        gap: var(--space-sm);
+      }
+
+      .app-search-wrap { max-width: none; }
+      .app-header-link { display: none; }
+    }
+
+    @media (max-width: 400px) {
+      .app-search input::placeholder { font-size: 0.8rem; }
+    }
+  </style>
+  {% block extra_head %}{% endblock %}
+</head>
+<body class="app-body{% block body_class %}{% endblock %}{% if request.resolver_match.view_name == 'accounts:signin' or request.resolver_match.view_name == 'accounts:signup' %} app-body--auth{% endif %}">
+
+  <header class="app-header">
+    <div class="app-header-inner">
+      {% if request.resolver_match.view_name != 'accounts:signin' and request.resolver_match.view_name != 'accounts:signup' %}
+      <button type="button" class="app-nav-toggle" id="app-nav-toggle" aria-label="Open navigation menu" aria-expanded="false" aria-controls="app-sidebar">
+        <span></span>
+      </button>
+      {% endif %}
+
+      <a href="{% url 'core:landing' %}" class="app-header-brand">
+        <span class="logo-icon">S</span>
+        <span>SomaKenya</span>
+      </a>
+
+      <div class="app-search-wrap">
+        <form class="app-search" role="search" onsubmit="return false;">
+          <span class="app-search-icon">&#128269;</span>
+          <input type="search" id="app-search" placeholder="Search..." autocomplete="off">
+        </form>
+      </div>
+
+      <div class="app-header-actions">
+        <button type="button" class="theme-toggle" data-theme-toggle aria-label="Switch theme" title="Switch theme">
+          <svg class="theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="4"/>
+            <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
+          </svg>
+          <svg class="theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+            <path d="M21 14.5A8.5 8.5 0 1 1 9.5 3a7 7 0 0 0 11.5 11.5z"/>
+          </svg>
+        </button>
+        {% if request.user.is_authenticated %}
+        <div class="app-account" id="app-account">
+          <button type="button" class="app-account-toggle" id="app-account-toggle" aria-expanded="false" aria-haspopup="true">
+            <span class="app-avatar">{{ request.user.first_name|first|upper }}{{ request.user.last_name|first|upper }}</span>
+            <span class="app-account-name">{{ request.user.first_name }}</span>
+            <span class="app-account-chevron">&#9660;</span>
+          </button>
+          <div class="app-account-dropdown" role="menu">
+            {% if request.user.is_admin_role %}
+            <a href="{% url 'accounts:admin_profile' %}" role="menuitem">&#128100; Profile</a>
+            {% elif request.user.is_guardian %}
+            <a href="{% url 'accounts:guardian_dashboard' %}" role="menuitem">&#128100; My Learners</a>
+            {% elif request.user.is_teacher %}
+            <a href="{% url 'accounts:teacher_dashboard' %}" role="menuitem">&#128100; Teacher Dashboard</a>
+            {% elif request.user.is_referral %}
+            <a href="{% url 'accounts:referral_dashboard' %}" role="menuitem">&#128100; Referral Dashboard</a>
+            {% endif %}
+            {% if can_switch_role %}
+            <hr>
+            <div class="app-role-switcher">
+              <span class="app-role-switcher-label">Switch role</span>
+              <div class="app-role-options">
+                {% for value, label in role_choices %}
+                <form method="post" action="{% url 'accounts:switch_role' %}" class="app-role-form">
+                  {% csrf_token %}
+                  <input type="hidden" name="role" value="{{ value }}">
+                  <button type="submit" class="app-role-option{% if request.user.role == value %} is-active{% endif %}">
+                    <span>{{ label }}</span>
+                    {% if request.user.role == value %}<span class="app-role-check">&#10003;</span>{% endif %}
+                  </button>
+                </form>
+                {% endfor %}
+              </div>
+            </div>
+            {% endif %}
+            <hr>
+            <a href="{% url 'accounts:signout' %}" class="danger" role="menuitem">&#128682; Log out</a>
+          </div>
+        </div>
+        {% else %}
+        <a href="{% url 'accounts:signin' %}" class="app-header-link">Log In</a>
+        <a href="{% url 'accounts:signup' %}" class="app-header-btn">Sign Up</a>
+        {% endif %}
+      </div>
+    </div>
+  </header>
+
+  {% if request.resolver_match.view_name != 'accounts:signin' and request.resolver_match.view_name != 'accounts:signup' %}
+  <div class="app-sidebar-overlay" id="app-sidebar-overlay" aria-hidden="true"></div>
+  {% endif %}
+
+  <div class="app-layout{% if request.resolver_match.view_name == 'accounts:signin' or request.resolver_match.view_name == 'accounts:signup' %} app-layout--auth{% endif %}">
+    {% if request.resolver_match.view_name != 'accounts:signin' and request.resolver_match.view_name != 'accounts:signup' %}
+    {% include 'accounts/admin_sidebar.html' %}
+    {% endif %}
+
+    <main class="app-main-area {% block main_extra_class %}{% endblock %}">
+      {% if messages %}
+        <div class="messages-container">
+          {% for message in messages %}
+            <div class="alert {% if message.tags == 'success' %}alert-success{% else %}alert-danger{% endif %}">
+              {{ message }}
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+
+  <script>
+    (function () {
+      var account = document.getElementById('app-account');
+      var accountToggle = document.getElementById('app-account-toggle');
+      if (accountToggle && account) {
+        accountToggle.addEventListener('click', function (e) {
+          e.stopPropagation();
+          var open = account.classList.toggle('open');
+          accountToggle.setAttribute('aria-expanded', open);
+        });
+        document.addEventListener('click', function () {
+          account.classList.remove('open');
+          accountToggle.setAttribute('aria-expanded', 'false');
+        });
+      }
+
+      var navToggle = document.getElementById('app-nav-toggle');
+      var sidebar = document.querySelector('.admin-sidebar');
+      var overlay = document.getElementById('app-sidebar-overlay');
+
+      function setSidebarOpen(open) {
+        document.body.classList.toggle('sidebar-open', open);
+        if (overlay) {
+          overlay.classList.toggle('is-visible', open);
+          overlay.setAttribute('aria-hidden', open ? 'false' : 'true');
+        }
+        if (navToggle) {
+          navToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+          navToggle.setAttribute('aria-label', open ? 'Close navigation menu' : 'Open navigation menu');
+        }
+      }
+
+      function closeSidebar() { setSidebarOpen(false); }
+
+      if (navToggle && sidebar) {
+        navToggle.addEventListener('click', function () {
+          setSidebarOpen(!document.body.classList.contains('sidebar-open'));
+        });
+      }
+
+      if (overlay) {
+        overlay.addEventListener('click', closeSidebar);
+      }
+
+      if (sidebar) {
+        sidebar.setAttribute('id', 'app-sidebar');
+        sidebar.querySelectorAll('a').forEach(function (link) {
+          link.addEventListener('click', closeSidebar);
+        });
+      }
+
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') {
+          closeSidebar();
+          if (account) {
+            account.classList.remove('open');
+            if (accountToggle) accountToggle.setAttribute('aria-expanded', 'false');
+          }
+        }
+      });
+
+      window.addEventListener('resize', function () {
+        if (window.innerWidth > 992) closeSidebar();
+      });
+
+      var search = document.getElementById('app-search');
+      if (search && !document.getElementById('users-table')) {
+        search.addEventListener('input', function () {
+          var q = this.value.toLowerCase().trim();
+          document.querySelectorAll('[data-searchable]').forEach(function (el) {
+            el.style.display = !q || el.textContent.toLowerCase().includes(q) ? '' : 'none';
+          });
+        });
+      }
+    })();
+  </script>
+  <script src="{% static 'js/theme.js' %}"></script>
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

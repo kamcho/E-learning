@@ -1,0 +1,240 @@
+<style>
+  html[data-theme="dark"] body.guardian-dash-dark .guardian-dash-main {
+    padding: var(--space-lg) var(--space-xl) var(--space-2xl);
+    background: var(--cs-bg);
+  }
+
+  html[data-theme="dark"] body.guardian-dash-dark .grade-group-title,
+  html[data-theme="dark"] body.guardian-dash-dark .exams-grade-heading {
+    border-bottom-color: rgba(61, 214, 198, 0.15);
+  }
+
+  html[data-theme="dark"] body.guardian-dash-dark .subject-browser-card:hover,
+  html[data-theme="dark"] body.guardian-dash-dark .subject-course-card:hover,
+  html[data-theme="dark"] body.guardian-dash-dark .test-type-card:hover,
+  html[data-theme="dark"] body.guardian-dash-dark .topic-browser-card:hover,
+  html[data-theme="dark"] body.guardian-dash-dark .wizard-choice:hover,
+  html[data-theme="dark"] body.guardian-dash-dark .wizard-scope-card:hover,
+  html[data-theme="dark"] body.guardian-dash-dark .learner-option:hover,
+  html[data-theme="dark"] body.guardian-dash-dark .exam-journey-action:hover,
+  html[data-theme="dark"] body.guardian-dash-dark .exam-journey-crumb:hover {
+    background: rgba(61, 214, 198, 0.06);
+    border-color: rgba(61, 214, 198, 0.35);
+  }
+
+  html[data-theme="dark"] body.guardian-dash-dark .exam-learner-banner {
+    background: rgba(61, 214, 198, 0.08);
+    border-color: rgba(61, 214, 198, 0.2);
+  }
+
+  html[data-theme="dark"] body.guardian-dash-dark .exam-change-learner-btn {
+    background: var(--cs-bg-elevated);
+    border-color: rgba(61, 214, 198, 0.35);
+    color: var(--cs-accent);
+  }
+
+  html[data-theme="dark"] body.guardian-dash-dark .exam-change-learner-btn:hover {
+    background: rgba(61, 214, 198, 0.08);
+  }
+
+  html[data-theme="dark"] body.guardian-dash-dark .learner-option.is-selected {
+    border-color: var(--cs-accent);
+    background: rgba(61, 214, 198, 0.1);
+  }
+
+  html[data-theme="dark"] body.guardian-dash-dark .grade-tab.active {
+    color: #0a0f14;
+  }
+
+  html[data-theme="dark"] body.guardian-dash-dark .exam-card:hover {
+    border-color: rgba(61, 214, 198, 0.25);
+  }
+
+  html[data-theme="dark"] body.guardian-dash-dark .exam-card.diff-easy::before {
+    background: var(--cs-accent);
+  }
+
+  html[data-theme="dark"] body.guardian-dash-dark .diff-badge.easy {
+    background: rgba(61, 214, 198, 0.12);
+  }
+
+  html[data-theme="dark"] body.guardian-dash-dark .exam-btn-primary {
+    color: #0a0f14;
+    box-shadow: 0 2px 10px var(--cs-accent-glow);
+  }
+
+  html[data-theme="dark"] body.guardian-dash-dark .exam-btn-primary:hover {
+    color: #0a0f14;
+    box-shadow: 0 4px 14px var(--cs-accent-glow);
+  }
+
+  html[data-theme="dark"] body.guardian-dash-dark .exam-btn-secondary {
+    background: var(--cs-bg-elevated);
+    border-color: var(--cs-accent);
+    color: var(--cs-accent);
+  }
+
+  html[data-theme="dark"] body.guardian-dash-dark .exam-btn-secondary:hover {
+    background: rgba(61, 214, 198, 0.1);
+    color: var(--clr-primary-dark);
+  }
+
+  html[data-theme="dark"] body.guardian-dash-dark .exam-journey-avatar,
+  html[data-theme="dark"] body.guardian-dash-dark .exam-learner-banner-avatar,
+  html[data-theme="dark"] body.guardian-dash-dark .exam-wizard-helper-avatar,
+  html[data-theme="dark"] body.guardian-dash-dark .learner-option-avatar {
+    background: linear-gradient(135deg, var(--cs-crimson) 0%, var(--cs-accent) 100%);
+  }
+
+  html[data-theme="dark"] body.guardian-dash-dark .exam-finder-bar {
+    background: linear-gradient(135deg, rgba(92, 10, 18, 0.2) 0%, rgba(61, 214, 198, 0.05) 100%);
+    border-color: rgba(61, 214, 198, 0.18);
+  }
+
+  html[data-theme="dark"] body.guardian-dash-dark .finder-chip {
+    background: var(--cs-bg-elevated);
+    border-color: rgba(61, 214, 198, 0.25);
+  }
+
+  html[data-theme="dark"] body.guardian-dash-dark .exam-finder-btn {
+    color: #0a0f14;
+    box-shadow: 0 2px 10px var(--cs-accent-glow);
+  }
+
+  html[data-theme="dark"] body.guardian-dash-dark .exam-finder-btn:hover {
+    box-shadow: 0 4px 14px var(--cs-accent-glow);
+  }
+
+  html[data-theme="dark"] body.guardian-dash-dark .exam-wizard-top {
+    background: linear-gradient(180deg, rgba(61, 214, 198, 0.08) 0%, transparent 100%);
+  }
+
+  html[data-theme="dark"] body.guardian-dash-dark .exam-wizard-progress-fill {
+    background: linear-gradient(90deg, var(--cs-crimson), var(--cs-accent));
+  }
+
+  html[data-theme="dark"] body.guardian-dash-dark .exam-wizard-spinner {
+    border-color: rgba(61, 214, 198, 0.15);
+    border-top-color: var(--cs-accent);
+  }
+
+  html[data-theme="dark"] body.guardian-dash-dark .btn-primary {
+    background: var(--cs-accent);
+    color: #0a0f14;
+    font-weight: 700;
+    box-shadow: 0 4px 20px var(--cs-accent-glow);
+  }
+
+  html[data-theme="dark"] body.guardian-dash-dark .btn-primary:hover {
+    background: var(--clr-primary-dark);
+    color: #0a0f14;
+  }
+
+  html[data-theme="dark"] body.guardian-dash-dark .btn-secondary {
+    background: var(--cs-bg-elevated);
+    color: var(--cs-text);
+    border: 1px solid var(--cs-border);
+    box-shadow: none;
+  }
+
+  html[data-theme="dark"] body.guardian-dash-dark .guardian-dash-main .card,
+  html[data-theme="dark"] body.guardian-dash-dark .filter-bar,
+  html[data-theme="dark"] body.guardian-dash-dark .exam-journey-header,
+  html[data-theme="dark"] body.guardian-dash-dark .exam-card,
+  html[data-theme="dark"] body.guardian-dash-dark .subject-course-card,
+  html[data-theme="dark"] body.guardian-dash-dark .subject-browser-card,
+  html[data-theme="dark"] body.guardian-dash-dark .test-type-card,
+  html[data-theme="dark"] body.guardian-dash-dark .topic-browser-card,
+  html[data-theme="dark"] body.guardian-dash-dark .learner-modal,
+  html[data-theme="dark"] body.guardian-dash-dark .exam-wizard {
+    background: var(--cs-surface);
+    border-color: var(--cs-border);
+  }
+
+  html[data-theme="dark"] body.guardian-dash-dark .subject-course-performance {
+    background: var(--cs-bg-elevated);
+    border-color: var(--cs-border);
+  }
+
+  html[data-theme="dark"] body.guardian-dash-dark .subject-course-status {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--cs-text-muted);
+  }
+
+  html[data-theme="dark"] body.guardian-dash-dark .subject-course-status--ongoing {
+    background: rgba(244, 162, 97, 0.15);
+    color: var(--cs-warm);
+  }
+
+  html[data-theme="dark"] body.guardian-dash-dark .subject-course-status--completed {
+    background: rgba(61, 214, 198, 0.12);
+    color: var(--cs-accent);
+  }
+
+  html[data-theme="dark"] body.guardian-dash-dark .subject-course-btn-primary {
+    color: #0a0f14;
+  }
+
+  html[data-theme="dark"] body.guardian-dash-dark .subject-course-btn-primary:hover {
+    color: #0a0f14;
+  }
+
+  html[data-theme="dark"] body.guardian-dash-dark .ew-learner-bar,
+  html[data-theme="dark"] body.guardian-dash-dark .ew-progress-card,
+  html[data-theme="dark"] body.guardian-dash-dark .ew-step-card {
+    background: var(--cs-surface);
+    border-color: var(--cs-border);
+  }
+
+  html[data-theme="dark"] body.guardian-dash-dark .ew-step--complete .ew-step-card {
+    background: var(--cs-bg-elevated);
+    border-color: rgba(61, 214, 198, 0.12);
+  }
+
+  html[data-theme="dark"] body.guardian-dash-dark .ew-step--current .ew-step-card {
+    border-color: rgba(61, 214, 198, 0.28);
+  }
+
+  html[data-theme="dark"] body.guardian-dash-dark .ew-progress-track {
+    background: var(--cs-bg-elevated);
+  }
+
+  html[data-theme="dark"] body.guardian-dash-dark .ew-choice-card {
+    background: var(--cs-bg-elevated);
+    border-color: var(--cs-border);
+  }
+
+  html[data-theme="dark"] body.guardian-dash-dark .ew-choice-card:hover {
+    background: rgba(61, 214, 198, 0.06);
+    border-color: rgba(61, 214, 198, 0.35);
+  }
+
+  html[data-theme="dark"] body.guardian-dash-dark .ew-step-change,
+  html[data-theme="dark"] body.guardian-dash-dark .ew-action-btn:hover {
+    color: var(--cs-accent);
+  }
+
+  html[data-theme="dark"] body.guardian-dash-dark .ew-action-btn {
+    background: var(--cs-bg-elevated);
+    border-color: var(--cs-border);
+    color: var(--cs-text-muted);
+  }
+
+  html[data-theme="dark"] body.guardian-dash-dark .learner-grade-warning {
+    border-color: rgba(244, 162, 97, 0.35);
+    background: rgba(244, 162, 97, 0.1);
+  }
+
+  html[data-theme="dark"] body.guardian-dash-dark .learner-grade-warning p {
+    color: var(--cs-warm);
+  }
+
+  html[data-theme="dark"] body.guardian-dash-dark .learner-grade-warning a {
+    color: var(--cs-accent);
+  }
+
+  html[data-theme="dark"] body.guardian-dash-dark .empty-state h3,
+  html[data-theme="dark"] body.guardian-dash-dark .empty-state p {
+    color: var(--cs-text-muted);
+  }
+</style>

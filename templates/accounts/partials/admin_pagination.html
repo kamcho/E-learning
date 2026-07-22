@@ -1,0 +1,27 @@
+{% if page_obj.paginator.num_pages > 1 %}
+<nav class="admin-pagination" aria-label="Pagination">
+  <span class="admin-pagination-info">
+    Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+    &middot; {{ page_obj.paginator.count }} total
+  </span>
+  <div class="admin-pagination-links">
+    {% if page_obj.has_previous %}
+      <a class="admin-page-btn" href="?{{ page_param }}={{ page_obj.previous_page_number }}{% if pagination_extra %}&{{ pagination_extra }}{% endif %}{% if pagination_anchor %}#{{ pagination_anchor }}{% endif %}">Prev</a>
+    {% else %}
+      <span class="admin-page-btn is-disabled">Prev</span>
+    {% endif %}
+    {% for page_num in page_obj.paginator.page_range %}
+      {% if page_num == page_obj.number %}
+        <span class="admin-page-btn is-active">{{ page_num }}</span>
+      {% else %}
+        <a class="admin-page-btn" href="?{{ page_param }}={{ page_num }}{% if pagination_extra %}&{{ pagination_extra }}{% endif %}{% if pagination_anchor %}#{{ pagination_anchor }}{% endif %}">{{ page_num }}</a>
+      {% endif %}
+    {% endfor %}
+    {% if page_obj.has_next %}
+      <a class="admin-page-btn" href="?{{ page_param }}={{ page_obj.next_page_number }}{% if pagination_extra %}&{{ pagination_extra }}{% endif %}{% if pagination_anchor %}#{{ pagination_anchor }}{% endif %}">Next</a>
+    {% else %}
+      <span class="admin-page-btn is-disabled">Next</span>
+    {% endif %}
+  </div>
+</nav>
+{% endif %}

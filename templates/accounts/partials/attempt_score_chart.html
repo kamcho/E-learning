@@ -1,0 +1,32 @@
+{% include 'accounts/partials/attempt_score_chart_styles.html' %}
+
+<div class="attempt-chart-panel">
+  <div class="chart-header">
+    <div class="chart-header-left">
+      <h2>{{ chart_title|default:"Attempt Score Analysis" }}</h2>
+      {% if attempt_chart.trend_pct %}
+      <span class="chart-trend {% if attempt_chart.trend_up %}up{% else %}down{% endif %}">
+        {% if attempt_chart.trend_up %}&#9650;{% else %}&#9660;{% endif %}
+        {{ attempt_chart.trend_pct }}%
+      </span>
+      {% endif %}
+    </div>
+    <div class="chart-legend">
+      <span class="chart-legend-item"><span class="chart-legend-dot avg"></span> Avg Score</span>
+      <span class="chart-legend-item"><span class="chart-legend-dot best"></span> Best Score</span>
+    </div>
+    {% if show_chart_period_filter and chart_period_choices %}
+    <select class="gd-card-filter-select chart-period-select" id="chart-period-filter" aria-label="Chart period">
+      {% for value, label in chart_period_choices %}
+        <option value="{{ value }}" {% if dashboard_filters and dashboard_filters.chart_period == value %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    {% endif %}
+    <span class="chart-period">&#128197; {{ attempt_chart.period_label }}{% if dashboard_filters and dashboard_filters.month %} (calendar month){% endif %}</span>
+  </div>
+  <div class="chart-canvas-wrap">
+    <canvas id="{{ chart_canvas_id }}" aria-label="Attempt score analysis chart"></canvas>
+  </div>
+</div>
+
+{{ attempt_chart|json_script:chart_data_id }}

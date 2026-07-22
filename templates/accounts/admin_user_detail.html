@@ -1,0 +1,324 @@
+{% extends 'accounts/admin_base.html' %}
+
+{% block title %}{{ profile_user.full_name }} — User Detail{% endblock %}
+
+{% block extra_head %}
+{% include 'accounts/partials/gd_metric_cards_styles.html' %}
+<style>
+  .admin-back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-xs);
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--clr-primary);
+    text-decoration: none;
+    margin-bottom: var(--space-lg);
+  }
+  .admin-back-link:hover { text-decoration: underline; }
+
+  .user-banner {
+    background: var(--grad-hero);
+    border-radius: var(--radius-xl);
+    padding: var(--space-2xl);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--space-lg);
+    margin-bottom: var(--space-2xl);
+    box-shadow: var(--shadow-lg);
+  }
+
+  .user-banner-main {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xl);
+  }
+
+  .user-avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: var(--radius-full);
+    background: rgba(255,255,255,0.18);
+    border: 2px solid rgba(255,255,255,0.35);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-heading);
+    font-size: 1.9rem;
+    font-weight: 800;
+    flex-shrink: 0;
+  }
+
+  .user-banner-name {
+    font-family: var(--font-heading);
+    font-size: 1.6rem;
+    font-weight: 800;
+  }
+
+  .user-banner-meta {
+    font-size: 0.88rem;
+    opacity: 0.85;
+    margin-top: var(--space-xs);
+  }
+
+  .user-banner-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-sm);
+    margin-top: var(--space-sm);
+  }
+
+  .user-banner-pill {
+    background: rgba(255,255,255,0.2);
+    border-radius: var(--radius-full);
+    padding: 0.2rem 0.75rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+  }
+
+  .btn-banner {
+    font-size: 0.85rem;
+    font-weight: 600;
+    padding: 0.55rem 1.1rem;
+    border-radius: var(--radius-md);
+    text-decoration: none;
+    background: rgba(255,255,255,0.15);
+    color: #fff;
+    border: 1px solid rgba(255,255,255,0.3);
+    transition: all var(--transition-fast);
+  }
+
+  .btn-banner:hover {
+    background: #fff;
+    color: var(--clr-primary);
+  }
+
+  .detail-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-xl);
+    margin-bottom: var(--space-xl);
+  }
+
+  @media (max-width: 992px) { .detail-grid { grid-template-columns: 1fr; } }
+
+  .detail-card {
+    background: var(--clr-surface);
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+  }
+
+  .detail-card-head {
+    padding: var(--space-lg) var(--space-xl);
+    border-bottom: 1px solid var(--clr-border);
+    font-family: var(--font-heading);
+    font-weight: 700;
+    font-size: 1.05rem;
+  }
+
+  .detail-card-body { padding: var(--space-xl); }
+
+  .detail-row {
+    display: flex;
+    justify-content: space-between;
+    padding: var(--space-sm) 0;
+    border-bottom: 1px solid var(--clr-border);
+    font-size: 0.9rem;
+  }
+
+  .detail-row:last-child { border-bottom: none; }
+  .detail-row span:first-child { color: var(--clr-text-muted); }
+  .detail-row span:last-child { font-weight: 600; text-align: right; }
+
+  .linked-student-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+  }
+
+  .linked-student-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-md);
+    background: var(--clr-surface-alt);
+    border-radius: var(--radius-md);
+    text-decoration: none;
+    color: inherit;
+    transition: all var(--transition-fast);
+  }
+
+  .linked-student-item:hover {
+    background: rgba(13, 138, 78, 0.08);
+    transform: translateX(4px);
+  }
+
+  .linked-student-item strong { font-size: 0.9rem; }
+  .linked-student-item span { font-size: 0.8rem; color: var(--clr-primary); font-weight: 600; }
+
+  .attempts-table { width: 100%; border-collapse: collapse; }
+  .attempts-table th, .attempts-table td {
+    text-align: left;
+    padding: var(--space-sm) var(--space-md);
+    font-size: 0.85rem;
+    border-bottom: 1px solid var(--clr-border);
+  }
+  .attempts-table th {
+    color: var(--clr-text-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.72rem;
+    letter-spacing: 0.04em;
+    background: var(--clr-surface-alt);
+  }
+  .attempts-table tr:last-child td { border-bottom: none; }
+</style>
+{% endblock %}
+
+{% block admin_content %}
+<a href="{% url 'accounts:admin_dashboard' %}" class="admin-back-link">&larr; Back to Dashboard</a>
+
+<div class="user-banner">
+  <div class="user-banner-main">
+    <div class="user-avatar">{{ profile_user.first_name|first|upper }}{{ profile_user.last_name|first|upper }}</div>
+    <div>
+      <div class="user-banner-name">{{ profile_user.full_name }}</div>
+      <div class="user-banner-meta">{{ profile_user.phone }}{% if profile_user.email %} &middot; {{ profile_user.email }}{% endif %}</div>
+      <div class="user-banner-pills">
+        <span class="user-banner-pill">{{ profile_user.get_role_display }}</span>
+        <span class="user-banner-pill">{% if profile_user.is_active %}Active{% else %}Inactive{% endif %}</span>
+        <span class="user-banner-pill">Joined {{ profile_user.date_joined|date:"M Y" }}</span>
+      </div>
+    </div>
+  </div>
+  <a href="{{ django_admin_url }}" class="btn-banner" target="_blank" rel="noopener">Edit in Django Admin</a>
+</div>
+
+<div class="gd-metrics-grid">
+  <div class="gd-metric-card gd-metric-card--orange">
+    <div class="gd-metric-top">
+      <div class="gd-metric-icon" aria-hidden="true">&#128203;</div>
+      <div class="gd-metric-value">{{ analytics.total_attempts }}</div>
+    </div>
+    <div class="gd-metric-label">Quiz attempts</div>
+    <div class="gd-metric-footer">
+      <span class="gd-metric-footer-icon" aria-hidden="true">&#128202;</span>
+      <span>All exam sessions</span>
+    </div>
+  </div>
+  <div class="gd-metric-card gd-metric-card--green">
+    <div class="gd-metric-top">
+      <div class="gd-metric-icon" aria-hidden="true">&#9989;</div>
+      <div class="gd-metric-value">{{ analytics.completed }}</div>
+    </div>
+    <div class="gd-metric-label">Completed</div>
+    <div class="gd-metric-footer">
+      <span class="gd-metric-footer-icon" aria-hidden="true">&#10003;</span>
+      <span>Finished exams</span>
+    </div>
+  </div>
+  <div class="gd-metric-card gd-metric-card--blue">
+    <div class="gd-metric-top">
+      <div class="gd-metric-icon" aria-hidden="true">&#128200;</div>
+      <div class="gd-metric-value">{{ analytics.avg_score }}</div>
+    </div>
+    <div class="gd-metric-label">Average score</div>
+    <div class="gd-metric-footer">
+      <span class="gd-metric-footer-icon" aria-hidden="true">&#128202;</span>
+      <span>Across all attempts</span>
+    </div>
+  </div>
+  <div class="gd-metric-card gd-metric-card--purple">
+    <div class="gd-metric-top">
+      <div class="gd-metric-icon" aria-hidden="true">&#128101;</div>
+      <div class="gd-metric-value">{{ linked_students|length }}</div>
+    </div>
+    <div class="gd-metric-label">Linked students</div>
+    <div class="gd-metric-footer">
+      <span class="gd-metric-footer-icon" aria-hidden="true">&#127891;</span>
+      <span>Learners on account</span>
+    </div>
+  </div>
+</div>
+
+<div class="detail-grid">
+  <div class="detail-card">
+    <div class="detail-card-head">Account Details</div>
+    <div class="detail-card-body">
+      <div class="detail-row"><span>Phone</span><span>{{ profile_user.phone }}</span></div>
+      <div class="detail-row"><span>Email</span><span>{{ profile_user.email|default:"—" }}</span></div>
+      <div class="detail-row"><span>Role</span><span>{{ profile_user.get_role_display }}</span></div>
+      <div class="detail-row"><span>Status</span><span>{% if profile_user.is_active %}Active{% else %}Inactive{% endif %}</span></div>
+      <div class="detail-row"><span>Member since</span><span>{{ profile_user.date_joined|date:"d M Y" }}</span></div>
+      <div class="detail-row"><span>Last login</span><span>{{ profile_user.last_login|date:"d M Y, H:i"|default:"—" }}</span></div>
+    </div>
+  </div>
+
+  <div class="detail-card">
+    <div class="detail-card-head">Linked Students</div>
+    <div class="detail-card-body">
+      {% if linked_students %}
+        <div class="linked-student-list">
+          {% for student in linked_students %}
+          <a href="{% url 'accounts:student_analytics' student.uuid %}" class="linked-student-item">
+            <strong>{{ student.first_name }} {{ student.last_name }}</strong>
+            <span>View analytics &rarr;</span>
+          </a>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty-state"><p>No linked students.</p></div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="detail-card">
+  <div class="detail-card-head">Recent Quiz Attempts</div>
+  <div class="detail-card-body" style="padding: 0;">
+    {% if recent_attempts %}
+    <table class="attempts-table">
+      <thead>
+        <tr>
+          <th>Quiz</th>
+          <th>Student</th>
+          <th>Score</th>
+          <th>Status</th>
+          <th>Date</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for attempt in recent_attempts %}
+        <tr>
+          <td><a href="{% url 'core:attempt_detail' attempt.quiz.uuid attempt.student.uuid %}" style="color: var(--clr-primary); font-weight: 700; text-decoration: none;"><strong>{{ attempt.quiz.title }}</strong></a></td>
+          <td>
+            {% if attempt.student %}
+              <a href="{% url 'accounts:student_analytics' attempt.student.uuid %}" style="color: var(--clr-primary); font-weight: 600; text-decoration: none;">
+                {{ attempt.student.first_name }} {{ attempt.student.last_name }}
+              </a>
+            {% else %}—{% endif %}
+          </td>
+          <td><strong>{{ attempt.score }}</strong></td>
+          <td>
+            {% if attempt.is_complete %}
+              <span class="badge badge-primary">Done</span>
+            {% else %}
+              <span class="badge badge-gold">Ongoing</span>
+            {% endif %}
+          </td>
+          <td>{{ attempt.created_at|date:"d M Y" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state"><p>No quiz attempts recorded.</p></div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

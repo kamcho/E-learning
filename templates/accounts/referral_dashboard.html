@@ -1,0 +1,273 @@
+{% extends 'accounts/admin_base.html' %}
+
+{% block title %}Referral Dashboard — SomaKenya{% endblock %}
+
+{% block extra_head %}
+{% include 'accounts/partials/gd_metric_cards_styles.html' %}
+{% include 'accounts/partials/admin_list_styles.html' %}
+<style>
+  .ref-hero {
+    background: var(--grad-hero);
+    border-radius: var(--radius-xl);
+    padding: var(--space-xl) var(--space-2xl);
+    color: #fff;
+    margin-bottom: var(--space-xl);
+    box-shadow: var(--shadow-lg);
+  }
+
+  .ref-hero h1 {
+    font-family: var(--font-heading);
+    font-size: 1.65rem;
+    font-weight: 800;
+    margin: 0.35rem 0 0;
+  }
+
+  .ref-hero p {
+    margin: 0.35rem 0 0;
+    opacity: 0.9;
+    font-size: 0.92rem;
+  }
+
+  .ref-share-card {
+    background: var(--clr-surface);
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-xl);
+    padding: var(--space-xl);
+    margin-bottom: var(--space-xl);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .ref-share-card h2 {
+    font-family: var(--font-heading);
+    font-size: 1.05rem;
+    font-weight: 700;
+    margin: 0 0 var(--space-md);
+  }
+
+  .ref-code-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-sm);
+    background: var(--clr-surface-alt);
+    border: 1px dashed var(--clr-border);
+    border-radius: var(--radius-md);
+    padding: 0.55rem 0.85rem;
+    font-family: monospace;
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    margin-bottom: var(--space-md);
+  }
+
+  .ref-link-row {
+    display: flex;
+    gap: var(--space-sm);
+    flex-wrap: wrap;
+    align-items: stretch;
+  }
+
+  .ref-link-input {
+    flex: 1;
+    min-width: 220px;
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-md);
+    padding: 0.65rem 0.85rem;
+    font-size: 0.85rem;
+    background: var(--clr-surface-alt);
+    color: var(--clr-text-muted);
+  }
+
+  .ref-copy-btn {
+    border: none;
+    border-radius: var(--radius-md);
+    padding: 0.65rem 1.1rem;
+    background: var(--clr-primary);
+    color: #fff;
+    font-weight: 600;
+    font-size: 0.85rem;
+    cursor: pointer;
+  }
+
+  .ref-copy-btn:hover { background: var(--clr-primary-dark); }
+
+  .ref-hint {
+    font-size: 0.82rem;
+    color: var(--clr-text-muted);
+    margin-top: var(--space-md);
+  }
+
+  .status-pill {
+    display: inline-block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 0.2rem 0.55rem;
+    border-radius: var(--radius-full);
+  }
+
+  .status-pill--active {
+    background: #ecfdf3;
+    color: #15803d;
+  }
+
+  .status-pill--pending {
+    background: #fff7ed;
+    color: #c2410c;
+  }
+</style>
+{% endblock %}
+
+{% block admin_content %}
+<div class="ref-hero">
+  <p style="margin:0;font-size:0.82rem;opacity:0.85;">Referral agent</p>
+  <h1>Welcome, {{ agent.first_name }}</h1>
+  <p>Earn {{ points_per_subscription }} points each time someone you referred subscribes.</p>
+</div>
+
+<div class="gd-metrics-grid admin-list-metrics">
+  <div class="gd-metric-card gd-metric-card--green">
+    <div class="gd-metric-top">
+      <div class="gd-metric-icon" aria-hidden="true">&#11088;</div>
+      <div class="gd-metric-value">{{ referral_points }}</div>
+    </div>
+    <div class="gd-metric-label">Current points</div>
+    <div class="gd-metric-footer">
+      <span class="gd-metric-footer-icon" aria-hidden="true">&#128176;</span>
+      <span>{{ total_points_earned }} earned all time</span>
+    </div>
+  </div>
+  <div class="gd-metric-card gd-metric-card--blue">
+    <div class="gd-metric-top">
+      <div class="gd-metric-icon" aria-hidden="true">&#128101;</div>
+      <div class="gd-metric-value">{{ referred_count }}</div>
+    </div>
+    <div class="gd-metric-label">Referred signups</div>
+    <div class="gd-metric-footer">
+      <span class="gd-metric-footer-icon" aria-hidden="true">&#10133;</span>
+      <span>Accounts linked to your code</span>
+    </div>
+  </div>
+  <div class="gd-metric-card gd-metric-card--purple">
+    <div class="gd-metric-top">
+      <div class="gd-metric-icon" aria-hidden="true">&#9989;</div>
+      <div class="gd-metric-value">{{ subscribed_count }}</div>
+    </div>
+    <div class="gd-metric-label">Active subscribers</div>
+    <div class="gd-metric-footer">
+      <span class="gd-metric-footer-icon" aria-hidden="true">&#128179;</span>
+      <span>Referred users with a live plan</span>
+    </div>
+  </div>
+</div>
+
+<div class="ref-share-card">
+  <h2>&#128279; Your referral link</h2>
+  <div class="ref-code-pill">Code: {{ referral_code }}</div>
+  <div class="ref-link-row">
+    <input type="text" class="ref-link-input" id="referralLink" value="{{ referral_link }}" readonly>
+    <button type="button" class="ref-copy-btn" id="copyReferralLink">Copy link</button>
+  </div>
+  <p class="ref-hint">
+    Share this link with guardians. When they sign up and complete a subscription payment, you receive
+    <strong>{{ points_per_subscription }} points</strong> automatically.
+  </p>
+</div>
+
+<div class="admin-panel" style="margin-bottom:var(--space-xl);">
+  <div class="admin-panel-head-flex">
+    <div>
+      <h2>Referred users</h2>
+      <p class="admin-panel-sub">Signups attributed to your referral code</p>
+    </div>
+    <span class="table-count">{{ referred_count }} total</span>
+  </div>
+  {% if referred_users %}
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Phone</th>
+        <th>Joined</th>
+        <th>Subscription</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in referred_users %}
+      <tr>
+        <td><strong>{{ row.user.full_name }}</strong></td>
+        <td>{{ row.user.phone|default:"—" }}</td>
+        <td>{{ row.joined_at|date:"d M Y" }}</td>
+        <td>
+          {% if row.is_subscribed %}
+            <span class="status-pill status-pill--active">{{ row.subscription_plan }}</span>
+          {% else %}
+            <span class="status-pill status-pill--pending">Not subscribed</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="admin-panel-body">
+    <p style="color:var(--clr-text-muted);margin:0;">No referred signups yet. Share your link to get started.</p>
+  </div>
+  {% endif %}
+</div>
+
+<div class="admin-panel">
+  <div class="admin-panel-head-flex">
+    <div>
+      <h2>Points history</h2>
+      <p class="admin-panel-sub">Rewards from successful referred subscriptions</p>
+    </div>
+  </div>
+  {% if point_logs %}
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Referred user</th>
+        <th>Plan</th>
+        <th>Points</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for log in point_logs %}
+      <tr>
+        <td>{{ log.created_at|date:"d M Y, H:i" }}</td>
+        <td>{{ log.referred_user.full_name }}</td>
+        <td>{{ log.payment.plan.name }}</td>
+        <td><strong>+{{ log.points }}</strong></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="admin-panel-body">
+    <p style="color:var(--clr-text-muted);margin:0;">No points earned yet. You earn {{ points_per_subscription }} points per referred subscription.</p>
+  </div>
+  {% endif %}
+</div>
+
+<script>
+  (function () {
+    var btn = document.getElementById('copyReferralLink');
+    var input = document.getElementById('referralLink');
+    if (!btn || !input) return;
+    btn.addEventListener('click', function () {
+      input.select();
+      input.setSelectionRange(0, 99999);
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(input.value).then(function () {
+          btn.textContent = 'Copied!';
+          setTimeout(function () { btn.textContent = 'Copy link'; }, 2000);
+        });
+      } else {
+        document.execCommand('copy');
+        btn.textContent = 'Copied!';
+        setTimeout(function () { btn.textContent = 'Copy link'; }, 2000);
+      }
+    });
+  })();
+</script>
+{% endblock %}

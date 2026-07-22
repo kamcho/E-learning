@@ -1,0 +1,116 @@
+<script>
+(function () {
+  var chartDataEl = document.getElementById('{{ chart_data_id }}');
+  if (!chartDataEl || typeof Chart === 'undefined') return;
+
+  var chartData = JSON.parse(chartDataEl.textContent);
+  var ctx = document.getElementById('{{ chart_canvas_id }}');
+  if (!ctx) return;
+
+  var isDark = document.body.classList.contains('guardian-dash-dark');
+  var theme = isDark ? {
+    avg: '#3dd6c6',
+    avgFill: 'rgba(61, 214, 198, 0.15)',
+    best: '#c41e3a',
+    bestFill: 'rgba(196, 30, 58, 0.1)',
+    pointBorder: '#161f2a',
+    tooltipBg: '#161f2a',
+    tooltipTitle: '#e8edf2',
+    tooltipBody: '#8b9aab',
+    tooltipBorder: 'rgba(255,255,255,0.08)',
+    grid: 'rgba(255,255,255,0.06)',
+    tick: '#8b9aab',
+  } : {
+    avg: '#0D8A4E',
+    avgFill: 'rgba(13, 138, 78, 0.15)',
+    best: '#D4A017',
+    bestFill: 'rgba(212, 160, 23, 0.08)',
+    pointBorder: '#fff',
+    tooltipBg: '#fff',
+    tooltipTitle: '#1A1D26',
+    tooltipBody: '#5A6178',
+    tooltipBorder: '#E2E8F0',
+    grid: 'rgba(0,0,0,0.04)',
+    tick: '#8892A8',
+  };
+
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: chartData.labels,
+      datasets: [
+        {
+          label: 'Avg Score',
+          data: chartData.avg_scores,
+          borderColor: theme.avg,
+          backgroundColor: theme.avgFill,
+          fill: true,
+          tension: 0.4,
+          pointRadius: 4,
+          pointHoverRadius: 7,
+          pointBackgroundColor: theme.avg,
+          pointBorderColor: theme.pointBorder,
+          pointBorderWidth: 2,
+          borderWidth: 2.5,
+        },
+        {
+          label: 'Best Score',
+          data: chartData.best_scores,
+          borderColor: theme.best,
+          backgroundColor: theme.bestFill,
+          fill: true,
+          tension: 0.4,
+          pointRadius: 3,
+          pointHoverRadius: 6,
+          pointBackgroundColor: theme.best,
+          pointBorderColor: theme.pointBorder,
+          pointBorderWidth: 2,
+          borderWidth: 2,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: theme.tooltipBg,
+          titleColor: theme.tooltipTitle,
+          bodyColor: theme.tooltipBody,
+          borderColor: theme.tooltipBorder,
+          borderWidth: 1,
+          padding: 12,
+          boxPadding: 6,
+          usePointStyle: true,
+          callbacks: {
+            afterBody: function (items) {
+              var idx = items[0].dataIndex;
+              var count = chartData.counts[idx];
+              return count ? count + ' attempt' + (count !== 1 ? 's' : '') : 'No attempts';
+            },
+          },
+        },
+      },
+      scales: {
+        x: {
+          grid: { color: theme.grid, drawBorder: false },
+          ticks: { color: theme.tick, font: { size: 12 } },
+        },
+        y: {
+          min: 0,
+          max: 100,
+          grid: { color: theme.grid, borderDash: [4, 4], drawBorder: false },
+          ticks: {
+            color: theme.tick,
+            font: { size: 12 },
+            stepSize: 20,
+            callback: function (v) { return v < 10 ? '0' + v : v; },
+          },
+        },
+      },
+    },
+  });
+})();
+</script>

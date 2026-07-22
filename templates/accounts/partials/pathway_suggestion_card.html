@@ -1,0 +1,90 @@
+{% if pathway_suggestions %}
+<div class="pathway-suggestion-card{% if not pathway_suggestions.available %} pathway-suggestion-card--empty{% endif %}">
+  <div class="pathway-suggestion-head">
+    <div>
+      <span class="pathway-suggestion-tag">{{ pathway_suggestions.context_label }}</span>
+      <h3 class="pathway-suggestion-title">CBC Pathway Suggestion</h3>
+    </div>
+    {% if pathway_suggestions.available and pathway_suggestions.confidence %}
+      <span class="pathway-confidence pathway-confidence--{{ pathway_suggestions.confidence }}">
+        {{ pathway_suggestions.confidence|title }} confidence
+      </span>
+    {% endif %}
+  </div>
+
+  {% if pathway_suggestions.available and pathway_suggestions.recommended %}
+    <div class="pathway-suggestion-body">
+      <div class="pathway-recommended">
+        <div class="pathway-recommended-icon" aria-hidden="true">{{ pathway_suggestions.recommended.pathway.emoji }}</div>
+        <div class="pathway-recommended-text">
+          <div class="pathway-recommended-label">Best fit</div>
+          <div class="pathway-recommended-name">{{ pathway_suggestions.recommended.pathway.name }}</div>
+          <p class="pathway-recommended-desc">{{ pathway_suggestions.recommended.pathway.description }}</p>
+        </div>
+        <div class="pathway-recommended-score">
+          <div class="pathway-score-val">{{ pathway_suggestions.recommended.avg_score|floatformat:0 }}%</div>
+          <div class="pathway-score-lbl">weighted avg</div>
+        </div>
+      </div>
+
+      {% if pathway_suggestions.recommended.contributing_subjects %}
+        <div class="pathway-drivers">
+          <div class="pathway-drivers-title">Based on strongest subjects</div>
+          <div class="pathway-driver-chips">
+            {% for subj in pathway_suggestions.recommended.contributing_subjects %}
+              <span class="pathway-driver-chip">
+                {{ subj.name }}
+                <strong>{{ subj.avg_score|floatformat:0 }}%</strong>
+              </span>
+            {% endfor %}
+          </div>
+        </div>
+      {% endif %}
+
+      {% if pathway_suggestions.rankings|length > 1 %}
+        <div class="pathway-rankings">
+          <div class="pathway-rankings-title">All pathways</div>
+          <div class="pathway-ranking-bars">
+            {% for row in pathway_suggestions.rankings %}
+              <div class="pathway-ranking-row{% if forloop.first %} is-top{% endif %}">
+                <span class="pathway-ranking-emoji" aria-hidden="true">{{ row.pathway.emoji }}</span>
+                <span class="pathway-ranking-name">{{ row.pathway.name }}</span>
+                <div class="pathway-ranking-bar-wrap">
+                  <div class="pathway-ranking-bar" style="width: {{ row.fit_pct }}%;"></div>
+                </div>
+                <span class="pathway-ranking-pct">{{ row.avg_score|floatformat:0 }}%</span>
+              </div>
+            {% endfor %}
+          </div>
+          {% if pathway_suggestions.margin >= 5 %}
+            <p class="pathway-ranking-note">
+              {{ pathway_suggestions.margin|floatformat:0 }} point lead over the next pathway — a fairly clear signal.
+            </p>
+          {% elif pathway_suggestions.margin > 0 %}
+            <p class="pathway-ranking-note">
+              Close call — more exams across subjects will sharpen this suggestion.
+            </p>
+          {% endif %}
+        </div>
+      {% endif %}
+    </div>
+  {% else %}
+    <div class="pathway-suggestion-empty">
+      <p>{{ pathway_suggestions.reason }}</p>
+      {% if pathway_suggestions.top_subjects %}
+        <div class="pathway-drivers">
+          <div class="pathway-drivers-title">Best subjects so far</div>
+          <div class="pathway-driver-chips">
+            {% for subj in pathway_suggestions.top_subjects %}
+              <span class="pathway-driver-chip">
+                {{ subj.name }}
+                <strong>{{ subj.avg_score|floatformat:0 }}%</strong>
+              </span>
+            {% endfor %}
+          </div>
+        </div>
+      {% endif %}
+    </div>
+  {% endif %}
+</div>
+{% endif %}

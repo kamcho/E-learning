@@ -1,0 +1,262 @@
+{% extends "base.html" %}
+
+{% block title %}Bulk Question Import{% endblock %}
+
+{% block extra_head %}
+<style>
+  .bqi-header {
+    margin-bottom: var(--space-xl);
+  }
+
+  .bqi-header h1 {
+    font-family: var(--font-heading);
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: var(--clr-text);
+    letter-spacing: -0.02em;
+    margin-bottom: var(--space-sm);
+  }
+
+  .bqi-header p {
+    color: var(--clr-text-muted);
+    font-size: 0.92rem;
+    max-width: 52rem;
+    line-height: 1.55;
+  }
+
+  .bqi-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 320px;
+    gap: var(--space-xl);
+    align-items: start;
+  }
+
+  .bqi-panel {
+    background: var(--clr-surface);
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-xl);
+  }
+
+  .bqi-panel h2 {
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: var(--space-md);
+    color: var(--clr-text);
+  }
+
+  .bqi-textarea {
+    width: 100%;
+    min-height: 420px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.82rem;
+    line-height: 1.5;
+    padding: var(--space-md);
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-md);
+    background: var(--clr-surface-alt);
+    color: var(--clr-text);
+    resize: vertical;
+  }
+
+  .bqi-actions {
+    display: flex;
+    gap: var(--space-sm);
+    flex-wrap: wrap;
+    margin-top: var(--space-md);
+  }
+
+  .bqi-help ul {
+    margin: 0;
+    padding-left: 1.1rem;
+    color: var(--clr-text-muted);
+    font-size: 0.88rem;
+    line-height: 1.6;
+  }
+
+  .bqi-help li + li {
+    margin-top: var(--space-xs);
+  }
+
+  .bqi-result {
+    margin-top: var(--space-lg);
+    display: none;
+  }
+
+  .bqi-result.is-visible {
+    display: block;
+  }
+
+  .bqi-result-summary {
+    padding: var(--space-md) var(--space-lg);
+    border-radius: var(--radius-md);
+    font-size: 0.9rem;
+    margin-bottom: var(--space-md);
+  }
+
+  .bqi-result-summary.success {
+    background: rgba(13, 138, 78, 0.1);
+    border: 1px solid rgba(13, 138, 78, 0.2);
+    color: var(--clr-primary-dark);
+  }
+
+  .bqi-result-summary.warning {
+    background: rgba(217, 119, 6, 0.1);
+    border: 1px solid rgba(217, 119, 6, 0.2);
+    color: #92400e;
+  }
+
+  .bqi-result-summary.error {
+    background: rgba(193, 39, 45, 0.08);
+    border: 1px solid rgba(193, 39, 45, 0.2);
+    color: var(--clr-danger);
+  }
+
+  .bqi-result-details {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.78rem;
+    white-space: pre-wrap;
+    background: var(--clr-surface-alt);
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-md);
+    max-height: 280px;
+    overflow: auto;
+  }
+
+  @media (max-width: 992px) {
+    .bqi-layout {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="bqi-header">
+  <h1>Bulk Question Import</h1>
+  <p>
+    Paste a JSON payload to create multiple questions at once. Imported questions are saved as
+    <strong>inactive</strong> until an admin reviews and activates them.
+    Use <code>sub_strand_id</code> or <code>sub_strand_slug</code> to place each question in the curriculum.
+  </p>
+</div>
+
+<div class="bqi-layout">
+  <div class="bqi-panel">
+    <h2>JSON payload</h2>
+    <textarea id="bqi-json" class="bqi-textarea" spellcheck="false">{{ example_json }}</textarea>
+    <div class="bqi-actions">
+      <button type="button" class="btn btn-primary" id="bqi-submit">Import questions</button>
+      <button type="button" class="btn btn-secondary" id="bqi-reset">Reset example</button>
+    </div>
+    <div class="bqi-result" id="bqi-result">
+      <div class="bqi-result-summary" id="bqi-result-summary"></div>
+      <pre class="bqi-result-details" id="bqi-result-details"></pre>
+    </div>
+  </div>
+
+  <aside class="bqi-panel bqi-help">
+    <h2>Format guide</h2>
+    <ul>
+      <li>Top-level key: <code>questions</code> (array).</li>
+      <li>Each question needs <code>quiz</code>, <code>difficulty</code>, <code>quiz_type</code>, and a sub-strand reference.</li>
+      <li><code>difficulty</code>: Easy, Medium, or Hard.</li>
+      <li><code>quiz_type</code>: Multiple Choice, True or False, Fill in the Blank, OpenEnded, or Matching.</li>
+      <li><code>choices</code> is required for Multiple Choice and True or False.</li>
+      <li>Duplicate question text in the same sub-strand will be rejected.</li>
+    </ul>
+  </aside>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ example_payload|json_script:"bqi-example-payload" }}
+<script>
+(function () {
+  var apiUrl = '{{ api_url|escapejs }}';
+  var exampleJson = JSON.parse(document.getElementById('bqi-example-payload').textContent);
+  var textarea = document.getElementById('bqi-json');
+  var submitBtn = document.getElementById('bqi-submit');
+  var resetBtn = document.getElementById('bqi-reset');
+  var resultBox = document.getElementById('bqi-result');
+  var resultSummary = document.getElementById('bqi-result-summary');
+  var resultDetails = document.getElementById('bqi-result-details');
+
+  function getCookie(name) {
+    var match = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)'));
+    return match ? decodeURIComponent(match[1]) : '';
+  }
+
+  function showResult(kind, message, details) {
+    resultBox.classList.add('is-visible');
+    resultSummary.className = 'bqi-result-summary ' + kind;
+    resultSummary.textContent = message;
+    resultDetails.textContent = details || '';
+  }
+
+  resetBtn.addEventListener('click', function () {
+    textarea.value = JSON.stringify(exampleJson, null, 2);
+    resultBox.classList.remove('is-visible');
+  });
+
+  submitBtn.addEventListener('click', async function () {
+    var raw = textarea.value.trim();
+    if (!raw) {
+      showResult('error', 'Paste a JSON payload before importing.', '');
+      return;
+    }
+
+    var payload;
+    try {
+      payload = JSON.parse(raw);
+    } catch (err) {
+      showResult('error', 'Invalid JSON: ' + err.message, '');
+      return;
+    }
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Importing…';
+
+    try {
+      var response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': getCookie('csrftoken'),
+        },
+        body: JSON.stringify(payload),
+      });
+
+      var body;
+      try {
+        body = await response.json();
+      } catch (parseErr) {
+        showResult('error', 'Unexpected server response.', '');
+        return;
+      }
+
+      if (!response.ok) {
+        showResult('error', body.error || 'Import failed.', JSON.stringify(body, null, 2));
+        return;
+      }
+
+      var kind = body.failed > 0 ? 'warning' : 'success';
+      var message = 'Created ' + body.created + ' question(s)';
+      if (body.failed > 0) {
+        message += ', ' + body.failed + ' failed';
+      } else {
+        message += ' successfully';
+      }
+      message += '. Questions are inactive until reviewed.';
+      showResult(kind, message, JSON.stringify(body, null, 2));
+    } catch (err) {
+      showResult('error', 'Network error: ' + err.message, '');
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Import questions';
+    }
+  });
+})();
+</script>
+{% endblock %}

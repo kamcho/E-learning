@@ -1,0 +1,157 @@
+{% extends 'accounts/admin_base.html' %}
+
+{% block title %}Students — Admin — SomaKenya{% endblock %}
+
+{% block extra_head %}
+{% include 'accounts/partials/gd_metric_cards_styles.html' %}
+{% include 'accounts/partials/admin_list_styles.html' %}
+{% endblock %}
+
+{% block admin_content %}
+<div class="admin-list-banner">
+  <div>
+    <a href="{% url 'accounts:admin_dashboard' %}" class="admin-list-back admin-list-back--light">&larr; Back to dashboard</a>
+    <h1>All Students</h1>
+    <p>{{ stats.total }} learner{{ stats.total|pluralize }} enrolled on the platform</p>
+  </div>
+  <a href="{{ django_admin_url }}" class="btn-list-banner" target="_blank" rel="noopener">Manage in Django Admin</a>
+</div>
+
+<div class="gd-metrics-grid admin-list-metrics">
+  <div class="gd-metric-card gd-metric-card--purple">
+    <div class="gd-metric-top">
+      <div class="gd-metric-icon" aria-hidden="true">&#127891;</div>
+      <div class="gd-metric-value">{{ stats.total }}</div>
+    </div>
+    <div class="gd-metric-label">Total learners</div>
+    <div class="gd-metric-footer">
+      <span class="gd-metric-footer-icon" aria-hidden="true">&#128202;</span>
+      <span>All students</span>
+    </div>
+  </div>
+  <div class="gd-metric-card gd-metric-card--blue">
+    <div class="gd-metric-top">
+      <div class="gd-metric-icon" aria-hidden="true">&#128104;</div>
+      <div class="gd-metric-value">{{ stats.male }}</div>
+    </div>
+    <div class="gd-metric-label">Male</div>
+    <div class="gd-metric-footer">
+      <span class="gd-metric-footer-icon" aria-hidden="true">&#9794;</span>
+      <span>{{ stats.female }} female</span>
+    </div>
+  </div>
+  <div class="gd-metric-card gd-metric-card--green">
+    <div class="gd-metric-top">
+      <div class="gd-metric-icon" aria-hidden="true">&#128218;</div>
+      <div class="gd-metric-value">{{ stats.graded }}</div>
+    </div>
+    <div class="gd-metric-label">Grade assigned</div>
+    <div class="gd-metric-footer">
+      <span class="gd-metric-footer-icon" aria-hidden="true">&#10003;</span>
+      <span>{{ stats.ungraded }} unassigned</span>
+    </div>
+  </div>
+  <div class="gd-metric-card gd-metric-card--orange">
+    <div class="gd-metric-top">
+      <div class="gd-metric-icon" aria-hidden="true">&#128106;</div>
+      <div class="gd-metric-value">{{ stats.linked }}</div>
+    </div>
+    <div class="gd-metric-label">Linked to guardians</div>
+    <div class="gd-metric-footer">
+      <span class="gd-metric-footer-icon" aria-hidden="true">&#128279;</span>
+      <span>With parent accounts</span>
+    </div>
+  </div>
+</div>
+
+<div class="admin-panel">
+  <div class="admin-panel-head-flex">
+    <div>
+      <h2>Learner directory</h2>
+      <p class="admin-panel-sub">Browse students, grades and profiles</p>
+    </div>
+    <span class="table-count">
+      {% if page_obj.paginator.num_pages > 1 %}
+        Page {{ page_obj.number }}/{{ page_obj.paginator.num_pages }} &middot;
+      {% endif %}
+      {% if search %}{{ page_obj.paginator.count }} match{{ page_obj.paginator.count|pluralize:"es" }}{% else %}{{ stats.total }} total{% endif %}
+    </span>
+  </div>
+
+  <form method="get" class="admin-list-search-form">
+    <label class="table-search">
+      <span class="table-search-icon" aria-hidden="true">&#128269;</span>
+      <input type="search" name="q" value="{{ search }}" placeholder="Search by name, grade or gender..." autocomplete="off">
+    </label>
+    <button type="submit">Search</button>
+    {% if search %}
+      <a href="{% url 'accounts:admin_students_list' %}" class="admin-page-btn">Clear</a>
+    {% endif %}
+  </form>
+
+  {% if page_obj.object_list %}
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Student</th>
+        <th>Grade</th>
+        <th>Gender</th>
+        <th>Date of Birth</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for student in page_obj %}
+      <tr class="clickable-row" data-href="{% url 'accounts:student_analytics' student.uuid %}" tabindex="0" role="link">
+        <td>
+          <div class="list-row-identity">
+            <div class="list-row-avatar list-row-avatar--purple">{{ student.first_name|first|upper }}{{ student.last_name|first|upper }}</div>
+            <div>
+              <div class="list-row-name">{{ student.first_name }} {{ student.last_name }}</div>
+              <div class="list-row-meta">ID {{ student.uuid|truncatechars:13 }}</div>
+            </div>
+          </div>
+        </td>
+        <td>
+          {% if student.grade_level %}
+            <span class="grade-pill">{{ student.grade_level.name }}</span>
+          {% else %}
+            <span class="grade-pill grade-pill--empty">Not set</span>
+          {% endif %}
+        </td>
+        <td>
+          <span class="gender-pill gender-pill--{{ student.gender|lower }}">{{ student.gender }}</span>
+        </td>
+        <td>{{ student.dob|date:"d M Y"|default:"—" }}</td>
+        <td><span class="list-row-action">Analytics &rarr;</span></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% include 'accounts/partials/admin_pagination.html' with page_obj=page_obj page_param='page' pagination_extra=pagination_extra %}
+  {% else %}
+  <div class="admin-list-empty">
+    <div class="admin-list-empty-icon" aria-hidden="true">&#127891;</div>
+    <p>{% if search %}No students match &ldquo;{{ search }}&rdquo;.{% else %}No students added yet.{% endif %}</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  document.querySelectorAll('.data-table tbody tr.clickable-row[data-href]').forEach(function (row) {
+    row.addEventListener('click', function () {
+      window.location.href = row.dataset.href;
+    });
+    row.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        window.location.href = row.dataset.href;
+      }
+    });
+  });
+})();
+</script>
+{% endblock %}

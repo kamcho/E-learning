@@ -1,0 +1,661 @@
+{% extends 'accounts/admin_base.html' %}
+
+{% block title %}Admin Dashboard — SomaKenya{% endblock %}
+
+{% block extra_head %}
+{% include 'accounts/partials/admin_list_styles.html' %}
+<style>
+  .admin-page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: var(--space-md);
+    margin-bottom: var(--space-2xl);
+  }
+
+  .admin-page-header h1 {
+    font-family: var(--font-heading);
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: var(--clr-text);
+    letter-spacing: -0.02em;
+  }
+
+  .admin-page-header p {
+    color: var(--clr-text-muted);
+    font-size: 0.92rem;
+    margin-top: var(--space-xs);
+  }
+
+  .admin-page-header-actions {
+    display: flex;
+    gap: var(--space-sm);
+    flex-wrap: wrap;
+  }
+
+  .admin-page-header-actions a {
+    font-size: 0.85rem;
+    font-weight: 600;
+    padding: 0.55rem 1.1rem;
+    border-radius: var(--radius-md);
+    text-decoration: none;
+    transition: all var(--transition-fast);
+  }
+
+  .btn-admin-primary {
+    background: var(--clr-primary);
+    color: #fff;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .btn-admin-primary:hover { background: var(--clr-primary-dark); }
+
+  .btn-admin-outline {
+    background: var(--clr-surface);
+    color: var(--clr-text-muted);
+    border: 1px solid var(--clr-border);
+  }
+
+  .btn-admin-outline:hover {
+    border-color: var(--clr-primary);
+    color: var(--clr-primary);
+  }
+
+  .admin-stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--space-lg);
+    margin-bottom: var(--space-xl);
+  }
+
+  @media (max-width: 1200px) { .admin-stats-row { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 576px) { .admin-stats-row { grid-template-columns: 1fr; } }
+
+  .admin-stat-card {
+    background: var(--clr-surface);
+    border-radius: var(--radius-xl);
+    padding: var(--space-lg) var(--space-xl);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--clr-border);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+    transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+  }
+
+  .admin-stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+  }
+
+  .admin-stat-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+
+  .admin-stat-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-lg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.35rem;
+  }
+
+  .admin-stat-icon.blue { background: rgba(59, 130, 246, 0.12); }
+  .admin-stat-icon.purple { background: rgba(139, 92, 246, 0.12); }
+  .admin-stat-icon.orange { background: rgba(249, 115, 22, 0.12); }
+  .admin-stat-icon.green { background: rgba(13, 138, 78, 0.12); }
+
+  .admin-stat-label {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--clr-text-muted);
+  }
+
+  .admin-stat-value {
+    font-family: var(--font-heading);
+    font-size: 2.1rem;
+    font-weight: 800;
+    color: var(--clr-text);
+    line-height: 1;
+  }
+
+  .admin-stat-meta {
+    display: flex;
+    gap: var(--space-lg);
+    padding-top: var(--space-sm);
+    border-top: 1px solid var(--clr-border);
+  }
+
+  .admin-stat-meta-item {
+    font-size: 0.78rem;
+    color: var(--clr-text-light);
+  }
+
+  .admin-stat-meta-item strong {
+    display: block;
+    font-size: 0.9rem;
+    color: var(--clr-text);
+    font-weight: 700;
+    margin-top: 2px;
+  }
+
+  .admin-panel {
+    background: var(--clr-surface);
+    border-radius: var(--radius-xl);
+    border: 1px solid var(--clr-border);
+    box-shadow: var(--shadow-sm);
+    margin-bottom: var(--space-xl);
+    overflow: hidden;
+  }
+
+  .admin-panel-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-lg) var(--space-xl);
+    border-bottom: 1px solid var(--clr-border);
+  }
+
+  .admin-panel-head h2 {
+    font-family: var(--font-heading);
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--clr-text);
+  }
+
+  .admin-panel-head p {
+    font-size: 0.82rem;
+    color: var(--clr-text-light);
+    margin-top: 2px;
+  }
+
+  .admin-panel-body { padding: var(--space-xl); }
+
+  .admin-tables-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-xl);
+  }
+
+  @media (max-width: 992px) { .admin-tables-row { grid-template-columns: 1fr; } }
+
+  .data-table { width: 100%; border-collapse: collapse; }
+
+  .data-table th, .data-table td {
+    text-align: left;
+    padding: var(--space-sm) var(--space-md);
+    font-size: 0.85rem;
+    border-bottom: 1px solid var(--clr-border);
+  }
+
+  .data-table th {
+    color: var(--clr-text-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.68rem;
+    letter-spacing: 0.05em;
+    background: var(--clr-surface-alt);
+  }
+
+  .data-table tr:last-child td { border-bottom: none; }
+  .data-table tbody tr:hover td { background: rgba(13, 138, 78, 0.03); }
+
+  .data-table tbody tr.clickable-row {
+    cursor: pointer;
+    transition: background var(--transition-fast);
+  }
+
+  .data-table tbody tr.clickable-row:hover td {
+    background: rgba(13, 138, 78, 0.08);
+  }
+
+  .table-search-wrap {
+    padding: var(--space-md) var(--space-xl);
+    border-bottom: 1px solid var(--clr-border);
+    background: var(--clr-surface-alt);
+  }
+
+  .table-search {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    background: var(--clr-surface);
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-full);
+    padding: 0.45rem 0.85rem;
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  }
+
+  .table-search:focus-within {
+    border-color: var(--clr-primary);
+    box-shadow: 0 0 0 3px rgba(13, 138, 78, 0.1);
+  }
+
+  .table-search input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    color: var(--clr-text);
+    outline: none;
+  }
+
+  .table-search input::placeholder { color: var(--clr-text-light); }
+
+  .table-search-icon { color: var(--clr-text-light); font-size: 0.85rem; }
+
+  .table-empty-search {
+    display: none;
+    text-align: center;
+    padding: var(--space-2xl);
+    color: var(--clr-text-light);
+    font-size: 0.88rem;
+  }
+
+  .table-empty-search.visible { display: block; }
+
+  .admin-panel-head-flex {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-lg) var(--space-xl);
+    border-bottom: 1px solid var(--clr-border);
+  }
+
+  .admin-panel-head-flex h2 {
+    font-family: var(--font-heading);
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--clr-text);
+  }
+
+  .table-count {
+    font-size: 0.78rem;
+    color: var(--clr-text-light);
+    font-weight: 500;
+  }
+
+  .curriculum-bars {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+  }
+
+  .curriculum-bar-row {
+    display: grid;
+    grid-template-columns: 140px 1fr 40px;
+    align-items: center;
+    gap: var(--space-md);
+    font-size: 0.85rem;
+  }
+
+  .curriculum-bar-row span:first-child { font-weight: 600; color: var(--clr-text); }
+
+  .curriculum-bar-track {
+    height: 8px;
+    background: var(--clr-surface-alt);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+  }
+
+  .curriculum-bar-fill {
+    height: 100%;
+    border-radius: var(--radius-full);
+    background: var(--grad-hero);
+  }
+
+  .curriculum-bar-row span:last-child {
+    font-weight: 700;
+    color: var(--clr-primary);
+    text-align: right;
+  }
+</style>
+{% endblock %}
+
+{% block admin_content %}
+<div class="admin-page-header" id="overview">
+  <div>
+    <h1>Dashboard</h1>
+    <p>Good day, {{ admin_user.first_name }}! Here's your SomaKenya platform overview.</p>
+  </div>
+  <div class="admin-page-header-actions">
+    <a href="{{ django_admin_url }}" class="btn-admin-primary" target="_blank" rel="noopener">Django Admin</a>
+    <a href="{% url 'achievements:achievement_list' %}" class="btn-admin-outline">Achievements</a>
+    <a href="{{ curriculum_urls.subjects }}" class="btn-admin-outline">Browse Subjects</a>
+  </div>
+</div>
+
+<div class="admin-stats-row">
+  <div class="admin-stat-card" data-searchable>
+    <div class="admin-stat-top">
+      <div>
+        <div class="admin-stat-label">Total Users</div>
+        <div class="admin-stat-value">{{ user_stats.total }}</div>
+      </div>
+      <div class="admin-stat-icon blue">&#128100;</div>
+    </div>
+    <div class="admin-stat-meta">
+      <div class="admin-stat-meta-item">Active<strong>{{ user_stats.active }}</strong></div>
+      <div class="admin-stat-meta-item">Guardians<strong>{{ user_stats.guardians }}</strong></div>
+      <div class="admin-stat-meta-item">Teachers<strong>{{ user_stats.teachers }}</strong></div>
+    </div>
+  </div>
+
+  <div class="admin-stat-card" data-searchable>
+    <div class="admin-stat-top">
+      <div>
+        <div class="admin-stat-label">Total Students</div>
+        <div class="admin-stat-value">{{ student_stats.total }}</div>
+      </div>
+      <div class="admin-stat-icon purple">&#127891;</div>
+    </div>
+    <div class="admin-stat-meta">
+      <div class="admin-stat-meta-item">Guardian Links<strong>{{ student_stats.linked }}</strong></div>
+      <div class="admin-stat-meta-item">Partners<strong>{{ user_stats.partners }}</strong></div>
+      <div class="admin-stat-meta-item">Admins<strong>{{ user_stats.admins }}</strong></div>
+    </div>
+  </div>
+
+  <div class="admin-stat-card" data-searchable>
+    <div class="admin-stat-top">
+      <div>
+        <div class="admin-stat-label">Active Subjects</div>
+        <div class="admin-stat-value">{{ curriculum_counts.subjects }}</div>
+      </div>
+      <div class="admin-stat-icon orange">&#128218;</div>
+    </div>
+    <div class="admin-stat-meta">
+      <div class="admin-stat-meta-item">Grade Levels<strong>{{ curriculum_counts.grade_levels }}</strong></div>
+      <div class="admin-stat-meta-item">Disciplines<strong>{{ curriculum_counts.disciplines }}</strong></div>
+      <div class="admin-stat-meta-item">Strands<strong>{{ curriculum_counts.strands }}</strong></div>
+    </div>
+  </div>
+
+  <div class="admin-stat-card" data-searchable>
+    <div class="admin-stat-top">
+      <div>
+        <div class="admin-stat-label">Active Quizzes</div>
+        <div class="admin-stat-value">{{ content_counts.quizzes }}</div>
+      </div>
+      <div class="admin-stat-icon green">&#9997;</div>
+    </div>
+    <div class="admin-stat-meta">
+      <div class="admin-stat-meta-item">Questions<strong>{{ content_counts.questions }}</strong></div>
+      <div class="admin-stat-meta-item">Attempts<strong>{{ content_counts.attempts }}</strong></div>
+      <div class="admin-stat-meta-item">Completed<strong>{{ content_counts.completed_attempts }}</strong></div>
+    </div>
+  </div>
+</div>
+
+{% include 'accounts/partials/attempt_score_chart.html' with attempt_chart=attempt_chart chart_canvas_id='attemptScoreChart' chart_data_id='attempt-chart-data' %}
+
+<div class="admin-tables-row">
+  <div class="admin-panel" data-searchable>
+    <div class="admin-panel-head">
+      <div>
+        <h2>Curriculum Structure</h2>
+        <p>CBC content hierarchy at a glance</p>
+      </div>
+    </div>
+    <div class="admin-panel-body">
+      <div class="curriculum-bars">
+        {% with max_val=curriculum_max %}
+        <div class="curriculum-bar-row">
+          <span>Grade Levels</span>
+          <div class="curriculum-bar-track"><div class="curriculum-bar-fill" style="width: {% if max_val %}{% widthratio curriculum_counts.grade_levels max_val 100 %}{% else %}0{% endif %}%;"></div></div>
+          <span>{{ curriculum_counts.grade_levels }}</span>
+        </div>
+        <div class="curriculum-bar-row">
+          <span>Disciplines</span>
+          <div class="curriculum-bar-track"><div class="curriculum-bar-fill" style="width: {% if max_val %}{% widthratio curriculum_counts.disciplines max_val 100 %}{% else %}0{% endif %}%;"></div></div>
+          <span>{{ curriculum_counts.disciplines }}</span>
+        </div>
+        <div class="curriculum-bar-row">
+          <span>Subjects</span>
+          <div class="curriculum-bar-track"><div class="curriculum-bar-fill" style="width: {% if max_val %}{% widthratio curriculum_counts.subjects max_val 100 %}{% else %}0{% endif %}%;"></div></div>
+          <span>{{ curriculum_counts.subjects }}</span>
+        </div>
+        <div class="curriculum-bar-row">
+          <span>Strands</span>
+          <div class="curriculum-bar-track"><div class="curriculum-bar-fill" style="width: {% if max_val %}{% widthratio curriculum_counts.strands max_val 100 %}{% else %}0{% endif %}%;"></div></div>
+          <span>{{ curriculum_counts.strands }}</span>
+        </div>
+        <div class="curriculum-bar-row">
+          <span>Sub-Strands</span>
+          <div class="curriculum-bar-track"><div class="curriculum-bar-fill" style="width: {% if max_val %}{% widthratio curriculum_counts.sub_strands max_val 100 %}{% else %}0{% endif %}%;"></div></div>
+          <span>{{ curriculum_counts.sub_strands }}</span>
+        </div>
+        {% endwith %}
+      </div>
+    </div>
+  </div>
+
+  <div class="admin-panel" data-searchable>
+    <div class="admin-panel-head">
+      <div>
+        <h2>Platform Activity</h2>
+        <p>Users, learners and exam engagement</p>
+      </div>
+    </div>
+    <div class="admin-panel-body">
+      <div class="curriculum-bars">
+        {% with max_val=activity_max %}
+        <div class="curriculum-bar-row">
+          <span>Total Users</span>
+          <div class="curriculum-bar-track"><div class="curriculum-bar-fill" style="width: {% if max_val %}{% widthratio user_stats.total max_val 100 %}{% else %}0{% endif %}%;"></div></div>
+          <span>{{ user_stats.total }}</span>
+        </div>
+        <div class="curriculum-bar-row">
+          <span>Active Users</span>
+          <div class="curriculum-bar-track"><div class="curriculum-bar-fill" style="width: {% if max_val %}{% widthratio user_stats.active max_val 100 %}{% else %}0{% endif %}%;"></div></div>
+          <span>{{ user_stats.active }}</span>
+        </div>
+        <div class="curriculum-bar-row">
+          <span>Students</span>
+          <div class="curriculum-bar-track"><div class="curriculum-bar-fill" style="width: {% if max_val %}{% widthratio student_stats.total max_val 100 %}{% else %}0{% endif %}%;"></div></div>
+          <span>{{ student_stats.total }}</span>
+        </div>
+        <div class="curriculum-bar-row">
+          <span>Quizzes</span>
+          <div class="curriculum-bar-track"><div class="curriculum-bar-fill" style="width: {% if max_val %}{% widthratio content_counts.quizzes max_val 100 %}{% else %}0{% endif %}%;"></div></div>
+          <span>{{ content_counts.quizzes }}</span>
+        </div>
+        <div class="curriculum-bar-row">
+          <span>Attempts</span>
+          <div class="curriculum-bar-track"><div class="curriculum-bar-fill" style="width: {% if max_val %}{% widthratio content_counts.attempts max_val 100 %}{% else %}0{% endif %}%;"></div></div>
+          <span>{{ content_counts.attempts }}</span>
+        </div>
+        {% endwith %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="admin-tables-row" id="recent">
+  <div class="admin-panel" id="users-panel">
+    <div class="admin-panel-head-flex">
+      <h2>Users</h2>
+      <div style="display: flex; align-items: center; gap: var(--space-md);">
+        <span class="table-count" id="users-table-count">
+          {% if users_page.paginator.num_pages > 1 %}
+            Page {{ users_page.number }}/{{ users_page.paginator.num_pages }} &middot;
+          {% endif %}
+          {{ user_stats.total }} total
+        </span>
+        <a href="{% url 'accounts:admin_users_list' %}" class="admin-view-all-link">View all &rarr;</a>
+      </div>
+    </div>
+    <div class="table-search-wrap">
+      <label class="table-search" for="users-table-search">
+        <span class="table-search-icon">&#128269;</span>
+        <input type="search" id="users-table-search" placeholder="Search by name, phone or role..." autocomplete="off">
+      </label>
+    </div>
+    <div class="admin-panel-body" style="padding: 0;">
+      {% if users_page.object_list %}
+      <table class="data-table admin-table" id="users-table">
+        <thead>
+          <tr><th>Name</th><th>Role</th><th>Status</th><th>Joined</th></tr>
+        </thead>
+        <tbody>
+          {% for u in users_page %}
+          <tr class="clickable-row searchable-row" data-href="{% url 'accounts:admin_user_detail' u.pk %}" tabindex="0" role="link">
+            <td><strong>{{ u.full_name }}</strong><br><small style="color:var(--clr-text-light)">{{ u.phone }}</small></td>
+            <td>{{ u.get_role_display }}</td>
+            <td>
+              {% if u.is_active %}<span class="badge badge-primary">Active</span>
+              {% else %}<span class="badge badge-gold">Inactive</span>{% endif %}
+            </td>
+            <td>{{ u.date_joined|date:"d M Y" }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <div class="table-empty-search" id="users-table-empty">No users match your search.</div>
+      {% include 'accounts/partials/admin_pagination.html' with page_obj=users_page page_param='users_page' pagination_extra=students_pagination_extra pagination_anchor='users-panel' %}
+      {% else %}
+      <div class="empty-state"><p>No users registered yet.</p></div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="admin-panel" id="students-panel">
+    <div class="admin-panel-head-flex">
+      <h2>Students</h2>
+      <div style="display: flex; align-items: center; gap: var(--space-md);">
+        <span class="table-count" id="students-table-count">
+          {% if students_page.paginator.num_pages > 1 %}
+            Page {{ students_page.number }}/{{ students_page.paginator.num_pages }} &middot;
+          {% endif %}
+          {{ student_stats.total }} total
+        </span>
+        <a href="{% url 'accounts:admin_students_list' %}" class="admin-view-all-link">View all &rarr;</a>
+      </div>
+    </div>
+    <div class="table-search-wrap">
+      <label class="table-search" for="students-table-search">
+        <span class="table-search-icon">&#128269;</span>
+        <input type="search" id="students-table-search" placeholder="Search by name, grade or gender..." autocomplete="off">
+      </label>
+    </div>
+    <div class="admin-panel-body" style="padding: 0;">
+      {% if students_page.object_list %}
+      <table class="data-table admin-table" id="students-table">
+        <thead>
+          <tr><th>Name</th><th>Grade</th><th>Gender</th><th>DOB</th></tr>
+        </thead>
+        <tbody>
+          {% for student in students_page %}
+          <tr class="clickable-row searchable-row" data-href="{% url 'accounts:student_analytics' student.uuid %}" tabindex="0" role="link">
+            <td><strong>{{ student.first_name }} {{ student.last_name }}</strong></td>
+            <td>{{ student.grade_level.name|default:"—" }}</td>
+            <td>{{ student.gender }}</td>
+            <td>{{ student.dob|date:"d M Y"|default:"—" }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <div class="table-empty-search" id="students-table-empty">No students match your search.</div>
+      {% include 'accounts/partials/admin_pagination.html' with page_obj=students_page page_param='students_page' pagination_extra=users_pagination_extra pagination_anchor='students-panel' %}
+      {% else %}
+      <div class="empty-state"><p>No students added yet.</p></div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+  (function () {
+    function filterTable(tableId, query, emptyId, countId) {
+      var table = document.getElementById(tableId);
+      if (!table) return 0;
+
+      var rows = table.querySelectorAll('tbody tr.searchable-row');
+      var q = query.toLowerCase().trim();
+      var visible = 0;
+
+      rows.forEach(function (row) {
+        var match = !q || row.textContent.toLowerCase().includes(q);
+        row.style.display = match ? '' : 'none';
+        if (match) visible++;
+      });
+
+      var emptyEl = document.getElementById(emptyId);
+      if (emptyEl) {
+        emptyEl.classList.toggle('visible', q.length > 0 && visible === 0);
+        table.style.display = q.length > 0 && visible === 0 ? 'none' : '';
+      }
+
+      var countEl = document.getElementById(countId);
+      if (countEl) {
+        countEl.textContent = q
+          ? visible + ' of ' + rows.length + ' shown'
+          : rows.length + ' total';
+      }
+
+      return visible;
+    }
+
+    function filterUsersTable(q) {
+      return filterTable('users-table', q, 'users-table-empty', 'users-table-count');
+    }
+
+    function filterStudentsTable(q) {
+      return filterTable('students-table', q, 'students-table-empty', 'students-table-count');
+    }
+
+    function filterBothTables(q) {
+      filterUsersTable(q);
+      filterStudentsTable(q);
+    }
+
+    var usersSearch = document.getElementById('users-table-search');
+    var studentsSearch = document.getElementById('students-table-search');
+    var globalSearch = document.getElementById('app-search');
+
+    if (usersSearch) {
+      usersSearch.addEventListener('input', function () {
+        filterUsersTable(this.value);
+      });
+    }
+
+    if (studentsSearch) {
+      studentsSearch.addEventListener('input', function () {
+        filterStudentsTable(this.value);
+      });
+    }
+
+    if (globalSearch && (usersSearch || studentsSearch)) {
+      globalSearch.placeholder = 'Search users and students...';
+      globalSearch.addEventListener('input', function () {
+        var q = this.value;
+        if (usersSearch) usersSearch.value = q;
+        if (studentsSearch) studentsSearch.value = q;
+        filterBothTables(q);
+      });
+    }
+
+    document.querySelectorAll('.data-table tbody tr.clickable-row[data-href]').forEach(function (row) {
+      row.addEventListener('click', function () {
+        window.location.href = row.dataset.href;
+      });
+      row.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          window.location.href = row.dataset.href;
+        }
+      });
+    });
+  })();
+</script>
+{% include 'accounts/partials/attempt_score_chart_script.html' with chart_canvas_id='attemptScoreChart' chart_data_id='attempt-chart-data' %}
+{% endblock %}

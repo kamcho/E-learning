@@ -1,0 +1,288 @@
+{% extends 'accounts/admin_base.html' %}
+
+{% block title %}{{ subject.name }} — Teacher Analytics{% endblock %}
+
+{% block extra_head %}
+{% include 'accounts/partials/admin_list_styles.html' %}
+<style>
+  .teacher-back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-xs);
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--clr-primary);
+    text-decoration: none;
+    margin-bottom: var(--space-lg);
+  }
+
+  .teacher-back-link:hover { text-decoration: underline; }
+
+  .teacher-banner {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-lg);
+    padding: var(--space-xl);
+    background: linear-gradient(135deg, rgba(13, 138, 78, 0.08), rgba(59, 130, 246, 0.08));
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-xl);
+    margin-bottom: var(--space-xl);
+  }
+
+  .teacher-banner-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: var(--radius-lg);
+    background: var(--clr-surface);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.6rem;
+    flex-shrink: 0;
+  }
+
+  .teacher-banner h1 {
+    font-family: var(--font-heading);
+    font-size: 1.5rem;
+    font-weight: 800;
+    margin: 0 0 0.35rem;
+    color: var(--clr-text);
+  }
+
+  .teacher-banner p {
+    margin: 0;
+    color: var(--clr-text-muted);
+    font-size: 0.92rem;
+  }
+
+  .teacher-metrics {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--space-lg);
+    margin-bottom: var(--space-xl);
+  }
+
+  @media (max-width: 992px) { .teacher-metrics { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 576px) { .teacher-metrics { grid-template-columns: 1fr; } }
+
+  .teacher-metric {
+    background: var(--clr-surface);
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-xl);
+    padding: var(--space-lg);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .teacher-metric-label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--clr-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .teacher-metric-value {
+    font-family: var(--font-heading);
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: var(--clr-text);
+    margin-top: 0.35rem;
+  }
+
+  .teacher-section {
+    background: var(--clr-surface);
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-sm);
+    margin-bottom: var(--space-xl);
+    overflow: hidden;
+  }
+
+  .teacher-section-head {
+    padding: var(--space-lg) var(--space-xl);
+    border-bottom: 1px solid var(--clr-border);
+  }
+
+  .teacher-section-head h2 {
+    margin: 0;
+    font-family: var(--font-heading);
+    font-size: 1.05rem;
+    font-weight: 700;
+  }
+
+  .teacher-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .teacher-table th,
+  .teacher-table td {
+    padding: 0.85rem 1.25rem;
+    text-align: left;
+    border-bottom: 1px solid var(--clr-border);
+    font-size: 0.88rem;
+  }
+
+  .teacher-table th {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--clr-text-muted);
+    font-weight: 700;
+    background: var(--clr-surface-alt);
+  }
+
+  .teacher-link {
+    color: var(--clr-primary);
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  .teacher-link:hover { text-decoration: underline; }
+
+  .teacher-badge {
+    display: inline-flex;
+    padding: 0.2rem 0.55rem;
+    border-radius: var(--radius-full);
+    font-size: 0.72rem;
+    font-weight: 700;
+  }
+
+  .teacher-badge.active { background: rgba(13, 138, 78, 0.12); color: var(--clr-primary); }
+  .teacher-badge.pending { background: rgba(249, 115, 22, 0.12); color: #c2410c; }
+</style>
+{% endblock %}
+
+{% block admin_content %}
+<a href="{% url 'accounts:teacher_dashboard' %}" class="teacher-back-link">&larr; Back to Teacher Dashboard</a>
+
+<div class="teacher-banner">
+  <div class="teacher-banner-icon">&#128218;</div>
+  <div>
+    <h1>{{ subject.name }}</h1>
+    <p>{{ subject.grade_level.name }} · {{ subject.discipline.name }}</p>
+  </div>
+</div>
+
+<div class="teacher-metrics">
+  <div class="teacher-metric">
+    <div class="teacher-metric-label">Your questions</div>
+    <div class="teacher-metric-value">{{ summary.question_count }}</div>
+    <div style="font-size:0.82rem;color:var(--clr-text-muted);margin-top:0.35rem;">
+      {{ summary.active_questions }} active · {{ summary.pending_questions }} pending
+    </div>
+  </div>
+  <div class="teacher-metric">
+    <div class="teacher-metric-label">Your quizzes</div>
+    <div class="teacher-metric-value">{{ summary.quiz_count }}</div>
+  </div>
+  <div class="teacher-metric">
+    <div class="teacher-metric-label">Learner attempts</div>
+    <div class="teacher-metric-value">{{ summary.attempt_count }}</div>
+    <div style="font-size:0.82rem;color:var(--clr-text-muted);margin-top:0.35rem;">
+      {{ summary.completed_attempts }} completed
+    </div>
+  </div>
+  <div class="teacher-metric">
+    <div class="teacher-metric-label">Average score</div>
+    <div class="teacher-metric-value">{{ summary.avg_score }}%</div>
+    <div style="font-size:0.82rem;color:var(--clr-text-muted);margin-top:0.35rem;">
+      Best: {{ summary.best_score }}%
+    </div>
+  </div>
+</div>
+
+<section class="teacher-section">
+  <div class="teacher-section-head"><h2>Questions by sub-strand</h2></div>
+  {% if sub_strand_rows %}
+  <table class="teacher-table">
+    <thead>
+      <tr>
+        <th>Strand</th>
+        <th>Sub-strand</th>
+        <th>Your questions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in sub_strand_rows %}
+      <tr>
+        <td>{{ row.strand }}</td>
+        <td>{{ row.name }}</td>
+        <td>{{ row.question_count }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p style="padding:1.5rem;color:var(--clr-text-muted);margin:0;">No questions in this subject yet.</p>
+  {% endif %}
+</section>
+
+<section class="teacher-section">
+  <div class="teacher-section-head"><h2>Your quizzes in this subject</h2></div>
+  {% if quiz_rows %}
+  <table class="teacher-table">
+    <thead>
+      <tr>
+        <th>Quiz</th>
+        <th>Difficulty</th>
+        <th>Strand</th>
+        <th>Attempts</th>
+        <th>Avg score</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in quiz_rows %}
+      <tr>
+        <td><strong>{{ row.title }}</strong></td>
+        <td>{{ row.difficulty }}</td>
+        <td>{{ row.strand }} / {{ row.sub_strand }}</td>
+        <td>{{ row.attempt_count }} <span style="color:var(--clr-text-muted);">({{ row.completed_count }} done)</span></td>
+        <td>{{ row.avg_score }}%</td>
+        <td><a href="{{ row.analytics_url }}" class="teacher-link">Analytics</a></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p style="padding:1.5rem;color:var(--clr-text-muted);margin:0;">No quizzes in this subject yet.</p>
+  {% endif %}
+</section>
+
+<section class="teacher-section">
+  <div class="teacher-section-head"><h2>Your questions</h2></div>
+  {% if question_rows %}
+  <table class="teacher-table">
+    <thead>
+      <tr>
+        <th>Question</th>
+        <th>Sub-strand</th>
+        <th>Type</th>
+        <th>Difficulty</th>
+        <th>Status</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in question_rows %}
+      <tr>
+        <td>{{ row.quiz_preview }}{% if row.quiz|length > 100 %}…{% endif %}</td>
+        <td>{{ row.sub_strand }}</td>
+        <td>{{ row.quiz_type }}</td>
+        <td>{{ row.difficulty }}</td>
+        <td>
+          <span class="teacher-badge {% if row.is_active %}active{% else %}pending{% endif %}">
+            {{ row.status_label }}
+          </span>
+        </td>
+        <td><a href="{{ row.detail_url }}" class="teacher-link">View details</a></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p style="padding:1.5rem;color:var(--clr-text-muted);margin:0;">No questions in this subject yet.</p>
+  {% endif %}
+</section>
+{% endblock %}

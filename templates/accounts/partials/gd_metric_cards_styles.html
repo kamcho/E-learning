@@ -1,0 +1,98 @@
+<style>
+  .gd-metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: var(--space-md);
+    margin-bottom: var(--space-2xl);
+  }
+
+  .gd-metric-card {
+    background: var(--clr-surface);
+    border: 1px solid #e8ecf4;
+    border-radius: 14px;
+    padding: 1.15rem 1.25rem 0;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+    display: flex;
+    flex-direction: column;
+    min-height: 148px;
+    transition: box-shadow 0.15s ease, transform 0.15s ease;
+  }
+
+  .gd-metric-card:hover {
+    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.07);
+    transform: translateY(-2px);
+  }
+
+  .gd-metric-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.35rem;
+  }
+
+  .gd-metric-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    flex-shrink: 0;
+  }
+
+  .gd-metric-value {
+    font-family: var(--font-heading);
+    font-size: 2rem;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    text-align: right;
+    flex: 1;
+  }
+
+  .gd-metric-label {
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--clr-text-muted);
+    margin-bottom: 0.85rem;
+    line-height: 1.3;
+  }
+
+  .gd-metric-footer {
+    margin-top: auto;
+    padding: 0.7rem 0;
+    border-top: 1px solid #f0f2f7;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+  }
+
+  .gd-metric-footer-icon {
+    font-size: 0.85rem;
+    line-height: 1;
+  }
+
+  .gd-metric-card--orange .gd-metric-icon { background: #fff4e6; color: #ea580c; }
+  .gd-metric-card--orange .gd-metric-value { color: #c2410c; }
+  .gd-metric-card--orange .gd-metric-footer { color: #ea580c; }
+
+  .gd-metric-card--green .gd-metric-icon { background: #ecfdf3; color: #16a34a; }
+  .gd-metric-card--green .gd-metric-value { color: #15803d; }
+  .gd-metric-card--green .gd-metric-footer { color: #16a34a; }
+
+  .gd-metric-card--blue .gd-metric-icon { background: #eff6ff; color: #2563eb; }
+  .gd-metric-card--blue .gd-metric-value { color: #1d4ed8; }
+  .gd-metric-card--blue .gd-metric-footer { color: #2563eb; }
+
+  .gd-metric-card--purple .gd-metric-icon { background: #f5f3ff; color: #7c3aed; }
+  .gd-metric-card--purple .gd-metric-value { color: #6d28d9; }
+  .gd-metric-card--purple .gd-metric-footer { color: #7c3aed; }
+
+  .gd-metric-card--rose .gd-metric-icon { background: #fff1f2; color: #e11d48; }
+  .gd-metric-card--rose .gd-metric-value { color: #be123c; }
+  .gd-metric-card--rose .gd-metric-footer { color: #e11d48; }
+</style>

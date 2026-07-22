@@ -1,0 +1,364 @@
+{% extends "base.html" %}
+
+{% block title %}{{ quiz.title }}{% endblock %}
+
+{% block body_class %}{% if request.user.is_guardian %} guardian-dash-dark{% endif %}{% endblock %}
+{% block main_extra_class %}{% if request.user.is_guardian %}guardian-dash-main {% endif %}test-info-main{% endblock %}
+
+{% block extra_head %}
+{% if request.user.is_guardian %}
+{% include 'accounts/partials/guardian_dashboard_crimson_theme.html' %}
+{% include 'core/partials/test_info_crimson_theme.html' %}
+{% endif %}
+<style>
+  .test-info-main {
+    padding: var(--space-lg);
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+  }
+
+  .test-info-wrap {
+    width: 100%;
+    max-width: 420px;
+  }
+
+  .test-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--clr-primary);
+    text-decoration: none;
+    margin-bottom: var(--space-md);
+  }
+
+  .test-card {
+    background: var(--clr-surface);
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+    box-shadow: var(--shadow-md);
+  }
+
+  .test-card-accent {
+    height: 4px;
+  }
+
+  .test-card-accent.easy   { background: var(--clr-primary); }
+  .test-card-accent.medium { background: var(--clr-accent); }
+  .test-card-accent.hard   { background: var(--clr-danger); }
+
+  .test-card-body {
+    padding: var(--space-xl) var(--space-lg);
+  }
+
+  .test-title {
+    font-family: var(--font-heading);
+    font-size: 1.4rem;
+    font-weight: 800;
+    line-height: 1.3;
+    letter-spacing: -0.02em;
+    color: var(--clr-text);
+    margin: 0 0 var(--space-md);
+  }
+
+  .test-summary {
+    font-size: 0.9rem;
+    color: var(--clr-text-muted);
+    line-height: 1.5;
+    margin-bottom: var(--space-lg);
+  }
+
+  .test-facts {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-sm);
+    margin-bottom: var(--space-lg);
+  }
+
+  @media (max-width: 400px) {
+    .test-facts { grid-template-columns: 1fr 1fr; }
+  }
+
+  .test-fact {
+    background: var(--clr-surface-alt);
+    border-radius: var(--radius-lg);
+    padding: var(--space-md);
+    text-align: center;
+  }
+
+  .test-fact-val {
+    font-family: var(--font-heading);
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: var(--clr-primary);
+    line-height: 1;
+  }
+
+  .test-fact-val.diff-medium { color: var(--clr-accent); }
+  .test-fact-val.diff-hard   { color: var(--clr-danger); }
+
+  .test-fact-lbl {
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: var(--clr-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-top: 4px;
+  }
+
+  .test-learner {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: var(--space-md);
+    background: rgba(13, 138, 78, 0.08);
+    border-radius: var(--radius-lg);
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--clr-primary-dark);
+    margin-bottom: var(--space-lg);
+  }
+
+  .test-status {
+    font-size: 0.85rem;
+    color: var(--clr-text-muted);
+    background: var(--clr-surface-alt);
+    border-radius: var(--radius-md);
+    padding: var(--space-md);
+    margin-bottom: var(--space-lg);
+    line-height: 1.45;
+  }
+
+  .test-actions {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+    padding-top: var(--space-md);
+    border-top: 1px solid var(--clr-border);
+  }
+
+  .btn-test-start {
+    width: 100%;
+    justify-content: center;
+    padding: 0.95rem 1rem;
+    font-size: 1rem;
+    font-weight: 700;
+  }
+
+  .btn-test-cancel {
+    width: 100%;
+    justify-content: center;
+    padding: 0.7rem 1rem;
+    background: var(--clr-surface-alt);
+    color: var(--clr-text-muted);
+    box-shadow: none;
+    font-size: 0.9rem;
+  }
+
+  /* ── Attempt history ── */
+  .attempt-history {
+    margin-top: var(--space-xl);
+    padding-top: var(--space-lg);
+    border-top: 1px solid var(--clr-border);
+  }
+
+  .attempt-history-title {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--clr-text-muted);
+    margin-bottom: var(--space-sm);
+  }
+
+  .attempt-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-sm);
+    padding: var(--space-sm) 0;
+    border-bottom: 1px solid var(--clr-border);
+    font-size: 0.84rem;
+  }
+
+  .attempt-row:last-child { border-bottom: none; }
+
+  .attempt-row-num {
+    font-weight: 700;
+    color: var(--clr-text-muted);
+    flex-shrink: 0;
+    min-width: 24px;
+  }
+
+  .attempt-row-score {
+    font-weight: 700;
+    color: var(--clr-primary);
+  }
+
+  .attempt-row-score.low { color: var(--clr-danger); }
+  .attempt-row-score.mid { color: var(--clr-accent); }
+
+  .attempt-row-date {
+    color: var(--clr-text-muted);
+    font-size: 0.78rem;
+    flex: 1;
+    text-align: right;
+  }
+
+  .attempt-row-link {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--clr-primary);
+    text-decoration: none;
+    flex-shrink: 0;
+  }
+
+  .test-paywall {
+    background: rgba(212, 160, 23, 0.1);
+    border: 1px solid rgba(212, 160, 23, 0.25);
+    border-radius: var(--radius-lg);
+    padding: var(--space-md);
+    margin-bottom: var(--space-lg);
+    font-size: 0.88rem;
+    line-height: 1.5;
+    color: #92400e;
+  }
+
+  .test-credit-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--clr-primary);
+    background: rgba(13, 138, 78, 0.08);
+    border: 1px solid rgba(13, 138, 78, 0.2);
+    border-radius: var(--radius-full);
+    padding: 0.25rem 0.65rem;
+    margin-bottom: var(--space-md);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="test-info-wrap">
+  <a href="{{ cancel_url }}" class="test-back">← Back to exams</a>
+
+  <div class="test-card">
+    <div class="test-card-accent {{ quiz.difficulty|lower }}"></div>
+    <div class="test-card-body">
+      <h1 class="test-title">{{ quiz.title }}</h1>
+
+      {% if quiz.subject %}
+        <p class="test-summary">
+          {{ quiz.subject.name }}{% if quiz.subject.grade_level %} · {{ quiz.subject.grade_level.name }}{% endif %}
+        </p>
+      {% endif %}
+
+      <div class="test-facts">
+        <div class="test-fact">
+          <div class="test-fact-val">{{ question_count }}</div>
+          <div class="test-fact-lbl">Questions</div>
+        </div>
+        <div class="test-fact">
+          <div class="test-fact-val diff-{{ quiz.difficulty|lower }}">{{ quiz.difficulty }}</div>
+          <div class="test-fact-lbl">Difficulty</div>
+        </div>
+        <div class="test-fact">
+          <div class="test-fact-val">{% if quiz.time_limit_minutes %}{{ quiz.time_limit_minutes }}m{% else %}∞{% endif %}</div>
+          <div class="test-fact-lbl">Time Limit</div>
+        </div>
+      </div>
+
+      {% if student %}
+        <div class="test-learner">
+          For {{ student.first_name }} {{ student.last_name }}
+        </div>
+      {% endif %}
+
+      {% if attempt_status == 'in_progress' %}
+        <p class="test-status">
+          Attempt #{{ existing_attempt.attempt_number }} in progress
+          · {{ existing_attempt.responses.count }}/{{ question_count }} answered
+        </p>
+      {% elif attempt_status == 'completed' %}
+        <p class="test-status">
+          Latest score: <strong>{{ past_attempts.0.score }}%</strong>
+          ({{ past_attempts.0.marks_earned }}/{{ past_attempts.0.marks_possible }} marks)
+          · <a href="{% url 'core:attempt_detail' quiz.uuid student.uuid %}" style="color: var(--clr-primary); font-weight: 700;">View result</a>
+        </p>
+      {% endif %}
+
+      {% if subscription_required and active_subscription %}
+        <div class="test-credit-badge">
+          {{ active_subscription.tests_balance_label }}
+          &middot; until {{ active_subscription.ends_at|date:"d M Y" }}
+        </div>
+      {% endif %}
+
+      {% if needs_credit %}
+        <div class="test-paywall">
+          <strong>Test credit required.</strong>
+          {% if single_test_plan %}
+            Pay <strong>KES {{ single_test_plan.price_kes|floatformat:0 }}</strong> for one test, or choose a weekly/monthly pack.
+          {% else %}
+            Choose a plan to start this exam.
+          {% endif %}
+        </div>
+      {% endif %}
+
+      <div class="test-actions">
+        {% if needs_credit %}
+          {% if single_test_plan %}
+            <a href="{% url 'subscriptions:subscribe' single_test_plan.slug %}?next={{ request.get_full_path|urlencode }}"
+               class="btn btn-primary btn-test-start" style="text-align: center;">
+              Pay KES {{ single_test_plan.price_kes|floatformat:0 }} — 1 test
+            </a>
+          {% endif %}
+          <a href="{% url 'subscriptions:plans' %}?next={{ request.get_full_path|urlencode }}"
+             class="btn btn-secondary btn-test-start" style="text-align: center;">
+            View all plans
+          </a>
+        {% else %}
+        <form method="post" action="{% url 'core:test_info' quiz.uuid student.uuid %}">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="start">
+          <button type="submit" class="btn btn-primary btn-test-start">
+            {% if attempt_status == 'completed' %}
+              Retake Exam{% if subscription_required and active_subscription and not active_subscription.is_unlimited %} (1 credit){% endif %}
+            {% elif attempt_status == 'in_progress' %}
+              Continue Exam
+            {% else %}
+              Start for {{ student.first_name }}{% if subscription_required and active_subscription and not active_subscription.is_unlimited %} (1 credit){% endif %}
+            {% endif %}
+          </button>
+        </form>
+        {% endif %}
+        <a href="{{ cancel_url }}" class="btn btn-secondary btn-test-cancel">Cancel</a>
+      </div>
+
+      {% if past_attempts %}
+      <div class="attempt-history">
+        <div class="attempt-history-title">Attempt History ({{ past_attempts|length }})</div>
+        {% for att in past_attempts %}
+        <div class="attempt-row">
+          <span class="attempt-row-num">#{{ att.attempt_number }}</span>
+          <span class="attempt-row-score {% if att.score < 40 %}low{% elif att.score < 70 %}mid{% endif %}">
+            {{ att.score }}%
+          </span>
+          <span style="font-size: 0.78rem; color: var(--clr-text-muted);">
+            {{ att.marks_earned }}/{{ att.marks_possible }} marks
+          </span>
+          <span class="attempt-row-date">{{ att.created_at|date:"M d, Y" }}</span>
+          <a href="{% url 'core:attempt_by_uuid' att.uuid %}" class="attempt-row-link">Review</a>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

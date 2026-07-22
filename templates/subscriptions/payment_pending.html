@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+
+{% block title %}Complete M-Pesa Payment{% endblock %}
+
+{% block extra_head %}
+<style>
+  .pending-wrap { max-width: 520px; margin: 0 auto; text-align: center; }
+  .pending-card {
+    background: var(--clr-surface);
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-xl);
+    padding: var(--space-2xl);
+    box-shadow: var(--shadow-md);
+  }
+  .pending-spinner {
+    width: 56px; height: 56px;
+    border: 4px solid var(--clr-border);
+    border-top-color: var(--clr-primary);
+    border-radius: 50%;
+    animation: spin 0.9s linear infinite;
+    margin: 0 auto var(--space-lg);
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .pending-status { font-size: 0.9rem; color: var(--clr-text-muted); margin-top: var(--space-md); }
+  .pending-success { color: var(--clr-primary); font-weight: 700; }
+  .pending-failed { color: var(--clr-danger); font-weight: 700; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pending-wrap">
+  <div class="pending-card">
+    <div class="pending-spinner" id="pending-spinner"></div>
+    <h1 style="font-family: var(--font-heading); font-size: 1.4rem; font-weight: 800; margin-bottom: var(--space-sm);">
+      Check your phone
+    </h1>
+    <p style="color: var(--clr-text-muted); line-height: 1.5;">
+      We sent an M-Pesa STK push to <strong>{{ payment.phone_number }}</strong>.
+      Enter your PIN to pay <strong>KES {{ payment.amount_kes|floatformat:0 }}</strong> for {{ plan.name }}.
+    </p>
+    <p class="pending-status" id="pending-status">Waiting for payment confirmation…</p>
+    <p style="font-size: 0.78rem; color: var(--clr-text-light); margin-top: var(--space-lg);">
+      Do not close this page until payment is confirmed.
+    </p>
+    <a href="{% url 'subscriptions:plans' %}" class="btn btn-secondary" style="margin-top: var(--space-lg); box-shadow: none;">Back to plans</a>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  var statusUrl = '{% url "subscriptions:payment_status" payment.uuid %}';
+  var statusEl = document.getElementById('pending-status');
+  var spinner = document.getElementById('pending-spinner');
+  var polls = 0;
+  var maxPolls = 60;
+
+  function poll() {
+    polls += 1;
+    fetch(statusUrl, { headers: { 'Accept': 'application/json' } })
+      .then(function (res) { return res.json(); })
+      .then(function (data) {
+        if (data.status === 'success') {
+          spinner.style.display = 'none';
+          statusEl.className = 'pending-status pending-success';
+          statusEl.textContent = 'Payment successful! Redirecting…';
+          if (data.mpesa_receipt_number) {
+            statusEl.textContent += ' Receipt: ' + data.mpesa_receipt_number;
+          }
+          setTimeout(function () {
+            window.location.href = data.redirect_url || '{% url "subscriptions:my_subscription" %}';
+          }, 1500);
+          return;
+        }
+        if (data.status === 'failed' || data.status === 'cancelled') {
+          spinner.style.display = 'none';
+          statusEl.className = 'pending-status pending-failed';
+          statusEl.textContent = data.result_description || 'Payment failed. Please try again.';
+          return;
+        }
+        if (polls < maxPolls) {
+          setTimeout(poll, 3000);
+        } else {
+          spinner.style.display = 'none';
+          statusEl.textContent = 'Still waiting. If you completed payment, check My Subscription shortly.';
+        }
+      })
+      .catch(function () {
+        if (polls < maxPolls) setTimeout(poll, 4000);
+      });
+  }
+
+  setTimeout(poll, 2000);
+})();
+</script>
+{% endblock %}

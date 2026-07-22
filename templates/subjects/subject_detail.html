@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+
+{% block title %}{{ subject.name }} — SomaKenya{% endblock %}
+
+{% block extra_head %}
+<style>
+  .curriculum-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-sm);
+  }
+
+  .curriculum-stat-row {
+    display: flex;
+    gap: var(--space-md);
+    margin-top: var(--space-md);
+    flex-wrap: wrap;
+  }
+
+  .curriculum-stat {
+    background: var(--clr-surface);
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-sm) var(--space-md);
+    font-size: 0.82rem;
+    color: var(--clr-text-muted);
+  }
+
+  .curriculum-stat strong {
+    color: var(--clr-primary);
+    font-family: var(--font-heading);
+    font-size: 1.1rem;
+    margin-right: 4px;
+  }
+
+  .strand-order {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: var(--radius-full);
+    background: rgba(13, 138, 78, 0.1);
+    color: var(--clr-primary);
+    font-size: 0.75rem;
+    font-weight: 700;
+    margin-right: var(--space-sm);
+    flex-shrink: 0;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="breadcrumbs">
+  <a href="{% url 'core:landing' %}">Home</a>
+  <span>/</span>
+  <a href="{% url 'subjects:subject_list' %}">Subjects</a>
+  <span>/</span>
+  <span>{{ subject.name }}</span>
+</div>
+
+<div class="page-header">
+  <div class="page-header-content">
+    <div>
+      <div class="curriculum-meta">
+        <span class="badge badge-gold">{{ subject.grade_level.name }}</span>
+        <span class="badge badge-primary">{{ subject.discipline.name }}</span>
+        {% if subject.is_active %}
+          <span class="badge badge-primary">Active</span>
+        {% else %}
+          <span class="badge badge-danger">Inactive</span>
+        {% endif %}
+      </div>
+      <h1 class="page-title">{{ subject.name }}</h1>
+      <p class="page-subtitle">All curriculum strands under this subject. Click a strand to view its sub-strands.</p>
+      <div class="curriculum-stat-row">
+        <div class="curriculum-stat"><strong>{{ strand_count }}</strong> Strand{{ strand_count|pluralize }}</div>
+      </div>
+      {% if request.user.is_authenticated %}
+      <a href="{% url 'subjects:create_question' subject.pk %}" class="btn btn-secondary" style="display: inline-block; margin-top: var(--space-md);">
+        + Create Question
+      </a>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="content-grid">
+  <div>
+    <div class="card">
+      <h2 class="card-title">🌱 Strands</h2>
+
+      {% if strands %}
+        <div class="item-list">
+          {% for strand in strands %}
+            <a href="{% url 'subjects:strand_detail' strand.slug %}" class="list-item" style="text-decoration: none; color: inherit;">
+              <div style="display: flex; align-items: flex-start; gap: var(--space-sm); flex: 1;">
+                <span class="strand-order">{{ strand.order }}</span>
+                <div>
+                  <div class="list-item-title">{{ strand.name }}</div>
+                  <div class="list-item-meta">
+                    {{ strand.sub_strand_count }} sub-strand{{ strand.sub_strand_count|pluralize }}
+                    &middot; Slug: <code style="background:#e2e8f0; padding:2px 4px; border-radius:4px;">{{ strand.slug }}</code>
+                  </div>
+                </div>
+              </div>
+              <div style="display: flex; gap: var(--space-sm); align-items: center;">
+                {% if strand.is_active %}
+                  <span class="badge badge-primary">Active</span>
+                {% else %}
+                  <span class="badge badge-danger">Inactive</span>
+                {% endif %}
+                <span style="font-size: 0.8rem; font-weight: 600; color: var(--clr-primary);">View &rarr;</span>
+              </div>
+            </a>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty-state">
+          <div class="empty-state-icon">🌱</div>
+          <h3>No Strands Yet</h3>
+          <p>Add the first strand for this subject using the form on the right.</p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div>
+    <div class="card">
+      <h2 class="card-title">➕ Add Strand</h2>
+      <form method="post" novalidate>
+        {% csrf_token %}
+
+        {% for field in form %}
+          {% if field.is_hidden %}
+            {{ field }}
+          {% else %}
+            <div class="form-group">
+              {% if field.field.widget.input_type == 'checkbox' %}
+                <label class="form-checkbox-label" for="{{ field.id_for_label }}">
+                  {{ field }}
+                  {{ field.label }}
+                </label>
+              {% else %}
+                <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+              {% endif %}
+              {% if field.errors %}
+                <div style="color: var(--clr-danger); font-size: 0.82rem; margin-top: 4px;">
+                  {{ field.errors.0 }}
+                </div>
+              {% endif %}
+            </div>
+          {% endif %}
+        {% endfor %}
+
+        <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 0.75rem;">
+          Save Strand
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

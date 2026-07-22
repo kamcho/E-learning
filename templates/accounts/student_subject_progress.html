@@ -1,0 +1,276 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ subject.name }} Progress — {{ student.first_name }}{% endblock %}
+
+{% block extra_head %}
+<style>
+  .progress-page {
+    max-width: 720px;
+    margin: 0 auto;
+  }
+
+  .progress-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--clr-primary);
+    text-decoration: none;
+    margin-bottom: var(--space-lg);
+  }
+
+  .progress-back:hover { text-decoration: underline; }
+
+  .progress-header {
+    background: var(--clr-surface);
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-xl);
+    padding: var(--space-xl);
+    margin-bottom: var(--space-xl);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .progress-header h1 {
+    font-family: var(--font-heading);
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--clr-text);
+    margin: 0 0 0.35rem;
+  }
+
+  .progress-header-meta {
+    font-size: 0.88rem;
+    color: var(--clr-text-muted);
+  }
+
+  .progress-summary {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    margin-top: var(--space-lg);
+    padding-top: var(--space-lg);
+    border-top: 1px solid var(--clr-border);
+  }
+
+  .progress-summary-ring {
+    --pct: 0;
+    --size: 52px;
+    width: var(--size);
+    height: var(--size);
+    border-radius: 50%;
+    background: conic-gradient(var(--clr-primary) calc(var(--pct) * 1%), var(--clr-surface-alt) 0);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    position: relative;
+  }
+
+  .progress-summary-ring::before {
+    content: '';
+    width: calc(var(--size) - 10px);
+    height: calc(var(--size) - 10px);
+    border-radius: 50%;
+    background: var(--clr-surface);
+    position: absolute;
+  }
+
+  .progress-summary-ring span {
+    position: relative;
+    z-index: 1;
+    font-size: 0.72rem;
+    font-weight: 800;
+    color: var(--clr-primary);
+  }
+
+  .progress-summary-text {
+    font-size: 0.88rem;
+    color: var(--clr-text-muted);
+  }
+
+  .progress-summary-text strong {
+    display: block;
+    font-size: 1rem;
+    color: var(--clr-text);
+    margin-bottom: 0.15rem;
+  }
+
+  .strand-block {
+    background: var(--clr-surface);
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-lg);
+    margin-bottom: var(--space-md);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .strand-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-md);
+    padding: 0.85rem 1rem;
+    background: var(--clr-surface-alt);
+    border-bottom: 1px solid var(--clr-border);
+  }
+
+  .strand-name {
+    font-family: var(--font-heading);
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--clr-text);
+  }
+
+  .strand-pct-ring {
+    --pct: 0;
+    --ring-size: 18px;
+    width: var(--ring-size);
+    height: var(--ring-size);
+    border-radius: 50%;
+    flex-shrink: 0;
+    background: conic-gradient(var(--clr-primary) calc(var(--pct) * 1%), #dde3ea 0);
+    position: relative;
+  }
+
+  .strand-pct-ring::before {
+    content: '';
+    position: absolute;
+    inset: 3px;
+    border-radius: 50%;
+    background: var(--clr-surface-alt);
+  }
+
+  .substrand-list {
+    padding: 0.35rem 0;
+  }
+
+  .substrand-row {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.55rem 1rem 0.55rem 1.35rem;
+  }
+
+  .substrand-check {
+    width: 18px;
+    height: 18px;
+    border: 2px solid var(--clr-border);
+    border-radius: 4px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    font-weight: 800;
+    color: transparent;
+    background: var(--clr-surface);
+    transition: all 0.15s ease;
+  }
+
+  .substrand-check.is-complete {
+    background: var(--clr-primary);
+    border-color: var(--clr-primary);
+    color: #fff;
+  }
+
+  .substrand-name {
+    flex: 1;
+    font-size: 0.88rem;
+    font-weight: 500;
+    color: var(--clr-text);
+  }
+
+  .substrand-meta {
+    font-size: 0.75rem;
+    color: var(--clr-text-muted);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .progress-empty {
+    text-align: center;
+    padding: var(--space-3xl) var(--space-xl);
+    color: var(--clr-text-muted);
+    background: var(--clr-surface);
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-xl);
+  }
+
+  .progress-empty-icon { font-size: 2.5rem; margin-bottom: var(--space-md); }
+
+  .progress-legend {
+    font-size: 0.78rem;
+    color: var(--clr-text-light);
+    margin-bottom: var(--space-lg);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="progress-page">
+  <a href="{{ back_url }}" class="progress-back">&larr; Back</a>
+
+  <div class="progress-header">
+    <h1>{{ subject.name }}</h1>
+    <div class="progress-header-meta">
+      {{ student.first_name }} {{ student.last_name }}
+      &middot; {{ subject.grade_level.name }}
+      &middot; {{ subject.discipline.name }}
+    </div>
+    <div class="progress-summary">
+      <div class="progress-summary-ring" style="--pct: {{ progress.overall_pct }};">
+        <span>{{ progress.overall_pct }}%</span>
+      </div>
+      <div class="progress-summary-text">
+        <strong>Overall sub-strand progress</strong>
+        {{ progress.completed_substrands }} of {{ progress.total_substrands }} sub-strands complete
+      </div>
+    </div>
+  </div>
+
+  <p class="progress-legend">
+    Each sub-strand is complete when the learner finishes the required number of tests (usually 2).
+  </p>
+
+  {% if progress.strands %}
+    {% for row in progress.strands %}
+      <div class="strand-block">
+        <div class="strand-row">
+          <span class="strand-name">{{ row.strand.name }}</span>
+          <div
+            class="strand-pct-ring"
+            style="--pct: {{ row.pct }};"
+            title="{{ row.completed_count }}/{{ row.total_count }} sub-strands complete"
+            aria-label="{{ row.pct }}% complete"
+          ></div>
+        </div>
+        {% if row.substrands %}
+          <div class="substrand-list">
+            {% for sub in row.substrands %}
+              <div class="substrand-row">
+                <span
+                  class="substrand-check{% if sub.is_complete %} is-complete{% endif %}"
+                  aria-checked="{% if sub.is_complete %}true{% else %}false{% endif %}"
+                  role="checkbox"
+                >{% if sub.is_complete %}&#10003;{% endif %}</span>
+                <span class="substrand-name">{{ sub.sub_strand.name }}</span>
+                <span class="substrand-meta">{{ sub.tests_taken }}/{{ sub.required }} tests</span>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="substrand-row">
+            <span class="substrand-meta" style="padding-left: 1.35rem;">No sub-strands defined</span>
+          </div>
+        {% endif %}
+      </div>
+    {% endfor %}
+  {% else %}
+    <div class="progress-empty">
+      <div class="progress-empty-icon">&#128218;</div>
+      <p>No strands found for this subject yet.</p>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

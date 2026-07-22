@@ -1,0 +1,219 @@
+{% extends 'accounts/admin_base.html' %}
+
+{% block title %}Question Detail — SomaKenya{% endblock %}
+
+{% block extra_head %}
+{% include 'accounts/partials/admin_list_styles.html' %}
+<style>
+  .teacher-back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-xs);
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--clr-primary);
+    text-decoration: none;
+    margin-bottom: var(--space-lg);
+  }
+
+  .teacher-back-link:hover { text-decoration: underline; }
+
+  .question-detail-card {
+    background: var(--clr-surface);
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-sm);
+    padding: var(--space-xl);
+    margin-bottom: var(--space-xl);
+  }
+
+  .question-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: var(--space-lg);
+  }
+
+  .question-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.3rem 0.7rem;
+    border-radius: var(--radius-full);
+    font-size: 0.78rem;
+    font-weight: 600;
+    background: var(--clr-surface-alt);
+    color: var(--clr-text-muted);
+    border: 1px solid var(--clr-border);
+  }
+
+  .question-pill.status-active {
+    background: rgba(13, 138, 78, 0.12);
+    color: var(--clr-primary);
+    border-color: rgba(13, 138, 78, 0.2);
+  }
+
+  .question-pill.status-pending {
+    background: rgba(249, 115, 22, 0.12);
+    color: #c2410c;
+    border-color: rgba(249, 115, 22, 0.2);
+  }
+
+  .question-prompt {
+    font-size: 1.05rem;
+    line-height: 1.7;
+    color: var(--clr-text);
+    white-space: pre-wrap;
+    margin-bottom: var(--space-lg);
+  }
+
+  .question-path {
+    font-size: 0.88rem;
+    color: var(--clr-text-muted);
+    margin-bottom: var(--space-md);
+  }
+
+  .question-path a {
+    color: var(--clr-primary);
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  .choices-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 0.65rem;
+  }
+
+  .choice-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.85rem 1rem;
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-lg);
+    background: var(--clr-surface-alt);
+  }
+
+  .choice-item.correct {
+    border-color: rgba(13, 138, 78, 0.35);
+    background: rgba(13, 138, 78, 0.06);
+  }
+
+  .choice-marker {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 700;
+    flex-shrink: 0;
+    background: var(--clr-surface);
+    border: 1px solid var(--clr-border);
+    color: var(--clr-text-muted);
+  }
+
+  .choice-item.correct .choice-marker {
+    background: var(--clr-primary);
+    border-color: var(--clr-primary);
+    color: #fff;
+  }
+
+  .detail-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-md);
+    margin-top: var(--space-lg);
+    padding-top: var(--space-lg);
+    border-top: 1px solid var(--clr-border);
+  }
+
+  @media (max-width: 640px) { .detail-grid { grid-template-columns: 1fr; } }
+
+  .detail-item label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--clr-text-muted);
+    margin-bottom: 0.2rem;
+  }
+
+  .detail-item span {
+    font-size: 0.92rem;
+    color: var(--clr-text);
+  }
+</style>
+{% endblock %}
+
+{% block admin_content %}
+<a href="{% url 'accounts:teacher_dashboard' %}" class="teacher-back-link">&larr; Back to Teacher Dashboard</a>
+
+<div class="question-detail-card">
+  <div class="question-path">
+    <a href="{{ subject_detail_url }}">{{ subject.name }}</a>
+    &rsaquo; {{ strand.name }} &rsaquo; {{ sub_strand.name }}
+  </div>
+
+  <div class="question-meta">
+    <span class="question-pill {% if question.is_active %}status-active{% else %}status-pending{% endif %}">
+      {{ status_label }}
+    </span>
+    <span class="question-pill">{{ question.quiz_type }}</span>
+    <span class="question-pill">{{ question.difficulty }}</span>
+    <span class="question-pill">Score: {{ question.score }}</span>
+  </div>
+
+  <h1 style="font-family:var(--font-heading);font-size:1.2rem;font-weight:800;margin:0 0 1rem;">Question</h1>
+  <div class="question-prompt">{{ question.quiz }}</div>
+
+  {% if question.image_alt_text %}
+  <div class="detail-item" style="margin-bottom:1rem;">
+    <label>Image description</label>
+    <span>{{ question.image_alt_text }}</span>
+  </div>
+  {% endif %}
+
+  {% if options %}
+  <h2 style="font-family:var(--font-heading);font-size:1rem;font-weight:700;margin:0 0 0.75rem;">Choices</h2>
+  <ul class="choices-list">
+    {% for option in options %}
+    <li class="choice-item {% if option.is_correct %}correct{% endif %}">
+      <span class="choice-marker">{% if option.is_correct %}&#10003;{% else %}&nbsp;{% endif %}</span>
+      <span>{{ option.option }}</span>
+    </li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+
+  <div class="detail-grid">
+    <div class="detail-item">
+      <label>Question ID</label>
+      <span>{{ question.uuid }}</span>
+    </div>
+    <div class="detail-item">
+      <label>Added on</label>
+      <span>{{ question.created_at|date:"d M Y, H:i" }}</span>
+    </div>
+    <div class="detail-item">
+      <label>Grade</label>
+      <span>{{ subject.grade_level.name }}</span>
+    </div>
+    <div class="detail-item">
+      <label>Last updated</label>
+      <span>{{ question.updated_at|date:"d M Y, H:i" }}</span>
+    </div>
+  </div>
+
+  {% if question.metadata %}
+  <div style="margin-top:1.25rem;">
+    <label style="display:block;font-size:0.75rem;font-weight:700;text-transform:uppercase;color:var(--clr-text-muted);margin-bottom:0.35rem;">Metadata</label>
+    <pre style="margin:0;padding:1rem;background:var(--clr-surface-alt);border-radius:var(--radius-md);overflow:auto;font-size:0.82rem;">{{ question.metadata }}</pre>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+
+{% block title %}Create Question — {{ subject.name }}{% endblock %}
+
+{% block extra_head %}
+{% include 'core/partials/question_rich_styles.html' %}
+{% include 'core/partials/question_math_assets.html' %}
+{% endblock %}
+
+{% block content %}
+<div class="breadcrumbs">
+  <a href="{% url 'core:landing' %}">Home</a>
+  <span>/</span>
+  <a href="{% url 'subjects:subject_list' %}">Subjects</a>
+  <span>/</span>
+  <span>{{ subject.name }}</span>
+  <span>/</span>
+  <span>Create Question</span>
+</div>
+
+<div class="page-header">
+  <div class="container page-header-content">
+    <div>
+      <span class="badge badge-gold" style="margin-bottom: var(--space-xs);">
+        {{ subject.grade_level.name }} • {{ subject.discipline.name }}
+      </span>
+      <h1 class="page-title">Create Question</h1>
+      <p class="page-subtitle">
+        {% if return_sub_strand %}
+          Add a question for <strong>{{ return_sub_strand.name }}</strong>.
+        {% else %}
+          Add a question under this subject (select a sub-strand below).
+        {% endif %}
+      </p>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <h2 class="card-title">➕ New Question</h2>
+
+  <form method="post" enctype="multipart/form-data" novalidate>
+    {% csrf_token %}
+    {% if return_sub_strand %}
+      <input type="hidden" name="sub_strand_id" value="{{ return_sub_strand.pk }}">
+    {% endif %}
+
+    {% if form.errors %}
+      <div style="color: var(--clr-danger); font-size: 0.9rem; margin-bottom: var(--space-lg);">
+        <pre style="white-space: pre-wrap; margin: 0;">{{ form.errors }}</pre>
+      </div>
+    {% endif %}
+
+    <div class="form-group">
+      <label class="form-label" for="{{ form.sub_strand.id_for_label }}">{{ form.sub_strand.label }}</label>
+      {{ form.sub_strand }}
+      {% if form.sub_strand.errors %}<div style="color: var(--clr-danger); font-size: 0.82rem; margin-top: 4px;">{{ form.sub_strand.errors.0 }}</div>{% endif %}
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="{{ form.difficulty.id_for_label }}">{{ form.difficulty.label }}</label>
+      {{ form.difficulty }}
+      {% if form.difficulty.errors %}<div style="color: var(--clr-danger); font-size: 0.82rem; margin-top: 4px;">{{ form.difficulty.errors.0 }}</div>{% endif %}
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="{{ form.quiz_type.id_for_label }}">{{ form.quiz_type.label }}</label>
+      {{ form.quiz_type }}
+      {% if form.quiz_type.errors %}<div style="color: var(--clr-danger); font-size: 0.82rem; margin-top: 4px;">{{ form.quiz_type.errors.0 }}</div>{% endif %}
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="{{ form.quiz.id_for_label }}">{{ form.quiz.label }}</label>
+      {{ form.quiz }}
+      {% if form.quiz.help_text %}<p style="font-size: 0.78rem; color: var(--clr-text-light); margin-top: 4px;">{{ form.quiz.help_text }}</p>{% endif %}
+      {% if form.quiz.errors %}<div style="color: var(--clr-danger); font-size: 0.82rem; margin-top: 4px;">{{ form.quiz.errors.0 }}</div>{% endif %}
+    </div>
+
+    <div style="background: var(--clr-surface-alt); border: 1px solid var(--clr-border); border-radius: var(--radius-lg); padding: var(--space-lg); margin-bottom: var(--space-lg);">
+      <div class="badge badge-primary" style="margin-bottom: var(--space-sm);">Rich content</div>
+      <p style="color: var(--clr-text-light); font-size: 0.88rem; margin: 0 0 var(--space-md);">
+        Add diagrams, photos, or audio narration for STEM and lower-primary learners.
+      </p>
+
+      <div class="form-group">
+        <label class="form-label" for="{{ form.prompt_image.id_for_label }}">{{ form.prompt_image.label }}</label>
+        {{ form.prompt_image }}
+        {% if form.prompt_image.errors %}<div style="color: var(--clr-danger); font-size: 0.82rem; margin-top: 4px;">{{ form.prompt_image.errors.0 }}</div>{% endif %}
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="{{ form.image_alt_text.id_for_label }}">{{ form.image_alt_text.label }}</label>
+        {{ form.image_alt_text }}
+        {% if form.image_alt_text.errors %}<div style="color: var(--clr-danger); font-size: 0.82rem; margin-top: 4px;">{{ form.image_alt_text.errors.0 }}</div>{% endif %}
+      </div>
+
+      <div class="form-group" style="margin-bottom: 0;">
+        <label class="form-label" for="{{ form.prompt_audio.id_for_label }}">{{ form.prompt_audio.label }}</label>
+        {{ form.prompt_audio }}
+        {% if form.prompt_audio.errors %}<div style="color: var(--clr-danger); font-size: 0.82rem; margin-top: 4px;">{{ form.prompt_audio.errors.0 }}</div>{% endif %}
+      </div>
+    </div>
+
+    <div id="options-section" style="display:none; margin-top: var(--space-lg);">
+      <div style="margin-bottom: var(--space-md);">
+        <div class="badge badge-primary" style="margin-bottom: var(--space-sm);">Options</div>
+        <p style="color: var(--clr-text-light); font-size: 0.88rem; margin: 0;">
+          For <strong>Multiple Choice</strong>, mark one or more correct options. Optional images per choice.
+          For <strong>True or False</strong>, use only Option 1 (True) and Option 2 (False).
+        </p>
+      </div>
+
+      <div class="form-group" style="padding-bottom: var(--space-md); border-bottom: 1px solid var(--clr-border); margin-bottom: var(--space-md);">
+        <label class="form-label" for="{{ form.option_1.id_for_label }}">Option 1</label>
+        {{ form.option_1 }}
+        <label class="form-label" for="{{ form.option_1_image.id_for_label }}" style="margin-top: var(--space-sm);">Option 1 image (optional)</label>
+        {{ form.option_1_image }}
+        <label class="form-checkbox-label" style="margin-top: var(--space-sm);">{{ form.correct_1 }} {{ form.correct_1.label }}</label>
+      </div>
+
+      <div class="form-group" style="padding-bottom: var(--space-md); border-bottom: 1px solid var(--clr-border); margin-bottom: var(--space-md);">
+        <label class="form-label" for="{{ form.option_2.id_for_label }}">Option 2</label>
+        {{ form.option_2 }}
+        <label class="form-label" for="{{ form.option_2_image.id_for_label }}" style="margin-top: var(--space-sm);">Option 2 image (optional)</label>
+        {{ form.option_2_image }}
+        <label class="form-checkbox-label" style="margin-top: var(--space-sm);">{{ form.correct_2 }} {{ form.correct_2.label }}</label>
+      </div>
+
+      <div class="form-group" style="padding-bottom: var(--space-md); border-bottom: 1px solid var(--clr-border); margin-bottom: var(--space-md);">
+        <label class="form-label" for="{{ form.option_3.id_for_label }}">Option 3</label>
+        {{ form.option_3 }}
+        <label class="form-label" for="{{ form.option_3_image.id_for_label }}" style="margin-top: var(--space-sm);">Option 3 image (optional)</label>
+        {{ form.option_3_image }}
+        <label class="form-checkbox-label" style="margin-top: var(--space-sm);">{{ form.correct_3 }} {{ form.correct_3.label }}</label>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="{{ form.option_4.id_for_label }}">Option 4</label>
+        {{ form.option_4 }}
+        <label class="form-label" for="{{ form.option_4_image.id_for_label }}" style="margin-top: var(--space-sm);">Option 4 image (optional)</label>
+        {{ form.option_4_image }}
+        <label class="form-checkbox-label" style="margin-top: var(--space-sm);">{{ form.correct_4 }} {{ form.correct_4.label }}</label>
+      </div>
+    </div>
+
+    <div class="actions" style="margin-top: var(--space-2xl);">
+      <a class="btn btn-secondary" href="{% if return_sub_strand %}{% url 'subjects:sub_strand_detail' return_sub_strand.slug %}{% else %}{% url 'subjects:subject_detail' subject.slug %}{% endif %}" style="flex: 1; justify-content: center;">
+        Cancel
+      </a>
+      <button type="submit" class="btn btn-primary" style="flex: 1; justify-content: center;">
+        Create Question
+      </button>
+    </div>
+  </form>
+</div>
+
+<script>
+  (function () {
+    const select = document.getElementById('id_quiz_type');
+    const optionsSection = document.getElementById('options-section');
+    function sync() {
+      if (!select || !optionsSection) return;
+      const val = select.value;
+      const show = (val === 'Multiple Choice' || val === 'True or False');
+      optionsSection.style.display = show ? 'block' : 'none';
+    }
+    if (select) select.addEventListener('change', sync);
+    sync();
+  })();
+</script>
+{% endblock %}

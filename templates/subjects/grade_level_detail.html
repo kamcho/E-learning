@@ -1,0 +1,306 @@
+{% extends "base.html" %}
+
+{% block title %}{{ grade_level.name }} — SomaKenya{% endblock %}
+
+{% block extra_head %}
+<style>
+  .grade-detail-banner {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-lg);
+    padding: var(--space-xl);
+    background: linear-gradient(135deg, rgba(13, 138, 78, 0.08), rgba(59, 130, 246, 0.08));
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-xl);
+    margin-bottom: var(--space-xl);
+  }
+
+  .grade-detail-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: var(--radius-lg);
+    background: var(--clr-surface);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.6rem;
+    flex-shrink: 0;
+  }
+
+  .grade-detail-banner h1 {
+    font-family: var(--font-heading);
+    font-size: 1.6rem;
+    font-weight: 800;
+    margin: 0 0 0.35rem;
+  }
+
+  .grade-detail-banner p {
+    margin: 0;
+    color: var(--clr-text-muted);
+    font-size: 0.92rem;
+  }
+
+  .grade-metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--space-lg);
+    margin-bottom: var(--space-xl);
+  }
+
+  @media (max-width: 992px) { .grade-metrics-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 560px) { .grade-metrics-grid { grid-template-columns: 1fr; } }
+
+  .grade-metric-card {
+    background: var(--clr-surface);
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-xl);
+    padding: var(--space-lg);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .grade-metric-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--clr-text-muted);
+  }
+
+  .grade-metric-value {
+    font-family: var(--font-heading);
+    font-size: 1.65rem;
+    font-weight: 800;
+    color: var(--clr-text);
+    margin-top: 0.35rem;
+  }
+
+  .grade-metric-hint {
+    font-size: 0.8rem;
+    color: var(--clr-text-muted);
+    margin-top: 0.25rem;
+  }
+
+  .subject-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-lg);
+    margin-bottom: var(--space-xl);
+  }
+
+  @media (max-width: 900px) { .subject-cards-grid { grid-template-columns: 1fr; } }
+
+  .subject-analytics-card {
+    display: block;
+    background: var(--clr-surface);
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-xl);
+    padding: var(--space-lg);
+    box-shadow: var(--shadow-sm);
+    text-decoration: none;
+    color: inherit;
+    transition: transform var(--transition-fast), box-shadow var(--transition-fast), border-color var(--transition-fast);
+  }
+
+  .subject-analytics-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    border-color: rgba(13, 138, 78, 0.35);
+  }
+
+  .subject-card-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: var(--space-md);
+    margin-bottom: var(--space-md);
+  }
+
+  .subject-card-title {
+    font-family: var(--font-heading);
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: var(--clr-text);
+    margin: 0;
+  }
+
+  .subject-card-discipline {
+    font-size: 0.82rem;
+    color: var(--clr-text-muted);
+    margin-top: 0.2rem;
+  }
+
+  .subject-card-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.55rem;
+  }
+
+  .subject-card-stat {
+    background: var(--clr-surface-alt);
+    border-radius: var(--radius-md);
+    padding: 0.55rem 0.65rem;
+  }
+
+  .subject-card-stat-label {
+    display: block;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--clr-text-muted);
+  }
+
+  .subject-card-stat-value {
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: var(--clr-text);
+    margin-top: 0.1rem;
+  }
+
+  .subject-card-footer {
+    margin-top: var(--space-md);
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--clr-primary);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="breadcrumbs">
+  <a href="{% url 'core:landing' %}">Home</a>
+  <span>/</span>
+  <a href="{% url 'subjects:grade_level_list' %}">Grade Levels</a>
+  <span>/</span>
+  <span>{{ grade_level.name }}</span>
+</div>
+
+<div class="grade-detail-banner">
+  <div class="grade-detail-icon">&#127979;</div>
+  <div>
+    <span class="badge badge-gold" style="margin-bottom: var(--space-xs);">{{ grade_level.get_level_display }}</span>
+    <h1>{{ grade_level.name }}</h1>
+    <p>Subject analytics and learner enrollment for this grade.</p>
+  </div>
+</div>
+
+<div class="grade-metrics-grid">
+  <div class="grade-metric-card">
+    <div class="grade-metric-label">Students enrolled</div>
+    <div class="grade-metric-value">{{ summary.student_count }}</div>
+    <div class="grade-metric-hint">Learners assigned to this grade</div>
+  </div>
+  <div class="grade-metric-card">
+    <div class="grade-metric-label">Subjects</div>
+    <div class="grade-metric-value">{{ summary.subject_count }}</div>
+    <div class="grade-metric-hint">{{ summary.strand_count }} strand{{ summary.strand_count|pluralize }} · {{ summary.question_count }} questions</div>
+  </div>
+  <div class="grade-metric-card">
+    <div class="grade-metric-label">Exam attempts</div>
+    <div class="grade-metric-value">{{ summary.attempt_count }}</div>
+    <div class="grade-metric-hint">{{ summary.completed_attempts }} completed · {{ summary.active_learners }} learner{{ summary.active_learners|pluralize }}</div>
+  </div>
+  <div class="grade-metric-card">
+    <div class="grade-metric-label">Average score</div>
+    <div class="grade-metric-value">{{ summary.avg_score }}%</div>
+    <div class="grade-metric-hint">Best score {{ summary.best_score }}% · {{ summary.quiz_count }} quiz{{ summary.quiz_count|pluralize:"zes" }}</div>
+  </div>
+</div>
+
+<section>
+  <h2 class="card-title" style="margin-bottom: var(--space-lg);">&#128218; Subjects in {{ grade_level.name }}</h2>
+
+  {% if subject_rows %}
+  <div class="subject-cards-grid">
+    {% for row in subject_rows %}
+    <a href="{{ row.detail_url }}" class="subject-analytics-card">
+      <div class="subject-card-head">
+        <div>
+          <h3 class="subject-card-title">{{ row.subject.name }}</h3>
+          <div class="subject-card-discipline">{{ row.discipline }}</div>
+        </div>
+        {% if row.subject.is_active %}
+          <span class="badge badge-primary">Active</span>
+        {% else %}
+          <span class="badge badge-danger">Inactive</span>
+        {% endif %}
+      </div>
+      <div class="subject-card-stats">
+        <div class="subject-card-stat">
+          <span class="subject-card-stat-label">Learners</span>
+          <span class="subject-card-stat-value">{{ row.learner_count }}</span>
+        </div>
+        <div class="subject-card-stat">
+          <span class="subject-card-stat-label">Attempts</span>
+          <span class="subject-card-stat-value">{{ row.attempt_count }}</span>
+        </div>
+        <div class="subject-card-stat">
+          <span class="subject-card-stat-label">Avg score</span>
+          <span class="subject-card-stat-value">{{ row.avg_score }}%</span>
+        </div>
+        <div class="subject-card-stat">
+          <span class="subject-card-stat-label">Quizzes</span>
+          <span class="subject-card-stat-value">{{ row.quiz_count }}</span>
+        </div>
+        <div class="subject-card-stat">
+          <span class="subject-card-stat-label">Strands</span>
+          <span class="subject-card-stat-value">{{ row.strand_count }}</span>
+        </div>
+        <div class="subject-card-stat">
+          <span class="subject-card-stat-label">Questions</span>
+          <span class="subject-card-stat-value">{{ row.question_count }}</span>
+        </div>
+      </div>
+      <div class="subject-card-footer">
+        {{ row.completed_attempts }} completed · Best {{ row.best_score }}% · Open subject &#8594;
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="card">
+    <div class="empty-state">
+      <div class="empty-state-icon">&#128218;</div>
+      <h3>No Subjects Registered</h3>
+      <p>Add a subject for this grade using the form below.</p>
+    </div>
+  </div>
+  {% endif %}
+</section>
+
+<div class="content-grid" style="margin-top: var(--space-xl);">
+  <div>
+    <div class="card">
+      <h2 class="card-title">&#10133; Add Subject to {{ grade_level.name }}</h2>
+      <form method="post" novalidate>
+        {% csrf_token %}
+        {% for field in form %}
+          {% if field.is_hidden %}
+            {{ field }}
+          {% else %}
+            <div class="form-group">
+              {% if field.field.widget.input_type == 'checkbox' %}
+                <label class="form-checkbox-label">
+                  {{ field }}
+                  {{ field.label }}
+                </label>
+              {% else %}
+                <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+              {% endif %}
+              {% if field.errors %}
+                <div style="color: var(--clr-danger); font-size: 0.82rem; margin-top: 4px;">
+                  {{ field.errors.0 }}
+                </div>
+              {% endif %}
+            </div>
+          {% endif %}
+        {% endfor %}
+        <button type="submit" class="btn btn-secondary" style="width: 100%; justify-content: center; padding: 0.75rem;">
+          Save Subject
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

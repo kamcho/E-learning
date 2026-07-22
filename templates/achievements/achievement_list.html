@@ -1,0 +1,127 @@
+{% extends 'accounts/admin_base.html' %}
+
+{% block title %}Achievements — Admin — SomaKenya{% endblock %}
+
+{% block extra_head %}
+{% include 'accounts/partials/gd_metric_cards_styles.html' %}
+{% include 'accounts/partials/admin_list_styles.html' %}
+{% endblock %}
+
+{% block admin_content %}
+<div class="admin-list-banner">
+  <div>
+    <a href="{% url 'accounts:admin_dashboard' %}" class="admin-list-back admin-list-back--light">&larr; Back to dashboard</a>
+    <h1>Achievements</h1>
+    <p>Badges learners unlock by completing exams and hitting score milestones</p>
+  </div>
+  <a href="{% url 'achievements:achievement_create' %}" class="btn-list-banner">+ Create Achievement</a>
+</div>
+
+<div class="gd-metrics-grid admin-list-metrics">
+  <div class="gd-metric-card gd-metric-card--blue">
+    <div class="gd-metric-top">
+      <div class="gd-metric-icon" aria-hidden="true">&#127941;</div>
+      <div class="gd-metric-value">{{ stats.total }}</div>
+    </div>
+    <div class="gd-metric-label">Total badges</div>
+    <div class="gd-metric-footer">
+      <span class="gd-metric-footer-icon" aria-hidden="true">&#128202;</span>
+      <span>Configured in the system</span>
+    </div>
+  </div>
+  <div class="gd-metric-card gd-metric-card--green">
+    <div class="gd-metric-top">
+      <div class="gd-metric-icon" aria-hidden="true">&#9989;</div>
+      <div class="gd-metric-value">{{ stats.active }}</div>
+    </div>
+    <div class="gd-metric-label">Active</div>
+    <div class="gd-metric-footer">
+      <span class="gd-metric-footer-icon" aria-hidden="true">&#10003;</span>
+      <span>Shown to learners</span>
+    </div>
+  </div>
+  <div class="gd-metric-card gd-metric-card--orange">
+    <div class="gd-metric-top">
+      <div class="gd-metric-icon" aria-hidden="true">&#128683;</div>
+      <div class="gd-metric-value">{{ stats.inactive }}</div>
+    </div>
+    <div class="gd-metric-label">Inactive</div>
+    <div class="gd-metric-footer">
+      <span class="gd-metric-footer-icon" aria-hidden="true">&#128274;</span>
+      <span>Hidden from learners</span>
+    </div>
+  </div>
+</div>
+
+<div class="admin-panel">
+  <div class="admin-panel-head-flex">
+    <div>
+      <h2>All achievements</h2>
+      <p class="admin-panel-sub">Criteria, display order and unlock counts</p>
+    </div>
+    <a href="{{ django_admin_url }}" class="admin-page-btn" target="_blank" rel="noopener">Django Admin</a>
+  </div>
+
+  {% if achievements %}
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Badge</th>
+          <th>Criteria</th>
+          <th>Target</th>
+          <th>Order</th>
+          <th>Earned by</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for achievement in achievements %}
+        <tr>
+          <td>
+            <div style="display:flex;align-items:flex-start;gap:0.65rem;">
+              <span style="font-size:1.35rem;line-height:1;" aria-hidden="true">{{ achievement.icon }}</span>
+              <div>
+                <strong>{{ achievement.title }}</strong>
+                <div style="font-size:0.78rem;color:var(--clr-text-light);margin-top:2px;">{{ achievement.description }}</div>
+              </div>
+            </div>
+          </td>
+          <td>{{ achievement.get_criteria_type_display }}</td>
+          <td>
+            {% if achievement.criteria_type == 'perfect_score' %}
+              Score 100%
+            {% elif achievement.criteria_type == 'exams_completed' %}
+              {{ achievement.threshold }} exam{{ achievement.threshold|pluralize }}
+            {% elif achievement.criteria_type == 'avg_score' %}
+              {{ achievement.threshold }}% avg ({{ achievement.min_attempts }}+ exams)
+            {% else %}
+              {{ achievement.threshold }}%
+            {% endif %}
+          </td>
+          <td>{{ achievement.order }}</td>
+          <td>{{ achievement.earned_count }} learner{{ achievement.earned_count|pluralize }}</td>
+          <td>
+            {% if achievement.is_active %}
+              <span class="badge badge-primary">Active</span>
+            {% else %}
+              <span class="badge" style="background:var(--clr-surface-alt);color:var(--clr-text-muted);">Inactive</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+  <div class="admin-panel-body">
+    <div class="empty-state" style="text-align:center;padding:var(--space-2xl);">
+      <div style="font-size:2.5rem;margin-bottom:var(--space-md);">&#127941;</div>
+      <h3>No achievements yet</h3>
+      <p style="color:var(--clr-text-muted);margin:var(--space-sm) 0 var(--space-lg);">
+        Create your first badge or run <code>python manage.py seed_achievements</code>.
+      </p>
+      <a href="{% url 'achievements:achievement_create' %}" class="btn btn-primary">Create Achievement</a>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

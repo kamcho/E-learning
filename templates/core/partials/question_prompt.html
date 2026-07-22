@@ -1,0 +1,36 @@
+{% if question %}
+<div class="question-rich-prompt" data-math-content>
+  {% if question.quiz %}
+  <div class="question-rich-text">{{ question.quiz }}</div>
+  {% endif %}
+
+  {% if question.prompt_image %}
+  <figure class="question-rich-figure">
+    <img
+      src="{{ question.prompt_image.url }}"
+      alt="{{ question.image_alt_text|default:'Question illustration' }}"
+      class="question-rich-image"
+      loading="lazy"
+    >
+    {% if question.image_alt_text %}
+    <figcaption class="question-rich-caption">{{ question.image_alt_text }}</figcaption>
+    {% endif %}
+  </figure>
+  {% endif %}
+
+  {% if question.prompt_audio %}
+  <div class="question-rich-audio">
+    <span class="sr-only" id="audio-label-{{ question.uuid }}">Listen to this question</span>
+    <audio
+      controls
+      preload="metadata"
+      class="question-audio-player"
+      aria-labelledby="audio-label-{{ question.uuid }}"
+    >
+      <source src="{{ question.prompt_audio.url }}">
+      Your browser does not support audio playback.
+    </audio>
+  </div>
+  {% endif %}
+</div>
+{% endif %}

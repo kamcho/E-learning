@@ -1,0 +1,29 @@
+<div class="ew-progress-card">
+  <div class="ew-progress-head">
+    <span class="ew-progress-title">Exam setup progress</span>
+    <span class="ew-progress-count">{{ exams_wizard.progress_pct }}% complete</span>
+  </div>
+  <div class="ew-progress-track" role="progressbar" aria-valuenow="{{ exams_wizard.progress_pct }}" aria-valuemin="0" aria-valuemax="100">
+    <div class="ew-progress-fill" style="width: {{ exams_wizard.progress_pct }}%;"></div>
+  </div>
+</div>
+
+<div class="ew-steps">
+  {% for step in exams_wizard.steps %}
+    {% if step.state == 'complete' %}
+    <div class="ew-step ew-step--complete">
+      <div class="ew-step-rail">
+        <div class="ew-step-marker" aria-hidden="true">✓</div>
+      </div>
+      <div class="ew-step-card">
+        <div class="ew-step-card-head">
+          <span class="ew-step-label">{{ step.icon }} {{ step.label }}</span>
+          {% if step.edit_url %}
+            <a href="{{ step.edit_url }}" class="ew-step-change">Change</a>
+          {% endif %}
+        </div>
+        <div class="ew-step-value">{{ step.value }}</div>
+      </div>
+    </div>
+    {% endif %}
+  {% endfor %}

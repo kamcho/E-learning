@@ -1,0 +1,227 @@
+{% extends "base.html" %}
+
+{% block title %}{{ strand.name }} — {{ strand.subject.name }}{% endblock %}
+
+{% block extra_head %}
+<style>
+  .curriculum-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-sm);
+  }
+
+  .curriculum-stat-row {
+    display: flex;
+    gap: var(--space-md);
+    margin-top: var(--space-md);
+    flex-wrap: wrap;
+  }
+
+  .curriculum-stat {
+    background: var(--clr-surface);
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-sm) var(--space-md);
+    font-size: 0.82rem;
+    color: var(--clr-text-muted);
+  }
+
+  .curriculum-stat strong {
+    color: var(--clr-primary);
+    font-family: var(--font-heading);
+    font-size: 1.1rem;
+    margin-right: 4px;
+  }
+
+  .substrand-order {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 28px;
+    height: 28px;
+    padding: 0 6px;
+    border-radius: var(--radius-full);
+    background: rgba(212, 160, 23, 0.12);
+    color: var(--clr-accent);
+    font-size: 0.75rem;
+    font-weight: 700;
+    margin-right: var(--space-sm);
+    flex-shrink: 0;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="breadcrumbs">
+  <a href="{% url 'core:landing' %}">Home</a>
+  <span>/</span>
+  <a href="{% url 'subjects:subject_list' %}">Subjects</a>
+  <span>/</span>
+  <a href="{% url 'subjects:subject_detail' strand.subject.slug %}">{{ strand.subject.name }}</a>
+  <span>/</span>
+  <span>{{ strand.name }}</span>
+</div>
+
+<div class="page-header">
+  <div class="page-header-content">
+    <div>
+      <div class="curriculum-meta">
+        <span class="badge badge-gold">{{ strand.subject.grade_level.name }}</span>
+        <span class="badge badge-primary">{{ strand.subject.discipline.name }}</span>
+        <span class="badge badge-gold">Strand {{ strand.order }}</span>
+        {% if strand.is_active %}
+          <span class="badge badge-primary">Active</span>
+        {% else %}
+          <span class="badge badge-danger">Inactive</span>
+        {% endif %}
+      </div>
+      <h1 class="page-title">{{ strand.name }}</h1>
+      <p class="page-subtitle">
+        Sub-strands under this strand in <strong>{{ strand.subject.name }}</strong>.
+      </p>
+      <div class="curriculum-stat-row">
+        <div class="curriculum-stat"><strong>{{ sub_strand_count }}</strong> Sub-strand{{ sub_strand_count|pluralize }}</div>
+        <div class="curriculum-stat"><strong>{{ objectives|length }}</strong> Objective{{ objectives|length|pluralize }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="content-grid">
+  <div>
+    <div class="card">
+      <h2 class="card-title">🌿 Sub-strands</h2>
+
+      {% if sub_strands %}
+        <div class="item-list">
+          {% for sub in sub_strands %}
+            <a href="{% url 'subjects:sub_strand_detail' sub.slug %}" class="list-item" style="text-decoration: none; color: inherit;">
+              <div style="display: flex; align-items: flex-start; gap: var(--space-sm); flex: 1;">
+                <span class="substrand-order">{{ sub.order }}</span>
+                <div>
+                  <div class="list-item-title">{{ sub.name }}</div>
+                  <div class="list-item-meta">
+                    Slug: <code style="background:#e2e8f0; padding:2px 4px; border-radius:4px;">{{ sub.slug }}</code>
+                  </div>
+                </div>
+              </div>
+              <div style="display: flex; gap: var(--space-sm); align-items: center;">
+                {% if sub.is_active %}
+                  <span class="badge badge-primary">Active</span>
+                {% else %}
+                  <span class="badge badge-danger">Inactive</span>
+                {% endif %}
+                <span style="font-size: 0.8rem; font-weight: 600; color: var(--clr-primary);">View &rarr;</span>
+              </div>
+            </a>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty-state">
+          <div class="empty-state-icon">🌿</div>
+          <h3>No Sub-strands Yet</h3>
+          <p>Add the first sub-strand using the form on the right.</p>
+        </div>
+      {% endif %}
+    </div>
+
+    {% if objectives %}
+    <div class="card">
+      <h2 class="card-title">🎯 Strand Objectives</h2>
+      <div class="item-list">
+        {% for obj in objectives %}
+          <div class="list-item">
+            <div>
+              <span class="list-item-title">{{ obj.order }}. {{ obj.name }}</span>
+              <div class="list-item-meta">
+                Slug: <code style="background:#e2e8f0; padding:2px 4px; border-radius:4px;">{{ obj.slug }}</code>
+              </div>
+            </div>
+            <div>
+              {% if obj.is_active %}
+                <span class="badge badge-primary">Active</span>
+              {% else %}
+                <span class="badge badge-danger">Inactive</span>
+              {% endif %}
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <div>
+    <div class="card">
+      <h2 class="card-title">➕ Add Sub-strand</h2>
+      <form method="post" novalidate>
+        {% csrf_token %}
+        <input type="hidden" name="action" value="create_substrand">
+
+        {% for field in substrand_form %}
+          {% if field.is_hidden %}
+            {{ field }}
+          {% else %}
+            <div class="form-group">
+              {% if field.field.widget.input_type == 'checkbox' %}
+                <label class="form-checkbox-label" for="{{ field.id_for_label }}">
+                  {{ field }}
+                  {{ field.label }}
+                </label>
+              {% else %}
+                <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+              {% endif %}
+              {% if field.errors %}
+                <div style="color: var(--clr-danger); font-size: 0.82rem; margin-top: 4px;">
+                  {{ field.errors.0 }}
+                </div>
+              {% endif %}
+            </div>
+          {% endif %}
+        {% endfor %}
+
+        <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 0.75rem;">
+          Save Sub-strand
+        </button>
+      </form>
+    </div>
+
+    <div class="card">
+      <h2 class="card-title">➕ Add Strand Objective</h2>
+      <form method="post" novalidate>
+        {% csrf_token %}
+        <input type="hidden" name="action" value="create_objective">
+
+        {% for field in objective_form %}
+          {% if field.is_hidden %}
+            {{ field }}
+          {% else %}
+            <div class="form-group">
+              {% if field.field.widget.input_type == 'checkbox' %}
+                <label class="form-checkbox-label" for="{{ field.id_for_label }}">
+                  {{ field }}
+                  {{ field.label }}
+                </label>
+              {% else %}
+                <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+              {% endif %}
+              {% if field.errors %}
+                <div style="color: var(--clr-danger); font-size: 0.82rem; margin-top: 4px;">
+                  {{ field.errors.0 }}
+                </div>
+              {% endif %}
+            </div>
+          {% endif %}
+        {% endfor %}
+
+        <button type="submit" class="btn btn-secondary" style="width: 100%; justify-content: center; padding: 0.75rem;">
+          Save Objective
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

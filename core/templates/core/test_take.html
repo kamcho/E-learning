@@ -1,0 +1,331 @@
+{% extends "base.html" %}
+
+{% block title %}{{ quiz.title }}{% endblock %}
+
+{% block main_extra_class %}test-take-main{% endblock %}
+
+{% block extra_head %}
+{% include 'core/partials/question_rich_styles.html' %}
+{% include 'core/partials/question_math_assets.html' %}
+<style>
+  .test-take-main {
+    padding: var(--space-lg);
+    display: flex;
+    justify-content: center;
+  }
+
+  .test-take-wrap {
+    width: 100%;
+    max-width: 480px;
+  }
+
+  .test-progress {
+    height: 6px;
+    background: var(--clr-surface-alt);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+    margin-bottom: var(--space-md);
+  }
+
+  .test-progress-fill {
+    height: 100%;
+    background: var(--clr-primary);
+    border-radius: var(--radius-full);
+    transition: width 0.25s ease;
+  }
+
+  .test-progress-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--clr-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: var(--space-sm);
+  }
+
+  .question-card {
+    background: var(--clr-surface);
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-xl);
+    padding: var(--space-xl) var(--space-lg);
+    box-shadow: var(--shadow-md);
+  }
+
+  .option-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-xl);
+  }
+
+  .option-label {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-md);
+    padding: var(--space-md) var(--space-lg);
+    min-height: 52px;
+    background: var(--clr-surface-alt);
+    border: 1.5px solid var(--clr-border);
+    border-radius: var(--radius-lg);
+    cursor: pointer;
+    font-size: 0.95rem;
+    transition: border-color var(--transition-fast), background var(--transition-fast);
+  }
+
+  .option-label:has(input:checked) {
+    border-color: var(--clr-primary);
+    background: rgba(13, 138, 78, 0.08);
+  }
+
+  .option-label input {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    accent-color: var(--clr-primary);
+  }
+
+  .text-answer {
+    width: 100%;
+    padding: var(--space-md) var(--space-lg);
+    min-height: 52px;
+    border: 1.5px solid var(--clr-border);
+    border-radius: var(--radius-lg);
+    font-family: var(--font-body);
+    font-size: 1rem;
+    margin-bottom: var(--space-xl);
+  }
+
+  .btn-next {
+    width: 100%;
+    justify-content: center;
+    padding: 0.95rem;
+    font-size: 1rem;
+    font-weight: 700;
+  }
+
+  .result-card {
+    background: var(--clr-surface);
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-xl);
+    padding: var(--space-2xl) var(--space-lg);
+    text-align: center;
+    box-shadow: var(--shadow-md);
+  }
+
+  .result-score {
+    font-family: var(--font-heading);
+    font-size: 3rem;
+    font-weight: 900;
+    color: var(--clr-primary);
+    line-height: 1;
+  }
+
+  .result-label {
+    font-size: 0.9rem;
+    color: var(--clr-text-muted);
+    margin-top: var(--space-sm);
+  }
+
+  .result-actions {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+    margin-top: var(--space-xl);
+  }
+
+  .test-quit {
+    display: block;
+    text-align: center;
+    margin-top: var(--space-lg);
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--clr-text-muted);
+    text-decoration: none;
+  }
+
+  .test-timer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-md);
+    background: var(--clr-surface);
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-lg);
+    padding: 0.65rem 0.9rem;
+    margin-bottom: var(--space-md);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .test-timer-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--clr-text-muted);
+  }
+
+  .test-timer-value {
+    font-family: var(--font-heading);
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: var(--clr-primary);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .test-timer.is-warning {
+    border-color: #fbbf24;
+    background: #fffbeb;
+  }
+
+  .test-timer.is-warning .test-timer-value {
+    color: #b45309;
+  }
+
+  .test-timer.is-critical {
+    border-color: #f87171;
+    background: #fef2f2;
+    animation: timer-pulse 1s ease-in-out infinite;
+  }
+
+  .test-timer.is-critical .test-timer-value {
+    color: #b91c1c;
+  }
+
+  @keyframes timer-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.75; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="test-take-wrap">
+  {% if no_questions %}
+    <div class="result-card">
+      <p class="result-label">This exam has no questions yet.</p>
+      <a href="{% url 'core:exams_list' %}" class="btn btn-secondary btn-next" style="margin-top: var(--space-lg);">Back to exams</a>
+    </div>
+
+  {% else %}
+    {% if has_time_limit %}
+    <div class="test-timer" id="exam-timer" role="timer" aria-live="polite">
+      <span class="test-timer-label">Time remaining</span>
+      <span class="test-timer-value" id="exam-timer-value">--:--</span>
+    </div>
+    <form method="post" id="timeout-form" style="display:none;">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="time_up">
+    </form>
+    {% endif %}
+
+    <div class="test-progress-label" style="display:flex; align-items:center; justify-content:space-between;">
+      <span>Question {{ question_number }} of {{ question_count }} · {{ student.first_name }}</span>
+      <span style="font-size:0.68rem; color:var(--clr-primary); font-weight:600; display:flex; align-items:center; gap:3px;">
+        <span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:var(--clr-primary);"></span>
+        Saved
+      </span>
+    </div>
+    <div class="test-progress" aria-hidden="true">
+      <div class="test-progress-fill" style="width: {{ progress_pct }}%;"></div>
+    </div>
+
+    <div class="question-card">
+      {% include 'core/partials/question_prompt.html' with question=question %}
+
+      <form method="post">
+        {% csrf_token %}
+
+        {% if question.quiz_type == 'Multiple Choice' or question.quiz_type == 'True or False' %}
+          {% if allows_multiple_answers %}
+          <p style="font-size: 0.88rem; color: var(--clr-text-muted); margin-bottom: var(--space-md);">
+            Select all answers that apply.
+          </p>
+          <div class="option-list">
+            {% for option in question.options.all %}
+              {% if option.is_active %}
+                <label class="option-label">
+                  <input type="checkbox" name="answer" value="{{ option.uuid }}"
+                    {% if option.uuid|stringformat:"s" in saved_answer_ids %}checked{% endif %}>
+                  {% if option.option_image %}
+                    {% include 'core/partials/option_content.html' with text=option.option image_url=option.option_image.url %}
+                  {% else %}
+                    {% include 'core/partials/option_content.html' with text=option.option image_url='' %}
+                  {% endif %}
+                </label>
+              {% endif %}
+            {% endfor %}
+          </div>
+          {% else %}
+          <div class="option-list">
+            {% for option in question.options.all %}
+              {% if option.is_active %}
+                <label class="option-label">
+                  <input type="radio" name="answer" value="{{ option.uuid }}"
+                    {% if saved_answer == option.uuid|stringformat:"s" %}checked{% endif %} required>
+                  {% if option.option_image %}
+                    {% include 'core/partials/option_content.html' with text=option.option image_url=option.option_image.url %}
+                  {% else %}
+                    {% include 'core/partials/option_content.html' with text=option.option image_url='' %}
+                  {% endif %}
+                </label>
+              {% endif %}
+            {% endfor %}
+          </div>
+          {% endif %}
+        {% else %}
+          <input type="text" name="answer" class="text-answer" placeholder="Your answer"
+            value="{{ saved_answer }}" required>
+        {% endif %}
+
+        <button type="submit" class="btn btn-primary btn-next">
+          {% if is_last_question %}Finish{% else %}Next{% endif %}
+        </button>
+      </form>
+    </div>
+
+    <a href="{% url 'core:exams_list' %}" class="test-quit">Quit exam</a>
+  {% endif %}
+</div>
+
+{% if has_time_limit and time_remaining_seconds is not None %}
+<script>
+(function () {
+  var remaining = {{ time_remaining_seconds }};
+  var display = document.getElementById('exam-timer-value');
+  var timerBox = document.getElementById('exam-timer');
+  var timeoutForm = document.getElementById('timeout-form');
+  if (!display || !timeoutForm) return;
+
+  function pad(n) { return n < 10 ? '0' + n : String(n); }
+
+  function formatTime(seconds) {
+    var m = Math.floor(seconds / 60);
+    var s = seconds % 60;
+    return pad(m) + ':' + pad(s);
+  }
+
+  function updateTimer() {
+    display.textContent = formatTime(Math.max(0, remaining));
+    timerBox.classList.remove('is-warning', 'is-critical');
+    if (remaining <= 60) timerBox.classList.add('is-critical');
+    else if (remaining <= 300) timerBox.classList.add('is-warning');
+  }
+
+  updateTimer();
+  if (remaining <= 0) {
+    timeoutForm.submit();
+    return;
+  }
+
+  var tick = setInterval(function () {
+    remaining -= 1;
+    updateTimer();
+    if (remaining <= 0) {
+      clearInterval(tick);
+      timeoutForm.submit();
+    }
+  }, 1000);
+})();
+</script>
+{% endif %}
+{% endblock %}

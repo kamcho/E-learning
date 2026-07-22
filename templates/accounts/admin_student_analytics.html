@@ -1,0 +1,32 @@
+{% extends 'accounts/admin_base.html' %}
+
+{% block title %}{{ student.first_name }} {{ student.last_name }} — Analytics{% endblock %}
+
+{% block extra_head %}
+{% include 'accounts/partials/student_analytics_styles.html' %}
+{% include 'accounts/partials/pathway_suggestion_styles.html' %}
+<style>
+  .admin-back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-xs);
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--clr-primary);
+    text-decoration: none;
+    margin-bottom: var(--space-lg);
+  }
+  .admin-back-link:hover { text-decoration: underline; }
+</style>
+{% endblock %}
+
+{% block admin_content %}
+<a href="{% url 'accounts:admin_dashboard' %}" class="admin-back-link">&larr; Back to Dashboard</a>
+{% include 'accounts/partials/student_analytics_body.html' %}
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+{% include 'accounts/partials/attempt_score_chart_script.html' with chart_canvas_id='studentAnalyticsScoreChart' chart_data_id='student-analytics-chart-data' %}
+{% include 'accounts/partials/subject_score_chart_script.html' with chart_canvas_id='subjectScoreChart' chart_data_id='subject-score-chart-data' %}
+{% endblock %}

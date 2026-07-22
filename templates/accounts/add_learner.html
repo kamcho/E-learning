@@ -1,0 +1,205 @@
+{% extends "base.html" %}
+
+{% block title %}Add Learner — SomaKenya{% endblock %}
+
+{% block body_class %} guardian-dash-dark{% endblock %}
+{% block main_extra_class %}guardian-dash-main{% endblock %}
+
+{% block extra_head %}
+{% include 'accounts/partials/guardian_dashboard_crimson_theme.html' %}
+<style>
+  .guardian-dash-main {
+    padding: var(--space-lg) var(--space-xl) var(--space-2xl);
+    background: var(--cs-bg);
+  }
+
+  .learner-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: var(--space-xl) 0 var(--space-2xl);
+    min-height: calc(100vh - 64px - 4rem);
+  }
+
+  .learner-card {
+    width: 100%;
+    max-width: 560px;
+    background: var(--cs-surface);
+    border: 1px solid var(--cs-border);
+    border-radius: 16px;
+    padding: var(--space-2xl) var(--space-xl);
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.45);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .learner-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--cs-crimson) 0%, var(--cs-accent) 100%);
+  }
+
+  .learner-header {
+    text-align: center;
+    margin-bottom: var(--space-2xl);
+  }
+
+  .learner-logo {
+    width: 52px;
+    height: 52px;
+    background: linear-gradient(135deg, var(--cs-crimson) 0%, var(--cs-accent) 100%);
+    border-radius: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.6rem;
+    color: #fff;
+    margin-bottom: var(--space-md);
+    box-shadow: 0 8px 24px rgba(196, 30, 58, 0.35);
+  }
+
+  .learner-title {
+    font-family: var(--font-heading);
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: var(--cs-text);
+    letter-spacing: -0.02em;
+  }
+
+  .learner-subtitle {
+    color: var(--cs-text-muted);
+    font-size: 0.9rem;
+    margin-top: var(--space-xs);
+    line-height: 1.5;
+  }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-md);
+  }
+
+  @media (max-width: 540px) {
+    .form-row { grid-template-columns: 1fr; }
+  }
+
+  .form-actions {
+    display: flex;
+    gap: var(--space-md);
+    margin-top: var(--space-lg);
+  }
+
+  .learner-cancel-btn {
+    flex: 1;
+    justify-content: center;
+    padding: 0.85rem;
+    background: var(--cs-bg-elevated) !important;
+    color: var(--cs-text) !important;
+    border: 1px solid var(--cs-border) !important;
+    box-shadow: none !important;
+  }
+
+  .learner-cancel-btn:hover {
+    border-color: var(--cs-accent) !important;
+    color: var(--cs-accent) !important;
+  }
+
+  .learner-submit-btn {
+    flex: 2;
+    justify-content: center;
+    padding: 0.85rem;
+    font-size: 1rem;
+    background: var(--cs-accent) !important;
+    color: #0a0f14 !important;
+    font-weight: 700;
+    box-shadow: 0 4px 20px var(--cs-accent-glow) !important;
+  }
+
+  .learner-submit-btn:hover {
+    background: var(--clr-primary-dark) !important;
+    color: #0a0f14 !important;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="learner-wrapper">
+  <div class="learner-card">
+    <div class="learner-header">
+      <div class="learner-logo">&#43;</div>
+      <h1 class="learner-title">Add a Learner</h1>
+      <p class="learner-subtitle">Create a learner profile and link it to your guardian account.</p>
+    </div>
+
+    <form method="post" novalidate>
+      {% csrf_token %}
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="{{ form.first_name.id_for_label }}">{{ form.first_name.label }}</label>
+          {{ form.first_name }}
+          {% if form.first_name.errors %}<div style="color: var(--clr-danger); font-size: 0.82rem; margin-top: 4px;">{{ form.first_name.errors.0 }}</div>{% endif %}
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="{{ form.middle_name.id_for_label }}">{{ form.middle_name.label }}</label>
+          {{ form.middle_name }}
+          {% if form.middle_name.errors %}<div style="color: var(--clr-danger); font-size: 0.82rem; margin-top: 4px;">{{ form.middle_name.errors.0 }}</div>{% endif %}
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="{{ form.last_name.id_for_label }}">{{ form.last_name.label }}</label>
+        {{ form.last_name }}
+        {% if form.last_name.errors %}<div style="color: var(--clr-danger); font-size: 0.82rem; margin-top: 4px;">{{ form.last_name.errors.0 }}</div>{% endif %}
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="{{ form.grade_level.id_for_label }}">{{ form.grade_level.label }}</label>
+          {{ form.grade_level }}
+          {% if form.grade_level.errors %}<div style="color: var(--clr-danger); font-size: 0.82rem; margin-top: 4px;">{{ form.grade_level.errors.0 }}</div>{% endif %}
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="{{ form.gender.id_for_label }}">{{ form.gender.label }}</label>
+          {{ form.gender }}
+          {% if form.gender.errors %}<div style="color: var(--clr-danger); font-size: 0.82rem; margin-top: 4px;">{{ form.gender.errors.0 }}</div>{% endif %}
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="{{ form.dob.id_for_label }}">{{ form.dob.label }}</label>
+        {{ form.dob }}
+        {% if form.dob.errors %}<div style="color: var(--clr-danger); font-size: 0.82rem; margin-top: 4px;">{{ form.dob.errors.0 }}</div>{% endif %}
+      </div>
+
+      <div class="form-actions">
+        <a href="{% url 'accounts:guardian_dashboard' %}" class="btn btn-secondary learner-cancel-btn">Cancel</a>
+        <button type="submit" id="submit-btn" class="btn btn-primary learner-submit-btn">Add &amp; Link Learner</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+(function () {
+  var form = document.querySelector('form[method="post"]');
+  var btn  = document.getElementById('submit-btn');
+  if (!form || !btn) return;
+
+  form.addEventListener('submit', function (e) {
+    if (form.dataset.submitted === '1') {
+      e.preventDefault();   // block the second submit entirely
+      return;
+    }
+    form.dataset.submitted = '1';
+    btn.disabled = true;
+    btn.textContent = 'Adding…';
+    btn.style.opacity = '0.7';
+  });
+})();
+</script>
+{% endblock %}

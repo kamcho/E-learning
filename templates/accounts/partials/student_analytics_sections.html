@@ -1,0 +1,208 @@
+<div id="analytics-breakdown" class="analytics-breakdown">
+  <div class="card card--performance">
+    <div class="card-title card-title--with-filter">
+      <span>Performance by Subject</span>
+      <div class="card-title-filters">
+        {% if show_analytics_period_filter and analytics_period_choices %}
+        <select class="grade-filter-select analytics-period-select" id="analytics-period-filter" aria-label="Analytics period">
+          {% for value, label in analytics_period_choices %}
+            <option value="{{ value }}" {% if dashboard_filters and dashboard_filters.analytics_period == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+        {% endif %}
+        {% if grade_filter_options %}
+        <form method="get" class="grade-filter-form" action="{{ grade_filter_action|default:'' }}">
+          {% if preserve_student_in_grade_filter and student %}
+          <input type="hidden" name="student" value="{{ student.uuid }}">
+          {% endif %}
+          {% if dashboard_hidden_params %}
+            {% for key, val in dashboard_hidden_params.items %}
+              {% if key != 'student' and key != 'grade' %}
+              <input type="hidden" name="{{ key }}" value="{{ val }}">
+              {% endif %}
+            {% endfor %}
+          {% endif %}
+          <label for="subject-grade-filter" class="visually-hidden">Grade</label>
+          <select name="grade" id="subject-grade-filter" class="grade-filter-select" onchange="this.form.submit()">
+            {% for grade in grade_filter_options %}
+              <option value="{{ grade.slug }}" {% if selected_grade and selected_grade.slug == grade.slug %}selected{% endif %}>
+                {{ grade.name }}
+              </option>
+            {% endfor %}
+          </select>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+    {% if analytics_period_label %}
+      <p class="grade-filter-hint">{{ analytics_period_label }}{% if selected_grade %} · Subjects in {{ selected_grade.name }}{% if student.grade_level and selected_grade.pk != student.grade_level.pk %} (previous grade){% endif %}{% endif %}</p>
+    {% elif selected_grade %}
+      <p class="grade-filter-hint">Subjects in {{ selected_grade.name }}{% if student.grade_level and selected_grade.pk != student.grade_level.pk %} (previous grade){% endif %}</p>
+    {% endif %}
+
+    <div class="perf-metrics-grid" aria-label="Performance by difficulty">
+      {% for row in difficulty_breakdown %}
+        <div class="perf-metric-card perf-metric-card--{{ row.quiz__difficulty|lower }}">
+          <div class="perf-metric-top">
+            <div class="perf-metric-icon" aria-hidden="true">
+              {% if row.quiz__difficulty == 'Easy' %}🟢{% elif row.quiz__difficulty == 'Medium' %}🟡{% else %}🔴{% endif %}
+            </div>
+            <div class="perf-metric-value">{{ row.avg_score|floatformat:1 }}</div>
+          </div>
+          <div class="perf-metric-label">{{ row.quiz__difficulty }} avg score</div>
+          <div class="perf-metric-footer">
+            <span aria-hidden="true">{% if row.quiz__difficulty == 'Easy' %}🟢{% elif row.quiz__difficulty == 'Medium' %}🟡{% else %}🔴{% endif %}</span>
+            <span>{{ row.attempts }} attempt{{ row.attempts|pluralize }}</span>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+
+    {% if subject_breakdown %}
+      <div class="subject-table-wrap">
+        <table class="subject-table">
+          <thead>
+            <tr>
+              <th>Subject</th>
+              <th>Quizzes</th>
+              <th>Avg Score</th>
+              <th>Best Score</th>
+              <th>Progress</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in subject_breakdown %}
+              <tr class="subject-table-row" onclick="window.location='{% url 'accounts:student_subject_progress' student.uuid row.subject_id %}'" tabindex="0" role="link">
+                <td>
+                  <a href="{% url 'accounts:student_subject_progress' student.uuid row.subject_id %}" class="subject-table-link">
+                    {{ row.quiz__subject__name }}
+                  </a>
+                </td>
+                <td>{{ row.attempts }}</td>
+                <td>
+                  {% if row.attempts %}
+                    {% if row.avg_score >= 70 %}
+                      <span class="score-pill score-high">{{ row.avg_score|floatformat:1 }}</span>
+                    {% elif row.avg_score >= 40 %}
+                      <span class="score-pill score-mid">{{ row.avg_score|floatformat:1 }}</span>
+                    {% else %}
+                      <span class="score-pill score-low">{{ row.avg_score|floatformat:1 }}</span>
+                    {% endif %}
+                  {% else %}
+                    <span class="subject-table-muted">—</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if row.attempts and row.best_score %}
+                    <span class="subject-table-best">{{ row.best_score }}</span>
+                  {% else %}
+                    <span class="subject-table-muted">—</span>
+                  {% endif %}
+                </td>
+                <td>
+                  <div class="subject-table-progress">
+                    <div class="subject-table-progress-fill" style="width: {% widthratio row.avg_score 100 100 %}%;"></div>
+                  </div>
+                </td>
+                <td class="subject-table-action">
+                  <a
+                    href="{% url 'accounts:student_subject_progress' student.uuid row.subject_id %}"
+                    class="subject-table-learn-btn"
+                    onclick="event.stopPropagation()"
+                  >Learn</a>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="empty-state">
+        <div class="empty-state-icon">&#128202;</div>
+        {% if selected_grade %}
+          <p>No subjects found for {{ selected_grade.name }}.</p>
+        {% elif student.grade_level %}
+          <p>No subjects found for {{ student.grade_level.name }}.</p>
+        {% else %}
+          <p>Assign a grade level to see subject performance.</p>
+        {% endif %}
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+{% include 'accounts/partials/subject_score_chart.html' with subject_score_chart=subject_score_chart chart_canvas_id=subject_chart_canvas_id|default:'subjectScoreChart' chart_data_id=subject_chart_data_id|default:'subject-score-chart-data' %}
+
+{% if not hide_recent_attempts %}
+<div class="card card--attempts">
+  <div class="card-title">Recent Exam Attempts</div>
+  {% if recent_attempts %}
+    <div class="attempts-table-wrap">
+    <table class="attempts-table">
+      <thead>
+        <tr>
+          <th>Quiz</th>
+          <th>Subject</th>
+          <th>Strand</th>
+          <th>Difficulty</th>
+          <th>Score</th>
+          <th>Status</th>
+          <th>Date</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for attempt in recent_attempts %}
+          <tr class="attempts-table-row" tabindex="0" role="link" data-href="{% url 'core:attempt_detail' attempt.quiz.uuid attempt.student.uuid %}">
+            <td class="attempts-table-quiz" data-label="Quiz"><strong>{{ attempt.quiz.title }}</strong></td>
+            <td data-label="Subject">{{ attempt.quiz.subject.name|default:"—" }}</td>
+            <td data-label="Strand">{{ attempt.quiz.strand.name|default:"—" }}</td>
+            <td data-label="Difficulty">
+              {% if attempt.quiz.difficulty == 'Easy' %}🟢{% elif attempt.quiz.difficulty == 'Medium' %}🟡{% else %}🔴{% endif %}
+              {{ attempt.quiz.difficulty }}
+            </td>
+            <td data-label="Score">
+              {% if attempt.score >= 70 %}
+                <span class="score-pill score-high">{{ attempt.score }}</span>
+              {% elif attempt.score >= 40 %}
+                <span class="score-pill score-mid">{{ attempt.score }}</span>
+              {% else %}
+                <span class="score-pill score-low">{{ attempt.score }}</span>
+              {% endif %}
+            </td>
+            <td data-label="Status">
+              {% if attempt.is_complete %}
+                <span class="badge badge-primary">Done</span>
+              {% else %}
+                <span class="badge badge-gold">Ongoing</span>
+              {% endif %}
+            </td>
+            <td data-label="Date">{{ attempt.created_at|date:"d M Y" }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  {% else %}
+    <div class="empty-state">
+      <div class="empty-state-icon">&#128221;</div>
+      <p>No exam attempts recorded for this learner yet.</p>
+    </div>
+  {% endif %}
+</div>
+<script>
+(function () {
+  document.querySelectorAll('.attempts-table-row[data-href]').forEach(function (row) {
+    row.addEventListener('click', function () {
+      window.location.href = row.dataset.href;
+    });
+    row.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        window.location.href = row.dataset.href;
+      }
+    });
+  });
+})();
+</script>
+{% endif %}

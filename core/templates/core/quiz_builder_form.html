@@ -1,0 +1,1167 @@
+{% extends "base.html" %}
+
+{% block title %}{% if action == 'Create' %}New Quiz{% else %}Edit: {{ quiz.title }}{% endif %}{% endblock %}
+
+{% block extra_head %}
+<style>
+  .qbf-layout {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xl);
+    max-width: 920px;
+    margin: 0 auto;
+  }
+
+  .qbf-layout--edit {
+    max-width: 960px;
+  }
+
+  /* Off-canvas test details (slides in from the right — not a sidebar) */
+  .qbf-drawer-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.5);
+    z-index: 400;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.22s ease, visibility 0.22s ease;
+  }
+
+  .qbf-drawer-overlay.is-open {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .qbf-drawer {
+    position: fixed;
+    top: 0;
+    right: 0;
+    height: 100%;
+    width: min(400px, 100vw);
+    background: var(--clr-surface);
+    border-left: 1px solid var(--clr-border);
+    box-shadow: -8px 0 32px rgba(15, 23, 42, 0.12);
+    transform: translateX(100%);
+    transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .qbf-drawer-overlay.is-open .qbf-drawer {
+    transform: translateX(0);
+  }
+
+  .qbf-drawer-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-md);
+    padding: 1.25rem 1.35rem 1rem;
+    border-bottom: 1px solid var(--clr-border);
+    flex-shrink: 0;
+  }
+
+  .qbf-drawer-title {
+    font-family: var(--font-heading);
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: var(--clr-text);
+    margin: 0 0 0.25rem;
+  }
+
+  .qbf-drawer-sub {
+    font-size: 0.8rem;
+    color: var(--clr-text-muted);
+    line-height: 1.4;
+    margin: 0;
+  }
+
+  .qbf-drawer-close {
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-md);
+    background: var(--clr-surface);
+    color: var(--clr-text-muted);
+    font-size: 1.25rem;
+    line-height: 1;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+
+  .qbf-drawer-close:hover {
+    background: #f1f5f9;
+    color: var(--clr-text);
+  }
+
+  .qbf-drawer-body {
+    padding: 1.25rem 1.35rem 1.5rem;
+    flex: 1;
+  }
+
+  .qbf-drawer-fields {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+  }
+
+  .qbf-open-details-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .qbf-readonly-block {
+    margin-top: var(--space-lg);
+    padding-top: var(--space-lg);
+    border-top: 1px solid var(--clr-border);
+  }
+
+  .qbf-readonly-title {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--clr-text-light);
+    margin-bottom: var(--space-sm);
+  }
+
+  .qbf-readonly-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+  }
+
+  .qbf-readonly-row {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+
+  .qbf-readonly-label {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--clr-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  .qbf-readonly-value {
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--clr-text);
+    line-height: 1.35;
+  }
+
+  .qbf-status-pill {
+    display: inline-flex;
+    align-items: center;
+    width: fit-content;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0.25rem 0.65rem;
+    border-radius: var(--radius-full);
+  }
+
+  .qbf-status-pill.is-live {
+    background: rgba(13, 138, 78, 0.12);
+    color: var(--clr-primary);
+  }
+
+  .qbf-status-pill.is-draft {
+    background: #f3f4f6;
+    color: var(--clr-text-muted);
+  }
+
+  .qbf-details-panel {
+    width: 100%;
+  }
+
+  .qbf-details-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-md) var(--space-lg);
+  }
+
+  .qbf-details-grid .form-group--full {
+    grid-column: 1 / -1;
+  }
+
+  @media (max-width: 640px) {
+    .qbf-details-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .section-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--clr-text-light);
+    margin-bottom: var(--space-sm);
+  }
+
+  /* Question picker */
+  .picker-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-md);
+    flex-wrap: wrap;
+  }
+
+  .picker-counter {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--clr-primary);
+    background: #eff6ff;
+    padding: 4px 12px;
+    border-radius: 20px;
+    border: 1px solid #bfdbfe;
+  }
+
+  .picker-search {
+    flex: 1;
+    min-width: 160px;
+    max-width: 260px;
+  }
+
+  .picker-actions {
+    display: flex;
+    gap: var(--space-xs);
+  }
+
+  .picker-btn {
+    font-size: 0.75rem;
+    padding: 5px 10px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--clr-border);
+    background: var(--clr-surface);
+    cursor: pointer;
+    color: var(--clr-text);
+    font-weight: 500;
+    transition: background 0.12s ease;
+  }
+
+  .picker-btn:hover { background: #f1f5f9; }
+  .picker-btn.primary { background: var(--clr-primary); color: #fff; border-color: var(--clr-primary); }
+  .picker-btn.primary:hover { opacity: 0.85; }
+
+  /* Question cards in picker */
+  .question-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+    max-height: 560px;
+    overflow-y: auto;
+    padding-right: 4px;
+  }
+
+  .question-list::-webkit-scrollbar { width: 5px; }
+  .question-list::-webkit-scrollbar-track { background: transparent; }
+  .question-list::-webkit-scrollbar-thumb { background: var(--clr-border); border-radius: 4px; }
+
+  .q-card {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-sm);
+    background: var(--clr-surface);
+    border: 2px solid var(--clr-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-md) var(--space-md);
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease;
+    user-select: none;
+  }
+
+  .q-card:hover { border-color: var(--clr-primary); background: #f8faff; }
+
+  .q-card.selected {
+    border-color: var(--clr-primary);
+    background: #eff6ff;
+  }
+
+  .q-card.hidden { display: none; }
+
+  .q-card input[type="checkbox"] {
+    margin-top: 3px;
+    accent-color: var(--clr-primary);
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    cursor: pointer;
+  }
+
+  .q-card-body { flex: 1; min-width: 0; }
+
+  .q-card-text {
+    font-size: 0.88rem;
+    color: var(--clr-text);
+    line-height: 1.45;
+    margin-bottom: var(--space-xs);
+    word-break: break-word;
+  }
+
+  .q-card-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 4px;
+  }
+
+  .q-badge {
+    font-size: 0.68rem;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  .q-badge-type { background: #e0e7ff; color: #3730a3; }
+  .q-badge-easy { background: #dcfce7; color: #15803d; }
+  .q-badge-medium { background: #fef9c3; color: #92400e; }
+  .q-badge-hard { background: #fee2e2; color: #991b1b; }
+  .q-badge-score { background: #f3f4f6; color: #374151; }
+  .q-badge-scope { background: #f0fdf4; color: #166534; text-transform: none; letter-spacing: 0; }
+
+  .picker-scope-label {
+    font-size: 0.82rem;
+    color: var(--clr-text-muted);
+    margin-bottom: var(--space-md);
+    padding: 0.55rem 0.75rem;
+    background: var(--clr-surface-alt);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--clr-border);
+  }
+
+  .picker-scope-label strong {
+    color: var(--clr-text);
+  }
+
+  .q-correct-preview {
+    font-size: 0.72rem;
+    color: #15803d;
+    margin-top: 3px;
+  }
+
+  /* Empty picker state */
+  .picker-empty {
+    text-align: center;
+    padding: var(--space-2xl) var(--space-lg);
+    color: var(--clr-text-light);
+    font-size: 0.88rem;
+  }
+
+  .picker-empty-icon { font-size: 2.5rem; margin-bottom: var(--space-sm); }
+
+  /* Loading spinner */
+  .picker-loading {
+    display: none;
+    text-align: center;
+    padding: var(--space-xl);
+    color: var(--clr-text-light);
+    font-size: 0.88rem;
+  }
+
+  .spinner {
+    display: inline-block;
+    width: 22px;
+    height: 22px;
+    border: 3px solid var(--clr-border);
+    border-top-color: var(--clr-primary);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    vertical-align: middle;
+    margin-right: 8px;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .form-toggle-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+  }
+
+  .form-toggle-label {
+    font-size: 0.88rem;
+    color: var(--clr-text);
+    font-weight: 500;
+    cursor: pointer;
+  }
+
+  .save-bar {
+    position: sticky;
+    bottom: 0;
+    background: var(--clr-surface);
+    border-top: 1px solid var(--clr-border);
+    padding: var(--space-md) var(--space-xl);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-md);
+    z-index: 50;
+    flex-wrap: wrap;
+    box-shadow: 0 -2px 12px rgba(0,0,0,0.06);
+  }
+
+  .save-bar-info {
+    font-size: 0.85rem;
+    color: var(--clr-text-light);
+  }
+
+  .save-bar-info strong {
+    color: var(--clr-primary);
+    font-size: 1rem;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="breadcrumbs">
+  <a href="{% url 'core:landing' %}">Home</a>
+  <span>/</span>
+  <a href="{% url 'core:quiz_builder_list' %}">Quiz Builder</a>
+  <span>/</span>
+  <span>{% if action == 'Create' %}New Quiz{% else %}{{ quiz.title }}{% endif %}</span>
+</div>
+
+<div class="page-header">
+  <div class="container page-header-content">
+    <div>
+      <span class="badge badge-gold" style="margin-bottom: var(--space-xs);">
+        {% if request.user.is_admin_role or request.user.is_staff %}Admin{% else %}Teacher{% endif %}
+      </span>
+      <h1 class="page-title">
+        {% if action == 'Create' %}&#128221; New Quiz{% else %}&#9998; Edit Quiz{% endif %}
+      </h1>
+      <p class="page-subtitle">
+        {% if quiz_edit_mode %}
+          Manage questions below. Open <strong>Test details</strong> to edit title, difficulty, and limits.
+        {% elif action == 'Create' %}
+          Fill in the details and pick questions to assemble a quiz.
+        {% else %}
+          Update quiz details and manage which questions are included.
+        {% endif %}
+      </p>
+    </div>
+    {% if quiz %}
+    <div style="display:flex; gap: var(--space-sm); flex-wrap:wrap; align-items:center;">
+      {% if quiz_edit_mode %}
+      <button type="button" class="btn btn-primary qbf-open-details-btn" id="open-details-drawer-btn">
+        &#128203; Test details
+      </button>
+      {% endif %}
+      <a href="{% url 'core:exam_analytics' quiz_uuid=quiz.uuid %}" class="btn btn-secondary">
+        &#128202; Analytics
+      </a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<form method="post" id="quiz-form" novalidate>
+  {% csrf_token %}
+
+  {% if quiz_edit_mode %}
+  <div class="qbf-drawer-overlay{% if form.errors %} is-open{% endif %}" id="details-drawer-overlay" aria-hidden="true">
+    <div class="qbf-drawer" id="details-drawer" role="dialog" aria-modal="true" aria-labelledby="details-drawer-title">
+      <div class="qbf-drawer-head">
+        <div>
+          <h2 class="qbf-drawer-title" id="details-drawer-title">Test details</h2>
+          <p class="qbf-drawer-sub">Edit title, description, difficulty, and limits.</p>
+        </div>
+        <button type="button" class="qbf-drawer-close" id="close-details-drawer-btn" aria-label="Close">&times;</button>
+      </div>
+      <div class="qbf-drawer-body">
+        {% if form.non_field_errors %}
+          <div style="background:#fee2e2; border:1px solid #fca5a5; border-radius: var(--radius-md); padding: var(--space-md); margin-bottom: var(--space-md); font-size: 0.875rem; color: #991b1b;">
+            {% for error in form.non_field_errors %}
+              <div>&#9888; {{ error }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+
+        <div class="qbf-drawer-fields">
+          <div class="form-group">
+            <label class="form-label" for="{{ form.title.id_for_label }}">Quiz Title *</label>
+            {{ form.title }}
+            {% if form.title.errors %}
+              <div style="color: var(--clr-danger); font-size: 0.82rem; margin-top: 4px;">{{ form.title.errors.0 }}</div>
+            {% endif %}
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="{{ form.description.id_for_label }}">Description</label>
+            {{ form.description }}
+            {% if form.description.errors %}
+              <div style="color: var(--clr-danger); font-size: 0.82rem; margin-top: 4px;">{{ form.description.errors.0 }}</div>
+            {% endif %}
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="{{ form.difficulty.id_for_label }}">Difficulty *</label>
+            {{ form.difficulty }}
+            {% if form.difficulty.errors %}
+              <div style="color: var(--clr-danger); font-size: 0.82rem; margin-top: 4px;">{{ form.difficulty.errors.0 }}</div>
+            {% endif %}
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="{{ form.test_size.id_for_label }}">{{ form.test_size.label }}</label>
+            {{ form.test_size }}
+            {% if form.test_size.errors %}
+              <div style="color: var(--clr-danger); font-size: 0.82rem; margin-top: 4px;">{{ form.test_size.errors.0 }}</div>
+            {% endif %}
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="{{ form.time_limit_minutes.id_for_label }}">{{ form.time_limit_minutes.label }}</label>
+            {{ form.time_limit_minutes }}
+            {% if form.time_limit_minutes.help_text %}
+            <div style="font-size: 0.78rem; color: var(--clr-text-light); margin-top: 4px;">{{ form.time_limit_minutes.help_text }}</div>
+            {% endif %}
+            {% if form.time_limit_minutes.errors %}
+              <div style="color: var(--clr-danger); font-size: 0.82rem; margin-top: 4px;">{{ form.time_limit_minutes.errors.0 }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="qbf-readonly-block">
+          <div class="qbf-readonly-title">Curriculum scope</div>
+          <div class="qbf-readonly-list">
+            {% if quiz.subject %}
+            <div class="qbf-readonly-row">
+              <span class="qbf-readonly-label">Subject</span>
+              <span class="qbf-readonly-value">{{ quiz.subject.name }}</span>
+            </div>
+            {% if quiz.subject.grade_level %}
+            <div class="qbf-readonly-row">
+              <span class="qbf-readonly-label">Grade</span>
+              <span class="qbf-readonly-value">{{ quiz.subject.grade_level.name }}</span>
+            </div>
+            {% endif %}
+            {% else %}
+            <div class="qbf-readonly-row">
+              <span class="qbf-readonly-value" style="font-weight: 500; color: var(--clr-text-muted);">No subject linked</span>
+            </div>
+            {% endif %}
+            {% if quiz.strand %}
+            <div class="qbf-readonly-row">
+              <span class="qbf-readonly-label">Strand</span>
+              <span class="qbf-readonly-value">{{ quiz.strand.name }}</span>
+            </div>
+            {% endif %}
+            {% if quiz.sub_strand %}
+            <div class="qbf-readonly-row">
+              <span class="qbf-readonly-label">Sub-strand</span>
+              <span class="qbf-readonly-value">{{ quiz.sub_strand.name }}</span>
+            </div>
+            {% endif %}
+            <div class="qbf-readonly-row">
+              <span class="qbf-readonly-label">Status</span>
+              <span class="qbf-status-pill {% if quiz.is_active %}is-live{% else %}is-draft{% endif %}">
+                {% if quiz.is_active %}Published{% else %}Draft{% endif %}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="qbf-layout{% if quiz_edit_mode %} qbf-layout--edit{% endif %}">
+
+    {% if not quiz_edit_mode %}
+    <div class="qbf-details-panel">
+      <div class="card" style="margin-bottom: 0;">
+        <h2 class="card-title" style="margin-bottom: var(--space-lg);">&#128203; Quiz Details</h2>
+
+        {% if form.non_field_errors %}
+          <div style="background:#fee2e2; border:1px solid #fca5a5; border-radius: var(--radius-md); padding: var(--space-md); margin-bottom: var(--space-md); font-size: 0.875rem; color: #991b1b;">
+            {% for error in form.non_field_errors %}
+              <div>&#9888; {{ error }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+
+        <div class="qbf-details-grid">
+          <div class="form-group form-group--full">
+            <label class="form-label" for="{{ form.title.id_for_label }}">Quiz Title *</label>
+            {{ form.title }}
+            {% if form.title.errors %}
+              <div style="color: var(--clr-danger); font-size: 0.82rem; margin-top: 4px;">{{ form.title.errors.0 }}</div>
+            {% endif %}
+          </div>
+
+          <div class="form-group form-group--full">
+            <label class="form-label" for="{{ form.description.id_for_label }}">Description</label>
+            {{ form.description }}
+            {% if form.description.errors %}
+              <div style="color: var(--clr-danger); font-size: 0.82rem; margin-top: 4px;">{{ form.description.errors.0 }}</div>
+            {% endif %}
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="{{ form.difficulty.id_for_label }}">Difficulty *</label>
+            {{ form.difficulty }}
+            {% if form.difficulty.errors %}
+              <div style="color: var(--clr-danger); font-size: 0.82rem; margin-top: 4px;">{{ form.difficulty.errors.0 }}</div>
+            {% endif %}
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="{{ form.test_size.id_for_label }}">{{ form.test_size.label }}</label>
+            {{ form.test_size }}
+            {% if form.test_size.errors %}
+              <div style="color: var(--clr-danger); font-size: 0.82rem; margin-top: 4px;">{{ form.test_size.errors.0 }}</div>
+            {% endif %}
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="{{ form.time_limit_minutes.id_for_label }}">{{ form.time_limit_minutes.label }}</label>
+            {{ form.time_limit_minutes }}
+            {% if form.time_limit_minutes.help_text %}
+            <div style="font-size: 0.78rem; color: var(--clr-text-light); margin-top: 4px;">{{ form.time_limit_minutes.help_text }}</div>
+            {% endif %}
+            {% if form.time_limit_minutes.errors %}
+              <div style="color: var(--clr-danger); font-size: 0.82rem; margin-top: 4px;">{{ form.time_limit_minutes.errors.0 }}</div>
+            {% endif %}
+          </div>
+
+          <div class="form-group form-group--full">
+            <div class="section-label">Curriculum Scope</div>
+          </div>
+
+          <div class="form-group form-group--full">
+            <label class="form-label" for="{{ form.subject.id_for_label }}">Subject *</label>
+            <select name="subject" id="id_subject" class="form-select">
+              <option value="">Select a subject</option>
+              {% for subj in subjects %}
+                <option value="{{ subj.pk }}"
+                  data-grade="{{ subj.grade_level.name }}"
+                  {% if form.subject.value == subj.pk|stringformat:"s" %}selected{% endif %}>
+                  {{ subj.grade_level.name }} — {{ subj.name }}
+                </option>
+              {% endfor %}
+            </select>
+            {% if form.subject.errors %}
+              <div style="color: var(--clr-danger); font-size: 0.82rem; margin-top: 4px;">{{ form.subject.errors.0 }}</div>
+            {% endif %}
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="{{ form.strand.id_for_label }}">Strand</label>
+            <select name="strand" id="id_strand" class="form-select">
+              <option value="">Select a strand (optional)</option>
+              {% for st in strands %}
+                <option value="{{ st.pk }}"
+                  data-subject="{{ st.subject_id }}"
+                  {% if form.strand.value == st.pk|stringformat:"s" %}selected{% endif %}>
+                  {{ st.name }}
+                </option>
+              {% endfor %}
+            </select>
+            {% if form.strand.errors %}
+              <div style="color: var(--clr-danger); font-size: 0.82rem; margin-top: 4px;">{{ form.strand.errors.0 }}</div>
+            {% endif %}
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="{{ form.sub_strand.id_for_label }}">Sub-strand</label>
+            <select name="sub_strand" id="id_sub_strand" class="form-select">
+              <option value="">All sub-strands (optional)</option>
+              {% for ss in sub_strands %}
+                <option value="{{ ss.pk }}"
+                  data-strand="{{ ss.strand_id }}"
+                  {% if form.sub_strand.value == ss.pk|stringformat:"s" %}selected{% endif %}>
+                  {{ ss.name }}
+                </option>
+              {% endfor %}
+            </select>
+            {% if form.sub_strand.errors %}
+              <div style="color: var(--clr-danger); font-size: 0.82rem; margin-top: 4px;">{{ form.sub_strand.errors.0 }}</div>
+            {% endif %}
+          </div>
+
+          <div class="form-group form-group--full">
+            <div style="font-size: 0.78rem; color: var(--clr-text-light);">
+              Set question limit to 0 to serve all selected questions. A positive number randomly samples that many.
+            </div>
+          </div>
+
+          <div class="form-group form-group--full">
+            <div class="form-toggle-row">
+              {{ form.is_active }}
+              <label class="form-toggle-label" for="{{ form.is_active.id_for_label }}">{{ form.is_active.label }}</label>
+            </div>
+            {% if form.is_active.errors %}
+              <div style="color: var(--clr-danger); font-size: 0.82rem; margin-top: 4px;">{{ form.is_active.errors.0 }}</div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="card qbf-questions-panel" style="margin-bottom: 0;">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom: var(--space-lg); flex-wrap:wrap; gap: var(--space-sm);">
+        <h2 class="card-title" style="margin: 0;">&#10067; Question Picker</h2>
+        <span class="picker-counter" id="picker-counter">
+          <span id="selected-count">{{ selected_question_ids|length }}</span> selected
+        </span>
+      </div>
+
+      {% if quiz_edit_mode %}
+      <p style="font-size: 0.85rem; color: var(--clr-text-light); margin-bottom: var(--space-sm);">
+        Questions are loaded from this quiz's fixed curriculum scope. To change subject or strand, create a new quiz.
+      </p>
+      {% else %}
+      <p style="font-size: 0.85rem; color: var(--clr-text-light); margin-bottom: var(--space-sm);">
+        Pick a <strong>subject</strong> to load questions. Optionally narrow by <strong>strand</strong> or <strong>sub-strand</strong>.
+      </p>
+      {% endif %}
+      <p id="picker-scope-label" class="picker-scope-label"{% if not scope_label %} style="display:none;"{% endif %}>
+        {% if scope_label %}Showing questions for: <strong>{{ scope_label }}</strong>{% endif %}
+      </p>
+
+      <!-- Picker toolbar: search + select all/none -->
+      <div class="picker-toolbar" id="picker-toolbar" style="display: none;">
+        <input type="text" id="q-search" class="form-input picker-search" placeholder="Filter questions…">
+        <div class="picker-actions">
+          <button type="button" class="picker-btn primary" onclick="selectAllVisible()">Select All</button>
+          <button type="button" class="picker-btn" onclick="deselectAllVisible()">Deselect All</button>
+        </div>
+      </div>
+
+      <!-- Loading indicator -->
+      <div class="picker-loading" id="picker-loading">
+        <span class="spinner"></span> Loading questions…
+      </div>
+
+      <!-- Question list -->
+      <div class="question-list" id="question-list">
+        {% if available_questions %}
+          {% for question in available_questions %}
+          <label class="q-card {% if question.uuid|stringformat:'s' in selected_question_ids %}selected{% endif %}"
+                 data-text="{{ question.quiz|lower }}"
+                 onclick="toggleCard(this)">
+            <input type="checkbox"
+                   name="questions"
+                   value="{{ question.uuid }}"
+                   {% if question.uuid|stringformat:'s' in selected_question_ids %}checked{% endif %}
+                   onchange="updateCounter()">
+            <div class="q-card-body">
+              <div class="q-card-text">{{ question.quiz }}</div>
+              <div class="q-card-badges">
+                {% if quiz_edit_mode %}
+                  {% if not quiz.sub_strand_id %}<span class="q-badge q-badge-scope">{{ question.sub_strand.name }}</span>{% endif %}
+                {% elif not form.sub_strand.value %}
+                  <span class="q-badge q-badge-scope">{{ question.sub_strand.name }}</span>
+                {% endif %}
+                <span class="q-badge q-badge-type">{{ question.quiz_type }}</span>
+                <span class="q-badge q-badge-{{ question.difficulty }}">{{ question.difficulty }}</span>
+                <span class="q-badge q-badge-score">{{ question.score }} pt{{ question.score|pluralize }}</span>
+                {% if question.prompt_image %}<span class="q-badge" title="Has image">&#128247;</span>{% endif %}
+                {% if question.prompt_audio %}<span class="q-badge" title="Has audio">&#128266;</span>{% endif %}
+              </div>
+              {% with correct=question.options.all %}
+                {% if correct %}
+                  <div class="q-correct-preview">
+                    &#10003;
+                    {% for opt in correct %}{% if opt.is_correct and opt.is_active %}{{ opt.option }}{% if not forloop.last %}, {% endif %}{% endif %}{% endfor %}
+                  </div>
+                {% endif %}
+              {% endwith %}
+            </div>
+          </label>
+          {% endfor %}
+        {% else %}
+          <div class="picker-empty" id="picker-empty">
+            <div class="picker-empty-icon">&#128270;</div>
+            {% if quiz_edit_mode %}
+            <div>No questions found for this quiz's curriculum scope.</div>
+            {% else %}
+            <div>Select a sub-strand to browse available questions.</div>
+            <div style="margin-top: var(--space-sm); font-size: 0.8rem;">
+              Choose a subject above to browse questions for the whole subject, a strand, or a specific sub-strand.
+            </div>
+            {% endif %}
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Sticky save bar -->
+  <div class="save-bar">
+    <div class="save-bar-info">
+      <strong id="save-counter">{{ selected_question_ids|length }}</strong> question{{ selected_question_ids|length|pluralize }} selected
+      {% if quiz %}
+        &nbsp;&middot;&nbsp; Last updated {{ quiz.updated_at|date:"M d, Y H:i" }}
+      {% endif %}
+    </div>
+    <div style="display:flex; gap: var(--space-sm); flex-wrap: wrap;">
+      <a href="{% url 'core:quiz_builder_list' %}" class="btn btn-secondary">Cancel</a>
+      <button type="submit" class="btn btn-primary">
+        {% if action == 'Create' %}&#10003; Create Quiz{% else %}&#10003; Save Changes{% endif %}
+      </button>
+    </div>
+  </div>
+
+</form>
+
+{% if quiz_edit_mode and quiz %}
+<div id="quiz-scope-data"
+     data-subject-id="{{ quiz.subject_id|default:'' }}"
+     data-strand-id="{{ quiz.strand_id|default:'' }}"
+     data-sub-strand-id="{{ quiz.sub_strand_id|default:'' }}"
+     hidden></div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  'use strict';
+
+  const isEditMode = {{ quiz_edit_mode|yesno:"true,false" }};
+
+  if (isEditMode) {
+    const drawerOverlay = document.getElementById('details-drawer-overlay');
+    const openDrawerBtn = document.getElementById('open-details-drawer-btn');
+    const closeDrawerBtn = document.getElementById('close-details-drawer-btn');
+
+    function openDrawer() {
+      if (!drawerOverlay) return;
+      drawerOverlay.classList.add('is-open');
+      drawerOverlay.setAttribute('aria-hidden', 'false');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeDrawer() {
+      if (!drawerOverlay) return;
+      drawerOverlay.classList.remove('is-open');
+      drawerOverlay.setAttribute('aria-hidden', 'true');
+      document.body.style.overflow = '';
+    }
+
+    if (openDrawerBtn) openDrawerBtn.addEventListener('click', openDrawer);
+    if (closeDrawerBtn) closeDrawerBtn.addEventListener('click', closeDrawer);
+
+    if (drawerOverlay) {
+      drawerOverlay.addEventListener('click', function (e) {
+        if (e.target === drawerOverlay) closeDrawer();
+      });
+      if (drawerOverlay.classList.contains('is-open')) {
+        document.body.style.overflow = 'hidden';
+        drawerOverlay.setAttribute('aria-hidden', 'false');
+      }
+    }
+
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && drawerOverlay && drawerOverlay.classList.contains('is-open')) {
+        closeDrawer();
+      }
+    });
+  }
+
+  const questionList   = document.getElementById('question-list');
+  const pickerLoading  = document.getElementById('picker-loading');
+  const pickerToolbar  = document.getElementById('picker-toolbar');
+  const pickerScopeLabel = document.getElementById('picker-scope-label');
+  const pickerCounter  = document.getElementById('selected-count');
+  const saveCounter    = document.getElementById('save-counter');
+  const apiUrl         = '{% url "core:quiz_questions_api" %}';
+
+  const selectedSet = new Set([
+    {% for uid in selected_question_ids %}'{{ uid }}',{% endfor %}
+  ]);
+
+  let subjectSel = null;
+  let strandSel = null;
+  let subStrandSel = null;
+  let fixedSubjectId = '';
+  let fixedStrandId = '';
+  let fixedSubStrandId = '';
+
+  if (isEditMode) {
+    const scopeEl = document.getElementById('quiz-scope-data');
+    if (scopeEl) {
+      fixedSubjectId = scopeEl.dataset.subjectId || '';
+      fixedStrandId = scopeEl.dataset.strandId || '';
+      fixedSubStrandId = scopeEl.dataset.subStrandId || '';
+    }
+  } else {
+    subjectSel   = document.getElementById('id_subject');
+    strandSel    = document.getElementById('id_strand');
+    subStrandSel = document.getElementById('id_sub_strand');
+  }
+
+  function updateScopeLabel(text) {
+    if (!pickerScopeLabel) return;
+    if (text) {
+      pickerScopeLabel.style.display = '';
+      pickerScopeLabel.innerHTML = 'Showing questions for: <strong>' + escHtml(text) + '</strong>';
+    } else {
+      pickerScopeLabel.style.display = 'none';
+      pickerScopeLabel.innerHTML = '';
+    }
+  }
+
+  function refreshQuestions() {
+    const subjectId = isEditMode ? fixedSubjectId : subjectSel.value;
+    const strandId = isEditMode ? fixedStrandId : strandSel.value;
+    const subStrandId = isEditMode ? fixedSubStrandId : subStrandSel.value;
+
+    if (!subjectId) {
+      updateScopeLabel('');
+      showEmptyPicker(isEditMode
+        ? 'This quiz has no subject scope — questions cannot be loaded.'
+        : 'Select a <strong>subject</strong> above to browse questions.');
+      return;
+    }
+
+    const params = new URLSearchParams({ subject_id: subjectId });
+    if (strandId) params.set('strand_id', strandId);
+    if (subStrandId) params.set('sub_strand_id', subStrandId);
+
+    questionList.innerHTML = '';
+    pickerLoading.style.display = 'block';
+    pickerToolbar.style.display = 'none';
+
+    fetch(`${apiUrl}?${params.toString()}`, {
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+      .then(r => r.json())
+      .then(data => {
+        pickerLoading.style.display = 'none';
+        updateScopeLabel(data.scope_label || '');
+        if (!data.questions || data.questions.length === 0) {
+          showEmptyPicker('No questions found for this scope. <a href="{% url "subjects:subject_list" %}">Create questions</a> first.');
+          return;
+        }
+        pickerToolbar.style.display = 'flex';
+        renderQuestions(data.questions);
+      })
+      .catch(() => {
+        pickerLoading.style.display = 'none';
+        showEmptyPicker('Failed to load questions. Please refresh and try again.');
+      });
+  }
+
+  if (!isEditMode && subjectSel) {
+    const allStrandOpts    = Array.from(strandSel.querySelectorAll('option[data-subject]'));
+    const allSubStrandOpts = Array.from(subStrandSel.querySelectorAll('option[data-strand]'));
+
+    function filterStrands(subjectId) {
+      const cur = strandSel.value;
+      allStrandOpts.forEach(o => o.remove());
+      allStrandOpts.forEach(o => {
+        if (!subjectId || o.dataset.subject === subjectId) {
+          strandSel.appendChild(o);
+        }
+      });
+      if ([...strandSel.options].some(o => o.value === cur)) {
+        strandSel.value = cur;
+      } else {
+        strandSel.value = '';
+      }
+    }
+
+    function filterSubStrands(strandId) {
+      const cur = subStrandSel.value;
+      allSubStrandOpts.forEach(o => o.remove());
+      allSubStrandOpts.forEach(o => {
+        if (!strandId || o.dataset.strand === strandId) {
+          subStrandSel.appendChild(o);
+        }
+      });
+      if ([...subStrandSel.options].some(o => o.value === cur)) {
+        subStrandSel.value = cur;
+      } else {
+        subStrandSel.value = '';
+      }
+    }
+
+    subjectSel.addEventListener('change', function () {
+      filterStrands(this.value);
+      filterSubStrands('');
+      refreshQuestions();
+    });
+
+    strandSel.addEventListener('change', function () {
+      filterSubStrands(this.value);
+      refreshQuestions();
+    });
+
+    subStrandSel.addEventListener('change', refreshQuestions);
+
+    filterStrands(subjectSel.value);
+    filterSubStrands(strandSel.value);
+  }
+
+  function renderQuestions(questions) {
+    questionList.innerHTML = '';
+    const showSubStrand = isEditMode ? !fixedSubStrandId : !subStrandSel.value;
+    questions.forEach(q => {
+      const checked = selectedSet.has(q.uuid);
+      const diffClass = q.difficulty === 'Easy' ? 'easy' : q.difficulty === 'Hard' ? 'hard' : 'medium';
+      const correctHtml = q.correct_answers && q.correct_answers.length
+        ? `<div class="q-correct-preview">&#10003; ${escHtml(q.correct_answers.join(', '))}</div>`
+        : '';
+      const subStrandBadge = (showSubStrand && q.sub_strand_name)
+        ? `<span class="q-badge q-badge-scope">${escHtml(q.sub_strand_name)}</span>`
+        : '';
+      const mediaBadges = [
+        q.has_image ? '<span class="q-badge" title="Has image">&#128247;</span>' : '',
+        q.has_audio ? '<span class="q-badge" title="Has audio">&#128266;</span>' : '',
+      ].join('');
+
+      const label = document.createElement('label');
+      label.className = `q-card${checked ? ' selected' : ''}`;
+      label.dataset.text = (q.text || '').toLowerCase();
+      label.setAttribute('onclick', 'toggleCard(this)');
+      label.innerHTML = `
+        <input type="checkbox" name="questions" value="${escHtml(q.uuid)}"
+               ${checked ? 'checked' : ''} onchange="updateCounter()">
+        <div class="q-card-body">
+          <div class="q-card-text">${escHtml(q.text)}</div>
+          <div class="q-card-badges">
+            ${subStrandBadge}
+            <span class="q-badge q-badge-type">${escHtml(q.quiz_type)}</span>
+            <span class="q-badge q-badge-${diffClass}">${escHtml(q.difficulty)}</span>
+            <span class="q-badge q-badge-score">${q.score} pt${q.score !== 1 ? 's' : ''}</span>
+            ${mediaBadges}
+          </div>
+          ${correctHtml}
+        </div>`;
+      questionList.appendChild(label);
+    });
+    updateCounter();
+  }
+
+  function showEmptyPicker(msg) {
+    pickerToolbar.style.display = 'none';
+    questionList.innerHTML = `<div class="picker-empty"><div class="picker-empty-icon">&#128270;</div><div>${msg}</div></div>`;
+  }
+
+  function escHtml(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  /* ── Toggle card selection ── */
+  window.toggleCard = function (label) {
+    const cb = label.querySelector('input[type="checkbox"]');
+    if (!cb) return;
+    cb.checked = !cb.checked;
+    label.classList.toggle('selected', cb.checked);
+    if (cb.checked) {
+      selectedSet.add(cb.value);
+    } else {
+      selectedSet.delete(cb.value);
+    }
+    updateCounter();
+  };
+
+  /* ── Count selected ── */
+  window.updateCounter = function () {
+    // Rebuild selectedSet from current DOM checkboxes
+    document.querySelectorAll('#question-list input[type="checkbox"]').forEach(cb => {
+      if (cb.checked) selectedSet.add(cb.value);
+      else selectedSet.delete(cb.value);
+    });
+    const n = selectedSet.size;
+    pickerCounter.textContent = n;
+    saveCounter.textContent = n;
+    // Update sibling text
+    saveCounter.nextSibling && (saveCounter.parentNode.childNodes[1].textContent =
+      ` question${n !== 1 ? 's' : ''} selected`);
+  };
+
+  /* ── Select / Deselect visible ── */
+  window.selectAllVisible = function () {
+    document.querySelectorAll('#question-list .q-card:not(.hidden)').forEach(card => {
+      const cb = card.querySelector('input[type="checkbox"]');
+      if (cb && !cb.checked) {
+        cb.checked = true;
+        card.classList.add('selected');
+        selectedSet.add(cb.value);
+      }
+    });
+    updateCounter();
+  };
+
+  window.deselectAllVisible = function () {
+    document.querySelectorAll('#question-list .q-card:not(.hidden)').forEach(card => {
+      const cb = card.querySelector('input[type="checkbox"]');
+      if (cb && cb.checked) {
+        cb.checked = false;
+        card.classList.remove('selected');
+        selectedSet.delete(cb.value);
+      }
+    });
+    updateCounter();
+  };
+
+  /* ── Filter questions by search ── */
+  const searchInput = document.getElementById('q-search');
+  if (searchInput) {
+    searchInput.addEventListener('input', function () {
+      const q = this.value.toLowerCase().trim();
+      document.querySelectorAll('#question-list .q-card').forEach(card => {
+        const text = card.dataset.text || '';
+        card.classList.toggle('hidden', q.length > 0 && !text.includes(q));
+      });
+    });
+  }
+
+  /* ── On form submit: inject hidden inputs for all selectedSet entries
+        that are NOT currently rendered as checkboxes (i.e. questions from
+        other sub-strands that were previously checked). ── */
+  document.getElementById('quiz-form').addEventListener('submit', function () {
+    const rendered = new Set(
+      Array.from(document.querySelectorAll('#question-list input[name="questions"]'))
+           .map(cb => cb.value)
+    );
+    selectedSet.forEach(uuid => {
+      if (!rendered.has(uuid)) {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'questions';
+        input.value = uuid;
+        this.appendChild(input);
+      }
+    });
+  });
+
+  if (isEditMode) {
+    if (questionList.querySelector('.q-card')) {
+      pickerToolbar.style.display = 'flex';
+      updateCounter();
+    } else if (fixedSubjectId) {
+      refreshQuestions();
+    }
+  } else if (subjectSel && subjectSel.value) {
+    if (questionList.querySelector('.q-card')) {
+      pickerToolbar.style.display = 'flex';
+      updateCounter();
+    } else {
+      refreshQuestions();
+    }
+  }
+
+})();
+</script>
+{% endblock %}

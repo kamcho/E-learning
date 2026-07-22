@@ -1,0 +1,207 @@
+{% extends "base.html" %}
+
+{% block title %}Grade Levels — SomaKenya{% endblock %}
+
+{% block extra_head %}
+<style>
+  .grade-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--space-lg);
+    margin-bottom: var(--space-xl);
+  }
+
+  @media (max-width: 1200px) { .grade-cards-grid { grid-template-columns: repeat(3, 1fr); } }
+  @media (max-width: 900px) { .grade-cards-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 560px) { .grade-cards-grid { grid-template-columns: 1fr; } }
+
+  .grade-card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+    padding: var(--space-lg);
+    background: var(--clr-surface);
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-sm);
+    text-decoration: none;
+    color: inherit;
+    transition: transform var(--transition-fast), box-shadow var(--transition-fast), border-color var(--transition-fast);
+    min-height: 100%;
+  }
+
+  .grade-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-md);
+    border-color: rgba(13, 138, 78, 0.35);
+  }
+
+  .grade-card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: var(--space-sm);
+  }
+
+  .grade-card-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: var(--radius-lg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    background: rgba(13, 138, 78, 0.1);
+    flex-shrink: 0;
+  }
+
+  .grade-card-title {
+    font-family: var(--font-heading);
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: var(--clr-text);
+    margin: 0;
+  }
+
+  .grade-card-band {
+    display: inline-flex;
+    margin-top: 0.35rem;
+    padding: 0.2rem 0.55rem;
+    border-radius: var(--radius-full);
+    font-size: 0.72rem;
+    font-weight: 700;
+    background: rgba(59, 130, 246, 0.1);
+    color: #1d4ed8;
+  }
+
+  .grade-card-stats {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.65rem;
+  }
+
+  .grade-card-stat {
+    background: var(--clr-surface-alt);
+    border-radius: var(--radius-md);
+    padding: 0.65rem 0.75rem;
+  }
+
+  .grade-card-stat-label {
+    display: block;
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--clr-text-muted);
+    margin-bottom: 0.15rem;
+  }
+
+  .grade-card-stat-value {
+    font-family: var(--font-heading);
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: var(--clr-text);
+  }
+
+  .grade-card-footer {
+    margin-top: auto;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--clr-primary);
+  }
+
+  .grade-create-card {
+    margin-top: var(--space-md);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="breadcrumbs">
+  <a href="{% url 'core:landing' %}">Home</a>
+  <span>/</span>
+  <span>Grade Levels</span>
+</div>
+
+<div class="page-header">
+  <div class="page-header-content">
+    <div>
+      <h1 class="page-title">Grade Levels</h1>
+      <p class="page-subtitle">Browse CBC grades, learner enrollment, and subject performance at a glance.</p>
+    </div>
+  </div>
+</div>
+
+{% if grade_cards %}
+<div class="grade-cards-grid">
+  {% for card in grade_cards %}
+  <a href="{{ card.detail_url }}" class="grade-card">
+    <div class="grade-card-top">
+      <div>
+        <h2 class="grade-card-title">{{ card.grade.name }}</h2>
+        <span class="grade-card-band">{{ card.grade.get_level_display }}</span>
+      </div>
+      <div class="grade-card-icon">&#127979;</div>
+    </div>
+    <div class="grade-card-stats">
+      <div class="grade-card-stat">
+        <span class="grade-card-stat-label">Students</span>
+        <span class="grade-card-stat-value">{{ card.student_count }}</span>
+      </div>
+      <div class="grade-card-stat">
+        <span class="grade-card-stat-label">Subjects</span>
+        <span class="grade-card-stat-value">{{ card.subject_count }}</span>
+      </div>
+      <div class="grade-card-stat">
+        <span class="grade-card-stat-label">Quizzes</span>
+        <span class="grade-card-stat-value">{{ card.quiz_count }}</span>
+      </div>
+      <div class="grade-card-stat">
+        <span class="grade-card-stat-label">Avg score</span>
+        <span class="grade-card-stat-value">{{ card.avg_score }}%</span>
+      </div>
+    </div>
+    <div class="grade-card-footer">
+      {{ card.attempt_count }} attempt{{ card.attempt_count|pluralize }} &middot; View details &#8594;
+    </div>
+  </a>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card">
+  <div class="empty-state">
+    <div class="empty-state-icon">&#127979;</div>
+    <h3>No Grade Levels Found</h3>
+    <p>Create the first grade level using the form below.</p>
+  </div>
+</div>
+{% endif %}
+
+<div class="content-grid">
+  <div class="grade-create-card">
+    <div class="card">
+      <h2 class="card-title">&#10133; Create Grade Level</h2>
+      <form method="post" novalidate>
+        {% csrf_token %}
+        {% for field in form %}
+          <div class="form-group">
+            <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% if field.errors %}
+              <div style="color: var(--clr-danger); font-size: 0.82rem; margin-top: 4px;">
+                {{ field.errors.0 }}
+              </div>
+            {% endif %}
+            {% if field.help_text %}
+              <p style="font-size: 0.78rem; color: var(--clr-text-light); margin-top: 4px;">{{ field.help_text }}</p>
+            {% endif %}
+          </div>
+        {% endfor %}
+        <button type="submit" class="btn btn-secondary" style="width: 100%; justify-content: center; padding: 0.75rem;">
+          Save Grade Level
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

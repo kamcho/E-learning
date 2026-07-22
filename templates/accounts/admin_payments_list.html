@@ -1,0 +1,207 @@
+{% extends 'accounts/admin_base.html' %}
+
+{% block title %}Payments — Admin — SomaKenya{% endblock %}
+
+{% block extra_head %}
+{% include 'accounts/partials/gd_metric_cards_styles.html' %}
+{% include 'accounts/partials/admin_list_styles.html' %}
+<style>
+  .payment-status-pill {
+    display: inline-block;
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 0.2rem 0.55rem;
+    border-radius: var(--radius-full);
+  }
+  .payment-status-pill.success { background: rgba(13, 138, 78, 0.12); color: var(--clr-primary); }
+  .payment-status-pill.pending { background: rgba(212, 160, 23, 0.12); color: #b8860b; }
+  .payment-status-pill.failed { background: rgba(193, 39, 45, 0.1); color: var(--clr-danger); }
+  .payment-status-pill.cancelled { background: rgba(100, 116, 139, 0.12); color: #64748b; }
+  .payment-amount { font-family: var(--font-heading); font-weight: 800; color: var(--clr-text); }
+  .admin-filter-select {
+    padding: 0.55rem 0.85rem;
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-md);
+    font-size: 0.88rem;
+    background: var(--clr-surface);
+    color: var(--clr-text);
+  }
+</style>
+{% endblock %}
+
+{% block admin_content %}
+<div class="admin-list-banner">
+  <div>
+    <a href="{% url 'accounts:admin_dashboard' %}" class="admin-list-back admin-list-back--light">&larr; Back to dashboard</a>
+    <h1>Payments</h1>
+    <p>All M-Pesa subscription payments across the platform</p>
+  </div>
+  <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+    <a href="{% url 'subscriptions:admin_subscriptions_list' %}" class="btn-list-banner">View subscriptions</a>
+    <a href="{{ django_admin_url }}" class="btn-list-banner" target="_blank" rel="noopener">Django Admin</a>
+  </div>
+</div>
+
+<div class="gd-metrics-grid admin-list-metrics">
+  <div class="gd-metric-card gd-metric-card--green">
+    <div class="gd-metric-top">
+      <div class="gd-metric-icon" aria-hidden="true">&#128176;</div>
+      <div class="gd-metric-value">KES {{ stats.revenue|floatformat:0 }}</div>
+    </div>
+    <div class="gd-metric-label">Total revenue</div>
+    <div class="gd-metric-footer">
+      <span class="gd-metric-footer-icon" aria-hidden="true">&#10003;</span>
+      <span>{{ stats.success_count }} successful payment{{ stats.success_count|pluralize }}</span>
+    </div>
+  </div>
+  <div class="gd-metric-card gd-metric-card--blue">
+    <div class="gd-metric-top">
+      <div class="gd-metric-icon" aria-hidden="true">&#128179;</div>
+      <div class="gd-metric-value">{{ stats.total }}</div>
+    </div>
+    <div class="gd-metric-label">All payments</div>
+    <div class="gd-metric-footer">
+      <span class="gd-metric-footer-icon" aria-hidden="true">&#128202;</span>
+      <span>Every transaction attempt</span>
+    </div>
+  </div>
+  <div class="gd-metric-card gd-metric-card--orange">
+    <div class="gd-metric-top">
+      <div class="gd-metric-icon" aria-hidden="true">&#9203;</div>
+      <div class="gd-metric-value">{{ stats.pending_count }}</div>
+    </div>
+    <div class="gd-metric-label">Pending</div>
+    <div class="gd-metric-footer">
+      <span class="gd-metric-footer-icon" aria-hidden="true">&#128241;</span>
+      <span>Awaiting M-Pesa confirmation</span>
+    </div>
+  </div>
+  <div class="gd-metric-card gd-metric-card--purple">
+    <div class="gd-metric-top">
+      <div class="gd-metric-icon" aria-hidden="true">&#10060;</div>
+      <div class="gd-metric-value">{{ stats.failed_count }}</div>
+    </div>
+    <div class="gd-metric-label">Failed / cancelled</div>
+    <div class="gd-metric-footer">
+      <span class="gd-metric-footer-icon" aria-hidden="true">&#9888;</span>
+      <span>Unsuccessful attempts</span>
+    </div>
+  </div>
+</div>
+
+<div class="admin-panel">
+  <div class="admin-panel-head-flex">
+    <div>
+      <h2>Payment ledger</h2>
+      <p class="admin-panel-sub">Search by guardian, phone, receipt, or plan</p>
+    </div>
+    <span class="table-count">
+      {% if page_obj.paginator.num_pages > 1 %}
+        Page {{ page_obj.number }}/{{ page_obj.paginator.num_pages }} &middot;
+      {% endif %}
+      {% if search or status_filter %}{{ page_obj.paginator.count }} match{{ page_obj.paginator.count|pluralize:"es" }}{% else %}{{ stats.total }} total{% endif %}
+    </span>
+  </div>
+
+  <form method="get" class="admin-list-search-form">
+    <label class="table-search">
+      <span class="table-search-icon" aria-hidden="true">&#128269;</span>
+      <input type="search" name="q" value="{{ search }}" placeholder="Search name, phone, receipt, plan…" autocomplete="off">
+    </label>
+    <select name="status" class="admin-filter-select" aria-label="Filter by status">
+      <option value="">All statuses</option>
+      {% for val, label in status_choices %}
+        <option value="{{ val }}" {% if status_filter == val %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit">Filter</button>
+    {% if search or status_filter %}
+      <a href="{% url 'subscriptions:admin_payments_list' %}" class="admin-page-btn">Clear</a>
+    {% endif %}
+  </form>
+
+  {% if page_obj.object_list %}
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Guardian</th>
+        <th>Plan</th>
+        <th>Amount</th>
+        <th>M-Pesa phone</th>
+        <th>Receipt</th>
+        <th>Status</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for payment in page_obj %}
+      <tr class="clickable-row" data-href="{% url 'accounts:admin_user_detail' payment.user.pk %}" tabindex="0" role="link">
+        <td>
+          <div class="list-row-name">{{ payment.created_at|date:"d M Y" }}</div>
+          <div class="list-row-meta">{{ payment.created_at|date:"H:i" }}</div>
+        </td>
+        <td>
+          <div class="list-row-identity">
+            <div class="list-row-avatar list-row-avatar--purple">{{ payment.user.first_name|first|upper }}{{ payment.user.last_name|first|upper }}</div>
+            <div>
+              <div class="list-row-name">{{ payment.user.get_full_name|default:payment.user.phone }}</div>
+              <div class="list-row-meta">{{ payment.user.phone }}</div>
+            </div>
+          </div>
+        </td>
+        <td>
+          <div class="list-row-name">{{ payment.plan.name }}</div>
+          <div class="list-row-meta">{{ payment.plan.tests_label }}</div>
+        </td>
+        <td><span class="payment-amount">KES {{ payment.amount_kes|floatformat:0 }}</span></td>
+        <td>{{ payment.phone_number }}</td>
+        <td>
+          {% if payment.mpesa_receipt_number %}
+            <span class="list-row-name">{{ payment.mpesa_receipt_number }}</span>
+          {% else %}
+            <span class="list-row-meta">—</span>
+          {% endif %}
+        </td>
+        <td>
+          <span class="payment-status-pill {{ payment.status }}">{{ payment.get_status_display }}</span>
+          {% if payment.result_description and payment.status != 'success' %}
+            <div class="list-row-meta" style="max-width: 140px; margin-top: 2px;" title="{{ payment.result_description }}">
+              {{ payment.result_description|truncatechars:28 }}
+            </div>
+          {% endif %}
+        </td>
+        <td><span class="list-row-action">User &rarr;</span></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% include 'accounts/partials/admin_pagination.html' with page_obj=page_obj page_param='page' pagination_extra=pagination_extra %}
+  {% else %}
+  <div class="admin-list-empty">
+    <div class="admin-list-empty-icon" aria-hidden="true">&#128179;</div>
+    <p>{% if search or status_filter %}No payments match your filters.{% else %}No payments recorded yet.{% endif %}</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  document.querySelectorAll('.data-table tbody tr.clickable-row[data-href]').forEach(function (row) {
+    row.addEventListener('click', function () {
+      window.location.href = row.dataset.href;
+    });
+    row.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        window.location.href = row.dataset.href;
+      }
+    });
+  });
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,214 @@
+{% extends 'accounts/admin_base.html' %}
+
+{% block title %}Create Achievement — SomaKenya{% endblock %}
+
+{% block extra_head %}
+{% include 'accounts/partials/admin_list_styles.html' %}
+<style>
+  .achievement-form-layout {
+    max-width: 720px;
+    margin: 0 auto;
+  }
+
+  .achievement-form-card {
+    background: var(--clr-surface);
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-xl);
+    padding: var(--space-2xl);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .achievement-form-card h2 {
+    font-family: var(--font-heading);
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin: 0 0 var(--space-xl);
+  }
+
+  .form-row-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-md);
+  }
+
+  @media (max-width: 640px) {
+    .form-row-2 { grid-template-columns: 1fr; }
+  }
+
+  .criteria-hint {
+    font-size: 0.82rem;
+    color: var(--clr-text-muted);
+    margin-top: 0.35rem;
+  }
+
+  .form-actions-row {
+    display: flex;
+    gap: var(--space-md);
+    margin-top: var(--space-xl);
+    flex-wrap: wrap;
+  }
+
+  .form-checkbox-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    margin-top: var(--space-md);
+  }
+</style>
+{% endblock %}
+
+{% block admin_content %}
+<div class="achievement-form-layout">
+  <a href="{% url 'achievements:achievement_list' %}" class="admin-list-back">&larr; All achievements</a>
+
+  <div class="admin-list-banner" style="margin-top:var(--space-md);">
+    <div>
+      <h1>Create Achievement</h1>
+      <p>Define a new badge learners can unlock from exam activity</p>
+    </div>
+  </div>
+
+  <div class="achievement-form-card">
+    <h2>&#127941; New badge</h2>
+
+    <form method="post" novalidate>
+      {% csrf_token %}
+
+      {% if form.non_field_errors %}
+      <div style="color:var(--clr-danger);font-size:0.9rem;margin-bottom:var(--space-lg);">
+        {{ form.non_field_errors }}
+      </div>
+      {% endif %}
+
+      <div class="form-row-2">
+        <div class="form-group">
+          <label class="form-label" for="{{ form.title.id_for_label }}">{{ form.title.label }}</label>
+          {{ form.title }}
+          {% if form.title.errors %}
+          <div style="color:var(--clr-danger);font-size:0.82rem;margin-top:4px;">{{ form.title.errors.0 }}</div>
+          {% endif %}
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="{{ form.slug.id_for_label }}">{{ form.slug.label }}</label>
+          {{ form.slug }}
+          {% if form.slug.errors %}
+          <div style="color:var(--clr-danger);font-size:0.82rem;margin-top:4px;">{{ form.slug.errors.0 }}</div>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="form-row-2">
+        <div class="form-group">
+          <label class="form-label" for="{{ form.icon.id_for_label }}">{{ form.icon.label }}</label>
+          {{ form.icon }}
+          {% if form.icon.errors %}
+          <div style="color:var(--clr-danger);font-size:0.82rem;margin-top:4px;">{{ form.icon.errors.0 }}</div>
+          {% endif %}
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="{{ form.order.id_for_label }}">{{ form.order.label }}</label>
+          {{ form.order }}
+          <p class="criteria-hint">Lower numbers appear first on learner dashboards.</p>
+          {% if form.order.errors %}
+          <div style="color:var(--clr-danger);font-size:0.82rem;margin-top:4px;">{{ form.order.errors.0 }}</div>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="{{ form.description.id_for_label }}">{{ form.description.label }}</label>
+        {{ form.description }}
+        {% if form.description.errors %}
+        <div style="color:var(--clr-danger);font-size:0.82rem;margin-top:4px;">{{ form.description.errors.0 }}</div>
+        {% endif %}
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="{{ form.criteria_type.id_for_label }}">{{ form.criteria_type.label }}</label>
+        {{ form.criteria_type }}
+        <p class="criteria-hint" id="criteria-hint">How learners qualify for this badge.</p>
+        {% if form.criteria_type.errors %}
+        <div style="color:var(--clr-danger);font-size:0.82rem;margin-top:4px;">{{ form.criteria_type.errors.0 }}</div>
+        {% endif %}
+      </div>
+
+      <div class="form-row-2" id="threshold-row">
+        <div class="form-group">
+          <label class="form-label" for="{{ form.threshold.id_for_label }}" id="threshold-label">{{ form.threshold.label }}</label>
+          {{ form.threshold }}
+          <p class="criteria-hint" id="threshold-hint"></p>
+          {% if form.threshold.errors %}
+          <div style="color:var(--clr-danger);font-size:0.82rem;margin-top:4px;">{{ form.threshold.errors.0 }}</div>
+          {% endif %}
+        </div>
+        <div class="form-group" id="min-attempts-row">
+          <label class="form-label" for="{{ form.min_attempts.id_for_label }}">{{ form.min_attempts.label }}</label>
+          {{ form.min_attempts }}
+          <p class="criteria-hint">Minimum completed exams before average is checked.</p>
+          {% if form.min_attempts.errors %}
+          <div style="color:var(--clr-danger);font-size:0.82rem;margin-top:4px;">{{ form.min_attempts.errors.0 }}</div>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="form-checkbox-row">
+        {{ form.is_active }}
+        <label class="form-label" for="{{ form.is_active.id_for_label }}" style="margin:0;">{{ form.is_active.label }}</label>
+      </div>
+
+      <div class="form-actions-row">
+        <a href="{% url 'achievements:achievement_list' %}" class="btn btn-secondary">Cancel</a>
+        <button type="submit" class="btn btn-primary">Create Achievement</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  (function () {
+    const criteriaSelect = document.getElementById('id_criteria_type');
+    const thresholdRow = document.getElementById('threshold-row');
+    const thresholdLabel = document.getElementById('threshold-label');
+    const thresholdHint = document.getElementById('threshold-hint');
+    const minAttemptsRow = document.getElementById('min-attempts-row');
+    const criteriaHint = document.getElementById('criteria-hint');
+
+    const hints = {
+      exams_completed: 'Unlock after completing this many exams.',
+      best_score: 'Unlock when the learner\'s best exam score reaches this percentage.',
+      avg_score: 'Unlock when the learner\'s average score across completed exams reaches this percentage.',
+      perfect_score: 'Unlock when the learner scores 100% on any exam.',
+    };
+
+    function sync() {
+      if (!criteriaSelect) return;
+      const val = criteriaSelect.value;
+
+      if (criteriaHint) {
+        criteriaHint.textContent = hints[val] || 'How learners qualify for this badge.';
+      }
+
+      if (val === 'perfect_score') {
+        thresholdRow.style.display = 'none';
+        return;
+      }
+
+      thresholdRow.style.display = '';
+      minAttemptsRow.style.display = val === 'avg_score' ? '' : 'none';
+
+      if (val === 'exams_completed') {
+        thresholdLabel.textContent = 'Number of exams';
+        thresholdHint.textContent = 'e.g. 5 for “Complete 5 exams”.';
+      } else {
+        thresholdLabel.textContent = 'Target score (%)';
+        thresholdHint.textContent = 'Percentage between 1 and 100.';
+      }
+    }
+
+    if (criteriaSelect) {
+      criteriaSelect.addEventListener('change', sync);
+      sync();
+    }
+  })();
+</script>
+{% endblock %}

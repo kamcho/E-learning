@@ -1,0 +1,518 @@
+{% extends 'accounts/admin_base.html' %}
+
+{% block title %}Profile — SomaKenya Admin{% endblock %}
+
+{% block extra_head %}
+<style>
+  .admin-back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-xs);
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--clr-primary);
+    text-decoration: none;
+    margin-bottom: var(--space-lg);
+  }
+  .admin-back-link:hover { text-decoration: underline; }
+
+  .profile-hero {
+    background: var(--grad-hero);
+    border-radius: var(--radius-xl);
+    padding: var(--space-2xl);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--space-xl);
+    margin-bottom: var(--space-2xl);
+    box-shadow: var(--shadow-lg);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .profile-hero::after {
+    content: '';
+    position: absolute;
+    top: -40%;
+    right: -5%;
+    width: 280px;
+    height: 280px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.06);
+    pointer-events: none;
+  }
+
+  .profile-hero-main {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xl);
+    position: relative;
+    z-index: 1;
+  }
+
+  .profile-hero-avatar {
+    width: 96px;
+    height: 96px;
+    border-radius: var(--radius-full);
+    background: rgba(255,255,255,0.18);
+    border: 3px solid rgba(255,255,255,0.35);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-heading);
+    font-size: 2.2rem;
+    font-weight: 800;
+    flex-shrink: 0;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+  }
+
+  .profile-hero-name {
+    font-family: var(--font-heading);
+    font-size: 1.85rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+  }
+
+  .profile-hero-meta {
+    font-size: 0.92rem;
+    opacity: 0.88;
+    margin-top: var(--space-xs);
+  }
+
+  .profile-hero-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-sm);
+    margin-top: var(--space-md);
+  }
+
+  .profile-hero-pill {
+    background: rgba(255,255,255,0.18);
+    border: 1px solid rgba(255,255,255,0.25);
+    border-radius: var(--radius-full);
+    padding: 0.25rem 0.85rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+  }
+
+  .profile-hero-pill.gold {
+    background: rgba(212, 160, 23, 0.25);
+    border-color: rgba(212, 160, 23, 0.4);
+  }
+
+  .profile-hero-actions {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+    position: relative;
+    z-index: 1;
+  }
+
+  .profile-hero-actions a {
+    font-size: 0.85rem;
+    font-weight: 600;
+    padding: 0.6rem 1.25rem;
+    border-radius: var(--radius-md);
+    text-decoration: none;
+    text-align: center;
+    transition: all var(--transition-fast);
+  }
+
+  .btn-hero-light {
+    background: #fff;
+    color: var(--clr-primary);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .btn-hero-light:hover {
+    background: var(--clr-surface-alt);
+    transform: translateY(-1px);
+  }
+
+  .btn-hero-outline {
+    background: rgba(255,255,255,0.12);
+    color: #fff;
+    border: 1px solid rgba(255,255,255,0.35);
+  }
+
+  .btn-hero-outline:hover {
+    background: rgba(255,255,255,0.22);
+  }
+
+  .profile-stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--space-lg);
+    margin-bottom: var(--space-2xl);
+  }
+
+  @media (max-width: 992px) { .profile-stats-row { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 480px) { .profile-stats-row { grid-template-columns: 1fr; } }
+
+  .profile-stat-card {
+    background: var(--clr-surface);
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-xl);
+    padding: var(--space-lg) var(--space-xl);
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-md);
+    transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+  }
+
+  .profile-stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+  }
+
+  .profile-stat-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: var(--radius-lg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+  }
+
+  .profile-stat-icon.green { background: rgba(13, 138, 78, 0.12); }
+  .profile-stat-icon.gold { background: rgba(212, 160, 23, 0.12); }
+  .profile-stat-icon.blue { background: rgba(59, 130, 246, 0.12); }
+  .profile-stat-icon.purple { background: rgba(139, 92, 246, 0.12); }
+
+  .profile-stat-label {
+    font-size: 0.78rem;
+    color: var(--clr-text-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .profile-stat-value {
+    font-family: var(--font-heading);
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--clr-text);
+    line-height: 1.2;
+    margin-top: 2px;
+  }
+
+  .profile-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-xl);
+  }
+
+  @media (max-width: 992px) { .profile-grid { grid-template-columns: 1fr; } }
+
+  .profile-panel {
+    background: var(--clr-surface);
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+  }
+
+  .profile-panel-head {
+    padding: var(--space-lg) var(--space-xl);
+    border-bottom: 1px solid var(--clr-border);
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+  }
+
+  .profile-panel-head h2 {
+    font-family: var(--font-heading);
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--clr-text);
+  }
+
+  .profile-panel-head span {
+    font-size: 1.1rem;
+  }
+
+  .profile-panel-body {
+    padding: var(--space-xl);
+  }
+
+  .info-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .info-item {
+    display: grid;
+    grid-template-columns: 36px 1fr auto;
+    align-items: center;
+    gap: var(--space-md);
+    padding: var(--space-md) 0;
+    border-bottom: 1px solid var(--clr-border);
+  }
+
+  .info-item:last-child { border-bottom: none; padding-bottom: 0; }
+  .info-item:first-child { padding-top: 0; }
+
+  .info-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-md);
+    background: var(--clr-surface-alt);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.95rem;
+  }
+
+  .info-label {
+    font-size: 0.78rem;
+    color: var(--clr-text-light);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .info-value {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--clr-text);
+    margin-top: 2px;
+  }
+
+  .info-item > div:last-child {
+    text-align: right;
+  }
+
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0.3rem 0.75rem;
+    border-radius: var(--radius-full);
+    font-size: 0.78rem;
+    font-weight: 600;
+  }
+
+  .status-badge.active {
+    background: rgba(13, 138, 78, 0.1);
+    color: var(--clr-primary);
+  }
+
+  .status-badge.inactive {
+    background: rgba(193, 39, 45, 0.1);
+    color: var(--clr-danger);
+  }
+
+  .status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+
+  .access-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-sm);
+    margin-top: var(--space-md);
+  }
+
+  .access-tag {
+    padding: 0.4rem 0.85rem;
+    border-radius: var(--radius-full);
+    font-size: 0.8rem;
+    font-weight: 600;
+    border: 1px solid var(--clr-border);
+    background: var(--clr-surface-alt);
+    color: var(--clr-text-muted);
+  }
+
+  .access-tag.on {
+    background: rgba(13, 138, 78, 0.08);
+    border-color: rgba(13, 138, 78, 0.25);
+    color: var(--clr-primary);
+  }
+
+  .quick-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-sm);
+    margin-top: var(--space-lg);
+  }
+
+  .quick-action {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: var(--space-md);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--clr-border);
+    background: var(--clr-surface-alt);
+    text-decoration: none;
+    color: var(--clr-text);
+    font-size: 0.85rem;
+    font-weight: 600;
+    transition: all var(--transition-fast);
+  }
+
+  .quick-action:hover {
+    border-color: var(--clr-primary);
+    background: rgba(13, 138, 78, 0.06);
+    color: var(--clr-primary);
+    transform: translateY(-1px);
+  }
+
+  .quick-action span:first-child { font-size: 1.1rem; }
+</style>
+{% endblock %}
+
+{% block admin_content %}
+<a href="{% url 'accounts:admin_dashboard' %}" class="admin-back-link">&larr; Back to Dashboard</a>
+
+<div class="profile-hero">
+  <div class="profile-hero-main">
+    <div class="profile-hero-avatar">{{ user.first_name|first|upper }}{{ user.last_name|first|upper }}</div>
+    <div>
+      <div class="profile-hero-name">{{ user.full_name }}</div>
+      <div class="profile-hero-meta">{{ user.phone }}{% if user.email %} &middot; {{ user.email }}{% endif %}</div>
+      <div class="profile-hero-pills">
+        <span class="profile-hero-pill">{{ user.get_role_display }}</span>
+        <span class="profile-hero-pill gold">SomaKenya Admin</span>
+        {% if user.is_staff %}<span class="profile-hero-pill">Staff</span>{% endif %}
+      </div>
+    </div>
+  </div>
+  <div class="profile-hero-actions">
+    <a href="{% url 'accounts:admin_dashboard' %}" class="btn-hero-light">Go to Dashboard</a>
+    {% if user.is_staff %}
+    <a href="{{ django_admin_url }}" class="btn-hero-outline" target="_blank" rel="noopener">Edit in Django Admin</a>
+    {% endif %}
+  </div>
+</div>
+
+<div class="profile-stats-row">
+  <div class="profile-stat-card">
+    <div class="profile-stat-icon green">&#128197;</div>
+    <div>
+      <div class="profile-stat-label">Member for</div>
+      <div class="profile-stat-value">{{ days_member }} day{{ days_member|pluralize }}</div>
+    </div>
+  </div>
+  <div class="profile-stat-card">
+    <div class="profile-stat-icon gold">&#128218;</div>
+    <div>
+      <div class="profile-stat-label">Quizzes Created</div>
+      <div class="profile-stat-value">{{ quizzes_created }}</div>
+    </div>
+  </div>
+  <div class="profile-stat-card">
+    <div class="profile-stat-icon blue">&#9997;</div>
+    <div>
+      <div class="profile-stat-label">Quiz Attempts</div>
+      <div class="profile-stat-value">{{ quiz_attempts }}</div>
+    </div>
+  </div>
+  <div class="profile-stat-card">
+    <div class="profile-stat-icon purple">&#128274;</div>
+    <div>
+      <div class="profile-stat-label">Account Status</div>
+      <div class="profile-stat-value">{% if user.is_active %}Active{% else %}Inactive{% endif %}</div>
+    </div>
+  </div>
+</div>
+
+<div class="profile-grid">
+  <div class="profile-panel">
+    <div class="profile-panel-head">
+      <span>&#128100;</span>
+      <h2>Account Information</h2>
+    </div>
+    <div class="profile-panel-body">
+      <div class="info-list">
+        <div class="info-item">
+          <div class="info-icon">&#128222;</div>
+          <div>
+            <div class="info-label">Phone</div>
+            <div class="info-value">{{ user.phone }}</div>
+          </div>
+        </div>
+        <div class="info-item">
+          <div class="info-icon">&#9993;</div>
+          <div>
+            <div class="info-label">Email</div>
+            <div class="info-value">{{ user.email|default:"Not set" }}</div>
+          </div>
+        </div>
+        <div class="info-item">
+          <div class="info-icon">&#127919;</div>
+          <div>
+            <div class="info-label">Role</div>
+            <div class="info-value">{{ user.get_role_display }}</div>
+          </div>
+        </div>
+        <div class="info-item">
+          <div class="info-icon">&#128197;</div>
+          <div>
+            <div class="info-label">Joined</div>
+            <div class="info-value">{{ user.date_joined|date:"d M Y" }}</div>
+          </div>
+        </div>
+        <div class="info-item">
+          <div class="info-icon">&#128336;</div>
+          <div>
+            <div class="info-label">Last login</div>
+            <div class="info-value">{{ user.last_login|date:"d M Y, H:i"|default:"Never" }}</div>
+          </div>
+          <div>
+            {% if user.is_active %}
+              <span class="status-badge active"><span class="status-dot"></span> Active</span>
+            {% else %}
+              <span class="status-badge inactive"><span class="status-dot"></span> Inactive</span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="profile-panel">
+    <div class="profile-panel-head">
+      <span>&#9881;</span>
+      <h2>Access &amp; Permissions</h2>
+    </div>
+    <div class="profile-panel-body">
+      <p style="font-size: 0.88rem; color: var(--clr-text-muted); line-height: 1.6;">
+        Your admin account has access to the SomaKenya platform dashboard, curriculum management via Django Admin, and user oversight tools.
+      </p>
+      <div class="access-tags">
+        <span class="access-tag on">Admin Dashboard</span>
+        {% if user.is_staff %}<span class="access-tag on">Django Staff</span>{% endif %}
+        {% if user.is_superuser %}<span class="access-tag on">Superuser</span>{% endif %}
+        <span class="access-tag{% if user.is_active %} on{% endif %}">Platform Access</span>
+      </div>
+      <div class="quick-actions">
+        <a href="{% url 'accounts:admin_dashboard' %}" class="quick-action">
+          <span>&#9632;</span> Dashboard
+        </a>
+        <a href="{% url 'subjects:subject_list' %}" class="quick-action">
+          <span>&#128218;</span> Subjects
+        </a>
+        <a href="{% url 'core:exams_list' %}" class="quick-action">
+          <span>&#9997;</span> Exams
+        </a>
+        <a href="{% url 'core:landing' %}" class="quick-action">
+          <span>&#127968;</span> Public Site
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

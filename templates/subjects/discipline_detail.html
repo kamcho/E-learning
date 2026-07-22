@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block title %}{{ discipline.name }} — SomaKenya{% endblock %}
+
+{% block content %}
+<div class="breadcrumbs">
+  <a href="{% url 'core:landing' %}">Home</a>
+  <span>/</span>
+  <a href="{% url 'subjects:discipline_list' %}">Disciplines</a>
+  <span>/</span>
+  <span>{{ discipline.name }}</span>
+</div>
+
+<div class="page-header">
+  <div class="container page-header-content">
+    <div>
+      <h1 class="page-title">{{ discipline.name }}</h1>
+      <p class="page-subtitle">Subjects and curriculum structure for this discipline area.</p>
+    </div>
+  </div>
+</div>
+
+<div class="content-grid">
+  <!-- Left: Subjects in this Discipline -->
+  <div>
+    <div class="card">
+      <h2 class="card-title">📚 Subjects in {{ discipline.name }}</h2>
+      
+      {% if subjects %}
+        <div class="item-list">
+          {% for subject in subjects %}
+            <div class="list-item">
+              <div>
+                <a href="{% url 'subjects:subject_detail' subject.slug %}" class="list-item-title">
+                  {{ subject.name }}
+                </a>
+                <div class="list-item-meta">
+                  Grade Level: <strong>{{ subject.grade_level.name }}</strong> | Slug: <code>{{ subject.slug }}</code>
+                </div>
+              </div>
+              <div>
+                {% if subject.is_active %}
+                  <span class="badge badge-primary">Active</span>
+                {% else %}
+                  <span class="badge badge-danger">Inactive</span>
+                {% endif %}
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty-state">
+          <div class="empty-state-icon">📚</div>
+          <h3>No Subjects Registered</h3>
+          <p>Create a subject for this discipline using the form on the right.</p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Right: Add Subject form -->
+  <div>
+    <div class="card">
+      <h2 class="card-title">➕ Add Subject to Discipline</h2>
+      <form method="post" novalidate>
+        {% csrf_token %}
+        
+        {% for field in form %}
+          {% if field.is_hidden %}
+            {{ field }}
+          {% else %}
+            <div class="form-group">
+              {% if field.field.widget.input_type == 'checkbox' %}
+                <label class="form-checkbox-label">
+                  {{ field }}
+                  {{ field.label }}
+                </label>
+              {% else %}
+                <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+              {% endif %}
+              
+              {% if field.errors %}
+                <div style="color: var(--clr-danger); font-size: 0.82rem; margin-top: 4px;">
+                  {{ field.errors.0 }}
+                </div>
+              {% endif %}
+            </div>
+          {% endif %}
+        {% endfor %}
+        
+        <button type="submit" class="btn btn-secondary" style="width: 100%; justify-content: center; padding: 0.75rem;">
+          Save Subject
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

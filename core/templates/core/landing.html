@@ -1,0 +1,504 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="SomaKenya — Kenya's premier CBC e-learning platform. Interactive lessons, assessments and progress tracking aligned to the Competency-Based Curriculum for all levels.">
+  <meta name="keywords" content="CBC, Kenya, e-learning, competency based curriculum, KICD, online learning, primary school, junior school">
+  <title>SomaKenya — CBC E-Learning Platform</title>
+  <script>
+    (function () {
+      try {
+        var t = localStorage.getItem('somakenya-theme');
+        if (t !== 'light' && t !== 'dark') {
+          t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+        document.documentElement.setAttribute('data-theme', t);
+      } catch (e) {
+        document.documentElement.setAttribute('data-theme', 'light');
+      }
+    })();
+  </script>
+  <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+</head>
+<body>
+
+  <!-- ═══════════════ NAVBAR ═══════════════ -->
+  <nav class="navbar" id="navbar">
+    <div class="container">
+      <a href="#" class="navbar-brand">
+        <span class="logo-icon">S</span>
+        <span class="brand-text">SomaKenya</span>
+      </a>
+
+      <div class="navbar-links">
+        <a href="#features">Features</a>
+        <a href="#levels">CBC Levels</a>
+        <a href="#pricing">Pricing</a>
+        {% if request.user.is_authenticated %}
+          <a href="{% url 'subjects:grade_level_list' %}">Curriculum Builder</a>
+          <a href="{% url 'subscriptions:plans' %}">Subscriptions</a>
+        {% else %}
+          <a href="#about">About</a>
+        {% endif %}
+      </div>
+
+      <div class="navbar-actions">
+        <button type="button" class="theme-toggle" data-theme-toggle aria-label="Switch theme" title="Switch theme">
+          <svg class="theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="4"/>
+            <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
+          </svg>
+          <svg class="theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+            <path d="M21 14.5A8.5 8.5 0 1 1 9.5 3a7 7 0 0 0 11.5 11.5z"/>
+          </svg>
+        </button>
+        {% if request.user.is_authenticated %}
+          <span style="font-weight: 600; font-size: 0.95rem; color: rgba(255,255,255,0.9); margin-right: 10px;">
+            Hi, {{ request.user.first_name }}!
+          </span>
+          <a href="{% url 'accounts:signout' %}" class="btn-signup" style="background: var(--clr-danger); color: white; box-shadow: none;">Log Out</a>
+        {% else %}
+          <a href="{% url 'accounts:signin' %}" class="btn-login">Log In</a>
+          <a href="{% url 'accounts:signup' %}" class="btn-signup">Get Started</a>
+        {% endif %}
+      </div>
+
+      <button class="menu-toggle" id="menu-toggle" aria-label="Open navigation menu" aria-expanded="false" aria-controls="navbar-drawer">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+  </nav>
+
+  <div class="navbar-overlay" id="navbar-overlay" aria-hidden="true"></div>
+  <div class="navbar-drawer" id="navbar-drawer">
+    <div class="navbar-drawer-brand">
+      <span class="logo-icon">S</span>
+      <span class="brand-text" style="color: var(--clr-text);">SomaKenya</span>
+    </div>
+    <div class="navbar-drawer-links">
+      <a href="#features">Features</a>
+      <a href="#levels">CBC Levels</a>
+      <a href="#pricing">Pricing</a>
+      {% if request.user.is_authenticated %}
+        <a href="{% url 'subjects:grade_level_list' %}">Curriculum Builder</a>
+        <a href="{% url 'core:exams_list' %}">Exam Center</a>
+        <a href="{% url 'subscriptions:plans' %}">Subscriptions</a>
+        {% if request.user.is_guardian %}
+          <a href="{% url 'accounts:guardian_dashboard' %}">My Dashboard</a>
+        {% elif request.user.is_admin_role or request.user.is_staff %}
+          <a href="{% url 'accounts:admin_dashboard' %}">Admin Dashboard</a>
+        {% endif %}
+      {% else %}
+        <a href="#about">About</a>
+      {% endif %}
+    </div>
+    <div class="navbar-drawer-actions">
+      <button type="button" class="theme-toggle" data-theme-toggle aria-label="Switch theme" title="Switch theme">
+        <svg class="theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="4"/>
+          <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
+        </svg>
+        <svg class="theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+          <path d="M21 14.5A8.5 8.5 0 1 1 9.5 3a7 7 0 0 0 11.5 11.5z"/>
+        </svg>
+      </button>
+      {% if request.user.is_authenticated %}
+        <p class="navbar-drawer-greeting">Hi, {{ request.user.first_name }}!</p>
+        <a href="{% url 'accounts:signout' %}" class="btn-signup" style="background: var(--clr-danger); color: white; box-shadow: none;">Log Out</a>
+      {% else %}
+        <a href="{% url 'accounts:signin' %}" class="btn-login">Log In</a>
+        <a href="{% url 'accounts:signup' %}" class="btn-signup">Get Started</a>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- ═══════════════ HERO ═══════════════ -->
+  <section class="hero" id="hero">
+    <div class="hero-grid"></div>
+    <div class="container">
+      <div class="hero-content">
+        <div class="hero-badge">
+          <span class="badge-dot"></span>
+          Aligned to KICD CBC Curriculum
+        </div>
+
+        <h1>
+          Learn Smarter with<br>
+          Kenya's <span class="highlight">CBE Online EXAMS Platform</span>
+        </h1>
+
+        <p class="hero-description">
+          Interactive lessons, assessments, and progress tracking built for Kenya's
+          Competency-Based Curriculum. From Pre-Primary to Senior School — every
+          learner finds their path here.
+        </p>
+
+        <div class="hero-cta">
+          {% if request.user.is_authenticated %}
+            {% if request.user.is_guardian %}
+            <a href="{% url 'subscriptions:plans' %}" class="btn btn-primary">
+              View Subscription Plans
+              <span class="btn-icon">→</span>
+            </a>
+            <a href="{% url 'core:exams_list' %}" class="btn btn-outline">
+              Exam Center
+            </a>
+            {% else %}
+            <a href="{% url 'subjects:grade_level_list' %}" class="btn btn-primary">
+              Go to Curriculum Builder
+              <span class="btn-icon">→</span>
+            </a>
+            {% endif %}
+          {% else %}
+            <a href="{% url 'accounts:signup' %}" class="btn btn-primary">
+              Get Started
+              <span class="btn-icon">→</span>
+            </a>
+            <a href="#pricing" class="btn btn-outline">
+              View Pricing
+            </a>
+          {% endif %}
+        </div>
+
+        <div class="hero-stats">
+          <div class="stat-item">
+            <div class="stat-number" data-count="12000" data-suffix="+">0</div>
+            <div class="stat-label">Active Learners</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-number" data-count="850" data-suffix="+">0</div>
+            <div class="stat-label">Video Lessons</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-number" data-count="47" data-suffix="">0</div>
+            <div class="stat-label">Counties Reached</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="hero-visual">
+        <div class="hero-image-wrapper">
+          <img src="{% static 'images/hero-illustration.png' %}" alt="Kenyan students learning with tablets and books in a vibrant classroom setting" width="600" height="400">
+        </div>
+
+        <!-- Floating accent cards -->
+        <div class="floating-card card-top">
+          <div class="card-icon green">📊</div>
+          <div class="card-info">
+            <div class="card-title">Progress Tracking</div>
+            <div class="card-subtitle">Real-time analytics</div>
+          </div>
+        </div>
+
+        <div class="floating-card card-bottom">
+          <div class="card-icon gold">🏆</div>
+          <div class="card-info">
+            <div class="card-title">CBC Aligned</div>
+            <div class="card-subtitle">KICD Approved Content</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════ FEATURES ═══════════════ -->
+  <section class="features" id="features">
+    <div class="container">
+      <div class="section-header reveal">
+        <span class="section-tag">✦ Why SomaKenya</span>
+        <h2 class="section-title">Everything a CBC Learner Needs</h2>
+        <p class="section-subtitle">
+          We combine interactive content, smart assessments, and real-time
+          feedback to make the CBC experience engaging and effective.
+        </p>
+      </div>
+
+      <div class="features-grid">
+        <div class="feature-card reveal">
+          <div class="feature-icon icon-green">📚</div>
+          <h3>Interactive Lessons</h3>
+          <p>
+            Rich multimedia lessons with videos, animations and quizzes
+            covering all CBC strands and sub-strands.
+          </p>
+        </div>
+
+        <div class="feature-card reveal">
+          <div class="feature-icon icon-gold">📝</div>
+          <h3>Smart Assessments</h3>
+          <p>
+            Formative and summative assessments that adapt to the learner's
+            pace, aligned to CBC competency benchmarks.
+          </p>
+        </div>
+
+        <div class="feature-card reveal">
+          <div class="feature-icon icon-red">📈</div>
+          <h3>Progress Dashboard</h3>
+          <p>
+            Parents and teachers track learner progress across all seven
+            core competencies in real time.
+          </p>
+        </div>
+
+        <div class="feature-card reveal">
+          <div class="feature-icon icon-green">💬</div>
+          <h3>Discussion Forums</h3>
+          <p>
+            Learners collaborate and discuss topics with peers and
+            teachers in a safe, moderated environment.
+          </p>
+        </div>
+
+        <div class="feature-card reveal">
+          <div class="feature-icon icon-gold">🎮</div>
+          <h3>Gamified Learning</h3>
+          <p>
+            Earn badges, climb leaderboards, and unlock rewards as you
+            master each strand of the curriculum.
+          </p>
+        </div>
+
+        <div class="feature-card reveal">
+          <div class="feature-icon icon-red">📱</div>
+          <h3>Learn Anywhere</h3>
+          <p>
+            Access lessons on any device — phone, tablet, or laptop.
+            Download content for offline study.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════ CBC LEVELS ═══════════════ -->
+  <section class="levels" id="levels">
+    <div class="container">
+      <div class="section-header reveal">
+        <span class="section-tag">📖 Curriculum Levels</span>
+        <h2 class="section-title">Content for Every CBC Level</h2>
+        <p class="section-subtitle">
+          From the foundation years all the way to Senior School, our content
+          maps precisely to the KICD curriculum design.
+        </p>
+      </div>
+
+      <div class="levels-grid">
+        <div class="level-card reveal">
+          <span class="level-emoji">🌱</span>
+          <h3>Pre-Primary</h3>
+          <p class="level-grades">PP1 – PP2</p>
+          <p class="level-desc">
+            Play-based learning activities that build foundational literacy,
+            numeracy and creativity skills.
+          </p>
+          <div class="level-bar"></div>
+        </div>
+
+        <div class="level-card reveal">
+          <span class="level-emoji">📗</span>
+          <h3>Lower Primary</h3>
+          <p class="level-grades">Grade 1 – 3</p>
+          <p class="level-desc">
+            Core subjects with integrated approaches nurturing
+            communication and social competencies.
+          </p>
+          <div class="level-bar"></div>
+        </div>
+
+        <div class="level-card reveal">
+          <span class="level-emoji">📘</span>
+          <h3>Upper Primary</h3>
+          <p class="level-grades">Grade 4 – 6</p>
+          <p class="level-desc">
+            Deeper subject exploration preparing learners for
+            Junior School with critical thinking focus.
+          </p>
+          <div class="level-bar"></div>
+        </div>
+
+        <div class="level-card reveal">
+          <span class="level-emoji">🎓</span>
+          <h3>Junior School</h3>
+          <p class="level-grades">Grade 7 – 9</p>
+          <p class="level-desc">
+            Pathway subjects and career guidance helping learners
+            discover their talents and interests.
+          </p>
+          <div class="level-bar"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════ PRICING ═══════════════ -->
+  <section class="pricing" id="pricing">
+    <div class="container">
+      <div class="section-header reveal">
+        <span class="section-tag">💳 Pricing</span>
+        <h2 class="section-title">Pay Per Test or Save with a Pack</h2>
+        <p class="section-subtitle">
+          One test for KES 10, weekly and monthly packs, or unlimited yearly access.
+          Pay securely with M-Pesa STK Push.
+        </p>
+      </div>
+
+      {% if active_subscription %}
+      <div class="pricing-active-note reveal">
+        <strong>Your plan:</strong> {{ active_subscription.plan.name }}
+        &middot; {{ active_subscription.tests_balance_label }}
+        &middot; until {{ active_subscription.ends_at|date:"d M Y" }}
+        &middot; <a href="{% url 'subscriptions:my_subscription' %}" style="color: var(--clr-primary); font-weight: 700;">Manage subscription</a>
+      </div>
+      {% endif %}
+
+      {% if subscription_plans %}
+      <div class="pricing-grid">
+        {% for plan in subscription_plans %}
+        <div class="pricing-card reveal {% if plan.slug == 'monthly-pack' %}featured{% endif %}">
+          {% if plan.slug == 'yearly-unlimited' %}
+          <span class="pricing-badge">Best value</span>
+          {% endif %}
+          <h3>{{ plan.name }}</h3>
+          <div class="pricing-amount">KES {{ plan.price_kes|floatformat:0 }}</div>
+          <p style="font-size: 0.82rem; font-weight: 700; color: var(--clr-primary); margin: 0.25rem 0 0.5rem;">
+            {{ plan.tests_label }} &middot; {{ plan.duration_days }} days
+          </p>
+          {% if plan.description %}
+          <p class="pricing-desc">{{ plan.description }}</p>
+          {% endif %}
+          <ul class="pricing-features">
+            {% for feature in plan.features %}
+            <li>{{ feature }}</li>
+            {% empty %}
+            <li>Up to {{ plan.max_learners }} learner{{ plan.max_learners|pluralize }}</li>
+            <li>Unlimited practice exams</li>
+            <li>Guardian dashboard & analytics</li>
+            {% endfor %}
+          </ul>
+          <p class="pricing-mpesa">📱 Pay with M-Pesa</p>
+          {% if request.user.is_authenticated %}
+            <a href="{% url 'subscriptions:subscribe' plan.slug %}" class="btn btn-primary" style="width: 100%; justify-content: center;">
+              Subscribe now
+            </a>
+          {% else %}
+            <a href="{% url 'accounts:signup' %}?next={% url 'subscriptions:subscribe' plan.slug %}" class="btn btn-primary" style="width: 100%; justify-content: center;">
+              Sign up to subscribe
+            </a>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+      <p style="text-align: center; margin-top: var(--space-xl); font-size: 0.88rem; color: var(--clr-text-muted);">
+        <a href="{% url 'subscriptions:plans' %}" style="color: var(--clr-primary); font-weight: 600;">View all plan details</a>
+      </p>
+      {% else %}
+      <p style="text-align: center; color: var(--clr-text-muted);">Subscription plans coming soon.</p>
+      {% endif %}
+    </div>
+  </section>
+
+  <!-- ═══════════════ CTA ═══════════════ -->
+  <section class="cta-section" id="about">
+    <div class="container reveal">
+      <h2 class="section-title">Ready to Transform Learning?</h2>
+      <p class="section-subtitle">
+        Join thousands of Kenyan learners, teachers, and parents already
+        using SomaKenya to excel in the CBC curriculum.
+      </p>
+      <div class="cta-buttons">
+        {% if request.user.is_authenticated %}
+          {% if request.user.is_guardian %}
+          <a href="{% url 'subscriptions:plans' %}" class="btn btn-primary">
+            Choose a Plan
+            <span class="btn-icon">→</span>
+          </a>
+          <a href="{% url 'core:exams_list' %}" class="btn btn-outline">
+            Browse Exams
+          </a>
+          {% else %}
+          <a href="{% url 'subjects:grade_level_list' %}" class="btn btn-primary">
+            Open Curriculum Builder
+            <span class="btn-icon">→</span>
+          </a>
+          {% endif %}
+        {% else %}
+          <a href="{% url 'accounts:signup' %}" class="btn btn-primary">
+            Create Account
+            <span class="btn-icon">→</span>
+          </a>
+          <a href="#pricing" class="btn btn-outline">
+            See Pricing
+          </a>
+        {% endif %}
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════ FOOTER ═══════════════ -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <div class="brand-name">
+            <span class="logo-icon">S</span>
+            SomaKenya
+          </div>
+          <p>
+            Kenya's trusted CBC e-learning platform. Empowering every
+            learner to achieve their full potential through quality,
+            curriculum-aligned digital education.
+          </p>
+        </div>
+
+        <div class="footer-col">
+          <h4>Platform</h4>
+          <ul>
+            <li><a href="#">Subjects</a></li>
+            <li><a href="#">Assessments</a></li>
+            <li><a href="#">Progress Reports</a></li>
+            <li><a href="{% url 'subscriptions:plans' %}">Pricing</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4>CBC Levels</h4>
+          <ul>
+            <li><a href="#">Pre-Primary</a></li>
+            <li><a href="#">Lower Primary</a></li>
+            <li><a href="#">Upper Primary</a></li>
+            <li><a href="#">Junior School</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4>Company</h4>
+          <ul>
+            <li><a href="#">About Us</a></li>
+            <li><a href="#">Careers</a></li>
+            <li><a href="#">Contact</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <p>&copy; 2026 SomaKenya. All rights reserved.</p>
+        <div class="social-links">
+          <a href="#" aria-label="Twitter">𝕏</a>
+          <a href="#" aria-label="Facebook">f</a>
+          <a href="#" aria-label="Instagram">📷</a>
+          <a href="#" aria-label="YouTube">▶</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script src="{% static 'js/theme.js' %}"></script>
+  <script src="{% static 'js/main.js' %}"></script>
+</body>
+</html>

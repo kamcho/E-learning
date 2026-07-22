@@ -1,0 +1,225 @@
+{% extends 'accounts/admin_base.html' %}
+
+{% block title %}Subscriptions — Admin — SomaKenya{% endblock %}
+
+{% block extra_head %}
+{% include 'accounts/partials/gd_metric_cards_styles.html' %}
+{% include 'accounts/partials/admin_list_styles.html' %}
+<style>
+  .sub-status-pill {
+    display: inline-block;
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 0.2rem 0.55rem;
+    border-radius: var(--radius-full);
+  }
+  .sub-status-pill.active { background: rgba(13, 138, 78, 0.12); color: var(--clr-primary); }
+  .sub-status-pill.pending { background: rgba(212, 160, 23, 0.12); color: #b8860b; }
+  .sub-status-pill.expired { background: rgba(100, 116, 139, 0.12); color: #64748b; }
+  .sub-status-pill.cancelled { background: rgba(193, 39, 45, 0.1); color: var(--clr-danger); }
+  .sub-live-badge {
+    display: inline-block;
+    font-size: 0.62rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 0.12rem 0.4rem;
+    border-radius: var(--radius-full);
+    background: rgba(13, 138, 78, 0.15);
+    color: var(--clr-primary);
+    margin-left: 0.35rem;
+    vertical-align: middle;
+  }
+  .sub-credits {
+    font-family: var(--font-heading);
+    font-weight: 800;
+    color: var(--clr-text);
+  }
+  .admin-filter-select {
+    padding: 0.55rem 0.85rem;
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-md);
+    font-size: 0.88rem;
+    background: var(--clr-surface);
+    color: var(--clr-text);
+  }
+</style>
+{% endblock %}
+
+{% block admin_content %}
+<div class="admin-list-banner">
+  <div>
+    <a href="{% url 'accounts:admin_dashboard' %}" class="admin-list-back admin-list-back--light">&larr; Back to dashboard</a>
+    <h1>Subscriptions</h1>
+    <p>User plans, test credits, and validity across the platform</p>
+  </div>
+  <a href="{{ django_admin_url }}" class="btn-list-banner" target="_blank" rel="noopener">Django Admin</a>
+</div>
+
+<div class="gd-metrics-grid admin-list-metrics">
+  <div class="gd-metric-card gd-metric-card--green">
+    <div class="gd-metric-top">
+      <div class="gd-metric-icon" aria-hidden="true">&#9989;</div>
+      <div class="gd-metric-value">{{ stats.live_count }}</div>
+    </div>
+    <div class="gd-metric-label">Live subscriptions</div>
+    <div class="gd-metric-footer">
+      <span class="gd-metric-footer-icon" aria-hidden="true">&#128106;</span>
+      <span>{{ stats.guardians_with_live }} guardian{{ stats.guardians_with_live|pluralize }} with access</span>
+    </div>
+  </div>
+  <div class="gd-metric-card gd-metric-card--blue">
+    <div class="gd-metric-top">
+      <div class="gd-metric-icon" aria-hidden="true">&#128203;</div>
+      <div class="gd-metric-value">{{ stats.total }}</div>
+    </div>
+    <div class="gd-metric-label">All records</div>
+    <div class="gd-metric-footer">
+      <span class="gd-metric-footer-icon" aria-hidden="true">&#128202;</span>
+      <span>Including history &amp; renewals</span>
+    </div>
+  </div>
+  <div class="gd-metric-card gd-metric-card--orange">
+    <div class="gd-metric-top">
+      <div class="gd-metric-icon" aria-hidden="true">&#9203;</div>
+      <div class="gd-metric-value">{{ stats.pending_count }}</div>
+    </div>
+    <div class="gd-metric-label">Pending</div>
+    <div class="gd-metric-footer">
+      <span class="gd-metric-footer-icon" aria-hidden="true">&#128179;</span>
+      <span>Awaiting payment completion</span>
+    </div>
+  </div>
+  <div class="gd-metric-card gd-metric-card--purple">
+    <div class="gd-metric-top">
+      <div class="gd-metric-icon" aria-hidden="true">&#128337;</div>
+      <div class="gd-metric-value">{{ stats.expired_count }}</div>
+    </div>
+    <div class="gd-metric-label">Expired</div>
+    <div class="gd-metric-footer">
+      <span class="gd-metric-footer-icon" aria-hidden="true">&#10060;</span>
+      <span>{{ stats.cancelled_count }} cancelled</span>
+    </div>
+  </div>
+</div>
+
+<div class="admin-panel">
+  <div class="admin-panel-head-flex">
+    <div>
+      <h2>Subscription directory</h2>
+      <p class="admin-panel-sub">Search by guardian, phone, or plan name</p>
+    </div>
+    <span class="table-count">
+      {% if page_obj.paginator.num_pages > 1 %}
+        Page {{ page_obj.number }}/{{ page_obj.paginator.num_pages }} &middot;
+      {% endif %}
+      {% if search or status_filter %}{{ page_obj.paginator.count }} match{{ page_obj.paginator.count|pluralize:"es" }}{% else %}{{ stats.total }} total{% endif %}
+    </span>
+  </div>
+
+  <form method="get" class="admin-list-search-form">
+    <label class="table-search">
+      <span class="table-search-icon" aria-hidden="true">&#128269;</span>
+      <input type="search" name="q" value="{{ search }}" placeholder="Search guardian, phone, plan…" autocomplete="off">
+    </label>
+    <select name="status" class="admin-filter-select" aria-label="Filter by status">
+      <option value="">All statuses</option>
+      {% for val, label in status_choices %}
+        <option value="{{ val }}" {% if status_filter == val %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit">Filter</button>
+    {% if search or status_filter %}
+      <a href="{% url 'subscriptions:admin_subscriptions_list' %}" class="admin-page-btn">Clear</a>
+    {% endif %}
+  </form>
+
+  {% if page_obj.object_list %}
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Guardian</th>
+        <th>Plan</th>
+        <th>Status</th>
+        <th>Tests left</th>
+        <th>Used</th>
+        <th>Valid from</th>
+        <th>Valid until</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for sub in page_obj %}
+      <tr class="clickable-row" data-href="{% url 'accounts:admin_user_detail' sub.user.pk %}" tabindex="0" role="link">
+        <td>
+          <div class="list-row-identity">
+            <div class="list-row-avatar list-row-avatar--blue">{{ sub.user.first_name|first|upper }}{{ sub.user.last_name|first|upper }}</div>
+            <div>
+              <div class="list-row-name">{{ sub.user.get_full_name|default:sub.user.phone }}</div>
+              <div class="list-row-meta">{{ sub.user.phone }}</div>
+            </div>
+          </div>
+        </td>
+        <td>
+          <div class="list-row-name">{{ sub.plan.name }}</div>
+          <div class="list-row-meta">{{ sub.plan.tests_label }} &middot; KES {{ sub.plan.price_kes|floatformat:0 }}</div>
+        </td>
+        <td>
+          <span class="sub-status-pill {{ sub.status }}">{{ sub.get_status_display }}</span>
+          {% if sub.is_active_now %}
+            <span class="sub-live-badge">Live</span>
+          {% endif %}
+        </td>
+        <td>
+          <span class="sub-credits">{{ sub.tests_balance_label }}</span>
+        </td>
+        <td>{{ sub.tests_used }}</td>
+        <td>
+          {% if sub.starts_at %}
+            <div class="list-row-name">{{ sub.starts_at|date:"d M Y" }}</div>
+            <div class="list-row-meta">{{ sub.starts_at|date:"H:i" }}</div>
+          {% else %}
+            <span class="list-row-meta">—</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if sub.ends_at %}
+            <div class="list-row-name">{{ sub.ends_at|date:"d M Y" }}</div>
+            <div class="list-row-meta">{{ sub.ends_at|date:"H:i" }}</div>
+          {% else %}
+            <span class="list-row-meta">—</span>
+          {% endif %}
+        </td>
+        <td><span class="list-row-action">User &rarr;</span></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% include 'accounts/partials/admin_pagination.html' with page_obj=page_obj page_param='page' pagination_extra=pagination_extra %}
+  {% else %}
+  <div class="admin-list-empty">
+    <div class="admin-list-empty-icon" aria-hidden="true">&#128203;</div>
+    <p>{% if search or status_filter %}No subscriptions match your filters.{% else %}No subscriptions recorded yet.{% endif %}</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  document.querySelectorAll('.data-table tbody tr.clickable-row[data-href]').forEach(function (row) {
+    row.addEventListener('click', function () {
+      window.location.href = row.dataset.href;
+    });
+    row.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        window.location.href = row.dataset.href;
+      }
+    });
+  });
+})();
+</script>
+{% endblock %}

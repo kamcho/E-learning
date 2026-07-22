@@ -1,0 +1,2473 @@
+{% extends "base.html" %}
+
+{% block title %}Exams — SomaKenya{% endblock %}
+
+{% block body_class %}{% if request.user.is_guardian and not staff_exams_browse %} guardian-dash-dark{% endif %}{% endblock %}
+{% block main_extra_class %}{% if request.user.is_guardian and not staff_exams_browse %}guardian-dash-main{% endif %}{% endblock %}
+
+{% block extra_head %}
+{% if request.user.is_guardian and not staff_exams_browse %}
+{% include 'accounts/partials/guardian_dashboard_crimson_theme.html' %}
+{% include 'core/partials/exams_list_crimson_theme.html' %}
+{% include 'core/partials/exams_wizard_styles.html' %}
+{% endif %}
+<style>
+  /* ── Filter bar ── */
+  .filter-bar {
+    background: var(--clr-surface);
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-xl);
+    padding: var(--space-lg) var(--space-xl);
+    box-shadow: var(--shadow-sm);
+    margin-bottom: var(--space-2xl);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: var(--space-md);
+  }
+
+  .filter-group { display: flex; flex-direction: column; gap: 4px; min-width: 140px; flex: 1; }
+  .filter-group.is-hidden { display: none; }
+  .filter-group.is-disabled select { opacity: 0.55; cursor: not-allowed; }
+  .filter-label { font-size: 0.72rem; font-weight: 700; color: var(--clr-text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+
+  .filter-bar .form-input,
+  .filter-bar .form-select { padding: 0.55rem 0.85rem; font-size: 0.88rem; }
+
+  .filter-actions { display: flex; gap: var(--space-sm); align-items: flex-end; flex-shrink: 0; }
+
+  /* ── Grade level tabs ── */
+  .grade-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-xl);
+  }
+
+  .grade-tab {
+    padding: 0.35rem 1rem;
+    border-radius: var(--radius-full);
+    border: 1.5px solid var(--clr-border);
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--clr-text-muted);
+    text-decoration: none;
+    transition: all var(--transition-fast);
+    background: var(--clr-surface);
+  }
+
+  .grade-tab:hover { border-color: var(--clr-primary); color: var(--clr-primary); }
+
+  .grade-tab.active {
+    background: var(--clr-primary);
+    border-color: var(--clr-primary);
+    color: #fff;
+  }
+
+  /* ── Subject browser (course cards) ── */
+  .subject-browser {
+    margin-bottom: var(--space-2xl);
+  }
+
+  .subject-browser-header {
+    margin-bottom: var(--space-xl);
+  }
+
+  .subject-browser-title {
+    font-family: var(--font-heading);
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: var(--clr-text);
+    margin-bottom: 0.35rem;
+  }
+
+  .subject-browser-sub {
+    font-size: 0.88rem;
+    color: var(--clr-text-muted);
+    line-height: 1.45;
+  }
+
+  .subject-browser-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--space-lg);
+  }
+
+  @media (max-width: 1200px) {
+    .subject-browser-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+
+  @media (max-width: 640px) {
+    .subject-browser-grid { grid-template-columns: 1fr; }
+  }
+
+  .subject-course-card {
+    --card-accent: var(--clr-primary);
+    --card-accent-soft: rgba(61, 214, 198, 0.12);
+    --card-accent-glow: rgba(61, 214, 198, 0.2);
+    display: flex;
+    flex-direction: column;
+    background: var(--clr-surface);
+    border: 1px solid var(--clr-border);
+    border-radius: 18px;
+    padding: 1.15rem;
+    min-height: 100%;
+    transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+  }
+
+  .subject-course-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.28);
+    border-color: rgba(255, 255, 255, 0.12);
+  }
+
+  .subject-course-card--0 {
+    --card-accent: #3dd6c6;
+    --card-accent-soft: rgba(61, 214, 198, 0.12);
+    --card-accent-glow: rgba(61, 214, 198, 0.22);
+  }
+
+  .subject-course-card--1 {
+    --card-accent: #c41e3a;
+    --card-accent-soft: rgba(196, 30, 58, 0.14);
+    --card-accent-glow: rgba(196, 30, 58, 0.22);
+  }
+
+  .subject-course-card--2 {
+    --card-accent: #f4a261;
+    --card-accent-soft: rgba(244, 162, 97, 0.14);
+    --card-accent-glow: rgba(244, 162, 97, 0.22);
+  }
+
+  .subject-course-card--3 {
+    --card-accent: #5b8def;
+    --card-accent-soft: rgba(91, 141, 239, 0.14);
+    --card-accent-glow: rgba(91, 141, 239, 0.22);
+  }
+
+  .subject-course-visual {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 118px;
+    border-radius: 14px;
+    background: var(--card-accent-soft);
+    margin-bottom: 1rem;
+  }
+
+  .subject-course-visual svg {
+    width: 52px;
+    height: 52px;
+    color: var(--card-accent);
+  }
+
+  .subject-course-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.65rem;
+    margin-bottom: 0.35rem;
+  }
+
+  .subject-course-title {
+    font-family: var(--font-heading);
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: var(--clr-text);
+    line-height: 1.3;
+    margin: 0;
+  }
+
+  .subject-course-badge {
+    flex-shrink: 0;
+    min-width: 2rem;
+    padding: 0.2rem 0.55rem;
+    border-radius: 999px;
+    background: var(--card-accent-soft);
+    color: var(--card-accent);
+    font-size: 0.78rem;
+    font-weight: 800;
+    text-align: center;
+  }
+
+  .subject-course-desc {
+    font-size: 0.82rem;
+    color: var(--clr-text-muted);
+    line-height: 1.45;
+    margin: 0 0 1rem;
+  }
+
+  .subject-course-performance {
+    background: var(--clr-surface-alt);
+    border: 1px solid var(--clr-border);
+    border-radius: 14px;
+    padding: 0.85rem 0.95rem;
+    margin-bottom: 1rem;
+  }
+
+  .subject-course-perf-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--clr-text);
+  }
+
+  .subject-course-status {
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 0.22rem 0.55rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--clr-text-muted);
+  }
+
+  .subject-course-status--ongoing {
+    background: rgba(244, 162, 97, 0.15);
+    color: #f4a261;
+  }
+
+  .subject-course-status--completed {
+    background: rgba(61, 214, 198, 0.12);
+    color: #3dd6c6;
+  }
+
+  .subject-course-perf-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+  }
+
+  .subject-course-perf-stat strong {
+    display: block;
+    font-family: var(--font-heading);
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: var(--clr-text);
+    line-height: 1;
+    margin-bottom: 0.25rem;
+  }
+
+  .subject-course-perf-stat span {
+    font-size: 0.72rem;
+    color: var(--clr-text-muted);
+  }
+
+  .subject-course-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+  }
+
+  .subject-course-meta-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .subject-course-meta-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    background: var(--card-accent-soft);
+    color: var(--card-accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .subject-course-meta-icon svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .subject-course-meta-row strong {
+    display: block;
+    font-size: 0.92rem;
+    font-weight: 800;
+    color: var(--clr-text);
+    line-height: 1.2;
+  }
+
+  .subject-course-meta-row span {
+    font-size: 0.72rem;
+    color: var(--clr-text-muted);
+  }
+
+  .subject-course-btn-outline,
+  .subject-course-btn-primary {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    width: 100%;
+    padding: 0.72rem 1rem;
+    border-radius: 12px;
+    font-family: var(--font-heading);
+    font-size: 0.84rem;
+    font-weight: 700;
+    text-decoration: none;
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+  }
+
+  .subject-course-btn-outline {
+    background: transparent;
+    border: 1.5px solid var(--card-accent);
+    color: var(--card-accent);
+    margin-bottom: 0.65rem;
+  }
+
+  .subject-course-btn-outline:hover {
+    background: var(--card-accent-soft);
+    color: var(--card-accent);
+  }
+
+  .subject-course-btn-primary {
+    margin-top: auto;
+    background: var(--card-accent);
+    border: none;
+    color: #0a0f14;
+    box-shadow: 0 8px 24px var(--card-accent-glow);
+  }
+
+  .subject-course-btn-primary:hover {
+    transform: translateY(-1px);
+    color: #0a0f14;
+  }
+
+  .subject-course-btn-outline svg,
+  .subject-course-btn-primary svg {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+  }
+
+  .grade-group {
+    margin-bottom: var(--space-xl);
+  }
+
+  .grade-group:last-child {
+    margin-bottom: 0;
+  }
+
+  .grade-group-title {
+    font-family: var(--font-heading);
+    font-size: 1rem;
+    font-weight: 800;
+    color: var(--clr-text);
+    margin-bottom: var(--space-md);
+    padding-bottom: 0.45rem;
+    border-bottom: 2px solid rgba(13, 138, 78, 0.15);
+  }
+
+  .exams-grade-section {
+    margin-bottom: var(--space-2xl);
+  }
+
+  .exams-grade-section:last-child {
+    margin-bottom: 0;
+  }
+
+  .exams-grade-heading {
+    font-family: var(--font-heading);
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: var(--clr-text);
+    margin-bottom: var(--space-lg);
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid rgba(13, 138, 78, 0.15);
+  }
+
+  .subject-browser-card {
+    display: none;
+  }
+
+  .subject-back-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-md);
+    flex-wrap: wrap;
+    margin-bottom: var(--space-lg);
+  }
+
+  .subject-back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--clr-primary);
+    text-decoration: none;
+  }
+
+  .subject-back-link:hover { text-decoration: underline; }
+
+  .subject-active-label {
+    font-size: 0.82rem;
+    color: var(--clr-text-muted);
+  }
+
+  .subject-active-label strong {
+    color: var(--clr-text);
+  }
+
+  /* ── Test type browser (subject → scope → exams) ── */
+  .test-type-browser {
+    margin-bottom: var(--space-2xl);
+  }
+
+  .test-type-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: var(--space-md);
+  }
+
+  .test-type-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 0.4rem;
+    padding: 1.25rem 1rem;
+    border: 2px solid var(--clr-border);
+    border-radius: var(--radius-lg);
+    background: var(--clr-surface);
+    text-decoration: none;
+    color: inherit;
+    transition: border-color 0.15s ease, background 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .test-type-card:hover {
+    border-color: var(--clr-primary);
+    background: rgba(13, 138, 78, 0.05);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .test-type-icon { font-size: 1.75rem; line-height: 1; }
+  .test-type-name { font-weight: 800; font-size: 0.95rem; color: var(--clr-text); }
+  .test-type-desc { font-size: 0.78rem; color: var(--clr-text-muted); line-height: 1.4; }
+  .test-type-count { font-size: 0.78rem; font-weight: 600; margin-top: 0.2rem; }
+  .test-type-count.is-ready { color: var(--clr-text-muted); }
+  .test-type-count.is-custom { color: var(--clr-primary); }
+
+  .topic-browser-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: var(--space-md);
+  }
+
+  .topic-browser-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    padding: 1rem;
+    border: 2px solid var(--clr-border);
+    border-radius: var(--radius-lg);
+    background: var(--clr-surface);
+    text-decoration: none;
+    color: inherit;
+    transition: border-color 0.15s ease, background 0.15s ease, transform 0.15s ease;
+  }
+
+  .topic-browser-card:hover {
+    border-color: var(--clr-primary);
+    background: rgba(13, 138, 78, 0.04);
+    transform: translateY(-2px);
+  }
+
+  .topic-browser-name { font-weight: 700; font-size: 0.9rem; color: var(--clr-text); line-height: 1.35; }
+  .topic-browser-meta { font-size: 0.72rem; color: var(--clr-text-muted); }
+
+  .exam-learner-select-wrap {
+    margin-bottom: var(--space-md);
+  }
+
+  /* ── Active learner banner ── */
+  .exam-learner-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-md);
+    flex-wrap: wrap;
+    background: rgba(13, 138, 78, 0.08);
+    border: 1px solid rgba(13, 138, 78, 0.2);
+    border-radius: var(--radius-lg);
+    padding: 0.75rem 1.1rem;
+    margin-bottom: var(--space-lg);
+  }
+
+  .exam-learner-banner-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-width: 0;
+  }
+
+  .exam-learner-banner-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--grad-hero);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 800;
+    flex-shrink: 0;
+  }
+
+  .exam-learner-banner-label {
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--clr-text-muted);
+    margin-bottom: 2px;
+  }
+
+  .exam-learner-banner-name {
+    font-weight: 700;
+    font-size: 0.92rem;
+    color: var(--clr-text);
+  }
+
+  .exam-learner-banner-meta {
+    font-size: 0.78rem;
+    color: var(--clr-text-muted);
+  }
+
+  .exam-change-learner-btn {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--clr-primary);
+    background: #fff;
+    border: 1px solid rgba(13, 138, 78, 0.35);
+    border-radius: var(--radius-md);
+    padding: 0.4rem 0.85rem;
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+
+  .exam-change-learner-btn:hover {
+    background: rgba(13, 138, 78, 0.06);
+  }
+
+  /* ── Learner selection modal ── */
+  .learner-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.55);
+    z-index: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-lg);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+  }
+
+  .learner-modal-overlay.is-open {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .learner-modal {
+    background: var(--clr-surface);
+    border-radius: var(--radius-xl);
+    border: 1px solid var(--clr-border);
+    box-shadow: var(--shadow-xl);
+    width: 100%;
+    max-width: 420px;
+    overflow: hidden;
+    transform: translateY(12px) scale(0.98);
+    transition: transform 0.2s ease;
+  }
+
+  .learner-modal-overlay.is-open .learner-modal {
+    transform: translateY(0) scale(1);
+  }
+
+  .learner-modal-header {
+    padding: 1.35rem 1.5rem 1rem;
+    border-bottom: 1px solid var(--clr-border);
+  }
+
+  .learner-modal-title {
+    font-family: var(--font-heading);
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: var(--clr-text);
+    margin-bottom: 0.35rem;
+  }
+
+  .learner-modal-sub {
+    font-size: 0.85rem;
+    color: var(--clr-text-muted);
+    line-height: 1.45;
+  }
+
+  .learner-modal-body {
+    padding: 1.25rem 1.5rem;
+    max-height: 50vh;
+    overflow-y: auto;
+  }
+
+  .learner-option {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    width: 100%;
+    padding: 0.85rem 1rem;
+    border: 2px solid var(--clr-border);
+    border-radius: var(--radius-lg);
+    background: var(--clr-surface);
+    cursor: pointer;
+    text-align: left;
+    margin-bottom: 0.65rem;
+    transition: border-color 0.15s ease, background 0.15s ease;
+  }
+
+  .learner-option:last-child { margin-bottom: 0; }
+
+  .learner-option:hover {
+    border-color: rgba(13, 138, 78, 0.4);
+    background: rgba(13, 138, 78, 0.04);
+  }
+
+  .learner-option.is-selected {
+    border-color: var(--clr-primary);
+    background: rgba(13, 138, 78, 0.08);
+  }
+
+  .learner-option-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--grad-hero);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: 800;
+    flex-shrink: 0;
+  }
+
+  .learner-option-name {
+    font-weight: 700;
+    font-size: 0.92rem;
+    color: var(--clr-text);
+  }
+
+  .learner-option-meta {
+    font-size: 0.78rem;
+    color: var(--clr-text-muted);
+    margin-top: 2px;
+  }
+
+  .learner-modal-footer {
+    padding: 1rem 1.5rem 1.35rem;
+    border-top: 1px solid var(--clr-border);
+    display: flex;
+    gap: 0.65rem;
+    justify-content: flex-end;
+  }
+
+  .exam-learner-label {
+    display: block;
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: var(--clr-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 0.35rem;
+  }
+
+  .exam-learner-select {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.82rem;
+    font-weight: 600;
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-md);
+    background: var(--clr-surface-alt);
+    color: var(--clr-text);
+    cursor: pointer;
+  }
+
+  .exam-learner-select:focus {
+    outline: none;
+    border-color: var(--clr-primary);
+    box-shadow: 0 0 0 3px rgba(13, 138, 78, 0.12);
+  }
+
+  .exam-stat-val.status-not_started { color: var(--clr-text-muted); font-size: 1rem; }
+  .exam-stat-val.status-ongoing { color: var(--clr-accent); font-size: 1rem; }
+  .exam-stat-val.status-completed { color: var(--clr-primary); }
+
+  /* ── Exam cards grid (max 3 columns) ── */
+  .exams-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-lg);
+  }
+
+  @media (max-width: 1100px) {
+    .exams-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+
+  @media (max-width: 640px) {
+    .exams-grid { grid-template-columns: 1fr; }
+  }
+
+  .exam-card {
+    background: var(--clr-surface);
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-xl);
+    padding: var(--space-xl);
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
+    transition: all var(--transition-base);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .exam-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+  }
+
+  .exam-card.diff-easy::before   { background: #0D8A4E; }
+  .exam-card.diff-medium::before { background: #D4A017; }
+  .exam-card.diff-hard::before   { background: #C1272D; }
+
+  .exam-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-md);
+    border-color: rgba(13,138,78,0.2);
+  }
+
+  .exam-card-header { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--space-sm); margin-bottom: var(--space-md); }
+
+  .exam-title { font-family: var(--font-heading); font-size: 1.05rem; font-weight: 700; color: var(--clr-text); }
+
+  .diff-badge {
+    flex-shrink: 0;
+    padding: 0.18rem 0.65rem;
+    border-radius: var(--radius-full);
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .diff-badge.easy   { background: rgba(13,138,78,0.1);  color: var(--clr-primary); }
+  .diff-badge.medium { background: rgba(212,160,23,0.1); color: var(--clr-accent); }
+  .diff-badge.hard   { background: rgba(193,39,45,0.1);  color: var(--clr-danger); }
+
+  .exam-meta {
+    display: flex; flex-wrap: wrap; gap: var(--space-sm);
+    margin-bottom: var(--space-lg);
+  }
+
+  .meta-chip {
+    font-size: 0.75rem;
+    color: var(--clr-text-light);
+    background: var(--clr-surface-alt);
+    padding: 0.18rem 0.6rem;
+    border-radius: var(--radius-sm);
+  }
+
+  .exam-stat-row {
+    display: flex;
+    gap: var(--space-lg);
+    padding: var(--space-md) 0;
+    border-top: 1px solid var(--clr-border);
+    border-bottom: 1px solid var(--clr-border);
+    margin-bottom: var(--space-lg);
+  }
+
+  .exam-stat { flex: 1; text-align: center; }
+  .exam-stat-val { font-family: var(--font-heading); font-size: 1.4rem; font-weight: 800; color: var(--clr-primary); }
+  .exam-stat-lbl { font-size: 0.68rem; color: var(--clr-text-muted); text-transform: uppercase; letter-spacing: 0.04em; margin-top: 2px; }
+
+  .exam-card-footer {
+    margin-top: auto;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+    padding-top: var(--space-xs);
+  }
+
+  .exam-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: 0.7rem 1rem;
+    border-radius: var(--radius-md);
+    font-family: var(--font-heading);
+    font-size: 0.88rem;
+    font-weight: 700;
+    text-decoration: none;
+    text-align: center;
+    line-height: 1.3;
+    border: none;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+    position: relative;
+    z-index: 1;
+  }
+
+  .exam-btn-primary {
+    background: var(--clr-primary);
+    color: #fff;
+    box-shadow: 0 2px 10px rgba(13, 138, 78, 0.28);
+  }
+
+  .exam-btn-primary:hover {
+    background: var(--clr-primary-dark);
+    color: #fff;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(13, 138, 78, 0.35);
+  }
+
+  .exam-btn-secondary {
+    background: #fff;
+    color: var(--clr-primary);
+    border: 1.5px solid var(--clr-primary);
+  }
+
+  .exam-btn-secondary:hover {
+    background: rgba(13, 138, 78, 0.08);
+    color: var(--clr-primary-dark);
+  }
+
+  .exam-btn-disabled {
+    background: var(--clr-surface-alt);
+    color: var(--clr-text-muted);
+    border: 1px solid var(--clr-border);
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+
+  .results-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: var(--space-xl);
+  }
+
+  .results-count { font-size: 0.88rem; color: var(--clr-text-muted); }
+
+  /* ── Unified exam journey header (learner + breadcrumbs) ── */
+  .exam-journey-header {
+    background: var(--clr-surface);
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-xl);
+    padding: 1rem 1.25rem;
+    margin-bottom: var(--space-xl);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .exam-journey-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-md);
+    flex-wrap: wrap;
+    margin-bottom: 0.85rem;
+    padding-bottom: 0.85rem;
+    border-bottom: 1px solid var(--clr-border);
+  }
+
+  .exam-journey-learner {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-width: 0;
+  }
+
+  .exam-journey-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--grad-hero);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.78rem;
+    font-weight: 800;
+    flex-shrink: 0;
+  }
+
+  .exam-journey-learner-text {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.35rem 0.5rem;
+    min-width: 0;
+  }
+
+  .exam-journey-name {
+    font-family: var(--font-heading);
+    font-weight: 800;
+    font-size: 0.95rem;
+    color: var(--clr-text);
+  }
+
+  .exam-journey-grade {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--clr-text-muted);
+  }
+
+  .exam-journey-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-shrink: 0;
+  }
+
+  .exam-journey-action {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--clr-text-muted);
+    background: var(--clr-surface-alt);
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-md);
+    padding: 0.4rem 0.85rem;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  }
+
+  .exam-journey-action:hover {
+    color: var(--clr-primary);
+    border-color: rgba(13, 138, 78, 0.35);
+    background: rgba(13, 138, 78, 0.05);
+  }
+
+  .exam-journey-action.is-muted {
+    background: transparent;
+    border-color: transparent;
+  }
+
+  .exam-journey-crumbs {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem 0.5rem;
+    font-size: 0.84rem;
+  }
+
+  .exam-journey-crumb {
+    font-weight: 600;
+    color: var(--clr-primary);
+    text-decoration: none;
+    padding: 0.2rem 0.15rem;
+    border-radius: var(--radius-sm);
+    transition: background 0.12s ease;
+  }
+
+  .exam-journey-crumb:hover {
+    background: rgba(13, 138, 78, 0.08);
+    text-decoration: underline;
+  }
+
+  .exam-journey-crumb.is-current {
+    color: var(--clr-text);
+    font-weight: 800;
+    cursor: default;
+    pointer-events: none;
+  }
+
+  .exam-journey-sep {
+    color: var(--clr-text-light);
+    font-weight: 600;
+    user-select: none;
+  }
+
+  .exam-journey-hint {
+    margin: 0.65rem 0 0;
+    font-size: 0.82rem;
+    color: var(--clr-text-muted);
+  }
+
+  /* ── Exam finder bar (legacy — replaced by journey header) ── */
+  .exam-finder-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-lg);
+    flex-wrap: wrap;
+    background: linear-gradient(135deg, rgba(13, 138, 78, 0.07) 0%, rgba(13, 138, 78, 0.02) 100%);
+    border: 1px solid rgba(13, 138, 78, 0.18);
+    border-radius: var(--radius-xl);
+    padding: 1rem 1.25rem;
+    margin-bottom: var(--space-xl);
+  }
+
+  .exam-finder-info { display: flex; align-items: flex-start; gap: 0.85rem; min-width: 0; flex: 1; }
+  .exam-finder-icon { font-size: 1.5rem; line-height: 1; flex-shrink: 0; }
+  .exam-finder-title { font-family: var(--font-heading); font-weight: 800; font-size: 0.98rem; color: var(--clr-text); margin-bottom: 0.2rem; }
+  .exam-finder-sub { font-size: 0.82rem; color: var(--clr-text-muted); line-height: 1.4; }
+  .exam-finder-chips { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.35rem; }
+  .finder-chip {
+    font-size: 0.72rem; font-weight: 700; padding: 0.22rem 0.65rem;
+    border-radius: var(--radius-full); background: #fff;
+    border: 1px solid rgba(13, 138, 78, 0.25); color: var(--clr-primary);
+  }
+
+  .exam-finder-btn {
+    flex-shrink: 0;
+    padding: 0.65rem 1.15rem;
+    border-radius: var(--radius-md);
+    border: none;
+    background: var(--clr-primary);
+    color: #fff;
+    font-family: var(--font-heading);
+    font-size: 0.88rem;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 2px 10px rgba(13, 138, 78, 0.28);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .exam-finder-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(13, 138, 78, 0.35);
+  }
+
+  /* ── Exam finder wizard modal ── */
+  .exam-wizard-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.6);
+    z-index: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-lg);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.25s ease, visibility 0.25s ease;
+  }
+
+  .exam-wizard-overlay.is-open { opacity: 1; visibility: visible; }
+
+  .exam-wizard {
+    background: var(--clr-surface);
+    border-radius: var(--radius-xl);
+    border: 1px solid var(--clr-border);
+    box-shadow: var(--shadow-xl);
+    width: 100%;
+    max-width: 480px;
+    overflow: hidden;
+    transform: translateY(16px) scale(0.97);
+    transition: transform 0.25s ease;
+  }
+
+  .exam-wizard-overlay.is-open .exam-wizard { transform: translateY(0) scale(1); }
+
+  .exam-wizard-top {
+    padding: 1.25rem 1.5rem 1rem;
+    border-bottom: 1px solid var(--clr-border);
+    background: linear-gradient(180deg, rgba(13, 138, 78, 0.06) 0%, transparent 100%);
+  }
+
+  .exam-wizard-helper {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.85rem;
+  }
+
+  .exam-wizard-helper-avatar {
+    width: 42px; height: 42px; border-radius: 50%;
+    background: var(--grad-hero); color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.8rem; font-weight: 800; flex-shrink: 0;
+  }
+
+  .exam-wizard-helper-label {
+    font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.05em; color: var(--clr-text-muted); margin-bottom: 2px;
+  }
+
+  .exam-wizard-helper-name { font-weight: 800; font-size: 0.95rem; color: var(--clr-text); }
+
+  .exam-wizard-progress-track {
+    height: 5px; background: var(--clr-surface-alt);
+    border-radius: var(--radius-full); overflow: hidden; margin-bottom: 0.4rem;
+  }
+
+  .exam-wizard-progress-fill {
+    height: 100%; width: 0;
+    background: linear-gradient(90deg, var(--clr-primary), #10b981);
+    border-radius: var(--radius-full);
+    transition: width 0.4s ease;
+  }
+
+  .exam-wizard-step-label { font-size: 0.72rem; color: var(--clr-text-muted); font-weight: 600; }
+
+  .exam-wizard-body { padding: 1.35rem 1.5rem 1rem; min-height: 220px; position: relative; }
+
+  .exam-wizard-panel { display: none; animation: wizardFadeIn 0.3s ease; }
+  .exam-wizard-panel.is-active { display: block; }
+
+  @keyframes wizardFadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .exam-wizard-question {
+    font-family: var(--font-heading);
+    font-size: 1.12rem;
+    font-weight: 800;
+    color: var(--clr-text);
+    line-height: 1.35;
+    margin-bottom: 0.45rem;
+  }
+
+  .exam-wizard-hint { font-size: 0.84rem; color: var(--clr-text-muted); margin-bottom: 1rem; line-height: 1.45; }
+
+  .exam-wizard-options { display: flex; flex-direction: column; gap: 0.55rem; max-height: 42vh; overflow-y: auto; }
+
+  .wizard-choice {
+    display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;
+    width: 100%; padding: 0.85rem 1rem;
+    border: 2px solid var(--clr-border); border-radius: var(--radius-lg);
+    background: var(--clr-surface); cursor: pointer; text-align: left;
+    transition: border-color 0.15s ease, background 0.15s ease, transform 0.15s ease;
+  }
+
+  .wizard-choice:hover {
+    border-color: rgba(13, 138, 78, 0.45);
+    background: rgba(13, 138, 78, 0.04);
+    transform: translateX(3px);
+  }
+
+  .wizard-choice-name { font-weight: 700; font-size: 0.92rem; color: var(--clr-text); }
+  .wizard-choice-meta { font-size: 0.75rem; font-weight: 600; flex-shrink: 0; }
+  .wizard-choice-meta.is-custom { color: var(--clr-primary); }
+  .wizard-choice-meta.is-ready { color: var(--clr-text-muted); }
+
+  .wizard-scope-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+
+  .wizard-scope-card {
+    display: flex; flex-direction: column; align-items: center; text-align: center;
+    gap: 0.35rem; padding: 1.1rem 0.75rem;
+    border: 2px solid var(--clr-border); border-radius: var(--radius-lg);
+    background: var(--clr-surface); cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease, transform 0.15s ease;
+  }
+
+  .wizard-scope-card:hover {
+    border-color: var(--clr-primary);
+    background: rgba(13, 138, 78, 0.05);
+    transform: translateY(-2px);
+  }
+
+  .wizard-scope-icon { font-size: 1.6rem; }
+  .wizard-scope-title { font-weight: 800; font-size: 0.88rem; color: var(--clr-text); }
+  .wizard-scope-desc { font-size: 0.72rem; color: var(--clr-text-muted); line-height: 1.35; }
+
+  .exam-wizard-loading {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center; padding: 2rem 1rem; min-height: 180px;
+  }
+
+  .exam-wizard-spinner {
+    width: 44px; height: 44px; border-radius: 50%;
+    border: 3px solid rgba(13, 138, 78, 0.15);
+    border-top-color: var(--clr-primary);
+    animation: wizardSpin 0.85s linear infinite;
+    margin-bottom: 1.1rem;
+  }
+
+  @keyframes wizardSpin { to { transform: rotate(360deg); } }
+
+  .exam-wizard-loading-text {
+    font-size: 0.92rem; font-weight: 600; color: var(--clr-text);
+    min-height: 1.4em; transition: opacity 0.2s ease;
+  }
+
+  .exam-wizard-complete-icon {
+    font-size: 2.5rem; margin-bottom: 0.75rem;
+    animation: wizardPop 0.4s ease;
+  }
+
+  @keyframes wizardPop {
+    0% { transform: scale(0.5); opacity: 0; }
+    70% { transform: scale(1.1); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  .exam-wizard-footer {
+    padding: 0.85rem 1.5rem 1.25rem;
+    border-top: 1px solid var(--clr-border);
+    display: flex; align-items: center; justify-content: space-between; gap: 0.65rem;
+  }
+
+  .exam-wizard-back {
+    font-size: 0.82rem; font-weight: 600; color: var(--clr-text-muted);
+    background: none; border: none; cursor: pointer; padding: 0.35rem 0.5rem;
+  }
+
+  .exam-wizard-back:hover { color: var(--clr-primary); }
+
+  .exam-wizard-skip {
+    font-size: 0.78rem; color: var(--clr-text-muted); text-decoration: none;
+  }
+
+  .exam-wizard-skip:hover { color: var(--clr-primary); }
+
+  @media (max-width: 480px) {
+    .wizard-scope-btns { grid-template-columns: 1fr; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+
+{% if learner_grade_missing %}
+<div class="card learner-grade-warning" style="margin-bottom: var(--space-lg);">
+  <p style="margin: 0; font-size: 0.9rem; line-height: 1.5;">
+    <strong>{{ selected_student.first_name }} has no grade level set.</strong>
+    Assign a grade on the learner profile so we can show the right exams.
+    <a href="{% url 'accounts:guardian_dashboard' %}?student={{ selected_student.uuid }}" style="font-weight: 700;">Go to dashboard</a>
+  </p>
+</div>
+{% endif %}
+
+{% if selected_student and not learner_grade_missing %}
+<!-- Exam finder wizard -->
+<div class="exam-wizard-overlay{% if open_exam_wizard %} is-open{% endif %}" id="exam-wizard" role="dialog" aria-modal="true" aria-labelledby="exam-wizard-title">
+  <div class="exam-wizard">
+    <div class="exam-wizard-top">
+      <div class="exam-wizard-helper">
+        <div class="exam-wizard-helper-avatar" id="wizard-avatar">{{ selected_student.first_name|first|upper }}{{ selected_student.last_name|first|upper }}</div>
+        <div>
+          <div class="exam-wizard-helper-label">Exam guide for</div>
+          <div class="exam-wizard-helper-name" id="exam-wizard-title">{{ selected_student.first_name }} {{ selected_student.last_name }}</div>
+        </div>
+      </div>
+      <div class="exam-wizard-progress-track">
+        <div class="exam-wizard-progress-fill" id="wizard-progress-fill"></div>
+      </div>
+      <div class="exam-wizard-step-label" id="wizard-progress-label">Step 1 of 5</div>
+    </div>
+
+    <div class="exam-wizard-body">
+      <div class="exam-wizard-panel" data-wizard-step="loading">
+        <div class="exam-wizard-loading">
+          <div class="exam-wizard-spinner"></div>
+          <p class="exam-wizard-loading-text" id="wizard-loading-text">Finding the best tests for you…</p>
+        </div>
+      </div>
+
+      <div class="exam-wizard-panel" data-wizard-step="grade">
+        <h2 class="exam-wizard-question" id="wizard-grade-question">Hi {{ selected_student.first_name }}, which grade test would you like to take?</h2>
+        <p class="exam-wizard-hint">Pick a grade up to your level{% if selected_student.grade_level %} ({{ selected_student.grade_level.name }}){% endif %}. No ready-made test? We'll create a custom one for you.</p>
+        <div class="exam-wizard-options" id="wizard-grade-options"></div>
+      </div>
+
+      <div class="exam-wizard-panel" data-wizard-step="subject">
+        <h2 class="exam-wizard-question" id="wizard-subject-question">What subject would you like?</h2>
+        <p class="exam-wizard-hint">Choose any subject — we'll match a ready test or build a custom one for {{ selected_student.first_name }}.</p>
+        <div class="exam-wizard-options" id="wizard-subject-options"></div>
+      </div>
+
+      <div class="exam-wizard-panel" data-wizard-step="scope">
+        <h2 class="exam-wizard-question" id="wizard-scope-question">General test or a specific strand?</h2>
+        <p class="exam-wizard-hint">A general test covers the whole subject. A strand test focuses on one CBC topic area.</p>
+        <div class="wizard-scope-btns">
+          <button type="button" class="wizard-scope-card" id="wizard-scope-general" data-scope="general">
+            <span class="wizard-scope-icon">📚</span>
+            <span class="wizard-scope-title">General test</span>
+            <span class="wizard-scope-desc">All topics in this subject</span>
+          </button>
+          <button type="button" class="wizard-scope-card" id="wizard-scope-strand" data-scope="strand">
+            <span class="wizard-scope-icon">🎯</span>
+            <span class="wizard-scope-title">Specific strand</span>
+            <span class="wizard-scope-desc">Focus on one CBC strand</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="exam-wizard-panel" data-wizard-step="strand">
+        <h2 class="exam-wizard-question" id="wizard-strand-question">Which strand?</h2>
+        <p class="exam-wizard-hint">Choose the strand you want to practise.</p>
+        <div class="exam-wizard-options" id="wizard-strand-options"></div>
+      </div>
+
+      <div class="exam-wizard-panel" data-wizard-step="sub_strand">
+        <h2 class="exam-wizard-question" id="wizard-sub-strand-question">Any specific sub-strand?</h2>
+        <p class="exam-wizard-hint">Optional — pick one to narrow further, or skip to see all.</p>
+        <div class="exam-wizard-options" id="wizard-sub-strand-options"></div>
+      </div>
+
+      <div class="exam-wizard-panel" data-wizard-step="difficulty">
+        <h2 class="exam-wizard-question" id="wizard-difficulty-question">How challenging should it be?</h2>
+        <p class="exam-wizard-hint">Pick a difficulty or choose any level.</p>
+        <div class="exam-wizard-options" id="wizard-difficulty-options"></div>
+      </div>
+
+      <div class="exam-wizard-panel" data-wizard-step="complete">
+        <div class="exam-wizard-loading">
+          <div class="exam-wizard-complete-icon">✨</div>
+          <p class="exam-wizard-question" id="wizard-complete-text">All set! Preparing your test…</p>
+          <p class="exam-wizard-hint" id="wizard-complete-sub">We're matching the best option for {{ selected_student.first_name }}.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="exam-wizard-footer">
+      <button type="button" class="exam-wizard-back" id="wizard-back-btn" style="visibility: hidden;">← Back</button>
+      <a href="{% url 'core:exams_list' %}?student={{ selected_student.uuid }}" class="exam-wizard-skip" id="wizard-skip-link">All subjects</a>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% if exams_wizard %}
+<div class="exams-wizard-shell">
+  {% if selected_student %}
+  <div class="ew-learner-bar">
+    <div class="ew-learner-info">
+      <div class="ew-learner-avatar">{{ selected_student.first_name|first|upper }}{{ selected_student.last_name|first|upper }}</div>
+      <div>
+        <div class="ew-learner-name">{{ selected_student.first_name }} {{ selected_student.last_name }}</div>
+        {% if selected_student.grade_level %}
+        <div class="ew-learner-meta">{{ selected_student.grade_level.name }}</div>
+        {% endif %}
+      </div>
+    </div>
+    <div class="ew-learner-actions">
+      <button type="button" class="ew-action-btn" id="change-learner-btn">Switch learner</button>
+      <button type="button" class="ew-action-btn open-exam-wizard-btn">Exam guide</button>
+    </div>
+  </div>
+  {% endif %}
+
+  {% include 'core/partials/exams_wizard_trail.html' %}
+
+  <div class="ew-step ew-step--current">
+    <div class="ew-step-rail">
+      <div class="ew-step-marker">{{ exams_wizard.current_step_number }}</div>
+    </div>
+    <div class="ew-step-card">
+      <div class="ew-step-active-head">
+        <div class="ew-step-active-icon" aria-hidden="true">
+          {% if exams_wizard.current_phase == 'subject' %}📚
+          {% elif exams_wizard.current_phase == 'scope' %}🎯
+          {% elif exams_wizard.current_phase == 'strand' or exams_wizard.current_phase == 'sub_strand' %}🧵
+          {% else %}✅{% endif %}
+        </div>
+        <div>
+          <h2 class="ew-step-active-title">{{ exams_wizard.current_label }}</h2>
+          <p class="ew-step-active-hint">{{ exams_wizard.current_hint }}</p>
+        </div>
+      </div>
+      <div class="ew-step-body">
+{% elif selected_student and not learner_grade_missing %}
+<div class="exam-journey-header">
+  <div class="exam-journey-top">
+    <div class="exam-journey-learner">
+      <div class="exam-journey-avatar">{{ selected_student.first_name|first|upper }}{{ selected_student.last_name|first|upper }}</div>
+      <div class="exam-journey-learner-text">
+        <span class="exam-journey-name">{{ selected_student.first_name }} {{ selected_student.last_name }}</span>
+        {% if selected_student.grade_level %}
+        <span class="exam-journey-grade">{{ selected_student.grade_level.name }}</span>
+        {% endif %}
+      </div>
+    </div>
+    <div class="exam-journey-actions">
+      <button type="button" class="exam-journey-action" id="change-learner-btn">Switch learner</button>
+      <button type="button" class="exam-journey-action exam-journey-action-guide open-exam-wizard-btn">Exam guide</button>
+    </div>
+  </div>
+  <nav class="exam-journey-crumbs" aria-label="Browse path">
+    {% if browse_all_grades %}
+      <a href="{% url 'core:exams_list' %}?{{ exams_nav_student_prefix }}grade=all" class="exam-journey-crumb{% if show_subject_browser %} is-current{% endif %}">All grades</a>
+    {% elif active_grade %}
+      <a href="{% url 'core:exams_list' %}?{{ exams_nav_student_prefix }}{% if exams_nav_grade %}{{ exams_nav_grade }}{% else %}grade={{ active_grade.slug }}{% endif %}" class="exam-journey-crumb{% if show_subject_browser %} is-current{% endif %}">{{ active_grade.name }}</a>
+    {% else %}
+      <a href="{% url 'core:exams_list' %}?{{ exams_nav_student_prefix }}" class="exam-journey-crumb{% if show_subject_browser %} is-current{% endif %}">Subjects</a>
+    {% endif %}
+
+    {% if active_subject %}
+      <span class="exam-journey-sep">›</span>
+      {% if show_scope_browser or show_strand_browser or show_sub_strand_browser or active_strand or active_scope == 'general' %}
+        <a href="{% url 'core:exams_list' %}?{{ exams_nav_student_prefix }}subject={{ active_subject.slug }}{% if exams_nav_grade %}&{{ exams_nav_grade }}{% endif %}" class="exam-journey-crumb">{{ active_subject.name }}</a>
+      {% else %}
+        <span class="exam-journey-crumb is-current">{{ active_subject.name }}</span>
+      {% endif %}
+    {% endif %}
+
+    {% if show_scope_browser %}
+      <span class="exam-journey-sep">›</span>
+      <span class="exam-journey-crumb is-current">Test type</span>
+    {% elif show_strand_browser %}
+      <span class="exam-journey-sep">›</span>
+      <span class="exam-journey-crumb is-current">Strands</span>
+    {% elif show_sub_strand_browser %}
+      <span class="exam-journey-sep">›</span>
+      <span class="exam-journey-crumb is-current">Sub-strands</span>
+    {% elif active_scope == 'general' and not show_test_type_browser %}
+      <span class="exam-journey-sep">›</span>
+      <span class="exam-journey-crumb is-current">Whole subject</span>
+    {% elif active_strand %}
+      <span class="exam-journey-sep">›</span>
+      {% if active_sub_strand %}
+        <a href="{% url 'core:exams_list' %}?{{ exams_nav_student_prefix }}subject={{ active_subject.slug }}&scope=strand&strand={{ active_strand.slug }}{% if exams_nav_grade %}&{{ exams_nav_grade }}{% endif %}" class="exam-journey-crumb">{{ active_strand.name }}</a>
+        <span class="exam-journey-sep">›</span>
+        <span class="exam-journey-crumb is-current">{{ active_sub_strand.name }}</span>
+      {% else %}
+        <span class="exam-journey-crumb is-current">{{ active_strand.name }}</span>
+      {% endif %}
+    {% endif %}
+  </nav>
+  {% if show_scope_browser %}
+    <p class="exam-journey-hint">Choose a test type for {{ active_subject.name }}.</p>
+  {% elif show_strand_browser %}
+    <p class="exam-journey-hint">Pick a strand in {{ active_subject.name }}.</p>
+  {% elif show_sub_strand_browser %}
+    <p class="exam-journey-hint">Pick a sub-strand in {{ active_subject.name }}.</p>
+  {% elif active_strand and not show_test_type_browser %}
+    <p class="exam-journey-hint">Tests in {{ active_strand.name }}{% if active_sub_strand %} · {{ active_sub_strand.name }}{% endif %}.</p>
+  {% elif show_subject_browser %}
+    <p class="exam-journey-hint">Pick a subject to continue.</p>
+  {% endif %}
+</div>
+{% elif staff_exams_browse and not exams_wizard %}
+<div class="exam-journey-header">
+  <nav class="exam-journey-crumbs" aria-label="Browse path">
+    {% if browse_all_grades %}
+      <a href="{% url 'core:exams_list' %}?grade=all" class="exam-journey-crumb{% if show_subject_browser %} is-current{% endif %}">All grades</a>
+    {% elif active_grade %}
+      <a href="{% url 'core:exams_list' %}?{% if exams_nav_grade %}{{ exams_nav_grade }}{% else %}grade={{ active_grade.slug }}{% endif %}" class="exam-journey-crumb{% if show_subject_browser %} is-current{% endif %}">{{ active_grade.name }}</a>
+    {% else %}
+      <span class="exam-journey-crumb is-current">Subjects</span>
+    {% endif %}
+    {% if active_subject %}
+      <span class="exam-journey-sep">›</span>
+      {% if show_scope_browser or show_strand_browser or show_sub_strand_browser or active_strand or active_scope == 'general' %}
+        <a href="{% url 'core:exams_list' %}?subject={{ active_subject.slug }}{% if exams_nav_grade %}&{{ exams_nav_grade }}{% endif %}" class="exam-journey-crumb">{{ active_subject.name }}</a>
+      {% else %}
+        <span class="exam-journey-crumb is-current">{{ active_subject.name }}</span>
+      {% endif %}
+    {% endif %}
+    {% if show_scope_browser %}
+      <span class="exam-journey-sep">›</span><span class="exam-journey-crumb is-current">Test type</span>
+    {% elif show_strand_browser %}
+      <span class="exam-journey-sep">›</span><span class="exam-journey-crumb is-current">Strands</span>
+    {% elif show_sub_strand_browser %}
+      <span class="exam-journey-sep">›</span><span class="exam-journey-crumb is-current">Sub-strands</span>
+    {% elif active_scope == 'general' and not show_test_type_browser %}
+      <span class="exam-journey-sep">›</span><span class="exam-journey-crumb is-current">Whole subject</span>
+    {% elif active_strand %}
+      <span class="exam-journey-sep">›</span>
+      {% if active_sub_strand %}
+        <a href="{% url 'core:exams_list' %}?subject={{ active_subject.slug }}&scope=strand&strand={{ active_strand.slug }}{% if exams_nav_grade %}&{{ exams_nav_grade }}{% endif %}" class="exam-journey-crumb">{{ active_strand.name }}</a>
+        <span class="exam-journey-sep">›</span>
+        <span class="exam-journey-crumb is-current">{{ active_sub_strand.name }}</span>
+      {% else %}
+        <span class="exam-journey-crumb is-current">{{ active_strand.name }}</span>
+      {% endif %}
+    {% endif %}
+  </nav>
+  {% if show_scope_browser %}
+    <p class="exam-journey-hint">Choose a test type for {{ active_subject.name }}.</p>
+  {% elif show_strand_browser %}
+    <p class="exam-journey-hint">Pick a strand in {{ active_subject.name }}.</p>
+  {% elif show_sub_strand_browser %}
+    <p class="exam-journey-hint">Pick a sub-strand in {{ active_subject.name }}.</p>
+  {% elif active_strand and not show_test_type_browser %}
+    <p class="exam-journey-hint">Tests in {{ active_strand.name }}{% if active_sub_strand %} · {{ active_sub_strand.name }}{% endif %}.</p>
+  {% elif show_subject_browser %}
+    <p class="exam-journey-hint">Pick a subject to continue.</p>
+  {% endif %}
+</div>
+{% endif %}
+
+{% if show_subject_browser %}
+<section class="subject-browser" aria-labelledby="subject-browser-title">
+  <div class="subject-browser-header">
+    {% if staff_exams_browse %}
+    <h2 class="subject-browser-title" id="subject-browser-title">Which subject?</h2>
+    <p class="subject-browser-sub">
+      Choose a subject to browse tests
+      {% if browse_all_grades %}
+        across all grades
+      {% elif active_grade %}
+        for {{ active_grade.name }}
+      {% endif %}.
+    </p>
+    {% else %}
+    <h2 class="subject-browser-title" id="subject-browser-title">Hi {{ selected_student.first_name }}, which subject?</h2>
+    <p class="subject-browser-sub">
+      Choose a subject to see available tests
+      {% if browse_all_grades and selected_student.grade_level %}
+        for {{ selected_student.grade_level.name }} and below
+      {% elif active_grade %}
+        for {{ active_grade.name }}
+      {% endif %}.
+      No ready-made test? We'll help you create a custom one.
+    </p>
+    {% endif %}
+  </div>
+  {% if filterable_grade_levels.count > 1 or staff_exams_browse %}
+  <div class="grade-tabs" style="margin-bottom: var(--space-lg);">
+    <a href="{% url 'core:exams_list' %}?{{ exams_nav_student_prefix }}grade=all"
+       class="grade-tab{% if browse_all_grades %} active{% endif %}">All grades</a>
+    {% for gl in filterable_grade_levels %}
+      <a href="{% url 'core:exams_list' %}?{{ exams_nav_student_prefix }}grade={{ gl.slug }}"
+         class="grade-tab{% if active_grade and active_grade.pk == gl.pk and not browse_all_grades %} active{% endif %}">{{ gl.name }}</a>
+    {% endfor %}
+  </div>
+  {% endif %}
+  {% for group in browse_subjects_by_grade %}
+  <div class="grade-group">
+    {% if browse_subjects_by_grade|length > 1 or browse_all_grades %}
+    <h3 class="grade-group-title">{{ group.grade_level.name }}</h3>
+    {% endif %}
+    <div class="subject-browser-grid">
+      {% for item in group.subjects %}
+      <article class="subject-course-card subject-course-card--{% cycle '0' '1' '2' '3' %}">
+        <div class="subject-course-visual" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M4 5.5C4 4.67157 4.67157 4 5.5 4H18.5C19.3284 4 20 4.67157 20 5.5V18.5C20 19.3284 19.3284 20 18.5 20H5.5C4.67157 20 4 19.3284 4 18.5V5.5Z" stroke="currentColor" stroke-width="1.8"/>
+            <path d="M8 4V20" stroke="currentColor" stroke-width="1.8"/>
+            <path d="M12 8H16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            <path d="M12 12H16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
+        </div>
+
+        <div class="subject-course-head">
+          <h3 class="subject-course-title">{{ item.subject.name }}</h3>
+          <span class="subject-course-badge">{% if item.count %}{{ item.count }}{% else %}{{ item.question_count }}{% endif %}</span>
+        </div>
+
+        <p class="subject-course-desc">
+          Practice questions and exercises
+          {% if browse_subjects_by_grade|length == 1 and not browse_all_grades %} · {{ item.subject.grade_level.name }}{% endif %}
+        </p>
+
+        <div class="subject-course-performance">
+          <div class="subject-course-perf-head">
+            <span>Performance</span>
+            <span class="subject-course-status subject-course-status--{{ item.status_key }}">{{ item.status_label }}</span>
+          </div>
+          <div class="subject-course-perf-stats">
+            <div class="subject-course-perf-stat">
+              <strong>{{ item.avg_score }}%</strong>
+              <span>Avg Score</span>
+            </div>
+            <div class="subject-course-perf-stat">
+              <strong>{{ item.completed_count }}</strong>
+              <span>Completed</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="subject-course-meta">
+          <div class="subject-course-meta-row">
+            <span class="subject-course-meta-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="12" cy="12" r="8.5" stroke="currentColor" stroke-width="1.8"/>
+                <path d="M12 7.5V12L15 14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+              </svg>
+            </span>
+            <div>
+              <strong>{{ item.duration_minutes }} Minutes</strong>
+              <span>Duration</span>
+            </div>
+          </div>
+          <div class="subject-course-meta-row">
+            <span class="subject-course-meta-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="12" cy="12" r="8.5" stroke="currentColor" stroke-width="1.8"/>
+                <path d="M9.5 9.5C9.8 8.4 10.7 7.5 12 7.5C13.7 7.5 15 8.8 15 10.5C15 12.7 12 13.5 12 15.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                <circle cx="12" cy="18" r="1" fill="currentColor"/>
+              </svg>
+            </span>
+            <div>
+              <strong>{{ item.question_count }} Question{{ item.question_count|pluralize }}</strong>
+              <span>Available</span>
+            </div>
+          </div>
+        </div>
+
+        {% if selected_student %}
+          <a href="{% url 'accounts:guardian_dashboard' %}?student={{ selected_student.uuid }}"
+             class="subject-course-btn-outline">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M4 18V6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+              <path d="M4 18H20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+              <path d="M8 14L11 11L14 13.5L18 9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            View Details &amp; History
+          </a>
+        {% elif staff_exams_browse %}
+          <a href="{% url 'core:exams_list' %}?subject={{ item.subject.slug }}{% if browse_all_grades %}&grade={{ item.subject.grade_level.slug }}{% elif active_grade %}&grade={{ active_grade.slug }}{% endif %}"
+             class="subject-course-btn-outline">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M4 18V6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+              <path d="M4 18H20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+              <path d="M8 14L11 11L14 13.5L18 9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Browse tests
+          </a>
+        {% endif %}
+
+        <a href="{% url 'core:exams_list' %}?{{ exams_nav_student_prefix }}subject={{ item.subject.slug }}{% if browse_all_grades %}&grade={{ item.subject.grade_level.slug }}{% elif active_grade %}&grade={{ active_grade.slug }}{% endif %}"
+           class="subject-course-btn-primary">
+          Start Learning
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M5 12H19" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            <path d="M13 6L19 12L13 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </a>
+      </article>
+      {% endfor %}
+    </div>
+  </div>
+  {% empty %}
+  <p style="color: var(--clr-text-muted); font-size: 0.9rem;">No subjects found{% if staff_exams_browse %} for this grade{% else %} for this learner's grade range{% endif %}.</p>
+  {% endfor %}
+</section>
+{% endif %}
+
+{% if show_scope_browser %}
+<section class="test-type-browser" aria-labelledby="test-type-title">
+  <div class="subject-browser-header">
+    <h2 class="subject-browser-title" id="test-type-title">What kind of test?</h2>
+    <p class="subject-browser-sub">
+      {% if staff_exams_browse %}
+      Choose a whole-subject test, or focus on a strand or sub-strand in {{ active_subject.name }}.
+      {% else %}
+      Choose whether {{ selected_student.first_name }} takes a whole-subject test, or focuses on a strand or sub-strand.
+      {% endif %}
+    </p>
+  </div>
+  <div class="ew-choice-grid">
+    <a href="{% url 'core:exams_list' %}?{{ exams_nav_student_prefix }}subject={{ active_subject.slug }}&scope=general{% if exams_nav_grade %}&{{ exams_nav_grade }}{% endif %}"
+       class="ew-choice-card ew-choice-card--0 test-type-card">
+      <span class="ew-choice-icon-wrap"><span class="test-type-icon">📚</span></span>
+      <span class="ew-choice-name">Whole subject</span>
+      <span class="ew-choice-desc">Covers all topics in {{ active_subject.name }}</span>
+      {% if general_test_count %}
+        <span class="ew-choice-meta">{{ general_test_count }} test{{ general_test_count|pluralize }}</span>
+      {% else %}
+        <span class="ew-choice-meta">Custom test</span>
+      {% endif %}
+    </a>
+    <a href="{% url 'core:exams_list' %}?{{ exams_nav_student_prefix }}subject={{ active_subject.slug }}&scope=strand{% if exams_nav_grade %}&{{ exams_nav_grade }}{% endif %}"
+       class="ew-choice-card ew-choice-card--1 test-type-card">
+      <span class="ew-choice-icon-wrap"><span class="test-type-icon">🎯</span></span>
+      <span class="ew-choice-name">Strand</span>
+      <span class="ew-choice-desc">Focus on one CBC strand</span>
+      <span class="ew-choice-meta">{{ browse_strands|length }} strand{{ browse_strands|length|pluralize }}</span>
+    </a>
+    <a href="{% url 'core:exams_list' %}?{{ exams_nav_student_prefix }}subject={{ active_subject.slug }}&scope=sub_strand{% if exams_nav_grade %}&{{ exams_nav_grade }}{% endif %}"
+       class="ew-choice-card ew-choice-card--2 test-type-card">
+      <span class="ew-choice-icon-wrap"><span class="test-type-icon">🔖</span></span>
+      <span class="ew-choice-name">Sub-strand</span>
+      <span class="ew-choice-desc">Narrow down to a specific sub-strand</span>
+      <span class="ew-choice-meta">{{ browse_sub_strands|length }} sub-strand{{ browse_sub_strands|length|pluralize }}</span>
+    </a>
+  </div>
+
+  {% if general_exam_entries %}
+  <div style="margin-top: var(--space-2xl);">
+    <h3 class="grade-group-title">Whole-subject tests</h3>
+    <p class="subject-browser-sub" style="margin-bottom: var(--space-lg);">Ready-made tests for {{ active_subject.name }} with no strand or sub-strand set.</p>
+    <div class="exams-grid">
+      {% for entry in general_exam_entries %}
+        {% with quiz=entry.quiz stat=entry.initial_stat %}
+        <div class="exam-card diff-{{ quiz.difficulty|lower }}" data-quiz-id="{{ quiz.uuid }}">
+          <div class="exam-card-header">
+            <div class="exam-title">{{ quiz.title }}</div>
+            <span class="diff-badge {{ quiz.difficulty|lower }}">{{ quiz.difficulty }}</span>
+          </div>
+          <div class="exam-meta">
+            {% if quiz.subject %}<span class="meta-chip">📚 {{ quiz.subject.name }}</span>{% endif %}
+            {% if quiz.subject.grade_level %}<span class="meta-chip">🏫 {{ quiz.subject.grade_level.name }}</span>{% endif %}
+          </div>
+          {% if quiz.description %}
+            <p style="font-size: 0.85rem; color: var(--clr-text-muted); margin-bottom: var(--space-md); line-height: 1.5;">{{ quiz.description|truncatechars:100 }}</p>
+          {% endif %}
+          <div class="exam-stat-row">
+            <div class="exam-stat">
+              <div class="exam-stat-val">{{ entry.question_count }}</div>
+              <div class="exam-stat-lbl">Questions</div>
+            </div>
+            {% if request.user.is_guardian and linked_students %}
+              <div class="exam-stat">
+                <div class="exam-stat-val exam-stat-score">{% if stat %}{{ stat.score_display }}{% else %}—{% endif %}</div>
+                <div class="exam-stat-lbl">Score</div>
+              </div>
+              <div class="exam-stat">
+                <div class="exam-stat-val exam-stat-status {% if stat %}status-{{ stat.status_key }}{% endif %}">{% if stat %}{{ stat.status_label }}{% else %}—{% endif %}</div>
+                <div class="exam-stat-lbl">Status</div>
+              </div>
+            {% else %}
+              <div class="exam-stat">
+                <div class="exam-stat-val">{{ quiz.attempts.count }}</div>
+                <div class="exam-stat-lbl">Attempts</div>
+              </div>
+            {% endif %}
+          </div>
+          <div class="exam-card-footer">
+            {% if request.user.is_guardian and linked_students %}
+              {% if selected_student and stat %}
+                <a href="{{ stat.action_url }}" class="exam-btn exam-btn-primary exam-card-action">{{ stat.action_label }}</a>
+              {% else %}
+                <button type="button" class="exam-btn exam-btn-primary exam-card-action exam-pick-learner-btn" data-quiz-id="{{ quiz.uuid }}">Select learner to start</button>
+              {% endif %}
+            {% elif request.user.is_guardian %}
+              <a href="{% url 'accounts:add_learner' %}" class="exam-btn exam-btn-primary">Add a learner first</a>
+            {% elif staff_exams_browse %}
+              <a href="{% url 'core:exam_analytics' quiz.uuid %}" class="exam-btn exam-btn-primary">View analytics</a>
+            {% else %}
+              <span class="exam-btn exam-btn-disabled">Sign in as guardian to start</span>
+            {% endif %}
+            {% if request.user.is_authenticated %}
+              <a href="{% url 'core:exam_analytics' quiz.uuid %}" class="exam-btn exam-btn-secondary">Analytics</a>
+            {% endif %}
+          </div>
+        </div>
+        {% endwith %}
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+</section>
+{% endif %}
+
+{% if show_strand_browser %}
+<section class="test-type-browser" aria-labelledby="strand-browser-title">
+  <div class="subject-browser-header">
+    <h2 class="subject-browser-title" id="strand-browser-title">Which strand?</h2>
+    <p class="subject-browser-sub">
+      {% if staff_exams_browse %}
+      Pick the strand to browse in {{ active_subject.name }}.
+      {% else %}
+      Pick the strand {{ selected_student.first_name }} should practise in {{ active_subject.name }}.
+      {% endif %}
+    </p>
+  </div>
+  <div class="ew-choice-grid topic-browser-grid">
+    {% for item in browse_strands %}
+      <a href="{% url 'core:exams_list' %}?{{ exams_nav_student_prefix }}subject={{ active_subject.slug }}&scope=strand&strand={{ item.strand.slug }}{% if exams_nav_grade %}&{{ exams_nav_grade }}{% endif %}"
+         class="ew-choice-card ew-choice-card--{% cycle '0' '1' '2' %} topic-browser-card">
+        <span class="ew-choice-icon-wrap">🧵</span>
+        <span class="ew-choice-name">{{ item.strand.name }}</span>
+        {% if item.count %}
+          <span class="ew-choice-meta">{{ item.count }} test{{ item.count|pluralize }}</span>
+        {% else %}
+          <span class="ew-choice-meta">Custom test</span>
+        {% endif %}
+      </a>
+    {% empty %}
+      <p style="color: var(--clr-text-muted); font-size: 0.9rem;">No strands defined for this subject yet.</p>
+    {% endfor %}
+  </div>
+  <p style="margin-top: var(--space-md);">
+    <a href="{% url 'core:exams_list' %}?{{ exams_nav_student_prefix }}subject={{ active_subject.slug }}{% if exams_nav_grade %}&{{ exams_nav_grade }}{% endif %}" class="subject-back-link">← Test types</a>
+  </p>
+</section>
+{% endif %}
+
+{% if show_sub_strand_browser %}
+<section class="test-type-browser" aria-labelledby="substrand-browser-title">
+  <div class="subject-browser-header">
+    <h2 class="subject-browser-title" id="substrand-browser-title">Which sub-strand?</h2>
+    <p class="subject-browser-sub">
+      {% if staff_exams_browse %}
+      Pick the sub-strand to browse in {{ active_subject.name }}.
+      {% else %}
+      Pick the sub-strand for {{ selected_student.first_name }}'s test in {{ active_subject.name }}.
+      {% endif %}
+    </p>
+  </div>
+  <div class="ew-choice-grid topic-browser-grid">
+    {% for item in browse_sub_strands %}
+      <a href="{% url 'core:exams_list' %}?{{ exams_nav_student_prefix }}subject={{ active_subject.slug }}&scope=sub_strand&sub_strand={{ item.sub_strand.slug }}{% if exams_nav_grade %}&{{ exams_nav_grade }}{% endif %}"
+         class="ew-choice-card ew-choice-card--{% cycle '0' '1' '2' %} topic-browser-card">
+        <span class="ew-choice-icon-wrap">🔖</span>
+        <span class="ew-choice-name">{{ item.sub_strand.name }}</span>
+        <span class="ew-choice-desc">{{ item.strand.name }}</span>
+        {% if item.count %}
+          <span class="ew-choice-meta">{{ item.count }} test{{ item.count|pluralize }}</span>
+        {% else %}
+          <span class="ew-choice-meta">Custom test</span>
+        {% endif %}
+      </a>
+    {% empty %}
+      <p style="color: var(--clr-text-muted); font-size: 0.9rem;">No sub-strands defined for this subject yet.</p>
+    {% endfor %}
+  </div>
+  <p style="margin-top: var(--space-md);">
+    <a href="{% url 'core:exams_list' %}?{{ exams_nav_student_prefix }}subject={{ active_subject.slug }}{% if exams_nav_grade %}&{{ exams_nav_grade }}{% endif %}" class="subject-back-link">← Test types</a>
+  </p>
+</section>
+{% endif %}
+
+{% if require_learner_selection %}
+<section class="subject-browser" aria-labelledby="learner-pick-title">
+  <div class="subject-browser-header" style="text-align: center; max-width: 28rem; margin: 0 auto;">
+    <h2 class="subject-browser-title" id="learner-pick-title">Who is taking the exam?</h2>
+    <p class="subject-browser-sub">Choose a learner to browse subjects by grade, pick a test type, and start the right exam.</p>
+  </div>
+</section>
+{% endif %}
+
+<!-- Results summary + grid -->
+{% if not show_subject_browser and not show_test_type_browser and not require_learner_selection %}
+{% if not exams_wizard %}
+<div class="results-header">
+  <div class="results-count">
+    {{ exam_entries|length }} exam{{ exam_entries|length|pluralize }} found
+    {% if not selected_student and not staff_exams_browse %}
+      {% if active_grade %}
+        in <strong>{{ active_grade.name }}</strong>
+      {% elif active_subject %}
+        in <strong>{{ active_subject.name }}</strong>
+      {% elif selected_student and student_grade_band %}
+        for <strong>{{ student_grade_band }}</strong> (up to {{ selected_student.grade_level.name }})
+      {% endif %}
+      {% if active_strand %} &middot; <strong>{{ active_strand.name }}</strong>{% endif %}
+      {% if active_sub_strand %} &middot; <strong>{{ active_sub_strand.name }}</strong>{% endif %}
+    {% endif %}
+    {% if active_difficulty %} &middot; <strong>{{ active_difficulty }}</strong>{% endif %}
+    {% if search %} matching "<strong>{{ search }}</strong>"{% endif %}
+  </div>
+</div>
+{% endif %}
+
+{% if exam_entries %}
+  {% for group in exam_entries_by_grade %}
+  <section class="exams-grade-section">
+    {% if exam_entries_by_grade|length > 1 or not active_subject %}
+    <h2 class="exams-grade-heading">{{ group.grade_name }}</h2>
+    {% endif %}
+    <div class="exams-grid">
+    {% for entry in group.entries %}
+      {% with quiz=entry.quiz stat=entry.initial_stat %}
+      <div class="exam-card diff-{{ quiz.difficulty|lower }}" data-quiz-id="{{ quiz.uuid }}">
+
+        <div class="exam-card-header">
+          <div class="exam-title">{{ quiz.title }}</div>
+          <span class="diff-badge {{ quiz.difficulty|lower }}">{{ quiz.difficulty }}</span>
+        </div>
+
+        <div class="exam-meta">
+          {% if quiz.subject %}<span class="meta-chip">📚 {{ quiz.subject.name }}</span>{% endif %}
+          {% if quiz.subject.grade_level and active_subject %}<span class="meta-chip">🏫 {{ quiz.subject.grade_level.name }}</span>{% endif %}
+          {% if quiz.strand %}<span class="meta-chip">🧵 {{ quiz.strand.name }}</span>{% endif %}
+          {% if quiz.sub_strand %}<span class="meta-chip">🔖 {{ quiz.sub_strand.name }}</span>{% endif %}
+        </div>
+
+        {% if quiz.description %}
+          <p style="font-size: 0.85rem; color: var(--clr-text-muted); margin-bottom: var(--space-md); line-height: 1.5;">{{ quiz.description|truncatechars:100 }}</p>
+        {% endif %}
+
+        <div class="exam-stat-row">
+          <div class="exam-stat">
+            <div class="exam-stat-val">{{ entry.question_count }}</div>
+            <div class="exam-stat-lbl">Questions</div>
+          </div>
+          {% if request.user.is_guardian and linked_students %}
+            <div class="exam-stat">
+              <div class="exam-stat-val exam-stat-score">{% if stat %}{{ stat.score_display }}{% else %}—{% endif %}</div>
+              <div class="exam-stat-lbl">Score</div>
+            </div>
+            <div class="exam-stat">
+              <div class="exam-stat-val exam-stat-status {% if stat %}status-{{ stat.status_key }}{% endif %}">{% if stat %}{{ stat.status_label }}{% else %}—{% endif %}</div>
+              <div class="exam-stat-lbl">Status</div>
+            </div>
+          {% else %}
+            <div class="exam-stat">
+              <div class="exam-stat-val">{{ quiz.attempts.count }}</div>
+              <div class="exam-stat-lbl">Attempts</div>
+            </div>
+          {% endif %}
+        </div>
+
+        <div class="exam-card-footer">
+          {% if request.user.is_guardian and linked_students %}
+            {% if selected_student and stat %}
+              <a href="{{ stat.action_url }}" class="exam-btn exam-btn-primary exam-card-action">
+                {{ stat.action_label }}
+              </a>
+            {% else %}
+              <button type="button" class="exam-btn exam-btn-primary exam-card-action exam-pick-learner-btn" data-quiz-id="{{ quiz.uuid }}">
+                Select learner to start
+              </button>
+            {% endif %}
+          {% elif request.user.is_guardian %}
+            <a href="{% url 'accounts:add_learner' %}" class="exam-btn exam-btn-primary">Add a learner first</a>
+          {% elif staff_exams_browse %}
+            <a href="{% url 'core:exam_analytics' quiz.uuid %}" class="exam-btn exam-btn-primary">View analytics</a>
+          {% else %}
+            <span class="exam-btn exam-btn-disabled">Sign in as guardian to start</span>
+          {% endif %}
+          {% if request.user.is_authenticated %}
+            <a href="{% url 'core:exam_analytics' quiz.uuid %}" class="exam-btn exam-btn-secondary">
+              Analytics
+            </a>
+          {% endif %}
+        </div>
+
+      </div>
+      {% endwith %}
+    {% endfor %}
+    </div>
+  </section>
+  {% endfor %}
+
+{% else %}
+  <div class="empty-state" style="padding: var(--space-4xl);">
+    <div class="empty-state-icon">📋</div>
+    <p style="font-size: 1.05rem; font-weight: 600; margin-bottom: var(--space-sm);">No ready-made tests yet</p>
+    <p style="color: var(--clr-text-light); font-size: 0.9rem;">
+      {% if active_grade or active_subject or active_strand or active_sub_strand or active_difficulty or search %}
+        {% if selected_student %}We can create a custom test for {{ selected_student.first_name }} based on your choices.{% else %}Try the exam guide to pick a grade, subject, and topic — we'll match or create a test.{% endif %}
+      {% else %}
+        {% if selected_student and active_subject %}We can create a custom test for {{ selected_student.first_name }} in {{ active_subject.name }}.{% elif selected_student %}Pick a subject above to see tests for {{ selected_student.first_name }}.{% else %}Use the exam guide to get started.{% endif %}
+      {% endif %}
+    </p>
+    {% if selected_student and not learner_grade_missing %}
+      {% if active_subject %}
+        <button type="button" class="btn btn-primary exam-finder-btn" id="empty-open-wizard-btn" style="margin-top: var(--space-lg);">Create custom test</button>
+      {% elif not show_subject_browser %}
+        <a href="{% url 'core:exams_list' %}?student={{ selected_student.uuid }}" class="btn btn-primary" style="margin-top: var(--space-lg);">Choose a subject</a>
+      {% endif %}
+    {% elif active_grade or active_subject or active_strand or active_sub_strand or active_difficulty or search %}
+      <a href="{% url 'core:exams_list' %}{% if selected_student %}?student={{ selected_student.uuid }}{% endif %}" class="btn btn-primary" style="margin-top: var(--space-lg);">Clear Filters</a>
+    {% endif %}
+  </div>
+{% endif %}
+{% endif %}
+
+{% if exams_wizard %}
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+{% endif %}
+
+{% if request.user.is_guardian and linked_students %}
+<!-- Learner selection modal -->
+<div class="learner-modal-overlay{% if require_learner_selection %} is-open{% endif %}" id="learner-modal" role="dialog" aria-modal="true" aria-labelledby="learner-modal-title">
+  <div class="learner-modal">
+    <div class="learner-modal-header">
+      <h2 class="learner-modal-title" id="learner-modal-title">Who is taking the exam?</h2>
+      <p class="learner-modal-sub">Choose a learner first — then pick a subject to see their tests.</p>
+    </div>
+    <div class="learner-modal-body" id="learner-modal-options">
+      {% for s in linked_students %}
+        <button type="button"
+                class="learner-option{% if selected_student and selected_student.uuid == s.uuid %} is-selected{% endif %}"
+                data-student-uuid="{{ s.uuid }}">
+          <span class="learner-option-avatar">{{ s.first_name|first|upper }}{{ s.last_name|first|upper }}</span>
+          <span>
+            <div class="learner-option-name">{{ s.first_name }} {{ s.last_name }}</div>
+            {% if s.grade_level %}
+              <div class="learner-option-meta">{{ s.grade_level.name }}</div>
+            {% endif %}
+          </span>
+        </button>
+      {% endfor %}
+    </div>
+    <div class="learner-modal-footer">
+      {% if not require_learner_selection %}
+        <button type="button" class="btn btn-secondary" id="learner-modal-cancel" style="padding: 0.55rem 1rem; font-size: 0.85rem;">Cancel</button>
+      {% endif %}
+      <button type="button" class="btn btn-primary" id="learner-modal-confirm" style="padding: 0.55rem 1.1rem; font-size: 0.85rem;" {% if not selected_student %}disabled{% endif %}>
+        Continue
+      </button>
+    </div>
+  </div>
+</div>
+
+{{ exam_card_stats|json_script:"exam-card-stats-data" }}
+<script>
+(function () {
+  var modal = document.getElementById('learner-modal');
+  if (!modal) return;
+
+  var mustSelect = {{ require_learner_selection|yesno:"true,false" }};
+  var confirmBtn = document.getElementById('learner-modal-confirm');
+  var cancelBtn = document.getElementById('learner-modal-cancel');
+  var optionsWrap = document.getElementById('learner-modal-options');
+  var changeBtn = document.getElementById('change-learner-btn');
+  var dataEl = document.getElementById('exam-card-stats-data');
+  var stats = dataEl ? JSON.parse(dataEl.textContent) : {};
+  var selectedUuid = '{{ selected_student.uuid|default:"" }}';
+  var pendingQuizId = null;
+
+  function openModal(quizId) {
+    pendingQuizId = quizId || null;
+    modal.classList.add('is-open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeModal() {
+    if (mustSelect && !selectedUuid) return;
+    modal.classList.remove('is-open');
+    document.body.style.overflow = '';
+    pendingQuizId = null;
+  }
+
+  function setSelected(uuid) {
+    selectedUuid = uuid;
+    confirmBtn.disabled = !uuid;
+    optionsWrap.querySelectorAll('.learner-option').forEach(function (btn) {
+      btn.classList.toggle('is-selected', btn.dataset.studentUuid === uuid);
+    });
+  }
+
+  function navigateWithStudent(uuid) {
+    var url = new URL(window.location.href);
+    url.searchParams.set('student', uuid);
+    if (pendingQuizId && stats[pendingQuizId] && stats[pendingQuizId][uuid]) {
+      window.location.href = stats[pendingQuizId][uuid].action_url;
+      return;
+    }
+    window.location.href = url.toString();
+  }
+
+  optionsWrap.addEventListener('click', function (e) {
+    var btn = e.target.closest('.learner-option');
+    if (!btn) return;
+    setSelected(btn.dataset.studentUuid);
+  });
+
+  confirmBtn.addEventListener('click', function () {
+    if (!selectedUuid) return;
+    navigateWithStudent(selectedUuid);
+  });
+
+  if (cancelBtn) {
+    cancelBtn.addEventListener('click', closeModal);
+  }
+
+  modal.addEventListener('click', function (e) {
+    if (e.target === modal && !mustSelect) closeModal();
+  });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && modal.classList.contains('is-open') && !mustSelect) closeModal();
+  });
+
+  if (changeBtn) {
+    changeBtn.addEventListener('click', function () { openModal(); });
+  }
+
+  document.querySelectorAll('.exam-pick-learner-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      openModal(this.dataset.quizId);
+    });
+  });
+
+  window.openLearnerModal = openModal;
+
+  if (selectedUuid) setSelected(selectedUuid);
+  if (mustSelect) document.body.style.overflow = 'hidden';
+})();
+</script>
+{% endif %}
+
+{% if selected_student and not learner_grade_missing %}
+{{ difficulty_choices|json_script:"difficulty-choices-data" }}
+<script>
+(function () {
+  var wizard = document.getElementById('exam-wizard');
+  if (!wizard) return;
+
+  var apiUrl = '{% url "core:exam_filter_options_api" %}';
+  var examsUrl = '{% url "core:exams_list" %}';
+  var studentUuid = '{{ selected_student.uuid }}';
+  var studentFirstName = '{{ selected_student.first_name|escapejs }}';
+  var openOnLoad = {{ open_exam_wizard|yesno:"true,false" }};
+  var mustComplete = openOnLoad;
+
+  var panels = wizard.querySelectorAll('[data-wizard-step]');
+  var progressFill = document.getElementById('wizard-progress-fill');
+  var progressLabel = document.getElementById('wizard-progress-label');
+  var loadingText = document.getElementById('wizard-loading-text');
+  var backBtn = document.getElementById('wizard-back-btn');
+  var skipLink = document.getElementById('wizard-skip-link');
+
+  var diffEl = document.getElementById('difficulty-choices-data');
+  var difficultyChoices = diffEl ? JSON.parse(diffEl.textContent) : [];
+
+  var state = {
+    grade: '', gradeName: '', subject: '', subjectName: '',
+    scope: '', strand: '', strandName: '', subStrand: '', subStrandName: '',
+    difficulty: '', cachedStrands: [], cachedSubStrands: [],
+  };
+
+  var history = [];
+  var TOTAL_STEPS = 5;
+
+  function setProgress(stepName) {
+    var map = { grade: 1, subject: 2, scope: 3, strand: 4, sub_strand: 4, difficulty: 5, complete: 5 };
+    var n = map[stepName] || 1;
+    progressFill.style.width = ((n / TOTAL_STEPS) * 100) + '%';
+    progressLabel.textContent = 'Step ' + n + ' of ' + TOTAL_STEPS;
+  }
+
+  function showPanel(name) {
+    panels.forEach(function (p) {
+      p.classList.toggle('is-active', p.dataset.wizardStep === name);
+    });
+    backBtn.style.visibility = history.length > 0 && name !== 'loading' && name !== 'complete' ? 'visible' : 'hidden';
+    setProgress(name);
+  }
+
+  function openWizard() {
+    wizard.classList.add('is-open');
+    document.body.style.overflow = 'hidden';
+    resetState();
+    history = [];
+    loadGradeStep(false);
+  }
+
+  function closeWizard() {
+    if (mustComplete && openOnLoad) return;
+    wizard.classList.remove('is-open');
+    document.body.style.overflow = '';
+  }
+
+  function resetState() {
+    state.grade = state.gradeName = state.subject = state.subjectName = '';
+    state.scope = state.strand = state.strandName = '';
+    state.subStrand = state.subStrandName = state.difficulty = '';
+    state.cachedStrands = state.cachedSubStrands = [];
+  }
+
+  function fetchOptions(includeGrades) {
+    var params = new URLSearchParams();
+    params.set('student', studentUuid);
+    if (includeGrades) params.set('include_grades', '1');
+    if (state.grade) params.set('grade', state.grade);
+    if (state.subject) params.set('subject', state.subject);
+    if (state.strand) params.set('strand', state.strand);
+    return fetch(apiUrl + '?' + params.toString(), {
+      credentials: 'same-origin',
+      headers: { 'Accept': 'application/json' },
+    }).then(function (r) {
+      if (!r.ok) throw new Error('fetch failed');
+      return r.json();
+    });
+  }
+
+  function runLoading(messages, work, thenFn) {
+    showPanel('loading');
+    var i = 0;
+    loadingText.textContent = messages[0];
+    var ticker = setInterval(function () {
+      i = (i + 1) % messages.length;
+      loadingText.textContent = messages[i];
+    }, 1000);
+    var minWait = new Promise(function (resolve) { setTimeout(resolve, 1500); });
+    Promise.all([work(), minWait]).then(function (results) {
+      clearInterval(ticker);
+      thenFn(results[0]);
+    }).catch(function () {
+      clearInterval(ticker);
+      loadingText.textContent = 'Something went wrong. Please try again.';
+    });
+  }
+
+  function choiceMeta(count) {
+    if (count > 0) {
+      return { text: count + ' test' + (count === 1 ? '' : 's') + ' ready', cls: 'is-ready' };
+    }
+    return { text: 'Custom test', cls: 'is-custom' };
+  }
+
+  function renderChoices(containerId, items, onPick, emptyMsg) {
+    var el = document.getElementById(containerId);
+    el.innerHTML = '';
+    if (!items || !items.length) {
+      var p = document.createElement('p');
+      p.className = 'exam-wizard-hint';
+      p.textContent = emptyMsg || 'We\'ll create a custom test for you — contact your teacher or try another option.';
+      el.appendChild(p);
+      return;
+    }
+    items.forEach(function (item) {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'wizard-choice';
+      var count = typeof item.count === 'number' ? item.count : 0;
+      var meta = choiceMeta(count);
+      btn.innerHTML = '<span class="wizard-choice-name">' + esc(item.name) + '</span>'
+        + '<span class="wizard-choice-meta ' + meta.cls + '">' + meta.text + '</span>';
+      btn.addEventListener('click', function () { onPick(item); });
+      el.appendChild(btn);
+    });
+  }
+
+  function esc(s) {
+    var d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
+  }
+
+  function pushHistory(step) { history.push(step); }
+  function popHistory() { return history.pop(); }
+
+  function loadGradeStep(withLoading) {
+    document.getElementById('wizard-grade-question').textContent =
+      'Hi ' + studentFirstName + ', which grade test would you like to take?';
+
+    function showGrades(data) {
+      renderChoices('wizard-grade-options', data.grades || [], function (item) {
+        pushHistory('grade');
+        state.grade = item.slug;
+        state.gradeName = item.name;
+        loadSubjectStep();
+      }, 'We\'ll create a custom test for your grade — pick another grade or check back soon.');
+      showPanel('grade');
+    }
+
+    if (withLoading === false && openOnLoad) {
+      runLoading(
+        ['Welcome, ' + studentFirstName + '!', 'Finding tests for your level…', 'Getting things ready…'],
+        function () { return fetchOptions(true); },
+        showGrades
+      );
+    } else {
+      runLoading(
+        ['Loading grade options…'],
+        function () { return fetchOptions(true); },
+        showGrades
+      );
+    }
+  }
+
+  function loadSubjectStep() {
+    document.getElementById('wizard-subject-question').textContent =
+      'Great choice, ' + studentFirstName + '! What subject in ' + state.gradeName + '?';
+
+    runLoading(
+        ['Finding the best match for you…', 'Checking your CBC curriculum…', 'Preparing your options…'],
+      function () { return fetchOptions(false); },
+      function (data) {
+        renderChoices('wizard-subject-options', data.subjects || [], function (item) {
+          pushHistory('subject');
+          state.subject = item.slug;
+          state.subjectName = item.name;
+          loadScopeStep();
+        }, 'We\'ll create a custom test for this subject — try another subject or continue.');
+        showPanel('subject');
+      }
+    );
+  }
+
+  function loadScopeStep() {
+    runLoading(
+      ['Checking topics in ' + state.subjectName + '…', 'Matching strands to your grade…'],
+      function () { return fetchOptions(false); },
+      function (data) {
+        state.cachedStrands = data.strands || [];
+        if (!state.cachedStrands.length) {
+          state.scope = 'general';
+          loadDifficultyStep();
+          return;
+        }
+        document.getElementById('wizard-scope-question').textContent =
+          'Would you like a general ' + state.subjectName + ' test or a specific strand?';
+        showPanel('scope');
+      }
+    );
+  }
+
+  function loadStrandStep() {
+    document.getElementById('wizard-strand-question').textContent =
+      'Which ' + state.subjectName + ' strand, ' + studentFirstName + '?';
+
+    renderChoices('wizard-strand-options', state.cachedStrands, function (item) {
+      pushHistory('strand');
+      state.strand = item.slug;
+      state.strandName = item.name;
+      loadSubStrandStep();
+    }, 'We\'ll build a custom strand test for you.');
+    showPanel('strand');
+  }
+
+  function loadSubStrandStep() {
+    runLoading(
+      ['Looking for sub-strand tests…', 'Narrowing down your options…'],
+      function () { return fetchOptions(false); },
+      function (data) {
+        state.cachedSubStrands = data.sub_strands || [];
+        if (!state.cachedSubStrands.length) {
+          loadDifficultyStep();
+          return;
+        }
+        document.getElementById('wizard-sub-strand-question').textContent =
+          'Any specific sub-strand in ' + state.strandName + '?';
+
+        var el = document.getElementById('wizard-sub-strand-options');
+        el.innerHTML = '';
+        var skipBtn = document.createElement('button');
+        skipBtn.type = 'button';
+        skipBtn.className = 'wizard-choice';
+        skipBtn.innerHTML = '<span class="wizard-choice-name">All sub-strands</span><span class="wizard-choice-meta">Skip</span>';
+        skipBtn.addEventListener('click', function () {
+          pushHistory('sub_strand');
+          state.subStrand = '';
+          loadDifficultyStep();
+        });
+        el.appendChild(skipBtn);
+
+        state.cachedSubStrands.forEach(function (item) {
+          var btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'wizard-choice';
+          var count = typeof item.count === 'number' ? item.count : 0;
+          var meta = choiceMeta(count);
+          btn.innerHTML = '<span class="wizard-choice-name">' + esc(item.name) + '</span>'
+            + '<span class="wizard-choice-meta ' + meta.cls + '">' + meta.text + '</span>';
+          btn.addEventListener('click', function () {
+            pushHistory('sub_strand');
+            state.subStrand = item.slug;
+            state.subStrandName = item.name;
+            loadDifficultyStep();
+          });
+          el.appendChild(btn);
+        });
+        showPanel('sub_strand');
+      }
+    );
+  }
+
+  function loadDifficultyStep() {
+    document.getElementById('wizard-difficulty-question').textContent =
+      'Last step, ' + studentFirstName + ' — how challenging?';
+
+    var el = document.getElementById('wizard-difficulty-options');
+    el.innerHTML = '';
+
+    var anyBtn = document.createElement('button');
+    anyBtn.type = 'button';
+    anyBtn.className = 'wizard-choice';
+    anyBtn.innerHTML = '<span class="wizard-choice-name">Any difficulty</span><span class="wizard-choice-meta">Recommended</span>';
+    anyBtn.addEventListener('click', function () {
+      pushHistory('difficulty');
+      state.difficulty = '';
+      finishWizard();
+    });
+    el.appendChild(anyBtn);
+
+    difficultyChoices.forEach(function (pair) {
+      var val = pair[0];
+      var label = pair[1];
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'wizard-choice';
+      btn.innerHTML = '<span class="wizard-choice-name">' + esc(label) + '</span>';
+      btn.addEventListener('click', function () {
+        pushHistory('difficulty');
+        state.difficulty = val;
+        finishWizard();
+      });
+      el.appendChild(btn);
+    });
+
+    showPanel('difficulty');
+  }
+
+  function finishWizard() {
+    mustComplete = false;
+    openOnLoad = false;
+    showPanel('complete');
+
+    runLoading(
+      ['All set! Preparing your test…', 'Matching the best option for ' + studentFirstName + '…'],
+      function () { return Promise.resolve(); },
+      function () {
+        var params = new URLSearchParams();
+        params.set('student', studentUuid);
+        if (state.grade) params.set('grade', state.grade);
+        if (state.subject) params.set('subject', state.subject);
+        if (state.scope === 'strand' && state.strand) params.set('strand', state.strand);
+        if (state.subStrand) params.set('sub_strand', state.subStrand);
+        if (state.difficulty) params.set('difficulty', state.difficulty);
+        window.location.href = examsUrl + '?' + params.toString();
+      }
+    );
+  }
+
+  document.getElementById('wizard-scope-general').addEventListener('click', function () {
+    pushHistory('scope');
+    state.scope = 'general';
+    state.strand = state.strandName = state.subStrand = '';
+    loadDifficultyStep();
+  });
+
+  document.getElementById('wizard-scope-strand').addEventListener('click', function () {
+    pushHistory('scope');
+    state.scope = 'strand';
+    loadStrandStep();
+  });
+
+  backBtn.addEventListener('click', function () {
+    var prev = popHistory();
+    if (!prev) return;
+    if (prev === 'grade') { resetState(); loadGradeStep(true); return; }
+    if (prev === 'subject') { state.subject = state.subjectName = ''; loadSubjectStep(); return; }
+    if (prev === 'scope') { state.scope = ''; showPanel('scope'); return; }
+    if (prev === 'strand') { state.strand = state.strandName = ''; loadStrandStep(); return; }
+    if (prev === 'sub_strand') { state.subStrand = ''; loadSubStrandStep(); return; }
+    if (prev === 'difficulty') { loadDifficultyStep(); return; }
+  });
+
+  var openBtns = document.querySelectorAll('.open-exam-wizard-btn');
+  openBtns.forEach(function (btn) {
+    btn.addEventListener('click', openWizard);
+  });
+
+  var emptyOpenBtn = document.getElementById('empty-open-wizard-btn');
+  if (emptyOpenBtn) {
+    emptyOpenBtn.addEventListener('click', openWizard);
+  }
+
+  wizard.addEventListener('click', function (e) {
+    if (e.target === wizard && !mustComplete) closeWizard();
+  });
+
+  if (openOnLoad) {
+    document.body.style.overflow = 'hidden';
+    loadGradeStep(false);
+  }
+
+  window.openExamWizard = openWizard;
+})();
+</script>
+{% endif %}
+
+{% endblock %}

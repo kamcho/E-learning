@@ -1,0 +1,832 @@
+{% extends "base.html" %}
+
+{% block title %}{{ quiz.title }} — Analytics{% endblock %}
+
+{% block extra_head %}
+<style>
+  .exam-analytics-page { max-width: 1100px; margin: 0 auto; }
+
+  .analytics-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: var(--space-lg);
+    margin-bottom: var(--space-xl);
+  }
+
+  .analytics-title {
+    font-family: var(--font-heading);
+    font-size: 1.75rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    margin: 0 0 var(--space-xs);
+  }
+
+  .analytics-subtitle {
+    font-size: 0.9rem;
+    color: var(--clr-text-muted);
+  }
+
+  .analytics-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-sm);
+    margin-top: var(--space-md);
+  }
+
+  .analytics-tag {
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 0.3rem 0.75rem;
+    border-radius: var(--radius-full);
+    background: var(--clr-surface-alt);
+    border: 1px solid var(--clr-border);
+    color: var(--clr-text-muted);
+  }
+
+  .period-picker {
+    display: flex;
+    gap: var(--space-xs);
+    background: var(--clr-surface);
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-lg);
+    padding: 4px;
+  }
+
+  .period-picker a {
+    padding: 0.45rem 0.9rem;
+    border-radius: var(--radius-md);
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--clr-text-muted);
+    text-decoration: none;
+    transition: all var(--transition-fast);
+  }
+
+  .period-picker a.active,
+  .period-picker a:hover {
+    background: var(--clr-primary);
+    color: #fff;
+  }
+
+  .analytics-header-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: var(--space-md);
+  }
+
+  .analytics-manage {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-sm);
+    justify-content: flex-end;
+  }
+
+  .analytics-manage-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.5rem 0.95rem;
+    border-radius: var(--radius-md);
+    font-size: 0.82rem;
+    font-weight: 700;
+    text-decoration: none;
+    border: 1.5px solid var(--clr-border);
+    background: var(--clr-surface);
+    color: var(--clr-text);
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  }
+
+  .analytics-manage-btn:hover {
+    border-color: var(--clr-primary);
+    color: var(--clr-primary);
+    background: rgba(13, 138, 78, 0.05);
+  }
+
+  .analytics-manage-btn.is-primary {
+    background: var(--clr-primary);
+    border-color: var(--clr-primary);
+    color: #fff;
+  }
+
+  .analytics-manage-btn.is-primary:hover {
+    background: #0b7340;
+    border-color: #0b7340;
+    color: #fff;
+  }
+
+  .analytics-manage-btn.is-danger {
+    border-color: rgba(220, 38, 38, 0.35);
+    color: #b91c1c;
+  }
+
+  .analytics-manage-btn.is-danger:hover {
+    background: rgba(220, 38, 38, 0.08);
+    border-color: #dc2626;
+    color: #991b1b;
+  }
+
+  .analytics-manage-form {
+    margin: 0;
+    display: inline-flex;
+  }
+
+  .stat-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--space-lg);
+    margin-bottom: var(--space-xl);
+  }
+
+  @media (max-width: 900px) { .stat-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 480px) { .stat-grid { grid-template-columns: 1fr; } }
+
+  .stat-card {
+    background: #fff;
+    border: 1px solid #eef1f6;
+    border-radius: 16px;
+    padding: 1.25rem 1.35rem 1.1rem;
+    box-shadow: 0 1px 3px rgba(16, 24, 40, 0.04), 0 1px 2px rgba(16, 24, 40, 0.02);
+    display: flex;
+    flex-direction: column;
+    min-height: 148px;
+  }
+
+  .stat-card-top {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.85rem;
+    flex: 1;
+  }
+
+  .stat-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.15rem;
+    flex-shrink: 0;
+  }
+
+  .stat-icon.orange { background: #fff4e6; color: #e67e22; }
+  .stat-icon.purple { background: #f3eeff; color: #7c5cbf; }
+  .stat-icon.green  { background: #e8f8ef; color: #0D8A4E; }
+  .stat-icon.blue   { background: #e8f1ff; color: #3b82f6; }
+
+  .stat-main { min-width: 0; padding-top: 2px; }
+
+  .stat-value {
+    font-family: var(--font-heading);
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: #1a1d26;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+  }
+
+  .stat-label {
+    margin-top: 0.35rem;
+    font-size: 0.84rem;
+    font-weight: 500;
+    color: #8892a8;
+    line-height: 1.35;
+  }
+
+  .stat-divider {
+    height: 1px;
+    background: #eef1f6;
+    margin: 1rem 0 0.75rem;
+  }
+
+  .stat-trend {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    line-height: 1.3;
+  }
+
+  .stat-trend.up { color: #0D8A4E; }
+  .stat-trend.down { color: #C1272D; }
+  .stat-trend.neutral { color: #8892a8; }
+
+  .stat-trend-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    font-size: 0.65rem;
+    font-weight: 800;
+    flex-shrink: 0;
+  }
+
+  .stat-trend.up .stat-trend-icon { background: rgba(13, 138, 78, 0.12); }
+  .stat-trend.down .stat-trend-icon { background: rgba(193, 39, 45, 0.1); }
+  .stat-trend.neutral .stat-trend-icon { background: #f1f3f8; }
+
+  .charts-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: var(--space-lg);
+    margin-bottom: var(--space-xl);
+  }
+
+  @media (max-width: 800px) { .charts-row { grid-template-columns: 1fr; } }
+
+  .chart-panel {
+    background: var(--clr-surface);
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+  }
+
+  .chart-panel-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--space-sm);
+    padding: var(--space-lg) var(--space-xl);
+    border-bottom: 1px solid var(--clr-border);
+  }
+
+  .chart-panel-head h2 {
+    font-family: var(--font-heading);
+    font-size: 1rem;
+    font-weight: 700;
+    margin: 0;
+  }
+
+  .chart-legend-inline {
+    display: flex;
+    gap: var(--space-md);
+    font-size: 0.78rem;
+    color: var(--clr-text-muted);
+    font-weight: 600;
+  }
+
+  .chart-legend-inline span::before {
+    content: '';
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 5px;
+    vertical-align: middle;
+  }
+
+  .legend-score::before { background: var(--clr-primary); }
+  .legend-count::before { background: rgba(13,138,78,0.35); }
+
+  .chart-canvas-box {
+    padding: var(--space-md) var(--space-xl) var(--space-xl);
+    height: 280px;
+    position: relative;
+  }
+
+  .chart-canvas-box.short { height: 240px; }
+
+  .question-bars { padding: var(--space-lg) var(--space-xl) var(--space-xl); }
+
+  .q-bar-row {
+    display: grid;
+    grid-template-columns: 28px 1fr 48px;
+    gap: var(--space-sm);
+    align-items: center;
+    margin-bottom: var(--space-md);
+  }
+
+  .q-bar-num {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--clr-text-muted);
+  }
+
+  .q-bar-track {
+    height: 10px;
+    background: var(--clr-surface-alt);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+  }
+
+  .q-bar-fill {
+    height: 100%;
+    border-radius: var(--radius-full);
+    background: linear-gradient(90deg, var(--clr-primary), #12a35f);
+    transition: width 0.4s ease;
+  }
+
+  .q-bar-fill.low { background: linear-gradient(90deg, var(--clr-danger), #e85a5f); }
+
+  .q-bar-pct {
+    font-size: 0.82rem;
+    font-weight: 800;
+    color: var(--clr-primary);
+    text-align: right;
+  }
+
+  .q-bar-pct.low { color: var(--clr-danger); }
+
+  .q-bar-label {
+    grid-column: 2 / -1;
+    font-size: 0.8rem;
+    color: var(--clr-text-muted);
+    margin-top: -6px;
+    line-height: 1.35;
+  }
+
+  .attempts-table-wrap { overflow-x: auto; }
+
+  .attempts-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.88rem;
+  }
+
+  .attempts-table th,
+  .attempts-table td {
+    padding: 0.75rem 1rem;
+    text-align: left;
+    border-bottom: 1px solid var(--clr-border);
+  }
+
+  .attempts-table th {
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--clr-text-muted);
+    background: var(--clr-surface-alt);
+  }
+
+  .attempts-table tr:hover td { background: var(--clr-surface-alt); }
+
+  .attempts-table a {
+    color: var(--clr-primary);
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  .score-pill {
+    display: inline-block;
+    padding: 0.2rem 0.6rem;
+    border-radius: var(--radius-full);
+    font-size: 0.78rem;
+    font-weight: 700;
+  }
+
+  .score-pill.high { background: rgba(13,138,78,0.1); color: var(--clr-primary); }
+  .score-pill.mid { background: rgba(212,160,23,0.12); color: var(--clr-accent); }
+  .score-pill.low { background: rgba(193,39,45,0.1); color: var(--clr-danger); }
+
+  .leaderboard {
+    list-style: none;
+    padding: var(--space-lg) var(--space-xl) var(--space-xl);
+    margin: 0;
+  }
+
+  .leaderboard li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-md) 0;
+    border-bottom: 1px solid var(--clr-border);
+  }
+
+  .leaderboard li:last-child { border-bottom: none; }
+
+  .lb-name { font-weight: 600; font-size: 0.9rem; }
+  .lb-meta { font-size: 0.75rem; color: var(--clr-text-muted); }
+
+  .analytics-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--clr-primary);
+    text-decoration: none;
+    margin-bottom: var(--space-lg);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="exam-analytics-page">
+  <a href="{% url 'core:exams_list' %}" class="analytics-back">← Back to exams</a>
+
+  <div class="analytics-header">
+    <div>
+      <h1 class="analytics-title">{{ quiz.title }}</h1>
+      <p class="analytics-subtitle">Exam performance analytics · {{ analytics.period_label }}</p>
+      <div class="analytics-meta">
+        <span class="analytics-tag">{{ quiz.difficulty }}</span>
+        {% if quiz.subject %}<span class="analytics-tag">{{ quiz.subject.name }}</span>{% endif %}
+        {% if quiz.subject.grade_level %}<span class="analytics-tag">{{ quiz.subject.grade_level.name }}</span>{% endif %}
+        <span class="analytics-tag">{{ quiz.test_size }} questions</span>
+      </div>
+    </div>
+    <div class="analytics-header-actions">
+      {% if can_manage %}
+      <div class="analytics-manage">
+        <a href="{% url 'core:quiz_edit' quiz_uuid=quiz.uuid %}" class="analytics-manage-btn is-primary">&#9998; Edit quiz</a>
+        <a href="{% url 'core:quiz_builder_list' %}" class="analytics-manage-btn">&#128196; All quizzes</a>
+        <form method="post" action="{% url 'core:quiz_delete' quiz_uuid=quiz.uuid %}" class="analytics-manage-form"
+              onsubmit="return confirm('Delete quiz &quot;{{ quiz.title }}&quot;? This cannot be undone.');">
+          {% csrf_token %}
+          <button type="submit" class="analytics-manage-btn is-danger">&#128465; Delete</button>
+        </form>
+      </div>
+      {% endif %}
+      <div class="period-picker">
+        <a href="?days=7" class="{% if days == 7 %}active{% endif %}">7 days</a>
+        <a href="?days=14" class="{% if days == 14 %}active{% endif %}">14 days</a>
+        <a href="?days=30" class="{% if days == 30 %}active{% endif %}">30 days</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stat cards -->
+  <div class="stat-grid">
+    <div class="stat-card">
+      <div class="stat-card-top">
+        <div class="stat-icon orange">&#128203;</div>
+        <div class="stat-main">
+          <div class="stat-value">{{ analytics.summary.total_attempts }}</div>
+          <div class="stat-label">Total attempts</div>
+        </div>
+      </div>
+      <div class="stat-divider"></div>
+      {% if analytics.summary.in_progress %}
+        <div class="stat-trend up">
+          <span class="stat-trend-icon">&#8593;</span>
+          <span>{{ analytics.summary.in_progress }} in progress now</span>
+        </div>
+      {% else %}
+        <div class="stat-trend neutral">
+          <span class="stat-trend-icon">&#10003;</span>
+          <span>Without changes</span>
+        </div>
+      {% endif %}
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-card-top">
+        <div class="stat-icon purple">&#128200;</div>
+        <div class="stat-main">
+          <div class="stat-value">{{ analytics.summary.avg_score }}%</div>
+          <div class="stat-label">Average score</div>
+        </div>
+      </div>
+      <div class="stat-divider"></div>
+      {% if analytics.trend.trend_pct %}
+        <div class="stat-trend {% if analytics.trend.trend_up %}up{% else %}down{% endif %}">
+          <span class="stat-trend-icon">{% if analytics.trend.trend_up %}&#8593;{% else %}&#8595;{% endif %}</span>
+          <span>{{ analytics.trend.trend_pct }}% vs prior period</span>
+        </div>
+      {% else %}
+        <div class="stat-trend neutral">
+          <span class="stat-trend-icon">&#10003;</span>
+          <span>Best score {{ analytics.summary.best_score }}%</span>
+        </div>
+      {% endif %}
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-card-top">
+        <div class="stat-icon green">&#9989;</div>
+        <div class="stat-main">
+          <div class="stat-value">{{ analytics.summary.pass_rate }}%</div>
+          <div class="stat-label">Pass rate (≥70%)</div>
+        </div>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat-trend {% if analytics.summary.passed %}up{% else %}neutral{% endif %}">
+        <span class="stat-trend-icon">{% if analytics.summary.passed %}&#8593;{% else %}&#10003;{% endif %}</span>
+        <span>{{ analytics.summary.passed }} learner{{ analytics.summary.passed|pluralize }} passed</span>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-card-top">
+        <div class="stat-icon blue">&#127942;</div>
+        <div class="stat-main">
+          <div class="stat-value">{{ analytics.summary.completion_rate }}%</div>
+          <div class="stat-label">Completion rate</div>
+        </div>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat-trend {% if analytics.summary.completed %}up{% else %}neutral{% endif %}">
+        <span class="stat-trend-icon">{% if analytics.summary.completed %}&#8593;{% else %}&#10003;{% endif %}</span>
+        <span>{{ analytics.summary.completed }} of {{ analytics.summary.total_attempts }} finished</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Trend + Outcomes -->
+  <div class="charts-row">
+    <div class="chart-panel">
+      <div class="chart-panel-head">
+        <h2>Score Trend</h2>
+        <div class="chart-legend-inline">
+          <span class="legend-score">Avg score</span>
+          <span class="legend-count">Attempts</span>
+        </div>
+      </div>
+      <div class="chart-canvas-box">
+        <canvas id="trendChart"></canvas>
+      </div>
+    </div>
+
+    <div class="chart-panel">
+      <div class="chart-panel-head">
+        <h2>Outcomes</h2>
+      </div>
+      <div class="chart-canvas-box short">
+        <canvas id="outcomesChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Score distribution -->
+  <div class="chart-panel" style="margin-bottom: var(--space-xl);">
+    <div class="chart-panel-head">
+      <h2>Score Distribution</h2>
+    </div>
+    <div class="chart-canvas-box short">
+      <canvas id="distributionChart"></canvas>
+    </div>
+  </div>
+
+  <div class="charts-row">
+    <!-- Question accuracy -->
+    {% if analytics.question_stats %}
+      <div class="chart-panel">
+        <div class="chart-panel-head">
+          <h2>Question Accuracy</h2>
+        </div>
+        <div class="question-bars">
+          {% for q in analytics.question_stats %}
+            <div>
+              <div class="q-bar-row">
+                <span class="q-bar-num">Q{{ q.number }}</span>
+                <div class="q-bar-track">
+                  <div class="q-bar-fill {% if q.pct < 50 %}low{% endif %}" style="width: {{ q.pct }}%;"></div>
+                </div>
+                <span class="q-bar-pct {% if q.pct < 50 %}low{% endif %}">{{ q.pct }}%</span>
+              </div>
+              <div class="q-bar-label">{{ q.label }}{% if q.answered %} · {{ q.correct }}/{{ q.answered }} correct{% endif %}</div>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    {% endif %}
+
+    <!-- Top performers -->
+    <div class="chart-panel">
+      <div class="chart-panel-head">
+        <h2>Top Scores</h2>
+      </div>
+      {% if analytics.top_attempts %}
+        <ul class="leaderboard">
+          {% for att in analytics.top_attempts %}
+            <li>
+              <div>
+                <div class="lb-name">
+                  {% if att.student %}{{ att.student.first_name }} {{ att.student.last_name }}
+                  {% else %}{{ att.user.first_name }} {{ att.user.last_name }}{% endif %}
+                </div>
+                <div class="lb-meta">{{ att.updated_at|date:"d M Y" }}</div>
+              </div>
+              <a href="{% url 'core:attempt_detail' att.quiz.uuid att.student.uuid %}">
+                <span class="score-pill {% if att.score >= 70 %}high{% elif att.score >= 40 %}mid{% else %}low{% endif %}">{{ att.score }}%</span>
+              </a>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p style="padding: var(--space-xl); color: var(--clr-text-muted); font-size: 0.9rem;">No completed attempts yet.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Recent attempts table -->
+  <div class="chart-panel">
+    <div class="chart-panel-head">
+      <h2>Recent Attempts</h2>
+    </div>
+    <div class="attempts-table-wrap">
+      {% if analytics.recent_attempts %}
+        <table class="attempts-table">
+          <thead>
+            <tr>
+              <th>Learner</th>
+              <th>Score</th>
+              <th>Status</th>
+              <th>Date</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for att in analytics.recent_attempts %}
+              <tr>
+                <td>
+                  {% if att.student %}{{ att.student.first_name }} {{ att.student.last_name }}
+                  {% else %}{{ att.user.first_name }}{% endif %}
+                </td>
+                <td>
+                  {% if att.is_complete %}
+                    <span class="score-pill {% if att.score >= 70 %}high{% elif att.score >= 40 %}mid{% else %}low{% endif %}">{{ att.score }}%</span>
+                  {% else %}—{% endif %}
+                </td>
+                <td>
+                  {% if att.is_complete %}
+                    <span style="color: var(--clr-primary); font-weight: 600; font-size: 0.82rem;">Done</span>
+                  {% else %}
+                    <span style="color: var(--clr-accent); font-weight: 600; font-size: 0.82rem;">Ongoing</span>
+                  {% endif %}
+                </td>
+                <td>{{ att.updated_at|date:"d M Y" }}</td>
+                <td><a href="{% url 'core:attempt_detail' att.quiz.uuid att.student.uuid %}">View →</a></td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <p style="padding: var(--space-xl); color: var(--clr-text-muted);">No attempts recorded for this exam yet.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+{{ analytics.trend|json_script:"trend-chart-data" }}
+{{ analytics.distribution|json_script:"outcomes-chart-data" }}
+{{ analytics.score_buckets|json_script:"distribution-chart-data" }}
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+(function () {
+  if (typeof Chart === 'undefined') return;
+
+  var gridColor = 'rgba(0,0,0,0.05)';
+  var tickColor = '#8892A8';
+
+  var trendEl = document.getElementById('trend-chart-data');
+  if (trendEl) {
+    var trend = JSON.parse(trendEl.textContent);
+    var ctx = document.getElementById('trendChart');
+    if (ctx) {
+      new Chart(ctx, {
+        data: {
+          labels: trend.labels,
+          datasets: [
+            {
+              type: 'bar',
+              label: 'Attempts',
+              data: trend.counts,
+              backgroundColor: 'rgba(13, 138, 78, 0.18)',
+              borderRadius: 6,
+              yAxisID: 'yCount',
+              order: 2,
+            },
+            {
+              type: 'line',
+              label: 'Avg Score',
+              data: trend.avg_scores,
+              borderColor: '#0D8A4E',
+              backgroundColor: 'rgba(13, 138, 78, 0.08)',
+              fill: true,
+              tension: 0.4,
+              pointRadius: 4,
+              pointHoverRadius: 7,
+              pointBackgroundColor: '#0D8A4E',
+              pointBorderColor: '#fff',
+              pointBorderWidth: 2,
+              borderWidth: 2.5,
+              yAxisID: 'yScore',
+              order: 1,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: '#fff',
+              titleColor: '#1A1D26',
+              bodyColor: '#5A6178',
+              borderColor: '#E2E8F0',
+              borderWidth: 1,
+              padding: 12,
+            },
+          },
+          scales: {
+            x: {
+              grid: { color: gridColor, drawBorder: false },
+              ticks: { color: tickColor, font: { size: 11 }, maxRotation: 45 },
+            },
+            yScore: {
+              type: 'linear',
+              position: 'left',
+              min: 0,
+              max: 100,
+              grid: { color: gridColor, borderDash: [4, 4], drawBorder: false },
+              ticks: { color: tickColor, stepSize: 20, callback: function (v) { return v + '%'; } },
+            },
+            yCount: {
+              type: 'linear',
+              position: 'right',
+              min: 0,
+              grid: { drawOnChartArea: false },
+              ticks: { color: tickColor, precision: 0 },
+            },
+          },
+        },
+      });
+    }
+  }
+
+  var outcomesEl = document.getElementById('outcomes-chart-data');
+  if (outcomesEl) {
+    var outcomes = JSON.parse(outcomesEl.textContent);
+    var ctx2 = document.getElementById('outcomesChart');
+    if (ctx2) {
+      new Chart(ctx2, {
+        type: 'doughnut',
+        data: {
+          labels: ['Passed (≥70%)', 'Developing (40–69%)', 'Below 40%', 'In Progress'],
+          datasets: [{
+            data: [outcomes.passed, outcomes.developing, outcomes.below, {{ analytics.summary.in_progress }}],
+            backgroundColor: ['#0D8A4E', '#D4A017', '#C1272D', '#E2E8F0'],
+            borderWidth: 0,
+            hoverOffset: 6,
+          }],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '68%',
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: { boxWidth: 10, padding: 14, font: { size: 11 }, color: '#5A6178' },
+            },
+          },
+        },
+      });
+    }
+  }
+
+  var distEl = document.getElementById('distribution-chart-data');
+  if (distEl) {
+    var buckets = JSON.parse(distEl.textContent);
+    var ctx3 = document.getElementById('distributionChart');
+    if (ctx3) {
+      new Chart(ctx3, {
+        type: 'bar',
+        data: {
+          labels: buckets.map(function (b) { return b.label; }),
+          datasets: [{
+            label: 'Learners',
+            data: buckets.map(function (b) { return b.count; }),
+            backgroundColor: buckets.map(function (b) { return b.color; }),
+            borderRadius: 8,
+            barThickness: 48,
+          }],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: {
+              grid: { display: false },
+              ticks: { color: tickColor, font: { weight: '600' } },
+            },
+            y: {
+              min: 0,
+              grid: { color: gridColor, borderDash: [4, 4], drawBorder: false },
+              ticks: { color: tickColor, precision: 0 },
+            },
+          },
+        },
+      });
+    }
+  }
+})();
+</script>
+{% endblock %}

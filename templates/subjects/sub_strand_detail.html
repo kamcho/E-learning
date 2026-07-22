@@ -1,0 +1,303 @@
+{% extends "base.html" %}
+
+{% block title %}{{ sub_strand.name }} — SomaKenya{% endblock %}
+
+{% block extra_head %}
+{% include 'core/partials/question_rich_styles.html' %}
+{% include 'core/partials/question_math_assets.html' %}
+<style>
+  .sub-strand-stats {
+    display: flex;
+    gap: var(--space-md);
+    margin-top: var(--space-md);
+    flex-wrap: wrap;
+  }
+
+  .sub-strand-stat {
+    background: var(--clr-surface);
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-sm) var(--space-md);
+    font-size: 0.82rem;
+    color: var(--clr-text-muted);
+  }
+
+  .sub-strand-stat strong {
+    color: var(--clr-primary);
+    font-family: var(--font-heading);
+    font-size: 1.1rem;
+    margin-right: 4px;
+  }
+
+  .question-item {
+    padding: var(--space-md) 0;
+    border-bottom: 1px solid var(--clr-border);
+  }
+
+  .question-item:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+
+  .question-item-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: var(--space-md);
+    margin-bottom: var(--space-sm);
+  }
+
+  .question-item-title {
+    font-weight: 700;
+    color: var(--clr-text);
+    line-height: 1.45;
+    flex: 1;
+  }
+
+  .question-item-title .question-rich-prompt {
+    margin-bottom: 0;
+  }
+
+  .question-item-title .question-rich-text {
+    font-size: 0.95rem;
+  }
+
+  .question-item-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    justify-content: flex-end;
+  }
+
+  .question-item-meta {
+    font-size: 0.78rem;
+    color: var(--clr-text-light);
+    margin-bottom: var(--space-sm);
+  }
+
+  .question-options {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    margin-top: var(--space-sm);
+  }
+
+  .question-option {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    font-size: 0.82rem;
+    color: var(--clr-text-muted);
+    padding: 0.45rem 0.65rem;
+    border-radius: var(--radius-md);
+    background: var(--clr-surface-alt);
+  }
+
+  .question-option.is-correct {
+    background: rgba(13, 138, 78, 0.08);
+    color: var(--clr-primary);
+    font-weight: 600;
+  }
+
+  .question-option-marker {
+    flex-shrink: 0;
+    font-size: 0.75rem;
+    line-height: 1.4;
+  }
+
+  .sub-strand-questions-panel {
+    margin-top: var(--space-xl);
+    width: 100%;
+  }
+
+  .sub-strand-questions-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-lg);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="breadcrumbs">
+  <a href="{% url 'core:landing' %}">Home</a>
+  <span>/</span>
+  <a href="{% url 'subjects:subject_list' %}">Subjects</a>
+  <span>/</span>
+  <a href="{% url 'subjects:subject_detail' sub_strand.strand.subject.slug %}">{{ sub_strand.strand.subject.name }}</a>
+  <span>/</span>
+  <a href="{% url 'subjects:strand_detail' sub_strand.strand.slug %}">Strand: {{ sub_strand.strand.name }}</a>
+  <span>/</span>
+  <span>Sub-strand: {{ sub_strand.name }}</span>
+</div>
+
+<div class="page-header">
+  <div class="page-header-content">
+    <div>
+      <span class="badge badge-gold" style="margin-bottom: var(--space-xs);">Strand: {{ sub_strand.strand.name }}</span>
+      <h1 class="page-title">Sub-strand: {{ sub_strand.name }}</h1>
+      <p class="page-subtitle">Manage objectives and assessment questions for this topic.</p>
+      <div class="sub-strand-stats">
+        <div class="sub-strand-stat"><strong>{{ objectives|length }}</strong> Objective{{ objectives|length|pluralize }}</div>
+        <div class="sub-strand-stat"><strong>{{ question_count }}</strong> Question{{ question_count|pluralize }}</div>
+      </div>
+      {% if request.user.is_authenticated %}
+        {% if request.user.is_admin_role or request.user.is_staff or request.user.is_teacher %}
+        <a href="{% url 'subjects:create_question' sub_strand.strand.subject.pk %}?sub_strand={{ sub_strand.pk }}" class="btn btn-secondary" style="display: inline-block; margin-top: var(--space-md);">
+          + Create Question
+        </a>
+        {% endif %}
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="content-grid">
+  <!-- Left Side: Objectives List -->
+  <div>
+    <div class="card">
+      <h2 class="card-title">🎯 Sub-strand Objectives</h2>
+      
+      {% if objectives %}
+        <div class="item-list">
+          {% for obj in objectives %}
+            <div class="list-item">
+              <div>
+                <span class="list-item-title">{{ obj.name }}</span>
+                <div class="list-item-meta">
+                  Order: {{ obj.order }} | Slug: <code>{{ obj.slug }}</code>
+                </div>
+              </div>
+              <div>
+                {% if obj.is_active %}
+                  <span class="badge badge-primary">Active</span>
+                {% else %}
+                  <span class="badge badge-danger">Inactive</span>
+                {% endif %}
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty-state">
+          <div class="empty-state-icon">🎯</div>
+          <h3>No Objectives Registered</h3>
+          <p>Create the first sub-strand objective using the form on the right.</p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Right Side: Add Objective Form -->
+  <div>
+    <div class="card">
+      <h2 class="card-title">➕ Add Sub-strand Objective</h2>
+      <form method="post" novalidate>
+        {% csrf_token %}
+        
+        {% for field in form %}
+          {% if field.is_hidden %}
+            {{ field }}
+          {% else %}
+            <div class="form-group">
+              {% if field.field.widget.input_type == 'checkbox' %}
+                <label class="form-checkbox-label">
+                  {{ field }}
+                  {{ field.label }}
+                </label>
+              {% else %}
+                <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+              {% endif %}
+              {% if field.errors %}
+                <div style="color: var(--clr-danger); font-size: 0.82rem; margin-top: 4px;">
+                  {{ field.errors.0 }}
+                </div>
+              {% endif %}
+            </div>
+          {% endif %}
+        {% endfor %}
+        
+        <button type="submit" class="btn btn-secondary" style="width: 100%; justify-content: center; padding: 0.75rem;">
+          Save Objective
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="card sub-strand-questions-panel">
+  <div class="sub-strand-questions-head">
+    <h2 class="card-title" style="margin-bottom: 0;">❓ Questions</h2>
+    {% if request.user.is_authenticated %}
+      {% if request.user.is_admin_role or request.user.is_staff or request.user.is_teacher %}
+      <a href="{% url 'subjects:create_question' sub_strand.strand.subject.pk %}?sub_strand={{ sub_strand.pk }}" class="btn btn-secondary" style="padding: 0.45rem 0.9rem; font-size: 0.82rem;">
+        + Add Question
+      </a>
+      {% endif %}
+    {% endif %}
+  </div>
+
+  {% if questions %}
+    {% for question in questions %}
+      <div class="question-item">
+        <div class="question-item-head">
+          <div class="question-item-title">
+            {% include 'core/partials/question_prompt.html' with question=question %}
+          </div>
+          <div class="question-item-badges">
+            <span class="badge badge-gold">{{ question.difficulty }}</span>
+            <span class="badge badge-primary">{{ question.quiz_type }}</span>
+            {% if question.is_active %}
+              <span class="badge badge-primary">Active</span>
+            {% else %}
+              <span class="badge badge-danger">Inactive</span>
+            {% endif %}
+          </div>
+        </div>
+        <div class="question-item-meta">
+          Added {{ question.created_at|date:"d M Y" }}
+          {% if question.score %}&middot; {{ question.score }} mark{{ question.score|pluralize }}{% endif %}
+        </div>
+
+        {% if question.quiz_type == 'Multiple Choice' or question.quiz_type == 'True or False' %}
+          {% with options=question.options.all %}
+            {% if options %}
+            <div class="question-options">
+              {% for option in options %}
+                {% if option.is_active %}
+                <div class="question-option{% if option.is_correct %} is-correct{% endif %}">
+                  <span class="question-option-marker">{% if option.is_correct %}&#10003;{% else %}&#9675;{% endif %}</span>
+                  {% if option.option_image %}
+                    {% include 'core/partials/option_content.html' with text=option.option image_url=option.option_image.url %}
+                  {% else %}
+                    {% include 'core/partials/option_content.html' with text=option.option image_url='' %}
+                  {% endif %}
+                </div>
+                {% endif %}
+              {% endfor %}
+            </div>
+            {% endif %}
+          {% endwith %}
+        {% endif %}
+      </div>
+    {% endfor %}
+  {% else %}
+    <div class="empty-state">
+      <div class="empty-state-icon">❓</div>
+      <h3>No Questions Yet</h3>
+      <p>Create assessment questions for this sub-strand.</p>
+      {% if request.user.is_authenticated %}
+        {% if request.user.is_admin_role or request.user.is_staff or request.user.is_teacher %}
+        <a href="{% url 'subjects:create_question' sub_strand.strand.subject.pk %}?sub_strand={{ sub_strand.pk }}" class="btn btn-primary" style="margin-top: var(--space-md);">
+          + Create Question
+        </a>
+        {% endif %}
+      {% endif %}
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,131 @@
+{% if google_client_id %}
+<style>
+  .auth-divider {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    margin: var(--space-xl) 0;
+    color: var(--clr-text-light);
+    font-size: 0.82rem;
+    font-weight: 500;
+  }
+
+  .auth-divider::before,
+  .auth-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--clr-border);
+  }
+
+  .google-signin-wrap {
+    display: flex;
+    justify-content: center;
+    min-height: 44px;
+  }
+
+  .google-signin-error {
+    display: none;
+    margin-top: var(--space-sm);
+    color: var(--clr-danger);
+    font-size: 0.82rem;
+    text-align: center;
+  }
+
+  .google-signin-error.is-visible {
+    display: block;
+  }
+</style>
+
+<div class="auth-divider">or continue with</div>
+
+<div class="google-signin-wrap">
+  <div
+    id="googleSignInButton"
+    data-client-id="{{ google_client_id }}"
+    data-auth-url="{% url 'accounts:google_auth' %}"
+    data-next="{{ next|default:'' }}"
+  ></div>
+</div>
+<p id="googleSignInError" class="google-signin-error" role="alert"></p>
+
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script>
+(function () {
+  var mount = document.getElementById('googleSignInButton');
+  if (!mount) return;
+
+  var clientId = mount.dataset.clientId;
+  var authUrl = mount.dataset.authUrl;
+  var nextUrl = mount.dataset.next || '';
+  var errorEl = document.getElementById('googleSignInError');
+
+  function getCookie(name) {
+    var match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+    return match ? decodeURIComponent(match[2]) : '';
+  }
+
+  function showError(message) {
+    if (!errorEl) return;
+    errorEl.textContent = message;
+    errorEl.classList.add('is-visible');
+  }
+
+  function handleCredential(response) {
+    if (!response || !response.credential) {
+      showError('Google sign-in was cancelled.');
+      return;
+    }
+
+    fetch(authUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': getCookie('csrftoken'),
+      },
+      credentials: 'same-origin',
+      body: JSON.stringify({
+        credential: response.credential,
+        next: nextUrl,
+      }),
+    })
+      .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
+      .then(function (result) {
+        if (result.ok && result.data.ok) {
+          window.location.href = result.data.redirect;
+          return;
+        }
+        showError((result.data && result.data.error) || 'Google sign-in failed. Please try again.');
+      })
+      .catch(function () {
+        showError('Google sign-in failed. Please try again.');
+      });
+  }
+
+  function initGoogleButton() {
+    if (!window.google || !google.accounts || !google.accounts.id) {
+      window.setTimeout(initGoogleButton, 100);
+      return;
+    }
+
+    google.accounts.id.initialize({
+      client_id: clientId,
+      callback: handleCredential,
+      auto_select: false,
+      cancel_on_tap_outside: true,
+    });
+
+    google.accounts.id.renderButton(mount, {
+      type: 'standard',
+      theme: 'outline',
+      size: 'large',
+      text: 'continue_with',
+      shape: 'pill',
+      width: Math.min(mount.parentElement.clientWidth, 360),
+    });
+  }
+
+  initGoogleButton();
+})();
+</script>
+{% endif %}

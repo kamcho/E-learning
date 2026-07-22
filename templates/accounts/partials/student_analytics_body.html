@@ -1,0 +1,27 @@
+<div class="student-banner">
+  <div class="banner-avatar">{{ student.first_name|first|upper }}{{ student.last_name|first|upper }}</div>
+  <div>
+    <div class="banner-name">{{ student.first_name }} {% if student.middle_name %}{{ student.middle_name }} {% endif %}{{ student.last_name }}</div>
+    <div class="banner-meta">
+      {{ student.grade_level.name|default:"No grade assigned" }}
+      &nbsp;&middot;&nbsp;
+      {{ student.gender }}
+      {% if student.dob %}&nbsp;&middot;&nbsp; Born {{ student.dob|date:"d M Y" }}{% endif %}
+    </div>
+    <div class="banner-pills">
+      <span class="banner-pill">&#128218; {{ student.grade_level.level|default:"CBC" }}</span>
+      <span class="banner-pill">&#128203; {{ analytics.total_attempts }} attempt{{ analytics.total_attempts|pluralize }}</span>
+      <span class="banner-pill">&#9989; {{ analytics.completion_rate }}% complete</span>
+    </div>
+  </div>
+</div>
+
+{% include 'accounts/partials/student_analytics_metric_cards.html' %}
+
+{% include 'accounts/partials/student_achievements.html' with achievements=achievements %}
+
+{% include 'accounts/partials/pathway_suggestion_card.html' %}
+
+{% include 'accounts/partials/attempt_score_chart.html' with attempt_chart=attempt_chart chart_canvas_id='studentAnalyticsScoreChart' chart_data_id='student-analytics-chart-data' %}
+
+{% include 'accounts/partials/student_analytics_sections.html' %}

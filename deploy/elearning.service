@@ -1,0 +1,26 @@
+# systemd unit for the Elearning ASGI app (gunicorn + uvicorn workers)
+# Install to: /etc/systemd/system/elearning.service
+[Unit]
+Description=Elearning Django ASGI (gunicorn + uvicorn workers)
+After=network.target postgresql.service
+Requires=postgresql.service
+
+[Service]
+Type=notify
+User=elearning
+Group=www-data
+WorkingDirectory=/srv/elearning
+EnvironmentFile=/srv/elearning/.env
+
+# Create /run/elearning (for the unix socket) on start, owned by the app user.
+RuntimeDirectory=elearning
+RuntimeDirectoryMode=0755
+
+ExecStart=/srv/elearning/.venv/bin/gunicorn -c /srv/elearning/deploy/gunicorn.conf.py Elearning.asgi:application
+ExecReload=/bin/kill -s HUP $MAINPID
+KillMode=mixed
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+
+{% block title %}Subscribe — {{ plan.name }}{% endblock %}
+
+{% block content %}
+<div style="max-width: 480px; margin: 0 auto;">
+  <a href="{% url 'subscriptions:plans' %}" style="font-size: 0.88rem; font-weight: 600; color: var(--clr-primary); text-decoration: none;">&larr; Back to plans</a>
+
+  <div class="card" style="margin-top: var(--space-lg);">
+    <h1 style="font-family: var(--font-heading); font-size: 1.5rem; font-weight: 800; margin-bottom: var(--space-sm);">{{ plan.name }}</h1>
+    <p style="color: var(--clr-text-muted); margin-bottom: var(--space-xl);">
+      KES {{ plan.price_kes|floatformat:0 }} &middot; {{ plan.tests_label }} &middot; {{ plan.duration_days }} days &middot; M-Pesa STK Push
+    </p>
+
+    <form method="post">
+      {% csrf_token %}
+      <div class="form-group">
+        <label class="form-label" for="{{ form.phone_number.id_for_label }}">{{ form.phone_number.label }}</label>
+        {{ form.phone_number }}
+        {% if form.phone_number.errors %}
+          <p style="color: var(--clr-danger); font-size: 0.82rem; margin-top: 0.35rem;">{{ form.phone_number.errors.0 }}</p>
+        {% endif %}
+        <p style="font-size: 0.78rem; color: var(--clr-text-light); margin-top: 0.35rem;">
+          You will receive an STK prompt on this number. Use the same number registered with M-Pesa.
+        </p>
+      </div>
+      <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; margin-top: var(--space-md);">
+        Pay KES {{ plan.price_kes|floatformat:0 }} with M-Pesa
+      </button>
+    </form>
+  </div>
+</div>
+{% endblock %}

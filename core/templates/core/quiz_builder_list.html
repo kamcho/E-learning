@@ -1,0 +1,329 @@
+{% extends "base.html" %}
+
+{% block title %}Quiz Builder{% endblock %}
+
+{% block extra_head %}
+<style>
+  .qb-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-md);
+    flex-wrap: wrap;
+    margin-bottom: var(--space-xl);
+  }
+
+  .qb-search-bar {
+    display: flex;
+    gap: var(--space-sm);
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .qb-search-bar input {
+    width: 220px;
+  }
+
+  .qb-stats-row {
+    display: flex;
+    gap: var(--space-md);
+    margin-bottom: var(--space-xl);
+    flex-wrap: wrap;
+  }
+
+  .qb-stat-card {
+    flex: 1;
+    min-width: 140px;
+    background: var(--clr-surface);
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-lg) var(--space-xl);
+    text-align: center;
+  }
+
+  .qb-stat-num {
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--clr-primary);
+    line-height: 1;
+    margin-bottom: var(--space-xs);
+  }
+
+  .qb-stat-label {
+    font-size: 0.78rem;
+    color: var(--clr-text-light);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .quiz-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: var(--space-lg);
+  }
+
+  .quiz-item {
+    background: var(--clr-surface);
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-xl);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+    transition: box-shadow 0.15s ease, border-color 0.15s ease;
+  }
+
+  .quiz-item:hover {
+    box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+    border-color: var(--clr-primary-light, #93c5fd);
+  }
+
+  .quiz-item-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-sm);
+  }
+
+  .quiz-item-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--clr-text);
+    line-height: 1.3;
+  }
+
+  .quiz-item-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-xs);
+    font-size: 0.78rem;
+    color: var(--clr-text-light);
+  }
+
+  .quiz-item-meta span {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+  }
+
+  .quiz-item-footer {
+    display: flex;
+    gap: var(--space-sm);
+    align-items: center;
+    margin-top: auto;
+    flex-wrap: wrap;
+  }
+
+  .difficulty-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 4px;
+    flex-shrink: 0;
+  }
+
+  .difficulty-dot--Easy { background: #22c55e; }
+  .difficulty-dot--Medium { background: #f59e0b; }
+  .difficulty-dot--Hard { background: #ef4444; }
+
+  .badge-status-active {
+    background: #dcfce7;
+    color: #15803d;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-size: 0.72rem;
+    font-weight: 600;
+  }
+
+  .badge-status-inactive {
+    background: #fee2e2;
+    color: #991b1b;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-size: 0.72rem;
+    font-weight: 600;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: var(--space-3xl) var(--space-xl);
+    color: var(--clr-text-light);
+  }
+
+  .empty-state-icon {
+    font-size: 3rem;
+    margin-bottom: var(--space-md);
+  }
+
+  .empty-state h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--clr-text);
+    margin-bottom: var(--space-sm);
+  }
+
+  .btn-icon-sm {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 12px;
+    font-size: 0.8rem;
+    border-radius: var(--radius-md);
+    font-weight: 500;
+    text-decoration: none;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: background 0.15s ease, opacity 0.15s ease;
+  }
+
+  .btn-icon-sm.btn-edit {
+    background: var(--clr-primary);
+    color: #fff;
+    border-color: var(--clr-primary);
+  }
+
+  .btn-icon-sm.btn-edit:hover { opacity: 0.85; }
+
+  .btn-icon-sm.btn-analytics {
+    background: var(--clr-surface);
+    color: var(--clr-primary);
+    border-color: var(--clr-primary);
+  }
+
+  .btn-icon-sm.btn-analytics:hover { background: var(--clr-primary); color: #fff; }
+
+  .btn-icon-sm.btn-del {
+    background: #fee2e2;
+    color: #dc2626;
+    border-color: #fca5a5;
+  }
+
+  .btn-icon-sm.btn-del:hover { background: #dc2626; color: #fff; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="breadcrumbs">
+  <a href="{% url 'core:landing' %}">Home</a>
+  <span>/</span>
+  <span>Quiz Builder</span>
+</div>
+
+<div class="page-header">
+  <div class="container page-header-content">
+    <div>
+      <h1 class="page-title">&#128221; Quiz Builder</h1>
+      <p class="page-subtitle">Create and manage quizzes for learners.</p>
+    </div>
+  </div>
+</div>
+
+<!-- Stats row -->
+{% with total=quizzes|length %}
+<div class="qb-stats-row">
+  <div class="qb-stat-card">
+    <div class="qb-stat-num">{{ total }}</div>
+    <div class="qb-stat-label">Total Quizzes</div>
+  </div>
+  <div class="qb-stat-card">
+    <div class="qb-stat-num">{% with cnt=quizzes %}{% for q in cnt %}{% if q.is_active %}{% endif %}{% endfor %}{{ cnt|length }}{% endwith %}</div>
+    <div class="qb-stat-label">Showing</div>
+  </div>
+</div>
+{% endwith %}
+
+<div class="card" style="margin-bottom: var(--space-xl);">
+  <!-- Header: search + create button -->
+  <div class="qb-header">
+    <form method="get" class="qb-search-bar" action="">
+      <input type="text" name="q" value="{{ search }}" class="form-input" placeholder="Search quizzes…" style="width: 220px;">
+      <select name="status" class="form-select" style="width: 160px;">
+        <option value="">All statuses</option>
+        <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Published</option>
+        <option value="inactive" {% if status_filter == 'inactive' %}selected{% endif %}>Unpublished</option>
+      </select>
+      <button type="submit" class="btn btn-secondary" style="padding: 8px 16px;">Filter</button>
+      {% if search or status_filter %}
+        <a href="{% url 'core:quiz_builder_list' %}" class="btn btn-secondary" style="padding: 8px 16px;">Clear</a>
+      {% endif %}
+    </form>
+    <a href="{% url 'core:quiz_create' %}" class="btn btn-primary">
+      &#43; New Quiz
+    </a>
+  </div>
+
+  {% if quizzes %}
+    <div class="quiz-grid">
+      {% for quiz in quizzes %}
+      <div class="quiz-item">
+        <div class="quiz-item-header">
+          <div>
+            <div class="quiz-item-title">{{ quiz.title }}</div>
+            {% if quiz.description %}
+              <p style="font-size: 0.82rem; color: var(--clr-text-light); margin: var(--space-xs) 0 0; line-height: 1.4;">
+                {{ quiz.description|truncatechars:90 }}
+              </p>
+            {% endif %}
+          </div>
+          <span class="{% if quiz.is_active %}badge-status-active{% else %}badge-status-inactive{% endif %}">
+            {% if quiz.is_active %}Published{% else %}Draft{% endif %}
+          </span>
+        </div>
+
+        <div class="quiz-item-meta">
+          <span>
+            <span class="difficulty-dot difficulty-dot--{{ quiz.difficulty }}"></span>
+            {{ quiz.difficulty }}
+          </span>
+          {% if quiz.subject %}
+          <span>&#128218; {{ quiz.subject.name }}</span>
+          {% endif %}
+          {% if quiz.sub_strand %}
+          <span>&#128196; {{ quiz.sub_strand.name }}</span>
+          {% endif %}
+          <span>&#10067; {{ quiz.question_count }} question{{ quiz.question_count|pluralize }}</span>
+          <span>&#128203; {{ quiz.attempt_count }} attempt{{ quiz.attempt_count|pluralize }}</span>
+          {% if quiz.test_size %}
+          <span>&#128290; Limit: {{ quiz.test_size }}</span>
+          {% endif %}
+        </div>
+
+        <div style="font-size: 0.75rem; color: var(--clr-text-light);">
+          By <strong>{{ quiz.created_by.full_name|default:quiz.created_by.phone|default:quiz.created_by.email }}</strong>
+          &middot; {{ quiz.created_at|date:"M d, Y" }}
+        </div>
+
+        <div class="quiz-item-footer">
+          <a href="{% url 'core:quiz_edit' quiz_uuid=quiz.uuid %}" class="btn-icon-sm btn-edit">
+            &#9998; Edit
+          </a>
+          <a href="{% url 'core:exam_analytics' quiz_uuid=quiz.uuid %}" class="btn-icon-sm btn-analytics">
+            &#128202; Analytics
+          </a>
+          <form method="post" action="{% url 'core:quiz_delete' quiz_uuid=quiz.uuid %}"
+                onsubmit="return confirm('Delete quiz "{{ quiz.title }}"? This cannot be undone.');"
+                style="margin: 0;">
+            {% csrf_token %}
+            <button type="submit" class="btn-icon-sm btn-del">&#128465; Delete</button>
+          </form>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="empty-state">
+      <div class="empty-state-icon">&#128196;</div>
+      <h3>No quizzes found</h3>
+      <p style="margin-bottom: var(--space-lg);">
+        {% if search or status_filter %}
+          No quizzes match your filters. <a href="{% url 'core:quiz_builder_list' %}">Clear filters</a>.
+        {% else %}
+          You haven't created any quizzes yet.
+        {% endif %}
+      </p>
+      <a href="{% url 'core:quiz_create' %}" class="btn btn-primary">&#43; Create Your First Quiz</a>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

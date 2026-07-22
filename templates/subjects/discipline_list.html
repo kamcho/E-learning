@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block title %}Disciplines — SomaKenya{% endblock %}
+
+{% block content %}
+<div class="breadcrumbs">
+  <a href="{% url 'core:landing' %}">Home</a>
+  <span>/</span>
+  <span>Disciplines</span>
+</div>
+
+<div class="page-header">
+  <div class="container page-header-content">
+    <div>
+      <h1 class="page-title">Disciplines</h1>
+      <p class="page-subtitle">Define areas of learning or study pathways under the CBC curriculum.</p>
+    </div>
+  </div>
+</div>
+
+<div class="content-grid">
+  <!-- Left: List of Disciplines -->
+  <div>
+    <div class="card">
+      <h2 class="card-title">🔬 Configured Disciplines</h2>
+      
+      {% if disciplines %}
+        <div class="item-list">
+          {% for discipline in disciplines %}
+            <div class="list-item">
+              <div>
+                <a href="{% url 'subjects:discipline_detail' discipline.slug %}" class="list-item-title">
+                  {{ discipline.name }}
+                </a>
+                <div class="list-item-meta">
+                  Slug: <code style="background:#e2e8f0; padding:2px 4px; border-radius:4px;">{{ discipline.slug }}</code>
+                </div>
+              </div>
+              <div>
+                <span class="badge badge-gold">Discipline</span>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty-state">
+          <div class="empty-state-icon">🔬</div>
+          <h3>No Disciplines Found</h3>
+          <p>Get started by creating the first Discipline in the system.</p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Right: Create Form -->
+  <div>
+    <div class="card">
+      <h2 class="card-title">➕ Create Discipline</h2>
+      <form method="post" novalidate>
+        {% csrf_token %}
+        
+        {% for field in form %}
+          <div class="form-group">
+            <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% if field.errors %}
+              <div style="color: var(--clr-danger); font-size: 0.82rem; margin-top: 4px;">
+                {{ field.errors.0 }}
+              </div>
+            {% endif %}
+          </div>
+        {% endfor %}
+        
+        <button type="submit" class="btn btn-secondary" style="width: 100%; justify-content: center; padding: 0.75rem;">
+          Save Discipline
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

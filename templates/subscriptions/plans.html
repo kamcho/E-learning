@@ -1,0 +1,302 @@
+{% extends 'base.html' %}
+
+
+
+{% block title %}Subscription Plans — SomaKenya{% endblock %}
+
+
+
+{% block extra_head %}
+
+<style>
+
+  .sub-page { max-width: 1100px; margin: 0 auto; }
+
+  .sub-hero {
+
+    background: var(--grad-hero);
+
+    color: #fff;
+
+    border-radius: var(--radius-xl);
+
+    padding: var(--space-2xl);
+
+    margin-bottom: var(--space-2xl);
+
+    box-shadow: var(--shadow-lg);
+
+  }
+
+  .sub-hero h1 {
+
+    font-family: var(--font-heading);
+
+    font-size: 2rem;
+
+    font-weight: 800;
+
+    margin: 0 0 var(--space-sm);
+
+  }
+
+  .sub-hero p { opacity: 0.9; margin: 0; max-width: 560px; }
+
+  .sub-active-banner {
+
+    background: rgba(13, 138, 78, 0.1);
+
+    border: 1px solid rgba(13, 138, 78, 0.2);
+
+    border-radius: var(--radius-lg);
+
+    padding: var(--space-md) var(--space-lg);
+
+    margin-bottom: var(--space-xl);
+
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+
+    flex-wrap: wrap;
+
+    gap: var(--space-sm);
+
+  }
+
+  .plans-grid {
+
+    display: grid;
+
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+
+    gap: var(--space-xl);
+
+  }
+
+  .plan-card {
+
+    background: var(--clr-surface);
+
+    border: 1px solid var(--clr-border);
+
+    border-radius: var(--radius-xl);
+
+    padding: var(--space-xl);
+
+    box-shadow: var(--shadow-sm);
+
+    display: flex;
+
+    flex-direction: column;
+
+    transition: transform var(--transition-base), box-shadow var(--transition-base);
+
+  }
+
+  .plan-card:hover {
+
+    transform: translateY(-4px);
+
+    box-shadow: var(--shadow-md);
+
+  }
+
+  .plan-card.featured {
+
+    border-color: var(--clr-primary);
+
+    box-shadow: 0 0 0 2px rgba(13, 138, 78, 0.15);
+
+  }
+
+  .plan-name {
+
+    font-family: var(--font-heading);
+
+    font-size: 1.35rem;
+
+    font-weight: 800;
+
+    margin-bottom: var(--space-xs);
+
+  }
+
+  .plan-price {
+
+    font-family: var(--font-heading);
+
+    font-size: 2rem;
+
+    font-weight: 900;
+
+    color: var(--clr-primary);
+
+    line-height: 1;
+
+  }
+
+  .plan-price span { font-size: 0.9rem; font-weight: 600; color: var(--clr-text-muted); }
+
+  .plan-tests {
+
+    font-size: 0.82rem;
+
+    font-weight: 700;
+
+    color: var(--clr-primary);
+
+    margin-top: 0.35rem;
+
+  }
+
+  .plan-desc {
+
+    font-size: 0.88rem;
+
+    color: var(--clr-text-muted);
+
+    margin: var(--space-md) 0 var(--space-lg);
+
+    line-height: 1.5;
+
+    flex: 1;
+
+  }
+
+  .plan-features {
+
+    list-style: none;
+
+    padding: 0;
+
+    margin: 0 0 var(--space-lg);
+
+  }
+
+  .plan-features li {
+
+    font-size: 0.85rem;
+
+    padding: 0.35rem 0;
+
+    color: var(--clr-text);
+
+  }
+
+  .plan-features li::before { content: '✓ '; color: var(--clr-primary); font-weight: 700; }
+
+  .plan-meta {
+
+    font-size: 0.78rem;
+
+    color: var(--clr-text-light);
+
+    margin-bottom: var(--space-lg);
+
+  }
+
+</style>
+
+{% endblock %}
+
+
+
+{% block content %}
+
+<div class="sub-page">
+
+  <div class="sub-hero">
+
+    <h1>Pay per test or save with a pack</h1>
+
+    <p>Start with one test for KES 10, grab a weekly or monthly pack, or go unlimited for the year. Pay with M-Pesa.</p>
+
+  </div>
+
+
+
+  {% if active_subscription %}
+
+  <div class="sub-active-banner">
+
+    <div>
+
+      <strong>{{ active_subscription.plan.name }}</strong>
+
+      &middot; {{ active_subscription.tests_balance_label }}
+
+      &middot; valid until {{ active_subscription.ends_at|date:"d M Y" }}
+
+    </div>
+
+    <a href="{% url 'subscriptions:my_subscription' %}" class="btn btn-secondary" style="box-shadow: none;">My balance</a>
+
+  </div>
+
+  {% endif %}
+
+
+
+  {% if plans %}
+
+  <div class="plans-grid">
+
+    {% for plan in plans %}
+
+    <div class="plan-card {% if plan.slug == 'monthly-pack' %}featured{% endif %}">
+
+      <div class="plan-name">{{ plan.name }}</div>
+
+      <div class="plan-price">KES {{ plan.price_kes|floatformat:0 }}</div>
+
+      <div class="plan-tests">{{ plan.tests_label }} &middot; {{ plan.duration_days }} day{{ plan.duration_days|pluralize }}</div>
+
+      {% if plan.description %}
+
+        <p class="plan-desc">{{ plan.description }}</p>
+
+      {% endif %}
+
+      <ul class="plan-features">
+
+        {% for feature in plan.features %}
+
+          <li>{{ feature }}</li>
+
+        {% endfor %}
+
+      </ul>
+
+      <p class="plan-meta">M-Pesa STK Push on your phone</p>
+
+      <a href="{% url 'subscriptions:subscribe' plan.slug %}" class="btn btn-primary" style="width: 100%; justify-content: center;">
+
+        Pay with M-Pesa
+
+      </a>
+
+    </div>
+
+    {% endfor %}
+
+  </div>
+
+  {% else %}
+
+  <div class="empty-state">
+
+    <div class="empty-state-icon">💳</div>
+
+    <p>No subscription plans available yet.</p>
+
+  </div>
+
+  {% endif %}
+
+</div>
+
+{% endblock %}
+
