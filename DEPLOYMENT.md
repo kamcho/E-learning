@@ -83,7 +83,7 @@ chown -R elearning:www-data /srv/elearning
 ```bash
 sudo -u postgres psql <<'SQL'
 CREATE DATABASE elearning;
-CREATE USER elearning WITH PASSWORD 'CHANGE_ME_strong_db_password';
+CREATE USER elearning WITH PASSWORD '141778215aA!';
 ALTER ROLE elearning SET client_encoding TO 'utf8';
 ALTER ROLE elearning SET default_transaction_isolation TO 'read committed';
 ALTER ROLE elearning SET timezone TO 'Africa/Nairobi';
@@ -201,6 +201,58 @@ systemctl restart elearning
 ---
 
 ## Updating the app later (redeploy)
+
+### Automatic (GitHub Actions)
+
+On every push to `main`, GitHub Actions SSHs into the droplet and runs
+`deploy/update.sh` (git pull → pip install → migrate → collectstatic →
+restart `elearning` → reload nginx).
+
+**One-time setup**
+
+1. On the droplet, the app directory must be a **git clone** of this repo
+   (not only an `scp` copy):
+
+   ```bash
+   # If you previously copied files with scp, convert to git:
+   cd /srv
+   mv elearning elearning.bak
+   git clone https://github.com/YOUR_USERNAME/YOUR_REPO.git elearning
+   # restore production secrets + venv if needed:
+   cp elearning.bak/.env elearning/.env
+   # either move the old venv or recreate it:
+   #   mv elearning.bak/.venv elearning/.venv
+   #   OR: cd elearning && python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
+   chown -R elearning:www-data /srv/elearning
+   chmod 640 /srv/elearning/.env
+   chmod +x /srv/elearning/deploy/update.sh
+   ```
+
+2. In the GitHub repo → **Settings → Secrets and variables → Actions**,
+   add these repository secrets:
+
+   | Secret | Value |
+   |---|---|
+   | `DROPLET_HOST` | `159.223.143.29` |
+   | `DROPLET_USER` | `root` |
+   | `DROPLET_SSH_PASSWORD` | your droplet root password |
+   | `DROPLET_PORT` | `22` (optional) |
+
+   > Prefer an SSH key long-term (more secure than password). For now password
+   > auth works with `appleboy/ssh-action` via `DROPLET_SSH_PASSWORD`.
+
+3. Push to `main` (or run the workflow manually under **Actions → Deploy to droplet**).
+
+The workflow file lives at `.github/workflows/deploy.yml`.
+
+### Manual (on the droplet)
+
+```bash
+cd /srv/elearning
+bash deploy/update.sh
+```
+
+Or step-by-step:
 
 ```bash
 cd /srv/elearning
