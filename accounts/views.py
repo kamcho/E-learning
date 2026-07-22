@@ -105,7 +105,7 @@ def signup_view(request):
             )
             if authenticated_user:
                 auth_login(request, authenticated_user)
-                messages.success(request, f"Welcome to SomaKenya, {user.first_name}! Your account has been created.")
+                messages.success(request, f"Welcome to Soma Smart, {user.first_name}! Your account has been created.")
                 return redirect(_resolve_post_login_redirect(request, authenticated_user))
             else:
                 messages.warning(request, "Registration successful. Please log in.")
@@ -202,7 +202,7 @@ def google_auth_view(request):
 
     auth_login(request, user)
     if created:
-        messages.success(request, f"Welcome to SomaKenya, {user.first_name}!")
+        messages.success(request, f"Welcome to Soma Smart, {user.first_name}!")
     else:
         messages.success(request, f"Welcome back, {user.first_name}!")
 

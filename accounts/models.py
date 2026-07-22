@@ -5,7 +5,7 @@ from django.db import models
 
 
 class Role(models.TextChoices):
-    """User roles within the SomaKenya platform."""
+    """User roles within the Soma Smart platform."""
     GUARDIAN = 'guardian', 'Guardian'
     TEACHER = 'teacher', 'Teacher'
     PARTNER = 'partner', 'Partner'
@@ -56,7 +56,7 @@ pin_validator = RegexValidator(
 
 class MyUser(AbstractBaseUser, PermissionsMixin):
     """
-    Custom user model for SomaKenya.
+    Custom user model for Soma Smart.
 
     - Login via **phone** + 4-digit **PIN** (no username).
     - Role determines dashboard & permissions.

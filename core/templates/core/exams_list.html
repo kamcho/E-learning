@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Exams — SomaKenya{% endblock %}
+{% block title %}Exams — Soma Smart{% endblock %}
 
 {% block body_class %}{% if request.user.is_guardian and not staff_exams_browse %} guardian-dash-dark{% endif %}{% endblock %}
 {% block main_extra_class %}{% if request.user.is_guardian and not staff_exams_browse %}guardian-dash-main{% endif %}{% endblock %}

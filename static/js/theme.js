@@ -1,14 +1,19 @@
 /**
- * SomaKenya theme switcher — light / dark
+ * Soma Smart theme switcher — light / dark
  * Persists preference in localStorage and syncs all toggle buttons.
  */
 (function () {
-  var STORAGE_KEY = 'somakenya-theme';
+  var STORAGE_KEY = 'soma-smart-theme';
 
   function getPreferred() {
     try {
       var stored = localStorage.getItem(STORAGE_KEY);
       if (stored === 'light' || stored === 'dark') return stored;
+      var legacy = localStorage.getItem('somakenya-theme');
+      if (legacy === 'light' || legacy === 'dark') {
+        localStorage.setItem(STORAGE_KEY, legacy);
+        return legacy;
+      }
     } catch (e) { /* ignore */ }
     if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
       return 'dark';
@@ -62,5 +67,5 @@
     }
   });
 
-  window.SomaKenyaTheme = { apply: applyTheme, toggle: toggleTheme, get: getPreferred };
+  window.SomaSmartTheme = { apply: applyTheme, toggle: toggleTheme, get: getPreferred };
 })();

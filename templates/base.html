@@ -4,11 +4,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{% block title %}SomaKenya — CBC Curriculum{% endblock %}</title>
+  <title>{% block title %}Soma Smart — CBC Curriculum{% endblock %}</title>
   <script>
     (function () {
       try {
-        var t = localStorage.getItem('somakenya-theme');
+        var t = localStorage.getItem('soma-smart-theme');
+        if (t !== 'light' && t !== 'dark') {
+          t = localStorage.getItem('somakenya-theme');
+        }
         if (t !== 'light' && t !== 'dark') {
           t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
         }
@@ -845,7 +848,7 @@
 
       <a href="{% url 'core:landing' %}" class="app-header-brand">
         <span class="logo-icon">S</span>
-        <span>SomaKenya</span>
+        <span>Soma Smart</span>
       </a>
 
       <div class="app-search-wrap">

@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+
+{% block title %}Free Practice Demo — Soma Smart{% endblock %}
+
+{% block body_class %} demo-page{% endblock %}
+{% block main_extra_class %}demo-main{% endblock %}
+
+{% block extra_head %}
+{% include 'core/partials/demo_styles.html' %}
+{% include 'core/partials/exams_wizard_styles.html' %}
+{% endblock %}
+
+{% block content %}
+<div class="demo-shell">
+  <header class="demo-hero">
+    <div>
+      <p class="demo-hero-kicker">No account needed</p>
+      <h1 class="demo-hero-title">Try a free practice test</h1>
+      <p class="demo-hero-sub">Pick your grade and topic — we'll build a {{ demo_question_count }}-question quiz with instant marking and AI help when you miss an answer.</p>
+    </div>
+    <a href="{% url 'accounts:signup' %}" class="demo-hero-cta">Create free account</a>
+  </header>
+
+  {% if active_demo and not active_demo.completed %}
+  <div class="demo-resume-banner">
+    <div>
+      <strong>Practice test in progress</strong>
+      <span>{{ active_demo.subject_name }} · {{ active_demo.topic_label }}</span>
+    </div>
+    <div class="demo-resume-actions">
+      <a href="{% url 'core:demo_take' %}?continue=1" class="demo-btn demo-btn-primary">Continue test</a>
+      <a href="{% url 'core:demo_wizard' %}?restart=1" class="demo-btn demo-btn-outline">Start over</a>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="exams-wizard-shell">
+    {% include 'core/partials/exams_wizard_trail.html' with exams_wizard=demo_wizard %}
+
+    <div class="ew-step ew-step--current">
+      <div class="ew-step-rail">
+        <div class="ew-step-marker">{{ demo_wizard.current_step_number }}</div>
+      </div>
+      <div class="ew-step-card">
+        <div class="ew-step-active-head">
+          <div class="ew-step-active-icon" aria-hidden="true">
+            {% if phase == 'subject' %}📚{% elif phase == 'scope' %}🎯{% elif phase == 'strand' or phase == 'sub_strand' %}🧵{% else %}✅{% endif %}
+          </div>
+          <div>
+            <h2 class="ew-step-active-title">{{ demo_wizard.current_label }}</h2>
+            <p class="ew-step-active-hint">{{ demo_wizard.current_hint }}</p>
+          </div>
+        </div>
+        <div class="ew-step-body">
+
+          {% if phase == 'subject' or not active_subject %}
+          <div class="grade-tabs" style="margin-bottom: var(--space-lg);">
+            <a href="{% url 'core:demo_wizard' %}?grade=all" class="grade-tab{% if browse_all_grades %} active{% endif %}">All grades</a>
+            {% for gl in all_grades %}
+              <a href="{% url 'core:demo_wizard' %}?grade={{ gl.slug }}" class="grade-tab{% if active_grade and active_grade.pk == gl.pk and not browse_all_grades %} active{% endif %}">{{ gl.name }}</a>
+            {% endfor %}
+          </div>
+          <div class="subject-browser-grid">
+            {% for item in browse_subjects %}
+            <a href="{% url 'core:demo_wizard' %}?subject={{ item.subject.slug }}{% if browse_all_grades %}&grade={{ item.subject.grade_level.slug }}{% elif active_grade %}&grade={{ active_grade.slug }}{% endif %}"
+               class="ew-choice-card ew-choice-card--{% cycle '0' '1' '2' %}">
+              <span class="ew-choice-icon-wrap">📚</span>
+              <span class="ew-choice-name">{{ item.subject.name }}</span>
+              <span class="ew-choice-desc">{{ item.subject.grade_level.name }}</span>
+            </a>
+            {% empty %}
+            <p class="demo-empty">No subjects found for this grade.</p>
+            {% endfor %}
+          </div>
+
+          {% elif phase == 'scope' %}
+          <div class="ew-choice-grid">
+            <a href="{% url 'core:demo_wizard' %}?subject={{ active_subject.slug }}&scope=general{% if nav_grade %}&{{ nav_grade }}{% endif %}"
+               class="ew-choice-card ew-choice-card--0">
+              <span class="ew-choice-icon-wrap">📚</span>
+              <span class="ew-choice-name">Whole subject</span>
+              <span class="ew-choice-desc">Mix questions from all of {{ active_subject.name }}</span>
+            </a>
+            <a href="{% url 'core:demo_wizard' %}?subject={{ active_subject.slug }}&scope=strand{% if nav_grade %}&{{ nav_grade }}{% endif %}"
+               class="ew-choice-card ew-choice-card--1">
+              <span class="ew-choice-icon-wrap">🎯</span>
+              <span class="ew-choice-name">Strand</span>
+              <span class="ew-choice-desc">Focus on one CBC strand</span>
+            </a>
+            <a href="{% url 'core:demo_wizard' %}?subject={{ active_subject.slug }}&scope=sub_strand{% if nav_grade %}&{{ nav_grade }}{% endif %}"
+               class="ew-choice-card ew-choice-card--2">
+              <span class="ew-choice-icon-wrap">🔖</span>
+              <span class="ew-choice-name">Sub-strand</span>
+              <span class="ew-choice-desc">Narrow to a specific sub-strand</span>
+            </a>
+          </div>
+
+          {% elif phase == 'strand' %}
+          <div class="ew-choice-grid">
+            {% for item in browse_strands %}
+            <a href="{% url 'core:demo_wizard' %}?subject={{ active_subject.slug }}&scope=strand&strand={{ item.strand.slug }}{% if nav_grade %}&{{ nav_grade }}{% endif %}"
+               class="ew-choice-card ew-choice-card--{% cycle '0' '1' '2' %}">
+              <span class="ew-choice-icon-wrap">🧵</span>
+              <span class="ew-choice-name">{{ item.strand.name }}</span>
+            </a>
+            {% empty %}
+            <p class="demo-empty">No strands defined for this subject yet.</p>
+            {% endfor %}
+          </div>
+
+          {% elif phase == 'sub_strand' %}
+          <div class="ew-choice-grid">
+            {% for item in browse_sub_strands %}
+            <a href="{% url 'core:demo_wizard' %}?subject={{ active_subject.slug }}&scope=sub_strand&sub_strand={{ item.sub_strand.slug }}{% if nav_grade %}&{{ nav_grade }}{% endif %}"
+               class="ew-choice-card ew-choice-card--{% cycle '0' '1' '2' %}">
+              <span class="ew-choice-icon-wrap">🔖</span>
+              <span class="ew-choice-name">{{ item.sub_strand.name }}</span>
+              <span class="ew-choice-desc">{{ item.strand.name }}</span>
+            </a>
+            {% empty %}
+            <p class="demo-empty">No sub-strands defined for this subject yet.</p>
+            {% endfor %}
+          </div>
+
+          {% elif phase == 'ready' %}
+          <div class="demo-ready-card">
+            <div class="demo-ready-summary">
+              <div><span>Grade</span><strong>{{ active_grade.name|default:'All grades' }}</strong></div>
+              <div><span>Subject</span><strong>{{ active_subject.name }}</strong></div>
+              <div><span>Focus</span><strong>{% if active_scope == 'general' %}Whole subject{% elif active_scope == 'strand' %}Strand{% else %}Sub-strand{% endif %}</strong></div>
+              {% if active_strand %}<div><span>Strand</span><strong>{{ active_strand.name }}</strong></div>{% endif %}
+              {% if active_sub_strand %}<div><span>Sub-strand</span><strong>{{ active_sub_strand.name }}</strong></div>{% endif %}
+              <div><span>Questions</span><strong>{{ demo_question_count }} multiple choice</strong></div>
+            </div>
+            <form method="post" action="{% url 'core:demo_start' %}">
+              {% csrf_token %}
+              <input type="hidden" name="grade" value="{% if active_grade %}{{ active_grade.slug }}{% endif %}">
+              <input type="hidden" name="subject" value="{{ active_subject.slug }}">
+              <input type="hidden" name="scope" value="{{ active_scope|default:'general' }}">
+              {% if active_strand %}<input type="hidden" name="strand" value="{{ active_strand.slug }}">{% endif %}
+              {% if active_sub_strand %}<input type="hidden" name="sub_strand" value="{{ active_sub_strand.slug }}">{% endif %}
+              <button type="submit" class="demo-btn demo-btn-primary demo-btn-lg">Start {{ demo_question_count }}-question practice test</button>
+            </form>
+          </div>
+          {% endif %}
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

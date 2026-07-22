@@ -4,13 +4,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="SomaKenya — Kenya's premier CBC e-learning platform. Interactive lessons, assessments and progress tracking aligned to the Competency-Based Curriculum for all levels.">
-  <meta name="keywords" content="CBC, Kenya, e-learning, competency based curriculum, KICD, online learning, primary school, junior school">
-  <title>SomaKenya — CBC E-Learning Platform</title>
+  <meta name="description" content="Soma Smart — fun, interactive CBC learning for PP1 to Grade 9. KEPSEA and KJSEA practice, notes, and AI-powered tutors that inspire every child.">
+  <meta name="keywords" content="CBC, Kenya, KEPSEA, KJSEA, e-learning, PP1, Grade 9, practice questions, AI tutor, online exams">
+  <title>Soma Smart — Fun CBC Learning & Exam Practice</title>
   <script>
     (function () {
       try {
-        var t = localStorage.getItem('somakenya-theme');
+        var t = localStorage.getItem('soma-smart-theme');
+        if (t !== 'light' && t !== 'dark') {
+          t = localStorage.getItem('somakenya-theme');
+        }
         if (t !== 'light' && t !== 'dark') {
           t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
         }
@@ -29,18 +32,19 @@
     <div class="container">
       <a href="#" class="navbar-brand">
         <span class="logo-icon">S</span>
-        <span class="brand-text">SomaKenya</span>
+        <span class="brand-text">Soma Smart</span>
       </a>
 
       <div class="navbar-links">
         <a href="#features">Features</a>
+        <a href="#demo">Demo</a>
+        <a href="#how-it-works">How it works</a>
+        <a href="#about">About</a>
         <a href="#levels">CBC Levels</a>
         <a href="#pricing">Pricing</a>
         {% if request.user.is_authenticated %}
           <a href="{% url 'subjects:grade_level_list' %}">Curriculum Builder</a>
           <a href="{% url 'subscriptions:plans' %}">Subscriptions</a>
-        {% else %}
-          <a href="#about">About</a>
         {% endif %}
       </div>
 
@@ -77,10 +81,13 @@
   <div class="navbar-drawer" id="navbar-drawer">
     <div class="navbar-drawer-brand">
       <span class="logo-icon">S</span>
-      <span class="brand-text" style="color: var(--clr-text);">SomaKenya</span>
+      <span class="brand-text" style="color: var(--clr-text);">Soma Smart</span>
     </div>
     <div class="navbar-drawer-links">
       <a href="#features">Features</a>
+      <a href="#demo">Demo</a>
+      <a href="#how-it-works">How it works</a>
+      <a href="#about">About</a>
       <a href="#levels">CBC Levels</a>
       <a href="#pricing">Pricing</a>
       {% if request.user.is_authenticated %}
@@ -92,8 +99,6 @@
         {% elif request.user.is_admin_role or request.user.is_staff %}
           <a href="{% url 'accounts:admin_dashboard' %}">Admin Dashboard</a>
         {% endif %}
-      {% else %}
-        <a href="#about">About</a>
       {% endif %}
     </div>
     <div class="navbar-drawer-actions">
@@ -123,18 +128,17 @@
       <div class="hero-content">
         <div class="hero-badge">
           <span class="badge-dot"></span>
-          Aligned to KICD CBC Curriculum
+          PP1 to Grade 9 · KEPSEA &amp; KJSEA ready
         </div>
 
         <h1>
-          Learn Smarter with<br>
-          Kenya's <span class="highlight">CBE Online EXAMS Platform</span>
+          Learning that inspires,<br>
+          never <span class="highlight">intimidates</span>
         </h1>
 
         <p class="hero-description">
-          Interactive lessons, assessments, and progress tracking built for Kenya's
-          Competency-Based Curriculum. From Pre-Primary to Senior School — every
-          learner finds their path here.
+          Making revision fun, interactive, and accessible for every child from PP1 to Grade 9 —
+          with KEPSEA and KJSEA practice, notes, and AI tutors that guide learners every step.
         </p>
 
         <div class="hero-cta">
@@ -157,6 +161,9 @@
             <a href="{% url 'accounts:signup' %}" class="btn btn-primary">
               Get Started
               <span class="btn-icon">→</span>
+            </a>
+            <a href="{% url 'core:demo_wizard' %}" class="btn btn-outline">
+              Try free demo
             </a>
             <a href="#pricing" class="btn btn-outline">
               View Pricing
@@ -209,7 +216,7 @@
   <section class="features" id="features">
     <div class="container">
       <div class="section-header reveal">
-        <span class="section-tag">✦ Why SomaKenya</span>
+        <span class="section-tag">✦ Why Soma Smart</span>
         <h2 class="section-title">Everything a CBC Learner Needs</h2>
         <p class="section-subtitle">
           We combine interactive content, smart assessments, and real-time
@@ -271,6 +278,129 @@
             Download content for offline study.
           </p>
         </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════ FREE DEMO ═══════════════ -->
+  <section class="demo-section" id="demo">
+    <div class="container">
+      <div class="demo-panel reveal">
+        <div class="demo-panel-copy">
+          <span class="section-tag">✦ Free demo</span>
+          <h2 class="section-title">Try Soma Smart before you sign up</h2>
+          <p>
+            No account needed. Pick a grade and topic, then take a short
+            multiple-choice practice test with instant marking — the same
+            revision flow families use for KEPSEA and KJSEA prep.
+          </p>
+          <ul class="demo-highlights">
+            <li>7 CBC-aligned practice questions</li>
+            <li>Instant correct / incorrect feedback</li>
+            <li>AI tutor explanations when you miss an answer</li>
+            <li>Works on phone, tablet, or laptop</li>
+          </ul>
+          <div class="demo-panel-actions">
+            <a href="{% url 'core:demo_wizard' %}" class="btn btn-primary">Start free demo</a>
+            <a href="{% url 'accounts:signup' %}" class="btn btn-outline">Create account</a>
+          </div>
+        </div>
+        <aside class="demo-panel-aside" aria-label="Demo preview">
+          <div class="demo-preview-card">
+            <p class="demo-preview-kicker">What you'll do</p>
+            <ol class="demo-preview-steps">
+              <li>
+                <strong>Choose grade &amp; subject</strong>
+                <span>PP1–Grade 9 topics aligned to CBC strands</span>
+              </li>
+              <li>
+                <strong>Answer 7 questions</strong>
+                <span>Submit each answer and see results immediately</span>
+              </li>
+              <li>
+                <strong>Learn from mistakes</strong>
+                <span>Ask the AI tutor to explain the right answer</span>
+              </li>
+            </ol>
+            <p class="demo-preview-note">Takes about 5–10 minutes. Progress is session-based until you create an account.</p>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════ HOW IT WORKS ═══════════════ -->
+  <section class="how-it-works" id="how-it-works">
+    <div class="container">
+      <div class="section-header reveal">
+        <span class="section-tag">🚀 How it works</span>
+        <h2 class="section-title">From signup to smarter revision</h2>
+        <p class="section-subtitle">
+          Four simple steps to get every child practising with confidence.
+        </p>
+      </div>
+
+      <ol class="how-steps">
+        <li class="how-step reveal">
+          <span class="how-step-num" aria-hidden="true">01</span>
+          <h3>Create your account</h3>
+          <p>Sign up as a guardian with your phone number and PIN — or use Google — in under a minute.</p>
+        </li>
+        <li class="how-step reveal">
+          <span class="how-step-num" aria-hidden="true">02</span>
+          <h3>Add your learners</h3>
+          <p>Link each child with their grade (PP1–Grade 9) so exams and progress stay personal.</p>
+        </li>
+        <li class="how-step reveal">
+          <span class="how-step-num" aria-hidden="true">03</span>
+          <h3>Practise KEPSEA &amp; KJSEA</h3>
+          <p>Pick a subject, start a test, and revise with notes plus AI feedback that explains answers.</p>
+        </li>
+        <li class="how-step reveal">
+          <span class="how-step-num" aria-hidden="true">04</span>
+          <h3>Track progress</h3>
+          <p>See scores, streaks, and weak areas on your dashboard — so you know what to revise next.</p>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ═══════════════ ABOUT US ═══════════════ -->
+  <section class="about" id="about">
+    <div class="container">
+      <div class="about-grid reveal">
+        <div class="about-copy">
+          <span class="section-tag">✦ About us</span>
+          <h2 class="section-title">Education should inspire, not intimidate</h2>
+          <p>
+            Soma Smart exists to make learning and revision fun, interactive, and accessible
+            for every child from PP1 to Grade 9. We believe CBC success comes from practice
+            that builds confidence — not fear of exams.
+          </p>
+          <p>
+            Families use Soma Smart for KEPSEA and KJSEA practice questions, clear notes,
+            and AI-powered analysis that tutors learners through mistakes. Parents see real
+            progress; children stay curious.
+          </p>
+          <ul class="about-points">
+            <li>Built for Kenya’s Competency-Based Curriculum</li>
+            <li>KEPSEA &amp; KJSEA practice that feels approachable</li>
+            <li>AI tutors that explain — they don’t just mark</li>
+            <li>Guardian dashboards made for busy parents</li>
+          </ul>
+        </div>
+        <aside class="about-aside" aria-label="Who we serve">
+          <div class="about-aside-card">
+            <h3>Who we serve</h3>
+            <p><strong>Learners</strong> — PP1 to Grade 9 revising at their own pace.</p>
+            <p><strong>Guardians</strong> — tracking progress without the guesswork.</p>
+            <p><strong>Teachers &amp; partners</strong> — aligning practice to CBC strands.</p>
+          </div>
+          <div class="about-aside-card about-aside-card--accent">
+            <h3>Our promise</h3>
+            <p>Quality practice, honest feedback, and a learning space where every child can grow with confidence.</p>
+          </div>
+        </aside>
       </div>
     </div>
   </section>
@@ -403,12 +533,12 @@
   </section>
 
   <!-- ═══════════════ CTA ═══════════════ -->
-  <section class="cta-section" id="about">
+  <section class="cta-section" id="get-started">
     <div class="container reveal">
-      <h2 class="section-title">Ready to Transform Learning?</h2>
+      <h2 class="section-title">Ready to start practising?</h2>
       <p class="section-subtitle">
-        Join thousands of Kenyan learners, teachers, and parents already
-        using SomaKenya to excel in the CBC curriculum.
+        Join Kenyan families using Soma Smart for fun revision, KEPSEA &amp; KJSEA practice,
+        and AI tutors that inspire every learner.
       </p>
       <div class="cta-buttons">
         {% if request.user.is_authenticated %}
@@ -446,10 +576,10 @@
         <div class="footer-brand">
           <div class="brand-name">
             <span class="logo-icon">S</span>
-            SomaKenya
+            Soma Smart
           </div>
           <p>
-            Kenya's trusted CBC e-learning platform. Empowering every
+            A trusted CBC e-learning platform. Empowering every
             learner to achieve their full potential through quality,
             curriculum-aligned digital education.
           </p>
@@ -458,9 +588,10 @@
         <div class="footer-col">
           <h4>Platform</h4>
           <ul>
-            <li><a href="#">Subjects</a></li>
-            <li><a href="#">Assessments</a></li>
-            <li><a href="#">Progress Reports</a></li>
+            <li><a href="#features">Features</a></li>
+            <li><a href="#demo">Free demo</a></li>
+            <li><a href="#how-it-works">How it works</a></li>
+            <li><a href="{% url 'core:exams_list' %}">Exam Center</a></li>
             <li><a href="{% url 'subscriptions:plans' %}">Pricing</a></li>
           </ul>
         </div>
@@ -468,26 +599,26 @@
         <div class="footer-col">
           <h4>CBC Levels</h4>
           <ul>
-            <li><a href="#">Pre-Primary</a></li>
-            <li><a href="#">Lower Primary</a></li>
-            <li><a href="#">Upper Primary</a></li>
-            <li><a href="#">Junior School</a></li>
+            <li><a href="#levels">Pre-Primary</a></li>
+            <li><a href="#levels">Lower Primary</a></li>
+            <li><a href="#levels">Upper Primary</a></li>
+            <li><a href="#levels">Junior School</a></li>
           </ul>
         </div>
 
         <div class="footer-col">
           <h4>Company</h4>
           <ul>
-            <li><a href="#">About Us</a></li>
-            <li><a href="#">Careers</a></li>
-            <li><a href="#">Contact</a></li>
-            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#about">About Us</a></li>
+            <li><a href="#how-it-works">How it works</a></li>
+            <li><a href="{% url 'accounts:signup' %}">Get Started</a></li>
+            <li><a href="{% url 'subscriptions:plans' %}">Subscriptions</a></li>
           </ul>
         </div>
       </div>
 
       <div class="footer-bottom">
-        <p>&copy; 2026 SomaKenya. All rights reserved.</p>
+        <p>&copy; 2026 Soma Smart. All rights reserved.</p>
         <div class="social-links">
           <a href="#" aria-label="Twitter">𝕏</a>
           <a href="#" aria-label="Facebook">f</a>

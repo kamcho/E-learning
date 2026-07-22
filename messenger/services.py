@@ -28,9 +28,9 @@ def _format_payment_success_message(payment) -> str:
         f'Receipt: {receipt}.',
     ]
     if ends_at:
-        lines.append(f'Your SomaKenya plan is active until {ends_at}.')
+        lines.append(f'Your Soma Smart plan is active until {ends_at}.')
     else:
-        lines.append('Your SomaKenya subscription is now active.')
+        lines.append('Your Soma Smart subscription is now active.')
     lines.append('Thank you!')
     return ' '.join(lines)
 

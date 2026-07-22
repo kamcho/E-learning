@@ -1,5 +1,5 @@
 /* ============================================
-   SomaKenya — Main JavaScript
+   Soma Smart — Main JavaScript
    ============================================ */
 
 document.addEventListener('DOMContentLoaded', () => {

@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+
+{% block title %}Practice Quiz — Soma Smart Demo{% endblock %}
+
+{% block body_class %} demo-page{% endblock %}
+{% block main_extra_class %}demo-main demo-quiz-page{% endblock %}
+
+{% block extra_head %}
+{% include 'core/partials/demo_styles.html' %}
+{% include 'core/partials/question_rich_styles.html' %}
+{% include 'core/partials/question_math_assets.html' %}
+{% endblock %}
+
+{% block content %}
+<header class="demo-quiz-header">
+  <div class="demo-quiz-header-inner">
+    <div>
+      <h1 class="demo-quiz-title">Practice Quiz</h1>
+      <p class="demo-quiz-meta">
+        Question {{ question_number }} of {{ question_count }}
+        · {{ demo.subject_name }}
+        {% if demo.strand_name %}· {{ demo.strand_name }}{% endif %}
+      </p>
+    </div>
+    <div class="demo-quiz-header-stats">
+      <span class="demo-quiz-pill">{{ answered_count }}/{{ question_count }} answered</span>
+      <span class="demo-quiz-pill">{{ demo.grade_name }}</span>
+    </div>
+  </div>
+  <div class="demo-quiz-progress" aria-hidden="true">
+    <div class="demo-quiz-progress-fill" style="width: {{ progress_pct }}%;"></div>
+  </div>
+</header>
+
+<div class="demo-quiz-layout">
+  <section class="demo-question-card">
+    <div class="demo-q-badges">
+      <span class="demo-q-badge demo-q-badge--num">Question {{ question_number }}</span>
+      <span class="demo-q-badge demo-q-badge--type">Multiple Choice</span>
+      <span class="demo-q-badge demo-q-badge--mark">1 mark</span>
+    </div>
+
+    <div class="demo-q-text question-rich-body">{{ question.quiz|linebreaksbr }}</div>
+
+    {% if showing_feedback %}
+      <div class="demo-options">
+        {% for opt in options %}
+        <label class="demo-option{% if feedback.selected_option_uuid == opt.uuid|stringformat:'s' %} {% if feedback.is_correct %}is-correct{% else %}is-wrong{% endif %}{% elif not feedback.is_correct and opt.is_correct %} is-correct{% endif %}">
+          <span class="demo-option-letter">{{ forloop.counter0|add:65|stringformat:"c" }}</span>
+          <span class="demo-option-text">{{ opt.option }}</span>
+        </label>
+        {% endfor %}
+      </div>
+
+      <div class="demo-feedback {% if feedback.is_correct %}is-correct{% else %}is-wrong{% endif %}">
+        {% if feedback.is_correct %}
+          <div class="demo-feedback-title">Correct — well done!</div>
+          <p style="margin:0;color:var(--demo-muted);font-size:0.88rem;">You earned {{ feedback.marks_awarded }}/{{ feedback.max_marks }} mark{{ feedback.max_marks|pluralize }}.</p>
+        {% else %}
+          <div class="demo-feedback-title">Not quite — let's learn from this</div>
+          <p style="margin:0 0 0.35rem;color:var(--demo-muted);font-size:0.88rem;">
+            Your answer: <strong style="color:var(--demo-text);">{{ feedback.selected_text|default:"—" }}</strong>
+          </p>
+          <p style="margin:0;color:var(--demo-muted);font-size:0.88rem;">
+            Correct answer: <strong style="color:var(--demo-accent);">{{ feedback.correct_text }}</strong>
+          </p>
+          <div class="demo-ai-box" id="demo-ai-box" data-question-uuid="{{ question_uuid }}">
+            <div class="demo-ai-loading" id="demo-ai-loading">Getting a tutor explanation…</div>
+            <div class="demo-ai-text" id="demo-ai-text" hidden></div>
+            <div class="demo-ai-text" id="demo-ai-error" hidden style="color:#f87171;"></div>
+          </div>
+        {% endif %}
+      </div>
+
+      <form method="post" class="demo-q-actions" style="margin-top:1rem;">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="continue">
+        <span></span>
+        <button type="submit" class="demo-btn demo-btn-primary">
+          {% if is_last_question %}See results{% else %}Next question →{% endif %}
+        </button>
+      </form>
+
+    {% else %}
+      <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="submit">
+        <div class="demo-options">
+          {% for opt in options %}
+          <label class="demo-option">
+            <input type="radio" name="answer" value="{{ opt.uuid }}" required>
+            <span class="demo-option-letter">{{ forloop.counter0|add:65|stringformat:"c" }}</span>
+            <span class="demo-option-text">{{ opt.option }}</span>
+          </label>
+          {% endfor %}
+        </div>
+        <div class="demo-q-actions">
+          <a href="{% url 'core:demo_wizard' %}?restart=1" class="demo-btn demo-btn-outline">Quit demo</a>
+          <button type="submit" class="demo-btn demo-btn-primary">Submit answer ✓</button>
+        </div>
+      </form>
+    {% endif %}
+  </section>
+
+  <aside>
+    <div class="demo-sidebar-card">
+      <div class="demo-sidebar-title">Question Navigator</div>
+      <div class="demo-nav-grid">
+        {% for state in nav_states %}
+          <div class="demo-nav-btn is-{{ state }}">{{ forloop.counter }}</div>
+        {% endfor %}
+      </div>
+      <div class="demo-stat-row">
+        <div class="is-green"><strong>{{ correct_count }}</strong><span>Correct</span></div>
+        <div class="is-red"><strong>{{ incorrect_count }}</strong><span>Incorrect</span></div>
+        <div class="is-muted"><strong>{{ unanswered_count }}</strong><span>Unanswered</span></div>
+      </div>
+    </div>
+
+    <div class="demo-sidebar-card demo-cta-card">
+      <div style="font-size:2rem;">🪙</div>
+      <strong style="color:var(--demo-text);">{{ correct_count }} correct so far</strong>
+      <p>Sign up to save progress, earn achievements, and track every learner.</p>
+      <a href="{% url 'accounts:signup' %}" class="demo-btn demo-btn-primary" style="width:100%;">Create free account</a>
+    </div>
+  </aside>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% if showing_feedback and feedback and not feedback.is_correct %}
+<script>
+(function () {
+  var box = document.getElementById('demo-ai-box');
+  if (!box) return;
+  var loading = document.getElementById('demo-ai-loading');
+  var textEl = document.getElementById('demo-ai-text');
+  var errEl = document.getElementById('demo-ai-error');
+  var qid = box.dataset.questionUuid;
+
+  fetch('{% url "core:demo_explain" %}', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': '{{ csrf_token }}'
+    },
+    body: JSON.stringify({ question_uuid: qid })
+  })
+    .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
+    .then(function (result) {
+      loading.hidden = true;
+      if (!result.ok) {
+        errEl.textContent = result.data.error || 'Could not load AI explanation.';
+        errEl.hidden = false;
+        return;
+      }
+      textEl.textContent = result.data.explanation || 'No explanation returned.';
+      textEl.hidden = false;
+    })
+    .catch(function () {
+      loading.hidden = true;
+      errEl.textContent = 'Could not reach the tutor. Please try again later.';
+      errEl.hidden = false;
+    });
+})();
+</script>
+{% endif %}
+{% endblock %}

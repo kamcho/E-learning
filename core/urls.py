@@ -1,5 +1,5 @@
 from django.urls import path
-from . import views
+from . import demo_views, views
 
 app_name = 'core'
 
@@ -37,4 +37,9 @@ urlpatterns = [
     path('questions/bulk-import/', views.bulk_question_import_view, name='bulk_question_import'),
     path('api/questions/bulk/', views.bulk_create_questions_api_view, name='bulk_create_questions_api'),
     path('api/exam-filters/', views.exam_filter_options_api_view, name='exam_filter_options_api'),
+    path('demo/', demo_views.demo_wizard_view, name='demo_wizard'),
+    path('demo/start/', demo_views.demo_start_view, name='demo_start'),
+    path('demo/take/', demo_views.demo_take_view, name='demo_take'),
+    path('demo/results/', demo_views.demo_results_view, name='demo_results'),
+    path('demo/api/explain/', demo_views.demo_explain_view, name='demo_explain'),
 ]

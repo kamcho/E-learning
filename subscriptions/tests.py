@@ -43,7 +43,7 @@ class ActivateSubscriptionSmsTests(TestCase):
         TEXTSMS_ENABLED=True,
         TEXTSMS_API_KEY='test-key',
         TEXTSMS_PARTNER_ID='99',
-        TEXTSMS_SHORTCODE='SomaKenya',
+        TEXTSMS_SHORTCODE='Soma Smart',
     )
     @patch('messenger.textsms.requests.post')
     def test_successful_payment_triggers_sms(self, mock_post):
@@ -79,7 +79,7 @@ class ActivateSubscriptionSmsTests(TestCase):
         TEXTSMS_ENABLED=True,
         TEXTSMS_API_KEY='test-key',
         TEXTSMS_PARTNER_ID='99',
-        TEXTSMS_SHORTCODE='SomaKenya',
+        TEXTSMS_SHORTCODE='Soma Smart',
     )
     @patch('messenger.services.send_sms')
     def test_payment_activation_succeeds_even_if_sms_fails(self, mock_send_sms):

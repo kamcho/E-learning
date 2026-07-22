@@ -31,7 +31,7 @@ from subjects.models import GradeLevel
 
 
 def landing_page(request):
-    """Render the SomaKenya CBC landing page."""
+    """Render the Soma Smart CBC landing page."""
     from subscriptions.models import SubscriptionPlan
     from subscriptions.services import get_active_subscription
 

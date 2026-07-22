@@ -1,6 +1,6 @@
 {% extends 'accounts/admin_base.html' %}
 
-{% block title %}Profile — SomaKenya Admin{% endblock %}
+{% block title %}Profile — Soma Smart Admin{% endblock %}
 
 {% block extra_head %}
 <style>
@@ -385,7 +385,7 @@
       <div class="profile-hero-meta">{{ user.phone }}{% if user.email %} &middot; {{ user.email }}{% endif %}</div>
       <div class="profile-hero-pills">
         <span class="profile-hero-pill">{{ user.get_role_display }}</span>
-        <span class="profile-hero-pill gold">SomaKenya Admin</span>
+        <span class="profile-hero-pill gold">Soma Smart Admin</span>
         {% if user.is_staff %}<span class="profile-hero-pill">Staff</span>{% endif %}
       </div>
     </div>
@@ -490,7 +490,7 @@
     </div>
     <div class="profile-panel-body">
       <p style="font-size: 0.88rem; color: var(--clr-text-muted); line-height: 1.6;">
-        Your admin account has access to the SomaKenya platform dashboard, curriculum management via Django Admin, and user oversight tools.
+        Your admin account has access to the Soma Smart platform dashboard, curriculum management via Django Admin, and user oversight tools.
       </p>
       <div class="access-tags">
         <span class="access-tag on">Admin Dashboard</span>

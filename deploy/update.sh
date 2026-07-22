@@ -6,6 +6,7 @@ set -euo pipefail
 APP_DIR="/srv/elearning"
 APP_USER="elearning"
 VENV="$APP_DIR/.venv/bin"
+NGINX_SITE="/etc/nginx/sites-available/elearning"
 
 cd "$APP_DIR"
 
@@ -13,6 +14,7 @@ echo "==> Pulling latest code"
 # Preserve local .env; never overwrite production secrets
 git fetch origin
 git reset --hard origin/main
+echo "    HEAD is now: $(git rev-parse --short HEAD) — $(git log -1 --pretty=%s)"
 
 echo "==> Ensuring ownership"
 chown -R "$APP_USER":www-data "$APP_DIR"
@@ -32,12 +34,26 @@ sudo -u "$APP_USER" "$VENV/python" manage.py migrate --noinput
 echo "==> Collecting static files"
 sudo -u "$APP_USER" "$VENV/python" manage.py collectstatic --noinput
 
+echo "==> Syncing nginx site config"
+# Don't overwrite a Certbot-managed SSL config (would wipe certificates).
+if [[ -f "$APP_DIR/deploy/nginx.conf" ]]; then
+  if [[ -f "$NGINX_SITE" ]] && grep -qE 'ssl_certificate|managed by Certbot' "$NGINX_SITE"; then
+    echo "    Keeping existing nginx site (SSL already configured by Certbot)"
+  else
+    cp "$APP_DIR/deploy/nginx.conf" "$NGINX_SITE"
+    ln -sf "$NGINX_SITE" /etc/nginx/sites-enabled/elearning
+    rm -f /etc/nginx/sites-enabled/default
+    echo "    Installed $NGINX_SITE from deploy/nginx.conf"
+  fi
+  grep -E '^\s*server_name' "$NGINX_SITE" || true
+fi
+
 echo "==> Restarting app (gunicorn + uvicorn workers)"
 systemctl restart elearning
 systemctl is-active --quiet elearning
 
-# Reload nginx config if it changed (no downtime if config is unchanged)
-if nginx -t 2>/dev/null; then
+echo "==> Reloading nginx"
+if nginx -t; then
   systemctl reload nginx
 fi
 

@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% block title %}Practice Results — Soma Smart Demo{% endblock %}
+
+{% block body_class %} demo-page{% endblock %}
+{% block main_extra_class %}demo-main{% endblock %}
+
+{% block extra_head %}
+{% include 'core/partials/demo_styles.html' %}
+{% endblock %}
+
+{% block content %}
+<div class="demo-shell">
+  <header class="demo-hero">
+    <div>
+      <p class="demo-hero-kicker">Practice complete</p>
+      <h1 class="demo-hero-title">{{ demo.score }}% — {{ demo.correct_count }}/{{ question_count }} correct</h1>
+      <p class="demo-hero-sub">
+        {{ demo.subject_name }} · {{ demo.topic_label }} · {{ demo.grade_name }}
+      </p>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:0.5rem;">
+      <a href="{% url 'core:demo_wizard' %}?restart=1" class="demo-btn demo-btn-outline" style="color:#fff;border-color:rgba(255,255,255,0.35);">Try another topic</a>
+      <a href="{% url 'accounts:signup' %}" class="demo-hero-cta">Save progress — sign up</a>
+    </div>
+  </header>
+
+  <div class="demo-question-card" style="margin-bottom:var(--space-lg);">
+    <div class="demo-stat-row" style="max-width:420px;margin:0 auto;">
+      <div class="is-green"><strong>{{ demo.correct_count }}</strong><span>Correct</span></div>
+      <div class="is-red"><strong>{{ incorrect_count }}</strong><span>Incorrect</span></div>
+      <div class="is-muted"><strong>{{ demo.marks_earned }}/{{ demo.marks_possible }}</strong><span>Marks</span></div>
+    </div>
+  </div>
+
+  {% for row in breakdown %}
+  <article class="demo-question-card" style="margin-bottom:var(--space-md);" id="q-{{ row.question_uuid }}">
+    <div class="demo-q-badges">
+      <span class="demo-q-badge demo-q-badge--num">Question {{ row.number }}</span>
+      <span class="demo-q-badge demo-q-badge--type">
+        {% if row.is_correct %}Correct{% elif row.is_correct == False %}Incorrect{% else %}Unanswered{% endif %}
+      </span>
+    </div>
+    <div class="demo-q-text">{{ row.question_text|linebreaksbr }}</div>
+    <div class="demo-options">
+      {% for opt in row.options %}
+      <div class="demo-option{% if opt.is_selected %} {% if opt.is_correct %}is-correct{% else %}is-wrong{% endif %}{% elif opt.is_correct and row.is_correct == False %} is-correct{% endif %}">
+        <span class="demo-option-letter">{{ forloop.counter0|add:65|stringformat:"c" }}</span>
+        <span class="demo-option-text">{{ opt.option }}</span>
+      </div>
+      {% endfor %}
+    </div>
+    {% if row.is_correct == False %}
+    <div class="demo-feedback is-wrong" style="margin-top:0.85rem;">
+      <div class="demo-feedback-title">Review this question</div>
+      <p style="margin:0;color:var(--demo-muted);font-size:0.88rem;">
+        You chose: <strong style="color:var(--demo-text);">{{ row.selected_text }}</strong>
+        · Correct: <strong style="color:var(--demo-accent);">{{ row.correct_text }}</strong>
+      </p>
+      <div class="demo-ai-box demo-ai-trigger" data-question-uuid="{{ row.question_uuid }}">
+        <button type="button" class="demo-btn demo-btn-outline demo-ai-btn" style="margin-top:0.75rem;">Explain with AI tutor</button>
+        <div class="demo-ai-loading" hidden>Getting explanation…</div>
+        <div class="demo-ai-text" hidden></div>
+        <div class="demo-ai-text demo-ai-error" hidden style="color:#f87171;"></div>
+      </div>
+    </div>
+    {% endif %}
+  </article>
+  {% endfor %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  document.querySelectorAll('.demo-ai-trigger').forEach(function (wrap) {
+    var btn = wrap.querySelector('.demo-ai-btn');
+    if (!btn) return;
+    btn.addEventListener('click', function () {
+      var loading = wrap.querySelector('.demo-ai-loading');
+      var textEl = wrap.querySelector('.demo-ai-text:not(.demo-ai-error)');
+      var errEl = wrap.querySelector('.demo-ai-error');
+      btn.hidden = true;
+      loading.hidden = false;
+      fetch('{% url "core:demo_explain" %}', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({ question_uuid: wrap.dataset.questionUuid })
+      })
+        .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
+        .then(function (result) {
+          loading.hidden = true;
+          if (!result.ok) {
+            errEl.textContent = result.data.error || 'Could not load explanation.';
+            errEl.hidden = false;
+            return;
+          }
+          textEl.textContent = result.data.explanation || '';
+          textEl.hidden = false;
+        })
+        .catch(function () {
+          loading.hidden = true;
+          errEl.textContent = 'Could not reach the tutor.';
+          errEl.hidden = false;
+        });
+    });
+  });
+})();
+</script>
+{% endblock %}

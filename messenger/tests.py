@@ -32,7 +32,7 @@ class NormalizeKenyanMobileTests(TestCase):
 @override_settings(
     TEXTSMS_API_KEY='test-key',
     TEXTSMS_PARTNER_ID='99',
-    TEXTSMS_SHORTCODE='SomaKenya',
+    TEXTSMS_SHORTCODE='Soma Smart',
 )
 class TextSmsClientTests(TestCase):
     @patch('messenger.textsms.requests.post')
@@ -54,7 +54,7 @@ class TextSmsClientTests(TestCase):
         payload = mock_post.call_args.kwargs['json']
         self.assertEqual(payload['apikey'], 'test-key')
         self.assertEqual(payload['partnerID'], '99')
-        self.assertEqual(payload['shortcode'], 'SomaKenya')
+        self.assertEqual(payload['shortcode'], 'Soma Smart')
         self.assertEqual(payload['mobile'], '254712345678')
         self.assertEqual(payload['message'], 'Hello')
 
@@ -124,7 +124,7 @@ class PaymentConfirmationSmsTests(TestCase):
         TEXTSMS_ENABLED=True,
         TEXTSMS_API_KEY='test-key',
         TEXTSMS_PARTNER_ID='99',
-        TEXTSMS_SHORTCODE='SomaKenya',
+        TEXTSMS_SHORTCODE='Soma Smart',
     )
     @patch('messenger.services.send_sms')
     def test_sends_payment_confirmation(self, mock_send_sms):
@@ -146,7 +146,7 @@ class PaymentConfirmationSmsTests(TestCase):
         TEXTSMS_ENABLED=True,
         TEXTSMS_API_KEY='test-key',
         TEXTSMS_PARTNER_ID='99',
-        TEXTSMS_SHORTCODE='SomaKenya',
+        TEXTSMS_SHORTCODE='Soma Smart',
     )
     @patch('messenger.services.send_sms')
     def test_idempotent_per_payment(self, mock_send_sms):
@@ -166,7 +166,7 @@ class PaymentConfirmationSmsTests(TestCase):
         TEXTSMS_ENABLED=True,
         TEXTSMS_API_KEY='test-key',
         TEXTSMS_PARTNER_ID='99',
-        TEXTSMS_SHORTCODE='SomaKenya',
+        TEXTSMS_SHORTCODE='Soma Smart',
     )
     @patch('messenger.services.send_sms')
     def test_records_failure(self, mock_send_sms):

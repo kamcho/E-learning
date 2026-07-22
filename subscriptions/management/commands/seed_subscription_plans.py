@@ -7,7 +7,7 @@ PLANS = [
     {
         'slug': 'single-test',
         'name': 'Single Test',
-        'description': 'Pay once, take one CBC practice exam. Perfect for trying SomaKenya.',
+        'description': 'Pay once, take one CBC practice exam. Perfect for trying Soma Smart.',
         'plan_type': SubscriptionPlan.PlanType.SINGLE_TEST,
         'price_kes': 10,
         'duration_days': 30,
@@ -79,7 +79,7 @@ LEGACY_SLUGS = ('family-monthly', 'family-term', 'family-annual')
 
 
 class Command(BaseCommand):
-    help = 'Seed SomaKenya test-credit subscription plans.'
+    help = 'Seed Soma Smart test-credit subscription plans.'
 
     def handle(self, *args, **options):
         deactivated = SubscriptionPlan.objects.filter(slug__in=LEGACY_SLUGS).update(is_active=False)
