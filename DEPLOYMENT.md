@@ -11,7 +11,7 @@ Throughout this guide:
 - App user: `elearning`
 - Unix socket: `/run/elearning/elearning.sock`
 - Droplet IP: **159.223.143.29**
-- Domain: optional (add later for HTTPS / Let's Encrypt)
+- Domain: **somasmartassesments.com** (www + apex)
 
 ---
 
@@ -115,19 +115,19 @@ Fill it in. The important bits for this droplet:
 ```
 SECRET_KEY=<paste output of the command below>
 DEBUG=False
-ALLOWED_HOSTS=159.223.143.29
-CSRF_TRUSTED_ORIGINS=http://159.223.143.29
+ALLOWED_HOSTS=somasmartassesments.com,www.somasmartassesments.com,159.223.143.29
+CSRF_TRUSTED_ORIGINS=http://somasmartassesments.com,http://www.somasmartassesments.com,https://somasmartassesments.com,https://www.somasmartassesments.com,http://159.223.143.29
 DB_ENGINE=postgres
 DB_NAME=elearning
 DB_USER=elearning
-DB_PASSWORD=CHANGE_ME_strong_db_password
+DB_PASSWORD=<same password you set for the Postgres elearning user>
 DB_HOST=127.0.0.1
 DB_PORT=5432
 SESSION_COOKIE_SECURE=False
 CSRF_COOKIE_SECURE=False
 ```
 
-> Until you have a domain + HTTPS, keep cookie secure flags **False** and use `http://` in `CSRF_TRUSTED_ORIGINS`.
+> Keep cookie secure flags **False** until Certbot HTTPS is working. Then set them to True and enable `SECURE_SSL_REDIRECT`.
 
 Generate a strong secret key:
 
@@ -176,20 +176,26 @@ nginx -t
 systemctl restart nginx
 ```
 
-Visit **http://159.223.143.29** — the site should load.
+Visit **http://somasmartassesments.com** (or **http://159.223.143.29**) — the site should load.
 
-## 12. HTTPS with Let's Encrypt (only if you have a domain pointed at the droplet)
+## 12. HTTPS with Let's Encrypt
+
+DNS A records for `@` and `www` must already point to `159.223.143.29`.
 
 ```bash
 apt install -y certbot python3-certbot-nginx
-certbot --nginx -d example.com -d www.example.com
+certbot --nginx -d somasmartassesments.com -d www.somasmartassesments.com
 ```
 
 Then turn on strict HTTPS in `/srv/elearning/.env`:
 
 ```
 SECURE_SSL_REDIRECT=True
+SESSION_COOKIE_SECURE=True
+CSRF_COOKIE_SECURE=True
 SECURE_HSTS_SECONDS=31536000
+CSRF_TRUSTED_ORIGINS=https://somasmartassesments.com,https://www.somasmartassesments.com
+MPESA_CALLBACK_BASE_URL=https://somasmartassesments.com
 ```
 
 Restart the app:
