@@ -59,7 +59,16 @@
       </p>
       <div class="demo-ai-box demo-ai-trigger" data-question-uuid="{{ row.question_uuid }}">
         <button type="button" class="demo-btn demo-btn-outline demo-ai-btn" style="margin-top:0.75rem;">Explain with AI tutor</button>
-        <div class="demo-ai-loading" hidden>Getting explanation…</div>
+        <div class="demo-ai-loading" hidden role="status" aria-live="polite">
+          <span class="demo-ai-spinner" aria-hidden="true"></span>
+          <span class="demo-ai-loading-copy">
+            <span class="demo-ai-loading-title">
+              AI tutor is thinking
+              <span class="demo-ai-dots" aria-hidden="true"><span></span><span></span><span></span></span>
+            </span>
+            <span class="demo-ai-loading-sub">Preparing a short explanation for this answer</span>
+          </span>
+        </div>
         <div class="demo-ai-text" hidden></div>
         <div class="demo-ai-text demo-ai-error" hidden style="color:#f87171;"></div>
       </div>
@@ -96,6 +105,8 @@
           if (!result.ok) {
             errEl.textContent = result.data.error || 'Could not load explanation.';
             errEl.hidden = false;
+            btn.hidden = false;
+            btn.textContent = 'Try again';
             return;
           }
           textEl.textContent = result.data.explanation || '';
@@ -103,8 +114,10 @@
         })
         .catch(function () {
           loading.hidden = true;
-          errEl.textContent = 'Could not reach the tutor.';
+          errEl.textContent = 'Could not reach the tutor. Please try again.';
           errEl.hidden = false;
+          btn.hidden = false;
+          btn.textContent = 'Try again';
         });
     });
   });

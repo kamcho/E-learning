@@ -466,6 +466,24 @@
     margin-top: auto;
   }
 
+  .gd-section--subjects {
+    margin-bottom: var(--space-lg);
+  }
+
+  .gd-section--subjects .analytics-breakdown,
+  .gd-section--subjects .card--performance,
+  .gd-section--subjects .attempt-chart-panel {
+    margin-bottom: var(--space-lg);
+  }
+
+  .gd-section--subjects .subject-cards-grid {
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  }
+
+  .gd-section--exam-history {
+    margin-top: var(--space-lg);
+  }
+
   .gd-dashboard-grid {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(300px, 340px);
@@ -511,18 +529,18 @@
 
   .gd-section--kpis .gd-metrics-grid {
     margin-bottom: 0;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
   @media (max-width: 1100px) {
     .gd-section--kpis .gd-metrics-grid {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-columns: repeat(2, minmax(0, 1fr));
     }
   }
 
   @media (max-width: 640px) {
     .gd-section--kpis .gd-metrics-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-columns: 1fr;
     }
   }
 
@@ -1299,6 +1317,188 @@
 
   .gd-empty-icon { font-size: 2.5rem; margin-bottom: 0.75rem; }
 
+  /* ── Empty dashboard (no learners) ── */
+  .gd-onboard {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .gd-onboard-hero {
+    display: grid;
+    grid-template-columns: 1.2fr 0.8fr;
+    gap: 1.25rem;
+    align-items: stretch;
+  }
+
+  .gd-onboard-welcome {
+    background:
+      radial-gradient(ellipse 70% 80% at 0% 0%, rgba(61, 214, 198, 0.16), transparent 55%),
+      var(--dash-card);
+    border: 1px solid var(--dash-border);
+    border-radius: 20px;
+    padding: 1.75rem 1.65rem;
+  }
+
+  .gd-onboard-kicker {
+    margin: 0 0 0.55rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--dash-purple, #3dd6c6);
+  }
+
+  .gd-onboard-welcome h1 {
+    margin: 0 0 0.55rem;
+    font-family: var(--font-heading);
+    font-size: clamp(1.45rem, 2.5vw, 1.85rem);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--dash-text);
+  }
+
+  .gd-onboard-welcome p {
+    margin: 0 0 1.35rem;
+    max-width: 34rem;
+    font-size: 0.95rem;
+    line-height: 1.55;
+    color: var(--dash-muted);
+  }
+
+  .gd-onboard-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.65rem;
+  }
+
+  .gd-onboard-cta {
+    background: var(--dash-card);
+    border: 1px solid var(--dash-border);
+    border-radius: 20px;
+    padding: 1.5rem 1.35rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .gd-onboard-cta-icon {
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.35rem;
+    background: rgba(61, 214, 198, 0.12);
+    margin-bottom: 0.35rem;
+  }
+
+  .gd-onboard-cta h2 {
+    margin: 0 0 0.4rem;
+    font-family: var(--font-heading);
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: var(--dash-text);
+  }
+
+  .gd-onboard-cta p {
+    margin: 0;
+    font-size: 0.88rem;
+    line-height: 1.5;
+    color: var(--dash-muted);
+  }
+
+  .gd-onboard-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1rem;
+  }
+
+  .gd-onboard-card {
+    background: var(--dash-card);
+    border: 1px solid var(--dash-border);
+    border-radius: 18px;
+    padding: 1.25rem 1.2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    text-decoration: none;
+    color: inherit;
+    transition: border-color 0.15s ease, transform 0.15s ease, background 0.15s ease;
+  }
+
+  a.gd-onboard-card:hover {
+    border-color: rgba(61, 214, 198, 0.4);
+    transform: translateY(-2px);
+    background: rgba(61, 214, 198, 0.04);
+  }
+
+  .gd-onboard-card-num {
+    width: 1.7rem;
+    height: 1.7rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.78rem;
+    font-weight: 800;
+    color: var(--dash-purple, #3dd6c6);
+    background: rgba(61, 214, 198, 0.12);
+  }
+
+  .gd-onboard-card h3 {
+    margin: 0;
+    font-family: var(--font-heading);
+    font-size: 1rem;
+    font-weight: 800;
+    color: var(--dash-text);
+  }
+
+  .gd-onboard-card p {
+    margin: 0;
+    font-size: 0.85rem;
+    line-height: 1.45;
+    color: var(--dash-muted);
+  }
+
+  .gd-onboard-links {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+  }
+
+  .gd-onboard-link-card {
+    background: var(--dash-card);
+    border: 1px solid var(--dash-border);
+    border-radius: 18px;
+    padding: 1.25rem 1.2rem;
+  }
+
+  .gd-onboard-link-card h3 {
+    margin: 0 0 0.4rem;
+    font-family: var(--font-heading);
+    font-size: 1rem;
+    font-weight: 800;
+    color: var(--dash-text);
+  }
+
+  .gd-onboard-link-card p {
+    margin: 0 0 1rem;
+    font-size: 0.85rem;
+    line-height: 1.45;
+    color: var(--dash-muted);
+  }
+
+  @media (max-width: 900px) {
+    .gd-onboard-hero,
+    .gd-onboard-grid,
+    .gd-onboard-links {
+      grid-template-columns: 1fr;
+    }
+  }
+
   .gd-empty h3 {
     font-family: var(--font-heading);
     color: var(--dash-text);
@@ -1668,109 +1868,17 @@
     </div>
   </section>
 
+  <section class="gd-section-block gd-section--subjects" aria-label="Subject analytics">
+    {% include 'accounts/partials/student_analytics_sections.html' with hide_recent_attempts=True subject_chart_canvas_id='guardianSubjectScoreChart' subject_chart_data_id='guardian-subject-chart-data' show_analytics_period_filter=True analytics_period_choices=analytics_period_choices dashboard_filters=dashboard_filters dashboard_hidden_params=dashboard_hidden_params analytics_period_label=analytics_period_label %}
+  </section>
+
   <div class="gd-dashboard-grid">
     <div class="gd-dash-primary">
-
-      <section class="gd-section-block" aria-label="Subject analytics">
-        {% include 'accounts/partials/student_analytics_sections.html' with hide_recent_attempts=True subject_chart_canvas_id='guardianSubjectScoreChart' subject_chart_data_id='guardian-subject-chart-data' show_analytics_period_filter=True analytics_period_choices=analytics_period_choices dashboard_filters=dashboard_filters dashboard_hidden_params=dashboard_hidden_params analytics_period_label=analytics_period_label %}
-      </section>
 
       <section class="gd-section-block" aria-label="Achievements">
         {% include 'accounts/partials/student_achievements.html' with achievements=achievements unified_grid=True %}
       </section>
 
-      <section class="gd-section-block gd-card" id="exam-attempts" aria-label="Exam attempts">
-        <div class="gd-courses-head">
-          <div>
-            <div class="gd-card-title">Exam history</div>
-            <p class="gd-filter-hint" style="margin: 0.25rem 0 0;">Recent attempts and scores</p>
-          </div>
-          <div class="gd-courses-filters">
-            <input type="search" class="gd-search-input" id="course-search" placeholder="Search exams…" data-searchable-parent>
-            <select class="gd-card-filter-select" id="attempt-status-filter" aria-label="Attempt status">
-              {% for value, label in status_choices %}
-                <option value="{{ value }}" {% if dashboard_filters.status == value %}selected{% endif %}>{{ label }}</option>
-              {% endfor %}
-            </select>
-            <a href="{% url 'core:exams_list' %}?student={{ active_student.uuid }}" class="gd-btn gd-btn-outline" style="padding: 0.45rem 0.85rem;">View all</a>
-          </div>
-        </div>
-
-        {% if attempt_courses %}
-          <div class="gd-table-head">
-            <span>Exam</span>
-            <span>Strand</span>
-            <span>Details</span>
-            <span>Progress</span>
-            <span>Score</span>
-            <span>Status</span>
-            <span>Date</span>
-            <span></span>
-          </div>
-          {% for course in attempt_courses %}
-            <a href="{{ course.detail_url }}" class="gd-course-row" data-searchable>
-              <div class="gd-course-info">
-                <div class="gd-course-thumb {% cycle 'purple' 'blue' 'yellow' 'pink' %}">&#128218;</div>
-                <div>
-                  <div class="gd-course-title">{{ course.title }}</div>
-                  <div class="gd-course-meta">{{ course.subject }}</div>
-                </div>
-              </div>
-              <div class="gd-course-stat">{{ course.strand }}</div>
-              <div class="gd-course-stat">
-                {% if course.difficulty == 'Easy' %}🟢{% elif course.difficulty == 'Medium' %}🟡{% else %}🔴{% endif %}
-                {{ course.difficulty }} &bull; {{ course.question_count }} Q
-              </div>
-              <div class="gd-progress-ring" style="--pct: {{ course.progress }};">
-                <span>{{ course.progress }}%</span>
-              </div>
-              <div class="gd-score-cell">{{ course.score_display }}</div>
-              <div>
-                <span class="gd-status-badge {{ course.status }}">{{ course.status_label }}</span>
-              </div>
-              <div class="gd-course-stat">{{ course.attempt_date|date:"d M Y" }}</div>
-              <div class="gd-cert-cell">
-                {% if course.status == 'completed' %}Result{% else %}Continue{% endif %}
-              </div>
-            </a>
-          {% endfor %}
-
-          {% if attempts_page.paginator.num_pages > 1 %}
-          <nav class="gd-pagination" aria-label="Exam attempts pages">
-            <span class="gd-pagination-info">
-              Page {{ attempts_page.number }} of {{ attempts_page.paginator.num_pages }}
-              &middot; {{ attempts_page.paginator.count }} attempt{{ attempts_page.paginator.count|pluralize }}
-            </span>
-            <div class="gd-pagination-links">
-              {% if attempts_page.has_previous %}
-                <a class="gd-page-btn" href="?{{ dashboard_query }}&attempts_page={{ attempts_page.previous_page_number }}#exam-attempts">Prev</a>
-              {% else %}
-                <span class="gd-page-btn is-disabled">Prev</span>
-              {% endif %}
-              {% for page_num in attempts_page.paginator.page_range %}
-                {% if page_num == attempts_page.number %}
-                  <span class="gd-page-btn is-active">{{ page_num }}</span>
-                {% else %}
-                  <a class="gd-page-btn" href="?{{ dashboard_query }}&attempts_page={{ page_num }}#exam-attempts">{{ page_num }}</a>
-                {% endif %}
-              {% endfor %}
-              {% if attempts_page.has_next %}
-                <a class="gd-page-btn" href="?{{ dashboard_query }}&attempts_page={{ attempts_page.next_page_number }}#exam-attempts">Next</a>
-              {% else %}
-                <span class="gd-page-btn is-disabled">Next</span>
-              {% endif %}
-            </div>
-          </nav>
-          {% endif %}
-        {% else %}
-          <div class="gd-empty">
-            <div class="gd-empty-icon">&#128218;</div>
-            <h3>No exams yet</h3>
-            <p>Start an exam to see progress and scores here.</p>
-            <a href="{% url 'core:exams_list' %}?student={{ active_student.uuid }}" class="gd-btn gd-btn-primary" style="margin-top: 1rem;">Browse exams</a>
-          </div>
-        {% endif %}
-      </section>
     </div>
 
     <aside class="gd-dash-secondary" aria-label="Activity and insights">
@@ -1814,13 +1922,161 @@
     </aside>
   </div>
 
+  <section class="gd-section-block gd-section--exam-history gd-card" id="exam-attempts" aria-label="Exam attempts">
+    <div class="gd-courses-head">
+      <div>
+        <div class="gd-card-title">Exam history</div>
+        <p class="gd-filter-hint" style="margin: 0.25rem 0 0;">Recent attempts and scores</p>
+      </div>
+      <div class="gd-courses-filters">
+        <input type="search" class="gd-search-input" id="course-search" placeholder="Search exams…" data-searchable-parent>
+        <select class="gd-card-filter-select" id="attempt-status-filter" aria-label="Attempt status">
+          {% for value, label in status_choices %}
+            <option value="{{ value }}" {% if dashboard_filters.status == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+        <a href="{% url 'core:exams_list' %}?student={{ active_student.uuid }}" class="gd-btn gd-btn-outline" style="padding: 0.45rem 0.85rem;">View all</a>
+      </div>
+    </div>
+
+    {% if attempt_courses %}
+      <div class="gd-table-head">
+        <span>Exam</span>
+        <span>Strand</span>
+        <span>Details</span>
+        <span>Progress</span>
+        <span>Score</span>
+        <span>Status</span>
+        <span>Date</span>
+        <span></span>
+      </div>
+      {% for course in attempt_courses %}
+        <a href="{{ course.detail_url }}" class="gd-course-row" data-searchable>
+          <div class="gd-course-info">
+            <div class="gd-course-thumb {% cycle 'purple' 'blue' 'yellow' 'pink' %}">&#128218;</div>
+            <div>
+              <div class="gd-course-title">{{ course.title }}</div>
+              <div class="gd-course-meta">{{ course.subject }}</div>
+            </div>
+          </div>
+          <div class="gd-course-stat">{{ course.strand }}</div>
+          <div class="gd-course-stat">
+            {% if course.difficulty == 'Easy' %}🟢{% elif course.difficulty == 'Medium' %}🟡{% else %}🔴{% endif %}
+            {{ course.difficulty }} &bull; {{ course.question_count }} Q
+          </div>
+          <div class="gd-progress-ring" style="--pct: {{ course.progress }}%;">
+            <span>{{ course.progress }}%</span>
+          </div>
+          <div class="gd-score-cell">{{ course.score_display }}</div>
+          <div>
+            <span class="gd-status-badge {{ course.status }}">{{ course.status_label }}</span>
+          </div>
+          <div class="gd-course-stat">{{ course.attempt_date|date:"d M Y" }}</div>
+          <div class="gd-cert-cell">
+            {% if course.status == 'completed' %}Result{% else %}Continue{% endif %}
+          </div>
+        </a>
+      {% endfor %}
+
+      {% if attempts_page.paginator.num_pages > 1 %}
+      <nav class="gd-pagination" aria-label="Exam attempts pages">
+        <span class="gd-pagination-info">
+          Page {{ attempts_page.number }} of {{ attempts_page.paginator.num_pages }}
+          &middot; {{ attempts_page.paginator.count }} attempt{{ attempts_page.paginator.count|pluralize }}
+        </span>
+        <div class="gd-pagination-links">
+          {% if attempts_page.has_previous %}
+            <a class="gd-page-btn" href="?{{ dashboard_query }}&attempts_page={{ attempts_page.previous_page_number }}#exam-attempts">Prev</a>
+          {% else %}
+            <span class="gd-page-btn is-disabled">Prev</span>
+          {% endif %}
+          {% for page_num in attempts_page.paginator.page_range %}
+            {% if page_num == attempts_page.number %}
+              <span class="gd-page-btn is-active">{{ page_num }}</span>
+            {% else %}
+              <a class="gd-page-btn" href="?{{ dashboard_query }}&attempts_page={{ page_num }}#exam-attempts">{{ page_num }}</a>
+            {% endif %}
+          {% endfor %}
+          {% if attempts_page.has_next %}
+            <a class="gd-page-btn" href="?{{ dashboard_query }}&attempts_page={{ attempts_page.next_page_number }}#exam-attempts">Next</a>
+          {% else %}
+            <span class="gd-page-btn is-disabled">Next</span>
+          {% endif %}
+        </div>
+      </nav>
+      {% endif %}
+    {% else %}
+      <div class="gd-empty">
+        <div class="gd-empty-icon">&#128218;</div>
+        <h3>No exams yet</h3>
+        <p>Start an exam to see progress and scores here.</p>
+        <a href="{% url 'core:exams_list' %}?student={{ active_student.uuid }}" class="gd-btn gd-btn-primary" style="margin-top: 1rem;">Browse exams</a>
+      </div>
+    {% endif %}
+  </section>
+
 {% else %}
-<div class="gd-card gd-empty">
-  <div class="gd-empty-icon">&#128106;</div>
-  <h3>No learners linked yet</h3>
-  <p>Add a learner to start tracking their CBC exam progress.</p>
-  <a href="{% url 'accounts:add_learner' %}" class="gd-btn gd-btn-primary" style="margin-top: 1rem;">+ Add learner</a>
-</div>
+<section class="gd-onboard" aria-label="Get started">
+  <div class="gd-onboard-hero">
+    <div class="gd-onboard-welcome">
+      <p class="gd-onboard-kicker">Welcome{% if request.user.first_name %}, {{ request.user.first_name }}{% endif %}</p>
+      <h1>Set up your first learner</h1>
+      <p>
+        Your guardian account is ready. Add a child to unlock exam practice,
+        progress tracking, and AI tutor help — all aligned to CBC.
+      </p>
+      <div class="gd-onboard-actions">
+        <a href="{% url 'accounts:add_learner' %}" class="gd-btn gd-btn-primary">+ Add learner</a>
+        <a href="{% url 'core:demo_wizard' %}" class="gd-btn gd-btn-outline">Try free demo</a>
+      </div>
+    </div>
+
+    <aside class="gd-onboard-cta" aria-label="Quick tip">
+      <div>
+        <div class="gd-onboard-cta-icon" aria-hidden="true">👨‍👩‍👧</div>
+        <h2>Why add a learner?</h2>
+        <p>
+          Each learner gets their own grade, exam history, and scores —
+          so you can track PP1–Grade 9 progress clearly.
+        </p>
+      </div>
+      <a href="{% url 'accounts:add_learner' %}" class="gd-btn gd-btn-primary" style="width:100%;justify-content:center;">
+        Add learner now
+      </a>
+    </aside>
+  </div>
+
+  <div class="gd-onboard-grid" aria-label="How it works">
+    <article class="gd-onboard-card">
+      <span class="gd-onboard-card-num" aria-hidden="true">1</span>
+      <h3>Add a learner</h3>
+      <p>Enter their name and grade so exams match the right CBC level.</p>
+    </article>
+    <article class="gd-onboard-card">
+      <span class="gd-onboard-card-num" aria-hidden="true">2</span>
+      <h3>Start practice</h3>
+      <p>Open Exam Center, pick a subject, and take KEPSEA/KJSEA-style tests.</p>
+    </article>
+    <article class="gd-onboard-card">
+      <span class="gd-onboard-card-num" aria-hidden="true">3</span>
+      <h3>Track progress</h3>
+      <p>Come back here for scores, weak areas, and improvement over time.</p>
+    </article>
+  </div>
+
+  <div class="gd-onboard-links">
+    <div class="gd-onboard-link-card">
+      <h3>Explore exams</h3>
+      <p>Browse subjects and practice questions while you set up learners.</p>
+      <a href="{% url 'core:exams_list' %}" class="gd-btn gd-btn-outline">Exam Center</a>
+    </div>
+    <div class="gd-onboard-link-card">
+      <h3>Subscription plans</h3>
+      <p>See plans when you’re ready for full exam access and analytics.</p>
+      <a href="{% url 'subscriptions:plans' %}" class="gd-btn gd-btn-outline">View plans</a>
+    </div>
+  </div>
+</section>
 {% endif %}
 
 {% if students %}

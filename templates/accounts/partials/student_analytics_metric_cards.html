@@ -2,23 +2,14 @@
   <div class="gd-metric-card gd-metric-card--orange">
     <div class="gd-metric-top">
       <div class="gd-metric-icon" aria-hidden="true">&#128203;</div>
-      <div class="gd-metric-value">{{ analytics.total_attempts }}</div>
+      <div class="gd-metric-value gd-metric-value--split">
+        <span>{{ analytics.completed }}</span><span class="gd-metric-value-sep">/</span><span>{{ analytics.total_attempts }}</span>
+      </div>
     </div>
-    <div class="gd-metric-label">Total attempts</div>
+    <div class="gd-metric-label">Exam attempts</div>
     <div class="gd-metric-footer">
-      <span class="gd-metric-footer-icon" aria-hidden="true">&#128202;</span>
-      <span>All exam sessions</span>
-    </div>
-  </div>
-  <div class="gd-metric-card gd-metric-card--green">
-    <div class="gd-metric-top">
-      <div class="gd-metric-icon" aria-hidden="true">&#9989;</div>
-      <div class="gd-metric-value">{{ analytics.completed }}</div>
-    </div>
-    <div class="gd-metric-label">Completed</div>
-    <div class="gd-metric-footer">
-      <span class="gd-metric-footer-icon" aria-hidden="true">&#10003;</span>
-      <span>Finished exams</span>
+      <span class="gd-metric-footer-icon" aria-hidden="true">&#9989;</span>
+      <span>{{ analytics.completed }} finished · {{ analytics.total_attempts }} total</span>
     </div>
   </div>
   <div class="gd-metric-card gd-metric-card--blue">
@@ -43,14 +34,14 @@
       <span>Personal record</span>
     </div>
   </div>
-  <div class="gd-metric-card gd-metric-card--rose">
+  <div class="gd-metric-card gd-metric-card--green">
     <div class="gd-metric-top">
       <div class="gd-metric-icon" aria-hidden="true">&#128200;</div>
       <div class="gd-metric-value">{{ analytics.completion_rate }}%</div>
     </div>
     <div class="gd-metric-label">Completion rate</div>
     <div class="gd-metric-footer">
-      <span class="gd-metric-footer-icon" aria-hidden="true">&#9989;</span>
+      <span class="gd-metric-footer-icon" aria-hidden="true">&#10003;</span>
       <span>Exams finished</span>
     </div>
   </div>

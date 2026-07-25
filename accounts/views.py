@@ -61,8 +61,15 @@ def _resolve_post_login_redirect(request, user, next_url=None):
 
 
 def _auth_page_context(**extra):
+    client_id = ''
+    ids = getattr(settings, 'GOOGLE_CLIENT_IDS', None) or []
+    if ids:
+        client_id = ids[0]
+    else:
+        client_id = getattr(settings, 'GOOGLE_CLIENT_ID', '') or ''
     return {
-        'google_client_id': settings.GOOGLE_CLIENT_ID,
+        'google_client_id': client_id,
+        'google_signin_enabled': bool(client_id),
         **extra,
     }
 
@@ -200,7 +207,11 @@ def google_auth_view(request):
     if not user.is_active:
         return JsonResponse({'ok': False, 'error': 'This account is inactive.'}, status=403)
 
-    auth_login(request, user)
+    auth_login(
+        request,
+        user,
+        backend='django.contrib.auth.backends.ModelBackend',
+    )
     if created:
         messages.success(request, f"Welcome to Soma Smart, {user.first_name}!")
     else:
@@ -215,6 +226,8 @@ def google_auth_view(request):
 @login_required(login_url='accounts:signin')
 def complete_profile_view(request):
     """Link phone + PIN after Google sign-in for backup login."""
+    from django.contrib.auth import update_session_auth_hash
+
     if not user_needs_phone_link(request.user):
         return redirect(_resolve_post_login_redirect(request, request.user))
 
@@ -227,9 +240,11 @@ def complete_profile_view(request):
             user.phone = form.cleaned_data['phone']
             user.set_password(form.cleaned_data['password'])
             user.save(update_fields=['phone', 'password'])
+            # Keep the Google session alive after setting a PIN hash.
+            update_session_auth_hash(request, user)
             messages.success(
                 request,
-                'Your phone number is linked. You can sign in with your PIN anytime.',
+                'Your phone number is linked. You can sign in with Google or your PIN anytime.',
             )
             return redirect(
                 _resolve_post_login_redirect(

@@ -59,63 +59,43 @@
     </div>
 
     {% if subject_breakdown %}
-      <div class="subject-table-wrap">
-        <table class="subject-table">
-          <thead>
-            <tr>
-              <th>Subject</th>
-              <th>Quizzes</th>
-              <th>Avg Score</th>
-              <th>Best Score</th>
-              <th>Progress</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for row in subject_breakdown %}
-              <tr class="subject-table-row" onclick="window.location='{% url 'accounts:student_subject_progress' student.uuid row.subject_id %}'" tabindex="0" role="link">
-                <td>
-                  <a href="{% url 'accounts:student_subject_progress' student.uuid row.subject_id %}" class="subject-table-link">
-                    {{ row.quiz__subject__name }}
-                  </a>
-                </td>
-                <td>{{ row.attempts }}</td>
-                <td>
-                  {% if row.attempts %}
-                    {% if row.avg_score >= 70 %}
-                      <span class="score-pill score-high">{{ row.avg_score|floatformat:1 }}</span>
-                    {% elif row.avg_score >= 40 %}
-                      <span class="score-pill score-mid">{{ row.avg_score|floatformat:1 }}</span>
-                    {% else %}
-                      <span class="score-pill score-low">{{ row.avg_score|floatformat:1 }}</span>
-                    {% endif %}
-                  {% else %}
-                    <span class="subject-table-muted">—</span>
-                  {% endif %}
-                </td>
-                <td>
-                  {% if row.attempts and row.best_score %}
-                    <span class="subject-table-best">{{ row.best_score }}</span>
-                  {% else %}
-                    <span class="subject-table-muted">—</span>
-                  {% endif %}
-                </td>
-                <td>
-                  <div class="subject-table-progress">
-                    <div class="subject-table-progress-fill" style="width: {% widthratio row.avg_score 100 100 %}%;"></div>
-                  </div>
-                </td>
-                <td class="subject-table-action">
-                  <a
-                    href="{% url 'accounts:student_subject_progress' student.uuid row.subject_id %}"
-                    class="subject-table-learn-btn"
-                    onclick="event.stopPropagation()"
-                  >Learn</a>
-                </td>
-              </tr>
-            {% endfor %}
-          </tbody>
-        </table>
+      <div class="subject-cards-grid" role="list">
+        {% for row in subject_breakdown %}
+          <a
+            href="{% url 'accounts:student_subject_progress' student.uuid row.subject_id %}"
+            class="subject-perf-card subject-perf-card--{% cycle '0' '1' '2' '3' %}{% if row.attempts %}{% if row.avg_score >= 70 %} subject-perf-card--high{% elif row.avg_score >= 40 %} subject-perf-card--mid{% else %} subject-perf-card--low{% endif %}{% else %} subject-perf-card--empty{% endif %}"
+            role="listitem"
+          >
+            <div class="subject-perf-top">
+              <div class="subject-perf-icon" aria-hidden="true">&#128218;</div>
+              <div class="subject-perf-score-wrap">
+                {% if row.attempts %}
+                  <div class="subject-perf-score">{{ row.avg_score|floatformat:1 }}%</div>
+                  <div class="subject-perf-score-label">Avg score</div>
+                {% else %}
+                  <div class="subject-perf-score subject-perf-score--muted">—</div>
+                  <div class="subject-perf-score-label">Not started</div>
+                {% endif %}
+              </div>
+            </div>
+
+            <h3 class="subject-perf-name">{{ row.quiz__subject__name }}</h3>
+
+            <div class="subject-perf-progress" aria-hidden="true">
+              <div
+                class="subject-perf-progress-fill"
+                style="width: {% if row.attempts %}{% widthratio row.avg_score 100 100 %}{% else %}0{% endif %}%;"
+              ></div>
+            </div>
+
+            <div class="subject-perf-meta">
+              <span><strong>{{ row.attempts }}</strong> quiz{{ row.attempts|pluralize:"zes" }}</span>
+              <span>Best <strong>{% if row.attempts and row.best_score %}{{ row.best_score }}%{% else %}—{% endif %}</strong></span>
+            </div>
+
+            <span class="subject-perf-cta">View progress</span>
+          </a>
+        {% endfor %}
       </div>
     {% else %}
       <div class="empty-state">

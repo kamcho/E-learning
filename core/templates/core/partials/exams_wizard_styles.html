@@ -280,8 +280,20 @@
     gap: var(--space-md);
   }
 
+  .subject-browser-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-md);
+  }
+
   @media (max-width: 900px) {
-    .ew-choice-grid { grid-template-columns: 1fr; }
+    .ew-choice-grid,
+    .subject-browser-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+
+  @media (max-width: 640px) {
+    .ew-choice-grid,
+    .subject-browser-grid { grid-template-columns: 1fr; }
   }
 
   .ew-choice-card {

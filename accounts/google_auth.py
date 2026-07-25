@@ -9,21 +9,28 @@ class GoogleAuthError(Exception):
     pass
 
 
+def get_google_client_ids():
+    """Return configured Google OAuth Web client IDs."""
+    return list(getattr(settings, 'GOOGLE_CLIENT_IDS', []) or [])
+
+
 def verify_google_credential(credential):
     """Verify a Google Identity Services ID token and return the token claims."""
-    if not settings.GOOGLE_CLIENT_ID:
+    client_ids = get_google_client_ids()
+    if not client_ids:
         raise GoogleAuthError('Google Sign-In is not configured.')
 
     try:
         idinfo = id_token.verify_oauth2_token(
             credential,
             google_requests.Request(),
-            settings.GOOGLE_CLIENT_ID,
+            client_ids[0] if len(client_ids) == 1 else client_ids,
         )
     except ValueError as exc:
         raise GoogleAuthError('Invalid Google sign-in token.') from exc
 
-    if idinfo.get('aud') != settings.GOOGLE_CLIENT_ID:
+    audience = idinfo.get('aud')
+    if audience not in client_ids:
         raise GoogleAuthError('Google token audience mismatch.')
 
     if not idinfo.get('email_verified'):

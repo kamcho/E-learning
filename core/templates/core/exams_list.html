@@ -9,8 +9,8 @@
 {% if request.user.is_guardian and not staff_exams_browse %}
 {% include 'accounts/partials/guardian_dashboard_crimson_theme.html' %}
 {% include 'core/partials/exams_list_crimson_theme.html' %}
-{% include 'core/partials/exams_wizard_styles.html' %}
 {% endif %}
+{% include 'core/partials/exams_wizard_styles.html' %}
 <style>
   /* ── Filter bar ── */
   .filter-bar {
@@ -89,11 +89,11 @@
 
   .subject-browser-grid {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: var(--space-lg);
   }
 
-  @media (max-width: 1200px) {
+  @media (max-width: 900px) {
     .subject-browser-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   }
 
@@ -1949,16 +1949,22 @@
     <p style="font-size: 1.05rem; font-weight: 600; margin-bottom: var(--space-sm);">No ready-made tests yet</p>
     <p style="color: var(--clr-text-light); font-size: 0.9rem;">
       {% if active_grade or active_subject or active_strand or active_sub_strand or active_difficulty or search %}
-        {% if selected_student %}We can create a custom test for {{ selected_student.first_name }} based on your choices.{% else %}Try the exam guide to pick a grade, subject, and topic — we'll match or create a test.{% endif %}
+        {% if selected_student and active_subject %}
+          No questions are available yet for this topic. Try another subject, strand, or difficulty.
+        {% elif selected_student %}
+          Pick a subject above to see tests for {{ selected_student.first_name }}.
+        {% else %}
+          Try the exam guide to pick a grade, subject, and topic.
+        {% endif %}
       {% else %}
-        {% if selected_student and active_subject %}We can create a custom test for {{ selected_student.first_name }} in {{ active_subject.name }}.{% elif selected_student %}Pick a subject above to see tests for {{ selected_student.first_name }}.{% else %}Use the exam guide to get started.{% endif %}
+        {% if selected_student %}Pick a subject above to see tests for {{ selected_student.first_name }}.{% else %}Use the exam guide to get started.{% endif %}
       {% endif %}
     </p>
     {% if selected_student and not learner_grade_missing %}
-      {% if active_subject %}
-        <button type="button" class="btn btn-primary exam-finder-btn" id="empty-open-wizard-btn" style="margin-top: var(--space-lg);">Create custom test</button>
-      {% elif not show_subject_browser %}
+      {% if not active_subject and not show_subject_browser %}
         <a href="{% url 'core:exams_list' %}?student={{ selected_student.uuid }}" class="btn btn-primary" style="margin-top: var(--space-lg);">Choose a subject</a>
+      {% elif active_subject %}
+        <a href="{% url 'core:exams_list' %}?student={{ selected_student.uuid }}" class="btn btn-primary" style="margin-top: var(--space-lg);">Choose another subject</a>
       {% endif %}
     {% elif active_grade or active_subject or active_strand or active_sub_strand or active_difficulty or search %}
       <a href="{% url 'core:exams_list' %}{% if selected_student %}?student={{ selected_student.uuid }}{% endif %}" class="btn btn-primary" style="margin-top: var(--space-lg);">Clear Filters</a>
@@ -2414,6 +2420,7 @@
         params.set('student', studentUuid);
         if (state.grade) params.set('grade', state.grade);
         if (state.subject) params.set('subject', state.subject);
+        if (state.scope === 'general') params.set('scope', 'general');
         if (state.scope === 'strand' && state.strand) params.set('strand', state.strand);
         if (state.subStrand) params.set('sub_strand', state.subStrand);
         if (state.difficulty) params.set('difficulty', state.difficulty);

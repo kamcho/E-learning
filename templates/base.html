@@ -779,6 +779,10 @@
       align-items: center;
     }
 
+    .app-layout--standalone .app-main-area {
+      max-width: 100%;
+    }
+
     body.app-body--auth .app-header-brand {
       display: flex;
     }
@@ -840,11 +844,13 @@
 
   <header class="app-header">
     <div class="app-header-inner">
+      {% block app_nav_toggle %}
       {% if request.resolver_match.view_name != 'accounts:signin' and request.resolver_match.view_name != 'accounts:signup' %}
       <button type="button" class="app-nav-toggle" id="app-nav-toggle" aria-label="Open navigation menu" aria-expanded="false" aria-controls="app-sidebar">
         <span></span>
       </button>
       {% endif %}
+      {% endblock app_nav_toggle %}
 
       <a href="{% url 'core:landing' %}" class="app-header-brand">
         <span class="logo-icon">S</span>
@@ -915,14 +921,18 @@
     </div>
   </header>
 
+  {% block app_sidebar_overlay %}
   {% if request.resolver_match.view_name != 'accounts:signin' and request.resolver_match.view_name != 'accounts:signup' %}
   <div class="app-sidebar-overlay" id="app-sidebar-overlay" aria-hidden="true"></div>
   {% endif %}
+  {% endblock app_sidebar_overlay %}
 
-  <div class="app-layout{% if request.resolver_match.view_name == 'accounts:signin' or request.resolver_match.view_name == 'accounts:signup' %} app-layout--auth{% endif %}">
+  <div class="app-layout{% if request.resolver_match.view_name == 'accounts:signin' or request.resolver_match.view_name == 'accounts:signup' %} app-layout--auth{% endif %}{% block app_layout_class %}{% endblock %}">
+    {% block app_sidebar %}
     {% if request.resolver_match.view_name != 'accounts:signin' and request.resolver_match.view_name != 'accounts:signup' %}
     {% include 'accounts/admin_sidebar.html' %}
     {% endif %}
+    {% endblock app_sidebar %}
 
     <main class="app-main-area {% block main_extra_class %}{% endblock %}">
       {% if messages %}

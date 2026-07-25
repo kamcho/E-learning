@@ -142,6 +142,117 @@ chown elearning:www-data /srv/elearning/.env
 chmod 640 /srv/elearning/.env
 ```
 
+### Google Sign-In (Google Cloud Console)
+
+Soma Smart uses **Google Identity Services** (browser ID token). You need an **OAuth consent screen** and a **Web application OAuth Client ID**. No client secret is required.
+
+#### A. Create / select a Google Cloud project
+
+1. Open [Google Cloud Console](https://console.cloud.google.com/).
+2. Click the project dropdown (top bar) → **New Project**.
+3. Name it e.g. `Soma Smart` → **Create**.
+4. Make sure that project is selected.
+
+#### B. Configure the OAuth consent screen
+
+1. Go to **APIs & Services** → **[OAuth consent screen](https://console.cloud.google.com/apis/credentials/consent)**.
+2. User type:
+   - Choose **External** (for guardians signing in with personal Gmail accounts).
+   - Click **Create**.
+3. **App information**
+   - App name: `Soma Smart`
+   - User support email: your email
+   - App logo: optional
+4. **App domain**
+   - Application home page: `https://somasmartassesments.com`
+   - Application privacy policy link: `https://somasmartassesments.com/privacy/`
+   - Application terms of service link: optional (leave blank if you don’t have one yet)
+5. **Authorized domains**
+   - Add: `somasmartassesments.com`
+6. **Developer contact information**
+   - Add your email → **Save and Continue**.
+7. **Scopes**
+   - Click **Add or Remove Scopes**.
+   - Keep only the default OpenID scopes (usually already selected):
+     - `openid`
+     - `.../auth/userinfo.email`
+     - `.../auth/userinfo.profile`
+   - Do **not** add Gmail, Drive, or other sensitive scopes.
+   - **Save and Continue**.
+8. **Test users** (while app is in Testing)
+   - Add the Gmail addresses you will use to test sign-in.
+   - **Save and Continue** → **Back to Dashboard**.
+9. Publishing:
+   - While developing, leave status as **Testing** (only test users can sign in).
+   - When ready for the public, click **Publish App** (may require Google verification if you later add sensitive scopes — basic sign-in usually does not).
+
+#### C. Create the OAuth Client ID (Web)
+
+1. Go to **APIs & Services** → **[Credentials](https://console.cloud.google.com/apis/credentials)**.
+2. Click **+ Create Credentials** → **OAuth client ID**.
+3. Application type: **Web application**.
+4. Name: e.g. `Soma Smart Web`.
+5. **Authorized JavaScript origins** (add each exactly, no trailing slash):
+
+   | Environment | Origin |
+   |---|---|
+   | Production | `https://somasmartassesments.com` |
+   | Production www | `https://www.somasmartassesments.com` |
+   | Local dev | `http://127.0.0.1:8000` |
+   | Local dev (optional) | `http://localhost:8000` |
+
+6. **Authorized redirect URIs**
+   - Not required for this GIS ID-token button flow. You can leave this empty unless Google’s UI forces a placeholder.
+7. Click **Create**.
+8. Copy the **Client ID** (ends with `.apps.googleusercontent.com`).
+   - You do **not** need the Client Secret for this app.
+
+#### D. Put the Client ID in your app
+
+**Local `.env`:**
+
+```env
+GOOGLE_CLIENT_ID=123456789-abc.apps.googleusercontent.com
+```
+
+**Production** (`/srv/elearning/.env` on the droplet):
+
+```env
+GOOGLE_CLIENT_ID=123456789-abc.apps.googleusercontent.com
+```
+
+Then restart the app:
+
+```bash
+systemctl restart elearning
+```
+
+If the button still doesn’t show, confirm `GOOGLE_CLIENT_ID` is loaded and restart the Django/gunicorn process.
+
+#### E. Test sign-in
+
+1. Open `https://somasmartassesments.com/accounts/signin/` (or `http://127.0.0.1:8000/accounts/signin/` locally).
+2. You should see the Google button under the phone/PIN form.
+3. Sign in with a **test user** Gmail (if the consent screen is still in Testing).
+4. New Google users are sent to **link phone + PIN** (`/accounts/complete-profile/` or similar) for backup login.
+
+#### Common errors
+
+| Symptom | Fix |
+|---|---|
+| No Google button | `GOOGLE_CLIENT_ID` missing/wrong; restart app |
+| `origin_mismatch` / blocked | Add the exact site origin under Authorized JavaScript origins |
+| Stuck on `accounts.google.com/gsi/transform` | App must send `Cross-Origin-Opener-Policy: same-origin-allow-popups` (already set in Django settings). Restart the server, hard-refresh, try Chrome with third-party sign-in enabled. Also ensure JS origins match the URL you use (`127.0.0.1` vs `localhost`) |
+| `access_denied` / app not verified | Add your Gmail as a Test user, or Publish the app |
+| Privacy policy rejected | Confirm `https://somasmartassesments.com/privacy/` loads publicly |
+
+#### Console checklist (copy into OAuth form)
+
+- Home page: `https://somasmartassesments.com`
+- Privacy policy: `https://somasmartassesments.com/privacy/`
+- Authorized domain: `somasmartassesments.com`
+- JS origins: production HTTPS + `http://127.0.0.1:8000` for local
+
 ## 9. Migrate, collect static, create admin
 
 ```bash

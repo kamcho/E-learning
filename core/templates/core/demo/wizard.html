@@ -44,7 +44,7 @@
       <div class="ew-step-card">
         <div class="ew-step-active-head">
           <div class="ew-step-active-icon" aria-hidden="true">
-            {% if phase == 'subject' %}📚{% elif phase == 'scope' %}🎯{% elif phase == 'strand' or phase == 'sub_strand' %}🧵{% else %}✅{% endif %}
+            {% if phase == 'grade' %}🏫{% elif phase == 'subject' %}📚{% elif phase == 'scope' %}🎯{% elif phase == 'strand' or phase == 'sub_strand' %}🧵{% else %}✅{% endif %}
           </div>
           <div>
             <h2 class="ew-step-active-title">{{ demo_wizard.current_label }}</h2>
@@ -53,8 +53,29 @@
         </div>
         <div class="ew-step-body">
 
-          {% if phase == 'subject' or not active_subject %}
+          {% if phase == 'grade' %}
+          <div class="ew-choice-grid">
+            {% for gl in all_grades %}
+            <a href="{% url 'core:demo_wizard' %}?grade={{ gl.slug }}"
+               class="ew-choice-card ew-choice-card--{% cycle '0' '1' '2' %}">
+              <span class="ew-choice-icon-wrap">🏫</span>
+              <span class="ew-choice-name">{{ gl.name }}</span>
+              {% if gl.level %}<span class="ew-choice-desc">{{ gl.level }}</span>{% endif %}
+            </a>
+            {% empty %}
+            <p class="demo-empty">No grades are available yet.</p>
+            {% endfor %}
+            <a href="{% url 'core:demo_wizard' %}?grade=all"
+               class="ew-choice-card ew-choice-card--0">
+              <span class="ew-choice-icon-wrap">📚</span>
+              <span class="ew-choice-name">All grades</span>
+              <span class="ew-choice-desc">Browse every subject</span>
+            </a>
+          </div>
+
+          {% elif phase == 'subject' or not active_subject %}
           <div class="grade-tabs" style="margin-bottom: var(--space-lg);">
+            <a href="{% url 'core:demo_wizard' %}" class="grade-tab">Change grade</a>
             <a href="{% url 'core:demo_wizard' %}?grade=all" class="grade-tab{% if browse_all_grades %} active{% endif %}">All grades</a>
             {% for gl in all_grades %}
               <a href="{% url 'core:demo_wizard' %}?grade={{ gl.slug }}" class="grade-tab{% if active_grade and active_grade.pk == gl.pk and not browse_all_grades %} active{% endif %}">{{ gl.name }}</a>

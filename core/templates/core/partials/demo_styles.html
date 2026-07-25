@@ -1,4 +1,5 @@
 <style>
+  /* Demo dark tokens (default when site theme is dark) */
   body.demo-page {
     --demo-purple: #7c3aed;
     --demo-purple-dark: #6d28d9;
@@ -12,6 +13,10 @@
     --demo-accent: #3dd6c6;
     --demo-warm: #f4a261;
     --demo-crimson: #c41e3a;
+    --demo-hero: linear-gradient(135deg, #6d28d9 0%, #4c1d95 55%, #1e1b4b 100%);
+    --demo-hero-text: #ffffff;
+    --demo-hero-muted: rgba(255, 255, 255, 0.82);
+    --demo-spinner-track: rgba(238, 241, 255, 0.18);
     color-scheme: dark;
 
     --clr-bg: var(--demo-bg);
@@ -21,6 +26,27 @@
     --clr-text-muted: var(--demo-muted);
     --clr-border: var(--demo-border);
     --clr-primary: var(--demo-purple);
+  }
+
+  /* Demo light tokens when site theme is light */
+  html[data-theme="light"] body.demo-page {
+    --demo-purple: #6d28d9;
+    --demo-purple-dark: #5b21b6;
+    --demo-purple-soft: rgba(109, 40, 217, 0.1);
+    --demo-bg: #f5f3ff;
+    --demo-surface: #ffffff;
+    --demo-surface-alt: #f3f0ff;
+    --demo-border: rgba(76, 29, 149, 0.12);
+    --demo-text: #1e1b4b;
+    --demo-muted: #5b567a;
+    --demo-accent: #0d9488;
+    --demo-warm: #c2410c;
+    --demo-crimson: #c41e3a;
+    --demo-hero: linear-gradient(135deg, #7c3aed 0%, #6d28d9 55%, #4c1d95 100%);
+    --demo-hero-text: #ffffff;
+    --demo-hero-muted: rgba(255, 255, 255, 0.88);
+    --demo-spinner-track: rgba(30, 27, 75, 0.12);
+    color-scheme: light;
   }
 
   body.demo-page.app-body {
@@ -46,8 +72,8 @@
     padding: 1.35rem 1.4rem;
     margin-bottom: var(--space-lg);
     border-radius: 18px;
-    background: linear-gradient(135deg, #6d28d9 0%, #4c1d95 55%, #1e1b4b 100%);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--demo-hero);
+    border: 1px solid var(--demo-border);
   }
 
   .demo-hero-kicker {
@@ -55,7 +81,7 @@
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.06em;
-    color: rgba(255, 255, 255, 0.75);
+    color: var(--demo-hero-muted);
     margin: 0 0 0.35rem;
   }
 
@@ -63,13 +89,13 @@
     font-family: var(--font-heading);
     font-size: 1.65rem;
     font-weight: 800;
-    color: #fff;
+    color: var(--demo-hero-text);
     margin: 0 0 0.35rem;
   }
 
   .demo-hero-sub {
     font-size: 0.9rem;
-    color: rgba(255, 255, 255, 0.82);
+    color: var(--demo-hero-muted);
     line-height: 1.5;
     margin: 0;
     max-width: 38rem;
@@ -425,8 +451,77 @@
   }
 
   .demo-ai-loading {
-    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 0.9rem 1rem;
+    border-radius: 14px;
+    border: 1px solid rgba(124, 58, 237, 0.28);
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.14), rgba(61, 214, 198, 0.06));
+  }
+
+  .demo-ai-loading[hidden] {
+    display: none !important;
+  }
+
+  .demo-ai-spinner {
+    width: 1.55rem;
+    height: 1.55rem;
+    border-radius: 50%;
+    border: 2.5px solid var(--demo-spinner-track);
+    border-top-color: var(--demo-accent);
+    border-right-color: var(--demo-purple);
+    animation: demo-ai-spin 0.75s linear infinite;
+    flex-shrink: 0;
+  }
+
+  .demo-ai-loading-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    min-width: 0;
+  }
+
+  .demo-ai-loading-title {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: var(--demo-text);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.15rem;
+  }
+
+  .demo-ai-dots {
+    display: inline-flex;
+    gap: 0.18rem;
+    margin-left: 0.15rem;
+  }
+
+  .demo-ai-dots span {
+    width: 0.28rem;
+    height: 0.28rem;
+    border-radius: 50%;
+    background: var(--demo-accent);
+    opacity: 0.35;
+    animation: demo-ai-bounce 1.1s ease-in-out infinite;
+  }
+
+  .demo-ai-dots span:nth-child(2) { animation-delay: 0.15s; }
+  .demo-ai-dots span:nth-child(3) { animation-delay: 0.3s; }
+
+  .demo-ai-loading-sub {
+    font-size: 0.78rem;
     color: var(--demo-muted);
+    line-height: 1.35;
+  }
+
+  @keyframes demo-ai-spin {
+    to { transform: rotate(360deg); }
+  }
+
+  @keyframes demo-ai-bounce {
+    0%, 80%, 100% { opacity: 0.3; transform: translateY(0); }
+    40% { opacity: 1; transform: translateY(-3px); }
   }
 
   .demo-ai-text {

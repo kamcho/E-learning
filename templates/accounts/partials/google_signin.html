@@ -4,7 +4,7 @@
     display: flex;
     align-items: center;
     gap: var(--space-md);
-    margin: var(--space-xl) 0;
+    margin: 1.35rem 0;
     color: var(--clr-text-light);
     font-size: 0.82rem;
     font-weight: 500;
@@ -22,6 +22,13 @@
     display: flex;
     justify-content: center;
     min-height: 44px;
+    width: 100%;
+  }
+
+  .google-signin-wrap .google-signin-mount {
+    width: 100%;
+    max-width: 360px;
+    min-height: 44px;
   }
 
   .google-signin-error {
@@ -35,30 +42,46 @@
   .google-signin-error.is-visible {
     display: block;
   }
+
+  .google-signin-fallback {
+    margin: 0;
+    font-size: 0.82rem;
+    color: var(--clr-text-muted);
+    text-align: center;
+  }
 </style>
 
-<div class="auth-divider">or continue with</div>
+{% if google_divider_before %}
+<div class="auth-divider">{{ google_divider_before }}</div>
+{% endif %}
 
 <div class="google-signin-wrap">
   <div
-    id="googleSignInButton"
+    class="google-signin-mount"
+    id="{{ google_button_id|default:'googleSignInButton' }}"
     data-client-id="{{ google_client_id }}"
     data-auth-url="{% url 'accounts:google_auth' %}"
     data-next="{{ next|default:'' }}"
-  ></div>
+    data-button-text="{{ google_button_text|default:'continue_with' }}"
+  >
+    <p class="google-signin-fallback">Loading Google Sign-In…</p>
+  </div>
 </div>
-<p id="googleSignInError" class="google-signin-error" role="alert"></p>
+<p class="google-signin-error" id="{{ google_button_id|default:'googleSignInButton' }}-error" role="alert"></p>
 
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script>
 (function () {
-  var mount = document.getElementById('googleSignInButton');
+  var mountId = '{{ google_button_id|default:"googleSignInButton" }}';
+  var mount = document.getElementById(mountId);
   if (!mount) return;
 
   var clientId = mount.dataset.clientId;
   var authUrl = mount.dataset.authUrl;
   var nextUrl = mount.dataset.next || '';
-  var errorEl = document.getElementById('googleSignInError');
+  var buttonText = mount.dataset.buttonText || 'continue_with';
+  var errorEl = document.getElementById(mountId + '-error');
+  var tries = 0;
 
   function getCookie(name) {
     var match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
@@ -103,8 +126,13 @@
   }
 
   function initGoogleButton() {
+    tries += 1;
     if (!window.google || !google.accounts || !google.accounts.id) {
-      window.setTimeout(initGoogleButton, 100);
+      if (tries < 50) {
+        window.setTimeout(initGoogleButton, 100);
+        return;
+      }
+      showError('Could not load Google Sign-In. Check your connection and refresh.');
       return;
     }
 
@@ -113,19 +141,31 @@
       callback: handleCredential,
       auto_select: false,
       cancel_on_tap_outside: true,
+      // FedCM can be flaky on localhost; classic button popup is more reliable in local dev.
+      use_fedcm_for_button: false,
+      itp_support: true,
     });
 
+    if (window.console && console.info) {
+      console.info('[Soma Smart Google Sign-In] origin=', window.location.origin, 'client_id=', clientId);
+    }
+
+    mount.innerHTML = '';
     google.accounts.id.renderButton(mount, {
       type: 'standard',
       theme: 'outline',
       size: 'large',
-      text: 'continue_with',
+      text: buttonText,
       shape: 'pill',
-      width: Math.min(mount.parentElement.clientWidth, 360),
+      width: Math.min(mount.clientWidth || mount.parentElement.clientWidth || 320, 360),
     });
   }
 
   initGoogleButton();
 })();
 </script>
+{% else %}
+<p class="google-signin-fallback" style="text-align:center;color:var(--clr-text-muted);font-size:0.85rem;">
+  Google Sign-In is not configured. Set <code>GOOGLE_CLIENT_ID</code> in <code>.env</code> and restart the server.
+</p>
 {% endif %}

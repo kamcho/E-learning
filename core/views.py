@@ -45,6 +45,21 @@ def landing_page(request):
     })
 
 
+def privacy_policy_view(request):
+    """Public privacy policy page (required for Google Sign-In / OAuth)."""
+    from django.conf import settings
+
+    return render(request, 'core/privacy_policy.html', {
+        'privacy_contact_email': getattr(
+            settings,
+            'PRIVACY_CONTACT_EMAIL',
+            'privacy@somasmartassesments.com',
+        ),
+        'site_name': 'Soma Smart',
+        'policy_effective_date': '22 July 2026',
+    })
+
+
 def _resolve_next_url(next_param):
     """Return a safe redirect target from ?next= or fall back to exams list."""
     if next_param and next_param.startswith('/'):
@@ -1166,6 +1181,104 @@ def _exam_question_count(quiz):
     return sum(1 for question in quiz.questions.all() if question.is_active)
 
 
+def _should_auto_create_custom_exam(
+    *,
+    wizard_phase,
+    exam_entries,
+    active_subject,
+    selected_student,
+    learner_grade_missing,
+    require_learner_selection,
+    show_subject_browser,
+    show_scope_browser,
+    show_strand_browser,
+    show_sub_strand_browser,
+):
+    if wizard_phase != 'tests':
+        return False
+    if exam_entries:
+        return False
+    if not active_subject:
+        return False
+    if require_learner_selection or learner_grade_missing:
+        return False
+    if not selected_student:
+        return False
+    if any([
+        show_subject_browser,
+        show_scope_browser,
+        show_strand_browser,
+        show_sub_strand_browser,
+    ]):
+        return False
+    return True
+
+
+def _maybe_auto_create_custom_exam(
+    request,
+    *,
+    wizard_phase,
+    exam_entries,
+    active_subject,
+    active_strand,
+    active_sub_strand,
+    scope,
+    difficulty,
+    selected_student,
+    learner_grade_missing,
+    require_learner_selection,
+    show_subject_browser,
+    show_scope_browser,
+    show_strand_browser,
+    show_sub_strand_browser,
+):
+    if not _should_auto_create_custom_exam(
+        wizard_phase=wizard_phase,
+        exam_entries=exam_entries,
+        active_subject=active_subject,
+        selected_student=selected_student,
+        learner_grade_missing=learner_grade_missing,
+        require_learner_selection=require_learner_selection,
+        show_subject_browser=show_subject_browser,
+        show_scope_browser=show_scope_browser,
+        show_strand_browser=show_strand_browser,
+        show_sub_strand_browser=show_sub_strand_browser,
+    ):
+        return None
+
+    from core.custom_quiz import find_or_create_custom_quiz, resolve_custom_quiz_scope
+
+    strand, sub_strand = resolve_custom_quiz_scope(
+        scope=scope,
+        active_strand=active_strand,
+        active_sub_strand=active_sub_strand,
+    )
+    quiz = find_or_create_custom_quiz(
+        user=request.user,
+        subject=active_subject,
+        strand=strand,
+        sub_strand=sub_strand,
+        difficulty=difficulty,
+    )
+    if not quiz:
+        messages.warning(
+            request,
+            f'No questions are available yet for {active_subject.name}. '
+            'Try another subject or topic.',
+        )
+        return None
+
+    messages.info(
+        request,
+        f'Created a custom test for {selected_student.first_name}: {quiz.title}.',
+    )
+    return redirect(
+        'core:test_info',
+        quiz_uuid=quiz.uuid,
+        student_uuid=selected_student.uuid,
+    )
+
+
 def _exams_list_return_query(request, student=None):
     params = {}
     grade = request.GET.get('grade', '').strip()
@@ -1926,7 +2039,7 @@ def exams_list_view(request):
         show_scope_browser or show_strand_browser or show_sub_strand_browser
     )
 
-    if strand_slug and active_subject:
+    if scope != 'general' and strand_slug and active_subject:
         active_strand = Strand.objects.filter(
             slug=strand_slug, subject=active_subject, is_active=True,
         ).first()
@@ -1935,7 +2048,7 @@ def exams_list_view(request):
         else:
             active_strand = None
 
-    if active_strand:
+    if active_strand and scope != 'general':
         filter_sub_strands = sub_strands_for_quizzes(
             base_quizzes.filter(subject=active_subject, strand=active_strand),
             strand=active_strand,
@@ -1943,7 +2056,7 @@ def exams_list_view(request):
     else:
         filter_sub_strands = SubStrand.objects.none()
 
-    if sub_strand_slug and active_subject:
+    if scope != 'general' and sub_strand_slug and active_subject:
         active_sub_strand = SubStrand.objects.filter(
             slug=sub_strand_slug,
             strand__subject=active_subject,
@@ -1956,6 +2069,8 @@ def exams_list_view(request):
             active_sub_strand = None
 
     if scope == 'general' and active_subject:
+        active_strand = None
+        active_sub_strand = None
         quizzes = quizzes.filter(strand__isnull=True, sub_strand__isnull=True)
 
     if difficulty:
@@ -2037,6 +2152,26 @@ def exams_list_view(request):
             filterable_grade_levels=filterable_grade_levels,
             staff_exams_browse=staff_exams_browse,
         )
+
+    auto_create_response = _maybe_auto_create_custom_exam(
+        request,
+        wizard_phase=wizard_phase,
+        exam_entries=exam_entries,
+        active_subject=active_subject,
+        active_strand=active_strand,
+        active_sub_strand=active_sub_strand,
+        scope=scope,
+        difficulty=difficulty,
+        selected_student=selected_student,
+        learner_grade_missing=learner_grade_missing,
+        require_learner_selection=require_learner_selection,
+        show_subject_browser=show_subject_browser,
+        show_scope_browser=show_scope_browser,
+        show_strand_browser=show_strand_browser,
+        show_sub_strand_browser=show_sub_strand_browser,
+    )
+    if auto_create_response:
+        return auto_create_response
 
     context = {
         'quizzes': quizzes,

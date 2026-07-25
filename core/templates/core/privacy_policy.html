@@ -1,0 +1,339 @@
+{% extends "base.html" %}
+
+{% block title %}Privacy Policy — Soma Smart{% endblock %}
+
+{% block app_nav_toggle %}{% endblock %}
+{% block app_sidebar_overlay %}{% endblock %}
+{% block app_sidebar %}{% endblock %}
+{% block app_layout_class %} app-layout--standalone{% endblock %}
+
+{% block content %}
+<style>
+  .legal-page {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: var(--space-xl) 0 var(--space-3xl);
+  }
+
+  .legal-kicker {
+    display: inline-block;
+    margin: 0 0 var(--space-sm);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--clr-primary);
+  }
+
+  .legal-title {
+    margin: 0 0 var(--space-sm);
+    font-family: var(--font-heading);
+    font-size: clamp(1.75rem, 3vw, 2.25rem);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    color: var(--clr-text);
+  }
+
+  .legal-meta {
+    margin: 0 0 var(--space-2xl);
+    font-size: 0.9rem;
+    color: var(--clr-text-muted);
+  }
+
+  .legal-toc {
+    list-style: none;
+    margin: 0 0 var(--space-2xl);
+    padding: 1rem 1.15rem;
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-lg);
+    background: var(--clr-surface);
+    display: grid;
+    gap: 0.45rem;
+  }
+
+  .legal-toc a {
+    color: var(--clr-primary);
+    font-weight: 600;
+    font-size: 0.9rem;
+    text-decoration: none;
+  }
+
+  .legal-toc a:hover { text-decoration: underline; }
+
+  .legal-section {
+    margin-bottom: var(--space-2xl);
+    scroll-margin-top: 5rem;
+  }
+
+  .legal-section h2 {
+    margin: 0 0 var(--space-md);
+    font-family: var(--font-heading);
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: var(--clr-text);
+  }
+
+  .legal-section p,
+  .legal-section li {
+    font-size: 0.95rem;
+    line-height: 1.65;
+    color: var(--clr-text-muted);
+  }
+
+  .legal-section p { margin: 0 0 var(--space-md); }
+
+  .legal-section ul {
+    margin: 0 0 var(--space-md);
+    padding-left: 1.2rem;
+  }
+
+  .legal-section li { margin-bottom: 0.45rem; }
+
+  .legal-callout {
+    margin: var(--space-md) 0;
+    padding: 1rem 1.1rem;
+    border-left: 3px solid var(--clr-primary);
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
+    background: rgba(13, 138, 78, 0.08);
+  }
+
+  .legal-callout p {
+    margin: 0;
+    color: var(--clr-text);
+    font-weight: 600;
+  }
+
+  .legal-contact a {
+    color: var(--clr-primary);
+    font-weight: 700;
+  }
+</style>
+
+<article class="legal-page">
+  <p class="legal-kicker">Legal</p>
+  <h1 class="legal-title">Privacy Policy</h1>
+  <p class="legal-meta">
+    Effective date: {{ policy_effective_date }} · Applies to {{ site_name }}
+    (somasmartassesments.com) and related services.
+  </p>
+
+  <p>
+    This Privacy Policy explains how {{ site_name }} (“we”, “us”, or “our”)
+    collects, uses, stores, and shares information when you use our CBC e-learning
+    platform, including when you sign in with Google.
+  </p>
+
+  <ol class="legal-toc" aria-label="Privacy policy contents">
+    <li><a href="#who-we-are">1. Who we are</a></li>
+    <li><a href="#google-user-data">2. Google user data (Google Sign-In)</a></li>
+    <li><a href="#other-data">3. Other information we collect</a></li>
+    <li><a href="#how-we-use">4. How we use information</a></li>
+    <li><a href="#sharing">5. How we share information</a></li>
+    <li><a href="#retention">6. Retention and deletion</a></li>
+    <li><a href="#security">7. Security</a></li>
+    <li><a href="#children">8. Children and learners</a></li>
+    <li><a href="#your-choices">9. Your choices and rights</a></li>
+    <li><a href="#changes">10. Changes to this policy</a></li>
+    <li><a href="#contact">11. Contact us</a></li>
+  </ol>
+
+  <section class="legal-section" id="who-we-are">
+    <h2>1. Who we are</h2>
+    <p>
+      {{ site_name }} provides online CBC learning and exam practice for Kenyan
+      families (PP1–Grade 9), including practice questions, progress tracking,
+      subscriptions, and AI-assisted answer explanations.
+    </p>
+    <p>
+      Website: <strong>https://somasmartassesments.com</strong>
+    </p>
+  </section>
+
+  <section class="legal-section" id="google-user-data">
+    <h2>2. Google user data (Google Sign-In)</h2>
+    <p>
+      If you choose <strong>Sign in with Google</strong>, we use Google Identity
+      Services (OAuth / OpenID Connect) for authentication only. We request the
+      basic profile information needed to create or sign in to your {{ site_name }} account.
+    </p>
+
+    <h3 style="font-size:1rem;font-weight:700;color:var(--clr-text);margin:0 0 0.65rem;">Google user data we access</h3>
+    <ul>
+      <li><strong>Google user ID</strong> (the unique <code>sub</code> identifier)</li>
+      <li><strong>Email address</strong> (and whether it is verified by Google)</li>
+      <li><strong>Name</strong> (given name and family name, when provided by Google)</li>
+    </ul>
+    <p>
+      We do <strong>not</strong> request access to your Gmail, Google Drive, Contacts,
+      Calendar, or other Google Workspace content. We only use Google Sign-In to
+      authenticate you and obtain the profile fields listed above.
+    </p>
+
+    <h3 style="font-size:1rem;font-weight:700;color:var(--clr-text);margin:0 0 0.65rem;">How we use Google user data</h3>
+    <ul>
+      <li>To verify your identity and sign you into {{ site_name }}</li>
+      <li>To create or link your {{ site_name }} account</li>
+      <li>To display your name in the product and send account-related emails when needed</li>
+      <li>To prevent duplicate accounts and secure your login session</li>
+    </ul>
+
+    <div class="legal-callout">
+      <p>
+        Limited use: Google user data is used only to provide or improve
+        user-facing features of {{ site_name }} (account authentication and
+        profile). We do not sell Google user data. We do not use Google user
+        data for advertising, personalized ads, credit scoring, or lending.
+        We do not use Google user data to develop, improve, or train
+        generalized AI or machine-learning models.
+      </p>
+    </div>
+
+    <h3 style="font-size:1rem;font-weight:700;color:var(--clr-text);margin:0 0 0.65rem;">How we store Google user data</h3>
+    <p>
+      We store your Google user ID, email, and name in our application database
+      as part of your {{ site_name }} user record, together with session data
+      needed to keep you signed in.
+    </p>
+
+    <h3 style="font-size:1rem;font-weight:700;color:var(--clr-text);margin:0 0 0.65rem;">How we share Google user data</h3>
+    <p>
+      We do not sell or rent Google user data. We do not share Google user data
+      with third parties for advertising. We may disclose Google user data only:
+    </p>
+    <ul>
+      <li>To infrastructure and service providers that help us operate the service
+        (for example hosting, email delivery, or security), under contractual
+        obligations to protect the data and use it only for providing those services</li>
+      <li>When required by law, regulation, or valid legal process</li>
+      <li>To protect the rights, safety, and security of {{ site_name }}, our users, or the public</li>
+      <li>With your direction or consent</li>
+    </ul>
+  </section>
+
+  <section class="legal-section" id="other-data">
+    <h2>3. Other information we collect</h2>
+    <p>Depending on how you use {{ site_name }}, we may also collect:</p>
+    <ul>
+      <li><strong>Account details:</strong> phone number, PIN (stored as a secure hash), role (e.g. guardian)</li>
+      <li><strong>Learner profiles:</strong> names, grade level, and related details you add for linked learners</li>
+      <li><strong>Learning activity:</strong> exam attempts, answers, scores, and progress</li>
+      <li><strong>Payments:</strong> subscription and M-Pesa payment references needed to activate plans (we do not store full card numbers)</li>
+      <li><strong>Technical data:</strong> IP address, browser type, device information, and cookies/local storage for sessions and preferences (such as theme)</li>
+      <li><strong>Support communications:</strong> messages you send us about your account</li>
+    </ul>
+    <p>
+      Demo practice may run in a temporary browser session without creating an account.
+      If you later sign up, account data is stored as described above.
+    </p>
+  </section>
+
+  <section class="legal-section" id="how-we-use">
+    <h2>4. How we use information</h2>
+    <p>We use information to:</p>
+    <ul>
+      <li>Provide, secure, and improve the learning platform</li>
+      <li>Authenticate users (phone + PIN and/or Google Sign-In)</li>
+      <li>Show exam content, mark answers, and display progress to guardians and learners</li>
+      <li>Process subscriptions and send related SMS or email notifications</li>
+      <li>Generate AI tutor explanations for quiz answers (using question content and the learner’s selected answer — not Google account credentials)</li>
+      <li>Prevent fraud, abuse, and unauthorized access</li>
+      <li>Comply with legal obligations</li>
+    </ul>
+  </section>
+
+  <section class="legal-section" id="sharing">
+    <h2>5. How we share information</h2>
+    <p>We may share information with:</p>
+    <ul>
+      <li><strong>Service providers</strong> who process data on our behalf (hosting, email, SMS, payment gateways, AI explanation providers)</li>
+      <li><strong>Legal authorities</strong> when required by applicable law</li>
+      <li><strong>Professional advisers</strong> where necessary to protect our legal rights</li>
+    </ul>
+    <p>
+      We do not sell personal information. Payment providers (such as M-Pesa) process
+      payments under their own terms and privacy practices.
+    </p>
+  </section>
+
+  <section class="legal-section" id="retention">
+    <h2>6. Retention and deletion</h2>
+    <p>
+      We retain account and learning data for as long as your account remains active
+      and as needed to provide the service, resolve disputes, enforce agreements,
+      and meet legal or accounting requirements.
+    </p>
+    <p>
+      You may request deletion of your {{ site_name }} account and associated personal
+      data by contacting us at
+      <a href="mailto:{{ privacy_contact_email }}">{{ privacy_contact_email }}</a>.
+      We will delete or anonymize personal data unless we must retain certain records
+      (for example payment records) for legal compliance. After deletion, Google
+      Sign-In will no longer reconnect that deleted account unless you create a new one.
+    </p>
+    <p>
+      You can also revoke {{ site_name }}’s access to your Google Account at any time in
+      your Google Account permissions:
+      <a href="https://myaccount.google.com/permissions" rel="noopener noreferrer" target="_blank">myaccount.google.com/permissions</a>.
+    </p>
+  </section>
+
+  <section class="legal-section" id="security">
+    <h2>7. Security</h2>
+    <p>
+      We use administrative, technical, and organizational measures designed to
+      protect personal data, including encrypted connections (HTTPS) in production,
+      hashed PINs, access controls, and rate limiting on authentication endpoints.
+      No method of transmission or storage is completely secure; please use a strong
+      unique PIN and keep your devices protected.
+    </p>
+  </section>
+
+  <section class="legal-section" id="children">
+    <h2>8. Children and learners</h2>
+    <p>
+      {{ site_name }} is designed for guardians and educators to support learners.
+      Learner profiles are typically created and managed by a parent, guardian, or
+      authorized adult. If you believe a child’s information was provided without
+      appropriate consent, contact us and we will take appropriate steps.
+    </p>
+  </section>
+
+  <section class="legal-section" id="your-choices">
+    <h2>9. Your choices and rights</h2>
+    <p>Subject to applicable law, you may request to:</p>
+    <ul>
+      <li>Access the personal data we hold about you</li>
+      <li>Correct inaccurate information</li>
+      <li>Delete your account or certain personal data</li>
+      <li>Withdraw Google Sign-In access via your Google Account settings</li>
+    </ul>
+    <p>
+      To make a request, email
+      <a href="mailto:{{ privacy_contact_email }}">{{ privacy_contact_email }}</a>.
+      We may need to verify your identity before fulfilling the request.
+    </p>
+  </section>
+
+  <section class="legal-section" id="changes">
+    <h2>10. Changes to this policy</h2>
+    <p>
+      We may update this Privacy Policy from time to time. When we make material
+      changes — including changes to how we use Google user data — we will update
+      the effective date on this page and, where appropriate, notify you in the
+      product or by email and obtain any consent required before using Google user
+      data in a new way.
+    </p>
+  </section>
+
+  <section class="legal-section legal-contact" id="contact">
+    <h2>11. Contact us</h2>
+    <p>
+      For privacy questions, data requests, or concerns about Google user data:
+    </p>
+    <ul>
+      <li>Email: <a href="mailto:{{ privacy_contact_email }}">{{ privacy_contact_email }}</a></li>
+      <li>Website: <a href="{% url 'core:landing' %}">https://somasmartassesments.com</a></li>
+    </ul>
+  </section>
+</article>
+{% endblock %}

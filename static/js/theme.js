@@ -24,6 +24,7 @@
   function applyTheme(theme) {
     var next = theme === 'dark' ? 'dark' : 'light';
     document.documentElement.setAttribute('data-theme', next);
+    document.documentElement.removeAttribute('data-theme-locked');
     try {
       localStorage.setItem(STORAGE_KEY, next);
     } catch (e) { /* ignore */ }

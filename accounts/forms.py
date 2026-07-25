@@ -10,33 +10,31 @@ class SignUpForm(forms.ModelForm):
         (Role.PARTNER, 'School/Institutional Partner'),
         (Role.REFERRAL, 'Referral Agent'),
     ]
-    
+
+    full_name = forms.CharField(
+        label='Full name',
+        widget=forms.TextInput(attrs={
+            'class': 'form-input',
+            'placeholder': 'e.g. Jane Doe',
+            'autocomplete': 'name',
+        }),
+    )
+
     role = forms.ChoiceField(
         choices=role_choices,
         widget=forms.Select(attrs={'class': 'form-select'})
     )
-    
+
     password = forms.CharField(
         label='4-Digit PIN',
         widget=forms.PasswordInput(attrs={
-            'class': 'form-input', 
+            'class': 'form-input',
             'placeholder': 'Enter 4-digit PIN',
             'maxlength': '4',
             'pattern': '[0-9]*',
             'inputmode': 'numeric'
         }),
         help_text='Use a 4-digit numeric code as your PIN password.'
-    )
-    
-    confirm_password = forms.CharField(
-        label='Confirm PIN',
-        widget=forms.PasswordInput(attrs={
-            'class': 'form-input', 
-            'placeholder': 'Re-enter 4-digit PIN',
-            'maxlength': '4',
-            'pattern': '[0-9]*',
-            'inputmode': 'numeric'
-        })
     )
     referral_code = forms.CharField(
         label='Referral code (optional)',
@@ -49,26 +47,27 @@ class SignUpForm(forms.ModelForm):
 
     class Meta:
         model = MyUser
-        fields = ['phone', 'first_name', 'last_name', 'email', 'role']
+        fields = ['phone', 'role']
         widgets = {
             'phone': forms.TextInput(attrs={
-                'class': 'form-input', 
+                'class': 'form-input',
                 'placeholder': 'e.g. 0712345678',
                 'type': 'tel'
             }),
-            'first_name': forms.TextInput(attrs={
-                'class': 'form-input', 
-                'placeholder': 'First Name'
-            }),
-            'last_name': forms.TextInput(attrs={
-                'class': 'form-input', 
-                'placeholder': 'Last Name'
-            }),
-            'email': forms.EmailInput(attrs={
-                'class': 'form-input', 
-                'placeholder': 'Email Address (Optional)'
-            }),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.order_fields(['phone', 'full_name', 'role', 'password', 'referral_code'])
+
+    def clean_full_name(self):
+        full_name = (self.cleaned_data.get('full_name') or '').strip()
+        if not full_name:
+            raise ValidationError('Full name is required.')
+        parts = full_name.split()
+        if len(parts) < 2:
+            raise ValidationError('Enter at least your first and last name.')
+        return full_name
 
     def clean_phone(self):
         phone = self.cleaned_data.get('phone')
@@ -102,18 +101,11 @@ class SignUpForm(forms.ModelForm):
             raise ValidationError('Referral code is invalid or inactive.')
         return code
 
-    def clean(self):
-        cleaned_data = super().clean()
-        password = cleaned_data.get('password')
-        confirm_password = cleaned_data.get('confirm_password')
-
-        if password and confirm_password and password != confirm_password:
-            self.add_error('confirm_password', 'PINs do not match.')
-        return cleaned_data
-
     def save(self, commit=True):
         user = super().save(commit=False)
-        # Hash the PIN/password
+        first_name, last_name = self.cleaned_data['full_name'].split(None, 1)
+        user.first_name = first_name
+        user.last_name = last_name
         user.set_password(self.cleaned_data['password'])
         if commit:
             user.save()

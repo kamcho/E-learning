@@ -5,6 +5,7 @@ app_name = 'core'
 
 urlpatterns = [
     path('', views.landing_page, name='landing'),
+    path('privacy/', views.privacy_policy_view, name='privacy_policy'),
     path(
         'tests/<uuid:quiz_uuid>/learners/<uuid:student_uuid>/info/',
         views.test_info_view,

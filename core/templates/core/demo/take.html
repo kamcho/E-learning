@@ -65,9 +65,19 @@
             Correct answer: <strong style="color:var(--demo-accent);">{{ feedback.correct_text }}</strong>
           </p>
           <div class="demo-ai-box" id="demo-ai-box" data-question-uuid="{{ question_uuid }}">
-            <div class="demo-ai-loading" id="demo-ai-loading">Getting a tutor explanation…</div>
+            <div class="demo-ai-loading" id="demo-ai-loading" role="status" aria-live="polite">
+              <span class="demo-ai-spinner" aria-hidden="true"></span>
+              <span class="demo-ai-loading-copy">
+                <span class="demo-ai-loading-title">
+                  AI tutor is thinking
+                  <span class="demo-ai-dots" aria-hidden="true"><span></span><span></span><span></span></span>
+                </span>
+                <span class="demo-ai-loading-sub">Preparing a short explanation for this answer</span>
+              </span>
+            </div>
             <div class="demo-ai-text" id="demo-ai-text" hidden></div>
-            <div class="demo-ai-text" id="demo-ai-error" hidden style="color:#f87171;"></div>
+            <div class="demo-ai-text demo-ai-error" id="demo-ai-error" hidden style="color:#f87171;"></div>
+            <button type="button" class="demo-btn demo-btn-outline demo-ai-retry" id="demo-ai-retry" hidden style="margin-top:0.75rem;">Try again</button>
           </div>
         {% endif %}
       </div>
@@ -136,32 +146,49 @@
   var loading = document.getElementById('demo-ai-loading');
   var textEl = document.getElementById('demo-ai-text');
   var errEl = document.getElementById('demo-ai-error');
+  var retryBtn = document.getElementById('demo-ai-retry');
   var qid = box.dataset.questionUuid;
+  var explainUrl = '{% url "core:demo_explain" %}';
+  var csrfToken = '{{ csrf_token }}';
 
-  fetch('{% url "core:demo_explain" %}', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-CSRFToken': '{{ csrf_token }}'
-    },
-    body: JSON.stringify({ question_uuid: qid })
-  })
-    .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
-    .then(function (result) {
-      loading.hidden = true;
-      if (!result.ok) {
-        errEl.textContent = result.data.error || 'Could not load AI explanation.';
-        errEl.hidden = false;
-        return;
-      }
-      textEl.textContent = result.data.explanation || 'No explanation returned.';
-      textEl.hidden = false;
+  function loadExplanation() {
+    loading.hidden = false;
+    textEl.hidden = true;
+    errEl.hidden = true;
+    if (retryBtn) retryBtn.hidden = true;
+
+    fetch(explainUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': csrfToken
+      },
+      body: JSON.stringify({ question_uuid: qid })
     })
-    .catch(function () {
-      loading.hidden = true;
-      errEl.textContent = 'Could not reach the tutor. Please try again later.';
-      errEl.hidden = false;
-    });
+      .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
+      .then(function (result) {
+        loading.hidden = true;
+        if (!result.ok) {
+          errEl.textContent = result.data.error || 'Could not load AI explanation.';
+          errEl.hidden = false;
+          if (retryBtn) retryBtn.hidden = false;
+          return;
+        }
+        textEl.textContent = result.data.explanation || 'No explanation returned.';
+        textEl.hidden = false;
+      })
+      .catch(function () {
+        loading.hidden = true;
+        errEl.textContent = 'Could not reach the tutor. Please try again.';
+        errEl.hidden = false;
+        if (retryBtn) retryBtn.hidden = false;
+      });
+  }
+
+  if (retryBtn) {
+    retryBtn.addEventListener('click', loadExplanation);
+  }
+  loadExplanation();
 })();
 </script>
 {% endif %}

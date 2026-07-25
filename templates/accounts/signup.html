@@ -2,133 +2,391 @@
 
 {% block title %}Sign Up — Soma Smart{% endblock %}
 
+{% block body_class %} auth-page{% endblock %}
+
 {% block content %}
 <style>
-  .auth-wrapper {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 80vh;
-    padding: var(--space-2xl) 0;
+  body.auth-page.app-body--auth .app-main-area {
+    padding: 0;
+    max-width: none;
   }
-  
-  .auth-card {
+
+  .auth-stage {
+    --auth-ink: #10231a;
+    --auth-mist: #e8f5ee;
+    --auth-leaf: #0d8a4e;
+    --auth-leaf-deep: #065f36;
+    --auth-gold: #c9a227;
     width: 100%;
-    max-width: 500px;
-    background: var(--clr-surface);
-    border: 1px solid var(--clr-border);
-    border-radius: var(--radius-xl);
-    padding: var(--space-3xl) var(--space-2xl);
-    box-shadow: var(--shadow-lg);
-    position: relative;
-    overflow: hidden;
+    min-height: calc(100vh - 64px);
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+    background: var(--clr-bg);
   }
-  
-  .auth-card::before {
+
+  .auth-brand {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: clamp(2rem, 5vw, 3.5rem);
+    color: #f7fff9;
+    overflow: hidden;
+    background:
+      radial-gradient(ellipse 70% 55% at 15% 20%, rgba(212, 160, 23, 0.28), transparent 55%),
+      radial-gradient(ellipse 55% 45% at 85% 75%, rgba(20, 184, 102, 0.35), transparent 50%),
+      linear-gradient(155deg, #053d22 0%, #0a6e3e 42%, #0d8a4e 78%, #065f36 100%);
+  }
+
+  .auth-brand::before {
     content: '';
     position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 4px;
-    background: var(--grad-gold);
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+    background-size: 42px 42px;
+    mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.55), transparent 85%);
+    pointer-events: none;
   }
-  
-  .auth-header {
-    text-align: center;
-    margin-bottom: var(--space-2xl);
+
+  .auth-brand-top,
+  .auth-brand-copy,
+  .auth-brand-foot {
+    position: relative;
+    z-index: 1;
   }
-  
-  .auth-logo {
-    width: 48px;
-    height: 48px;
-    background: var(--grad-gold);
-    border-radius: var(--radius-md);
+
+  .auth-brand-mark {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    text-decoration: none;
+    color: inherit;
+  }
+
+  .auth-brand-mark-icon {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 0.7rem;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.6rem;
-    font-weight: 800;
-    color: #1a1a1a;
-    margin-bottom: var(--space-md);
-    box-shadow: 0 4px 10px rgba(212,160,23,0.3);
-  }
-  
-  .auth-title {
     font-family: var(--font-heading);
-    font-size: 1.75rem;
     font-weight: 800;
-    color: var(--clr-text);
+    font-size: 1.25rem;
+    color: #10231a;
+    background: linear-gradient(145deg, #f0c040, #d4a017);
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.22);
+  }
+
+  .auth-brand-mark-name {
+    font-family: var(--font-heading);
+    font-weight: 800;
+    font-size: 1.15rem;
     letter-spacing: -0.02em;
   }
-  
-  .auth-subtitle {
-    color: var(--clr-text-muted);
-    font-size: 0.9rem;
-    margin-top: var(--space-xs);
+
+  .auth-brand-copy {
+    max-width: 28rem;
+    margin: 3rem 0;
   }
-  
-  .auth-footer {
-    text-align: center;
-    margin-top: var(--space-xl);
-    font-size: 0.9rem;
-    color: var(--clr-text-muted);
+
+  .auth-brand-kicker {
+    display: inline-block;
+    margin: 0 0 1rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.72);
   }
-  
-  .auth-footer a {
-    color: var(--clr-primary);
+
+  .auth-brand-title {
+    margin: 0 0 1rem;
+    font-family: var(--font-heading);
+    font-size: clamp(2rem, 4vw, 2.85rem);
+    font-weight: 800;
+    line-height: 1.12;
+    letter-spacing: -0.03em;
+  }
+
+  .auth-brand-text {
+    margin: 0;
+    font-size: 1.02rem;
+    line-height: 1.65;
+    color: rgba(247, 255, 249, 0.84);
+    max-width: 24rem;
+  }
+
+  .auth-brand-points {
+    list-style: none;
+    margin: 1.75rem 0 0;
+    padding: 0;
+    display: grid;
+    gap: 0.7rem;
+  }
+
+  .auth-brand-points li {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    font-size: 0.92rem;
     font-weight: 600;
-    transition: color var(--transition-fast);
+    color: rgba(247, 255, 249, 0.92);
   }
-  
+
+  .auth-brand-points li::before {
+    content: '';
+    width: 0.55rem;
+    height: 0.55rem;
+    border-radius: 50%;
+    background: var(--auth-gold);
+    box-shadow: 0 0 0 4px rgba(201, 162, 39, 0.2);
+    flex-shrink: 0;
+  }
+
+  .auth-brand-foot {
+    font-size: 0.82rem;
+    color: rgba(247, 255, 249, 0.62);
+  }
+
+  .auth-panel {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: clamp(1.5rem, 4vw, 3rem);
+    background:
+      radial-gradient(ellipse 60% 40% at 100% 0%, rgba(13, 138, 78, 0.08), transparent 55%),
+      var(--clr-surface-alt);
+  }
+
+  .auth-panel-inner {
+    width: 100%;
+    max-width: 420px;
+  }
+
+  .auth-panel-header {
+    margin-bottom: 1.75rem;
+  }
+
+  .auth-panel-title {
+    margin: 0 0 0.4rem;
+    font-family: var(--font-heading);
+    font-size: 1.85rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    color: var(--clr-text);
+  }
+
+  .auth-panel-sub {
+    margin: 0;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    color: var(--clr-text-muted);
+  }
+
+  .auth-referral-banner {
+    background: #ecfdf3;
+    border: 1px solid #bbf7d0;
+    border-radius: 12px;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1.25rem;
+    font-size: 0.85rem;
+    color: #166534;
+  }
+
+  .auth-form .form-group {
+    margin-bottom: 1.1rem;
+  }
+
+  .auth-form .form-label {
+    font-size: 0.84rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+  }
+
+  .auth-form .form-input,
+  .auth-form .form-select {
+    padding: 0.88rem 1rem;
+    border-radius: 12px;
+    background: var(--clr-surface);
+    font-size: 0.98rem;
+  }
+
+  .auth-form .form-input:focus,
+  .auth-form .form-select:focus {
+    border-color: var(--auth-leaf);
+    box-shadow: 0 0 0 3px rgba(13, 138, 78, 0.16);
+  }
+
+  .auth-field-help {
+    font-size: 0.78rem;
+    color: var(--clr-text-light);
+    margin-top: 0.35rem;
+  }
+
+  .auth-field-error {
+    color: var(--clr-danger);
+    font-size: 0.8rem;
+    margin-top: 0.35rem;
+  }
+
+  .auth-submit {
+    width: 100%;
+    justify-content: center;
+    margin-top: 0.35rem;
+    padding: 0.95rem 1.25rem;
+    font-size: 1rem;
+    font-weight: 700;
+    border-radius: 12px;
+    background: linear-gradient(135deg, var(--auth-leaf) 0%, var(--auth-leaf-deep) 100%);
+    color: #fff;
+    border: none;
+    box-shadow: 0 12px 28px rgba(13, 138, 78, 0.28);
+  }
+
+  .auth-submit:hover {
+    filter: brightness(1.05);
+    transform: translateY(-1px);
+  }
+
+  .auth-panel .auth-divider {
+    margin: 1.35rem 0;
+  }
+
+  .auth-footer {
+    margin-top: 1.75rem;
+    padding-top: 1.35rem;
+    border-top: 1px solid var(--clr-border);
+    text-align: center;
+    font-size: 0.9rem;
+    color: var(--clr-text-muted);
+  }
+
+  .auth-footer a {
+    color: var(--auth-leaf);
+    font-weight: 700;
+    text-decoration: none;
+  }
+
   .auth-footer a:hover {
-    color: var(--clr-primary-dark);
     text-decoration: underline;
+  }
+
+  html[data-theme="dark"] .auth-panel {
+    background:
+      radial-gradient(ellipse 60% 40% at 100% 0%, rgba(13, 138, 78, 0.12), transparent 55%),
+      var(--clr-bg);
+  }
+
+  html[data-theme="dark"] .auth-referral-banner {
+    background: rgba(13, 138, 78, 0.12);
+    border-color: rgba(13, 138, 78, 0.35);
+    color: #86efac;
+  }
+
+  @media (max-width: 900px) {
+    .auth-stage {
+      grid-template-columns: 1fr;
+    }
+
+    .auth-brand {
+      min-height: auto;
+      padding: 1.5rem 1.35rem 1.75rem;
+    }
+
+    .auth-brand-copy {
+      margin: 1.5rem 0 1rem;
+    }
+
+    .auth-brand-title {
+      font-size: 1.7rem;
+    }
+
+    .auth-brand-points {
+      display: none;
+    }
+
+    .auth-brand-foot {
+      display: none;
+    }
+
+    .auth-panel {
+      padding: 1.5rem 1.25rem 2.5rem;
+    }
   }
 </style>
 
-<div class="auth-wrapper">
-  <div class="auth-card">
-    <div class="auth-header">
-      <div class="auth-logo">S</div>
-      <h1 class="auth-title">Create Account</h1>
-      <p class="auth-subtitle">Join with Google or create an account with your phone</p>
+<section class="auth-stage" aria-label="Sign up">
+  <aside class="auth-brand">
+    <div class="auth-brand-top">
+      <a href="{% url 'core:landing' %}" class="auth-brand-mark">
+        <span class="auth-brand-mark-icon" aria-hidden="true">S</span>
+        <span class="auth-brand-mark-name">Soma Smart</span>
+      </a>
     </div>
 
-    {% if referral_agent %}
-    <div style="background:#ecfdf3;border:1px solid #bbf7d0;border-radius:var(--radius-md);padding:0.75rem 1rem;margin-bottom:var(--space-lg);font-size:0.85rem;color:#166534;">
-      Referred by <strong>{{ referral_agent.full_name }}</strong> ({{ referral_code }})
+    <div class="auth-brand-copy">
+      <p class="auth-brand-kicker">Start learning in minutes</p>
+      <h1 class="auth-brand-title">Create your free guardian account.</h1>
+      <p class="auth-brand-text">
+        Add learners, run CBC practice tests, and track progress — with phone + PIN
+        or Google sign-in.
+      </p>
+      <ul class="auth-brand-points">
+        <li>Free to join — pay only when you take exams</li>
+        <li>KEPSEA &amp; KJSEA-aligned question banks</li>
+        <li>AI tutor help when answers need explaining</li>
+      </ul>
     </div>
-    {% endif %}
 
-    {% include 'accounts/partials/google_signin.html' %}
-    
-    <form method="post" novalidate>
-      {% csrf_token %}
-      
-      {% for field in form %}
-        <div class="form-group">
-          <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
-          {{ field }}
-          {% if field.errors %}
-            <div style="color: var(--clr-danger); font-size: 0.82rem; margin-top: 4px;">
-              {{ field.errors.0 }}
-            </div>
-          {% endif %}
-          {% if field.help_text %}
-            <p style="font-size: 0.78rem; color: var(--clr-text-light); margin-top: 4px;">{{ field.help_text }}</p>
-          {% endif %}
-        </div>
-      {% endfor %}
-      
-      <button type="submit" class="btn btn-secondary" style="width: 100%; justify-content: center; padding: 0.85rem; font-size: 1rem; margin-top: var(--space-md);">
-        Sign Up
-      </button>
-    </form>
-    
-    <div class="auth-footer">
-      Already have an account? <a href="{% url 'accounts:signin' %}">Sign In instead</a>
+    <p class="auth-brand-foot">Join families using Soma Smart across Kenya.</p>
+  </aside>
+
+  <div class="auth-panel">
+    <div class="auth-panel-inner">
+      <header class="auth-panel-header">
+        <h2 class="auth-panel-title">Create account</h2>
+        <p class="auth-panel-sub">Sign up with your phone and 4-digit PIN, or continue with Google.</p>
+      </header>
+
+      {% if referral_agent %}
+      <div class="auth-referral-banner">
+        Referred by <strong>{{ referral_agent.full_name }}</strong> ({{ referral_code }})
+      </div>
+      {% endif %}
+
+      {% include 'accounts/partials/google_signin.html' with google_button_id='signupGoogleButton' google_button_text='signup_with' %}
+
+      <div class="auth-divider">or sign up with phone</div>
+
+      <form method="post" class="auth-form" novalidate>
+        {% csrf_token %}
+
+        {% for field in form %}
+          <div class="form-group">
+            <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% if field.help_text %}
+              <p class="auth-field-help">{{ field.help_text }}</p>
+            {% endif %}
+            {% if field.errors %}
+              <div class="auth-field-error">{{ field.errors.0 }}</div>
+            {% endif %}
+          </div>
+        {% endfor %}
+
+        <button type="submit" class="btn auth-submit">Create account</button>
+      </form>
+
+      <div class="auth-footer">
+        Already have an account?
+        <a href="{% url 'accounts:signin' %}">Sign in instead</a>
+        <br>
+        <a href="{% url 'core:privacy_policy' %}" style="font-weight:600;">Privacy Policy</a>
+      </div>
     </div>
   </div>
-</div>
+</section>
 {% endblock %}

@@ -20,7 +20,6 @@ from core.demo import (
     start_demo_session,
 )
 from core.exam_filters import (
-    DEFAULT_EXAMS_GRADE_SLUG,
     active_quizzes_queryset,
     resolve_grade_from_slug,
     strands_for_wizard,
@@ -30,7 +29,9 @@ from core.exam_filters import (
 from subjects.models import GradeLevel, Strand, Subject, SubStrand
 
 
-def _demo_wizard_phase(subject_slug, scope, strand_slug, sub_strand_slug):
+def _demo_wizard_phase(grade_chosen, subject_slug, scope, strand_slug, sub_strand_slug):
+    if not grade_chosen:
+        return 'grade'
     if not subject_slug:
         return 'subject'
     if not scope:
@@ -57,14 +58,15 @@ def _build_demo_wizard_trail(*, phase, grade, subject, scope, strand, sub_strand
     steps.append({'key': 'grade', 'label': 'Grade', 'icon': '🏫', 'value': grade_value, 'rank': rank})
     rank += 1
 
-    steps.append({
-        'key': 'subject',
-        'label': 'Subject',
-        'icon': '📚',
-        'value': subject.name if subject else None,
-        'rank': rank,
-    })
-    rank += 1
+    if phase != 'grade':
+        steps.append({
+            'key': 'subject',
+            'label': 'Subject',
+            'icon': '📚',
+            'value': subject.name if subject else None,
+            'rank': rank,
+        })
+        rank += 1
 
     if subject or phase in ('scope', 'strand', 'sub_strand', 'ready'):
         steps.append({
@@ -87,16 +89,18 @@ def _build_demo_wizard_trail(*, phase, grade, subject, scope, strand, sub_strand
         })
         rank += 1
 
-    steps.append({'key': 'tests', 'label': 'Practice test', 'icon': '✅', 'value': None, 'rank': rank})
+    if phase != 'grade':
+        steps.append({'key': 'tests', 'label': 'Practice test', 'icon': '✅', 'value': None, 'rank': rank})
 
     phase_to_key = {
+        'grade': 'grade',
         'subject': 'subject',
         'scope': 'focus',
         'strand': 'topic',
         'sub_strand': 'topic',
         'ready': 'tests',
     }
-    current_key = phase_to_key.get(phase, 'subject')
+    current_key = phase_to_key.get(phase, 'grade')
     current_rank = next((s['rank'] for s in steps if s['key'] == current_key), 0)
 
     visible = []
@@ -119,12 +123,13 @@ def _build_demo_wizard_trail(*, phase, grade, subject, scope, strand, sub_strand
             continue
         visible.append({**step, 'number': index, 'state': state})
 
-    total = len(steps)
+    total = max(len(steps), 2)
     completed = sum(1 for s in visible if s['state'] == 'complete')
     current = sum(1 for s in visible if s['state'] == 'current')
     progress_pct = max(8, min(round(((completed + 0.35 * current) / total) * 100), 100))
 
     labels = {
+        'grade': ('Choose a grade', "Select the learner's grade to see matching subjects."),
         'subject': ('Choose a subject', 'Pick a subject for your free 7-question practice test.'),
         'scope': ('Test focus', 'Whole subject, one strand, or a specific sub-strand.'),
         'strand': ('Choose a strand', 'Select the strand you want to practise.'),
@@ -165,12 +170,15 @@ def demo_wizard_view(request):
         active_grade = None
     elif grade_slug:
         active_grade = resolve_grade_from_slug(grade_slug, all_grades)
-    else:
-        active_grade = GradeLevel.objects.filter(slug=DEFAULT_EXAMS_GRADE_SLUG).first() or all_grades.first()
 
     active_subject = None
     if subject_slug:
         active_subject = Subject.objects.filter(slug=subject_slug, is_active=True).select_related('grade_level').first()
+        # Deep link with subject only: inherit that subject's grade.
+        if active_subject and not grade_slug:
+            active_grade = active_subject.grade_level
+
+    grade_chosen = browse_all_grades or active_grade is not None
 
     active_strand = None
     if strand_slug and active_subject:
@@ -180,17 +188,16 @@ def demo_wizard_view(request):
     if sub_strand_slug and active_subject:
         active_sub_strand = SubStrand.objects.filter(slug=sub_strand_slug, is_active=True).first()
 
-    phase = _demo_wizard_phase(subject_slug, scope, strand_slug, sub_strand_slug)
+    phase = _demo_wizard_phase(grade_chosen, subject_slug if grade_chosen else '', scope, strand_slug, sub_strand_slug)
     base_quizzes = active_quizzes_queryset()
     if active_grade:
         base_quizzes = base_quizzes.filter(subject__grade_level=active_grade)
 
     browse_subjects = []
-    grades_for_browse = all_grades if browse_all_grades else (
-        GradeLevel.objects.filter(pk=active_grade.pk) if active_grade else all_grades
-    )
-    for subject in Subject.objects.filter(is_active=True, grade_level__in=grades_for_browse).select_related('grade_level').order_by('grade_level__name', 'name'):
-        browse_subjects.append({'subject': subject})
+    if grade_chosen:
+        grades_for_browse = all_grades if browse_all_grades else GradeLevel.objects.filter(pk=active_grade.pk)
+        for subject in Subject.objects.filter(is_active=True, grade_level__in=grades_for_browse).select_related('grade_level').order_by('grade_level__name', 'name'):
+            browse_subjects.append({'subject': subject})
 
     browse_strands = []
     browse_sub_strands = []
@@ -246,7 +253,8 @@ def demo_start_view(request):
 
     grade = resolve_grade_from_slug(grade_slug, all_grades) if grade_slug else None
     if not grade:
-        grade = GradeLevel.objects.filter(slug=DEFAULT_EXAMS_GRADE_SLUG).first()
+        messages.error(request, 'Please pick a grade for the demo test.')
+        return redirect('core:demo_wizard')
 
     subject = get_object_or_404(Subject, slug=subject_slug, is_active=True, grade_level=grade)
     strand = None

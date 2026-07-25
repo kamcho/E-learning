@@ -197,12 +197,41 @@
     color: var(--cs-text);
   }
 
-  html[data-theme="dark"] body.guardian-dash-dark .guardian-dash-main .subject-table th {
-    background: var(--cs-bg-elevated);
+  html[data-theme="dark"] body.guardian-dash-dark .guardian-dash-main .subject-perf-card {
+    background: var(--cs-surface);
+    border-color: var(--cs-border);
+  }
+
+  html[data-theme="dark"] body.guardian-dash-dark .guardian-dash-main .subject-perf-card:hover {
+    border-color: rgba(61, 214, 198, 0.28);
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+  }
+
+  html[data-theme="dark"] body.guardian-dash-dark .guardian-dash-main .subject-perf-name {
+    color: var(--cs-text);
+  }
+
+  html[data-theme="dark"] body.guardian-dash-dark .guardian-dash-main .subject-perf-meta {
     color: var(--cs-text-muted);
   }
 
-  html[data-theme="dark"] body.guardian-dash-dark .guardian-dash-main .subject-table td,
+  html[data-theme="dark"] body.guardian-dash-dark .guardian-dash-main .subject-perf-meta strong {
+    color: var(--cs-text);
+  }
+
+  html[data-theme="dark"] body.guardian-dash-dark .guardian-dash-main .subject-perf-progress {
+    background: var(--cs-bg-elevated);
+  }
+
+  html[data-theme="dark"] body.guardian-dash-dark .guardian-dash-main .subject-perf-cta {
+    border-top-color: var(--cs-border);
+  }
+
+  html[data-theme="dark"] body.guardian-dash-dark .guardian-dash-main .subject-perf-card--0 { --subject-accent: var(--cs-accent); --subject-accent-soft: rgba(61, 214, 198, 0.12); }
+  html[data-theme="dark"] body.guardian-dash-dark .guardian-dash-main .subject-perf-card--1 { --subject-accent: #7eb0ff; --subject-accent-soft: rgba(91, 141, 239, 0.14); }
+  html[data-theme="dark"] body.guardian-dash-dark .guardian-dash-main .subject-perf-card--2 { --subject-accent: var(--cs-warm); --subject-accent-soft: rgba(244, 162, 97, 0.14); }
+  html[data-theme="dark"] body.guardian-dash-dark .guardian-dash-main .subject-perf-card--3 { --subject-accent: #e85d7a; --subject-accent-soft: rgba(196, 30, 58, 0.14); }
+
   html[data-theme="dark"] body.guardian-dash-dark .guardian-dash-main .attempts-table th,
   html[data-theme="dark"] body.guardian-dash-dark .guardian-dash-main .attempts-table td {
     border-bottom-color: var(--cs-border);
@@ -214,32 +243,15 @@
     color: var(--cs-text-muted);
   }
 
-  html[data-theme="dark"] body.guardian-dash-dark .guardian-dash-main .subject-table-row:hover td,
   html[data-theme="dark"] body.guardian-dash-dark .guardian-dash-main .attempts-table-row:hover td {
     background: rgba(61, 214, 198, 0.05);
   }
 
-  html[data-theme="dark"] body.guardian-dash-dark .guardian-dash-main .subject-table-learn-btn {
-    background: var(--cs-accent);
-    color: #0a0f14;
-  }
-
-  html[data-theme="dark"] body.guardian-dash-dark .guardian-dash-main .subject-table-learn-btn:hover {
-    background: var(--clr-primary-dark);
-    color: #0a0f14;
-  }
-
-  html[data-theme="dark"] body.guardian-dash-dark .guardian-dash-main .subject-table-best {
-    color: var(--cs-accent);
-  }
-
-  html[data-theme="dark"] body.guardian-dash-dark .guardian-dash-main .progress-track,
-  html[data-theme="dark"] body.guardian-dash-dark .guardian-dash-main .subject-table-progress {
+  html[data-theme="dark"] body.guardian-dash-dark .guardian-dash-main .progress-track {
     background: var(--cs-bg-elevated);
   }
 
-  html[data-theme="dark"] body.guardian-dash-dark .guardian-dash-main .progress-fill,
-  html[data-theme="dark"] body.guardian-dash-dark .guardian-dash-main .subject-table-progress-fill {
+  html[data-theme="dark"] body.guardian-dash-dark .guardian-dash-main .progress-fill {
     background: linear-gradient(90deg, var(--cs-crimson), var(--cs-accent));
   }
 

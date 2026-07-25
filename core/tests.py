@@ -2,8 +2,8 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
 
-from accounts.models import Role
-from core.models import Option, Question
+from accounts.models import LinkedStudents, Role, Student
+from core.models import Option, Question, Quiz
 from core.question_import import bulk_create_questions, validate_question_item
 from subjects.models import Discipline, GradeLevel, Strand, Subject, SubStrand
 
@@ -160,6 +160,16 @@ class DemoPracticeTests(TestCase):
         response = self.client.get(reverse('core:demo_wizard'))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Try a free practice test')
+        self.assertContains(response, 'Choose a grade')
+        self.assertEqual(response.context['phase'], 'grade')
+        self.assertIsNone(response.context['active_grade'])
+
+    def test_demo_wizard_requires_grade_before_subjects(self):
+        response = self.client.get(reverse('core:demo_wizard'), {'grade': self.grade.slug})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['phase'], 'subject')
+        self.assertEqual(response.context['active_grade'], self.grade)
+        self.assertContains(response, self.subject.name)
 
     def test_demo_start_builds_seven_question_session(self):
         response = self.client.post(reverse('core:demo_start'), {
@@ -189,3 +199,113 @@ class DemoPracticeTests(TestCase):
         response = self.client.get(take_url)
         self.assertContains(response, 'Not quite')
         self.assertContains(response, 'demo-ai-box')
+
+
+class AutoCustomQuizTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.guardian = User.objects.create_user(
+            phone='0744444444',
+            password='1234',
+            role=Role.GUARDIAN,
+            first_name='Parent',
+            last_name='One',
+        )
+        cls.grade = GradeLevel.objects.create(name='Grade 6', slug='grade-6', level='Upper Primary')
+        cls.discipline = Discipline.objects.create(name='Languages', slug='languages')
+        cls.subject = Subject.objects.create(
+            name='English',
+            slug='english',
+            grade_level=cls.grade,
+            discipline=cls.discipline,
+        )
+        cls.strand = Strand.objects.create(name='Reading', slug='reading-g6', subject=cls.subject)
+        cls.sub_strand = SubStrand.objects.create(
+            name='Comprehension',
+            slug='comprehension-g6',
+            strand=cls.strand,
+        )
+        cls.student = Student.objects.create(
+            first_name='Sharon',
+            middle_name='',
+            last_name='Mwaka',
+            grade_level=cls.grade,
+        )
+        link = LinkedStudents.objects.create(user=cls.guardian)
+        link.students.add(cls.student)
+
+        for index in range(12):
+            question = Question.objects.create(
+                quiz=f'English question {index}?',
+                quiz_type='Multiple Choice',
+                difficulty='Easy',
+                sub_strand=cls.sub_strand,
+                score=1,
+                is_active=True,
+            )
+            Option.objects.create(question=question, option='Wrong', is_correct=False)
+            Option.objects.create(question=question, option='Correct', is_correct=True)
+
+    def test_exams_list_auto_creates_custom_quiz_when_none_exist(self):
+        self.client.force_login(self.guardian)
+        url = reverse('core:exams_list')
+        response = self.client.get(url, {
+            'student': str(self.student.uuid),
+            'grade': self.grade.slug,
+            'subject': self.subject.slug,
+            'scope': 'general',
+        })
+
+        self.assertEqual(response.status_code, 302)
+        quiz = Quiz.objects.get(subject=self.subject, created_by=self.guardian)
+        self.assertTrue(quiz.title.startswith('Custom'))
+        self.assertEqual(quiz.test_size, 12)
+        self.assertEqual(
+            response.url,
+            reverse('core:test_info', kwargs={
+                'quiz_uuid': quiz.uuid,
+                'student_uuid': self.student.uuid,
+            }),
+        )
+
+    def test_exams_list_reuses_existing_custom_quiz(self):
+        self.client.force_login(self.guardian)
+        params = {
+            'student': str(self.student.uuid),
+            'grade': self.grade.slug,
+            'subject': self.subject.slug,
+            'scope': 'general',
+        }
+        first = self.client.get(reverse('core:exams_list'), params)
+        self.assertEqual(first.status_code, 302)
+        quiz = Quiz.objects.get(created_by=self.guardian)
+        self.assertEqual(Quiz.objects.filter(title__startswith='Custom').count(), 1)
+
+        second = self.client.get(reverse('core:exams_list'), params)
+        self.assertEqual(second.status_code, 200)
+        self.assertContains(second, quiz.title)
+        self.assertEqual(Quiz.objects.filter(title__startswith='Custom').count(), 1)
+
+    def test_whole_subject_ignores_stale_sub_strand_param(self):
+        self.client.force_login(self.guardian)
+        params = {
+            'student': str(self.student.uuid),
+            'grade': self.grade.slug,
+            'subject': self.subject.slug,
+            'scope': 'general',
+            'sub_strand': 'roots-g6',
+        }
+        response = self.client.get(reverse('core:exams_list'), params)
+        self.assertEqual(response.status_code, 302)
+        quiz = Quiz.objects.get(title__startswith='Custom', subject=self.subject)
+        self.assertGreaterEqual(quiz.questions.filter(is_active=True).count(), 1)
+
+
+class PrivacyPolicyTests(TestCase):
+    def test_privacy_policy_page_is_public(self):
+        response = self.client.get(reverse('core:privacy_policy'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Privacy Policy')
+        self.assertContains(response, 'Google user data')
+        self.assertContains(response, 'Limited use')
+        self.assertContains(response, 'Retention and deletion')

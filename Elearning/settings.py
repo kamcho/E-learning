@@ -18,7 +18,7 @@ from dotenv import load_dotenv
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-load_dotenv(BASE_DIR / '.env')
+load_dotenv(BASE_DIR / '.env', override=True)
 
 
 def _env_bool(name, default='false'):
@@ -37,6 +37,8 @@ def _env_list(name, default=''):
 SECRET_KEY = os.environ.get(
     'SECRET_KEY',
     'django-insecure-t4%hnd3o10a+y7%kgo@id41hpspuv1ep)831@_1fl3duy21@um',
+
+    
 )
 
 # SECURITY WARNING: don't run with debug turned on in production!
@@ -101,7 +103,9 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'django.template.context_processors.debug',
                 'accounts.context_processors.account_nav',
+                'accounts.context_processors.google_auth',
             ],
         },
     },
@@ -190,6 +194,13 @@ STORAGES = {
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# Required for Google Identity Services popup / button callback (gsi/transform).
+# Django's default "same-origin" blocks window.opener postMessage and freezes sign-in.
+SECURE_CROSS_ORIGIN_OPENER_POLICY = os.environ.get(
+    'SECURE_CROSS_ORIGIN_OPENER_POLICY',
+    'same-origin-allow-popups',
+)
+
 # ---------------------------------------------------------------------------
 # Production security hardening (only active when DEBUG is False)
 # ---------------------------------------------------------------------------
@@ -222,6 +233,7 @@ EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
 EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'true').lower() == 'true'
 DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'Soma Smart <noreply@somasmartassesments.com>')
+PRIVACY_CONTACT_EMAIL = os.environ.get('PRIVACY_CONTACT_EMAIL', 'privacy@somasmartassesments.com')
 
 # Authentication backends
 AUTHENTICATION_BACKENDS = [
@@ -230,11 +242,16 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 # Google Sign-In (OAuth 2.0 client ID from Google Cloud Console)
-GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID', '')
+# Comma-separate multiple Web client IDs (e.g. localhost + production).
+GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID', '').strip()
+GOOGLE_CLIENT_IDS = [item.strip() for item in GOOGLE_CLIENT_ID.split(',') if item.strip()]
 
 # OpenAI — set OPENAI_API_KEY in your environment (never commit the key)
 OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY', '')
 OPENAI_MODEL = os.environ.get('OPENAI_MODEL', 'gpt-4o-mini')
+OPENAI_TIMEOUT = float(os.environ.get('OPENAI_TIMEOUT', '60'))
+OPENAI_MAX_TOKENS = int(os.environ.get('OPENAI_MAX_TOKENS', '300'))
+OPENAI_MAX_RETRIES = int(os.environ.get('OPENAI_MAX_RETRIES', '1'))
 
 # M-Pesa Daraja (Lipa na M-Pesa STK Push)
 MPESA_ENVIRONMENT = os.environ.get('MPESA_ENVIRONMENT', 'sandbox')
