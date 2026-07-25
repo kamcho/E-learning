@@ -37,8 +37,7 @@ def _env_list(name, default=''):
 SECRET_KEY = os.environ.get(
     'SECRET_KEY',
     'django-insecure-t4%hnd3o10a+y7%kgo@id41hpspuv1ep)831@_1fl3duy21@um',
-
-    
+ 
 )
 
 # SECURITY WARNING: don't run with debug turned on in production!

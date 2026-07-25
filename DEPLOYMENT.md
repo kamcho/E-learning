@@ -328,7 +328,7 @@ restart `elearning` → reload nginx).
 **One-time setup**
 
 1. On the droplet, the app directory must be a **git clone** of this repo
-   (not only an `scp` copy):
+   (not only an `scp` copy), and `deploy/update.sh` must exist on `main`:
 
    ```bash
    # If you previously copied files with scp, convert to git:
@@ -343,6 +343,7 @@ restart `elearning` → reload nginx).
    chown -R elearning:www-data /srv/elearning
    chmod 640 /srv/elearning/.env
    chmod +x /srv/elearning/deploy/update.sh
+   ls -la /srv/elearning/deploy/update.sh
    ```
 
 2. In the GitHub repo → **Settings → Secrets and variables → Actions**,

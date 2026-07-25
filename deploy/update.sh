@@ -10,6 +10,9 @@ NGINX_SITE="/etc/nginx/sites-available/elearning"
 
 cd "$APP_DIR"
 
+# Root often owns the checkout process while files are owned by elearning.
+git config --global --add safe.directory "$APP_DIR" || true
+
 echo "==> Pulling latest code"
 # Preserve local .env; never overwrite production secrets
 git fetch origin

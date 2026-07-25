@@ -28,6 +28,10 @@ jobs:
           command_timeout: 10m
           script: |
             set -euo pipefail
+            # Avoid "dubious ownership" when Actions SSHs as root into a
+            # repo owned by elearning:www-data
+            git config --global --add safe.directory /srv/elearning
+
             cd /srv/elearning
 
             if [[ ! -d .git ]]; then
@@ -36,13 +40,17 @@ jobs:
               exit 1
             fi
 
-            if [[ ! -x deploy/update.sh ]]; then
-              chmod +x deploy/update.sh
-            fi
-
-            # Pull the new update.sh first so this run uses the latest script
+            echo "==> Fetching origin/main"
             git fetch origin
             git reset --hard origin/main
-            chmod +x deploy/update.sh
+            echo "    HEAD: $(git rev-parse --short HEAD) — $(git log -1 --pretty=%s)"
 
+            if [[ ! -f deploy/update.sh ]]; then
+              echo "ERROR: deploy/update.sh missing after pull."
+              echo "Confirm the file exists on the main branch of this GitHub repo."
+              ls -la deploy || true
+              exit 1
+            fi
+
+            chmod +x deploy/update.sh
             bash deploy/update.sh
