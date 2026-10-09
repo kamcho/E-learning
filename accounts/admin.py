@@ -22,17 +22,17 @@ class MyUserAdmin(BaseUserAdmin):
     """Admin configuration for the custom MyUser model."""
 
     list_display = (
-        'phone', 'email', 'first_name', 'last_name', 'role',
+        'phone', 'email', 'first_name', 'last_name', 'county', 'role',
         'referral_code', 'referral_points', 'is_active', 'date_joined',
     )
-    list_filter = ('role', 'is_active', 'is_staff', 'date_joined')
-    search_fields = ('phone', 'first_name', 'last_name', 'email', 'referral_code')
+    list_filter = ('role', 'county', 'is_active', 'is_staff', 'date_joined')
+    search_fields = ('phone', 'first_name', 'last_name', 'email', 'referral_code', 'county')
     ordering = ('-date_joined',)
 
     # Fields shown when editing an existing user
     fieldsets = (
         (None, {'fields': ('phone', 'password', 'google_id')}),
-        ('Personal Info', {'fields': ('first_name', 'last_name', 'email')}),
+        ('Personal Info', {'fields': ('first_name', 'last_name', 'email', 'county')}),
         ('Referrals', {'fields': ('referral_code', 'referred_by', 'referral_points')}),
         ('Role & Permissions', {
             'fields': ('role', 'is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions'),

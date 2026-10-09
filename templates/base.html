@@ -346,9 +346,29 @@
       display: flex;
       flex: 1;
       min-height: 0;
+      flex-direction: column;
+    }
+
+    .app-frame:has(.dashboard-sidebar) .app-header-brand {
+      display: none;
     }
 
     /* ── Sidebar shell ── */
+    .app-frame {
+      display: flex;
+      flex: 1;
+      min-height: 100vh;
+      min-width: 0;
+    }
+
+    .app-main-column {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
     .admin-sidebar {
       width: 256px;
       flex-shrink: 0;
@@ -357,8 +377,8 @@
       display: flex;
       flex-direction: column;
       position: sticky;
-      top: 64px;
-      height: calc(100vh - 64px);
+      top: 0;
+      height: 100vh;
       overflow-y: auto;
       overflow-x: hidden;
       scrollbar-width: thin;
@@ -798,14 +818,18 @@
 
       .admin-sidebar {
         position: fixed;
-        top: 64px;
+        top: 0;
         left: 0;
         width: min(280px, 88vw);
-        height: calc(100vh - 64px);
+        height: 100vh;
         z-index: 300;
         transform: translateX(-105%);
         transition: transform 0.25s ease;
         box-shadow: var(--shadow-lg);
+      }
+
+      .app-frame:has(.dashboard-sidebar) .app-header-brand {
+        display: flex;
       }
 
       body.sidebar-open .admin-sidebar {
@@ -839,9 +863,24 @@
     }
   </style>
   {% block extra_head %}{% endblock %}
+  {% include 'accounts/partials/dashboard_sidebar_styles.html' %}
 </head>
 <body class="app-body{% block body_class %}{% endblock %}{% if request.resolver_match.view_name == 'accounts:signin' or request.resolver_match.view_name == 'accounts:signup' %} app-body--auth{% endif %}">
 
+  <div class="app-frame">
+  {% block app_sidebar_overlay %}
+  {% if request.resolver_match.view_name != 'accounts:signin' and request.resolver_match.view_name != 'accounts:signup' %}
+  <div class="app-sidebar-overlay" id="app-sidebar-overlay" aria-hidden="true"></div>
+  {% endif %}
+  {% endblock app_sidebar_overlay %}
+
+  {% block app_sidebar %}
+  {% if request.resolver_match.view_name != 'accounts:signin' and request.resolver_match.view_name != 'accounts:signup' %}
+  {% include 'accounts/admin_sidebar.html' %}
+  {% endif %}
+  {% endblock app_sidebar %}
+
+  <div class="app-main-column">
   <header class="app-header">
     <div class="app-header-inner">
       {% block app_nav_toggle %}
@@ -882,7 +921,8 @@
             <span class="app-account-chevron">&#9660;</span>
           </button>
           <div class="app-account-dropdown" role="menu">
-            {% if request.user.is_admin_role %}
+            {% if request.user.is_platform_admin %}
+            <a href="{% url 'accounts:admin_dashboard' %}" role="menuitem">&#128736; Admin dashboard</a>
             <a href="{% url 'accounts:admin_profile' %}" role="menuitem">&#128100; Profile</a>
             {% elif request.user.is_guardian %}
             <a href="{% url 'accounts:guardian_dashboard' %}" role="menuitem">&#128100; My Learners</a>
@@ -921,19 +961,7 @@
     </div>
   </header>
 
-  {% block app_sidebar_overlay %}
-  {% if request.resolver_match.view_name != 'accounts:signin' and request.resolver_match.view_name != 'accounts:signup' %}
-  <div class="app-sidebar-overlay" id="app-sidebar-overlay" aria-hidden="true"></div>
-  {% endif %}
-  {% endblock app_sidebar_overlay %}
-
   <div class="app-layout{% if request.resolver_match.view_name == 'accounts:signin' or request.resolver_match.view_name == 'accounts:signup' %} app-layout--auth{% endif %}{% block app_layout_class %}{% endblock %}">
-    {% block app_sidebar %}
-    {% if request.resolver_match.view_name != 'accounts:signin' and request.resolver_match.view_name != 'accounts:signup' %}
-    {% include 'accounts/admin_sidebar.html' %}
-    {% endif %}
-    {% endblock app_sidebar %}
-
     <main class="app-main-area {% block main_extra_class %}{% endblock %}">
       {% if messages %}
         <div class="messages-container">
@@ -947,6 +975,8 @@
 
       {% block content %}{% endblock %}
     </main>
+  </div>
+  </div>
   </div>
 
   <script>

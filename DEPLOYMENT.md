@@ -10,7 +10,7 @@ Throughout this guide:
 - App directory: `/srv/elearning`
 - App user: `elearning`
 - Unix socket: `/run/elearning/elearning.sock`
-- Droplet IP: **159.223.143.29**
+- Droplet IP: **185.170.196.219** (legacy doc references `159.223.143.29` may be outdated)
 - Domain: **somasmartassesments.com** (www + apex)
 
 ---
@@ -32,7 +32,7 @@ python manage.py runserver
 Create an Ubuntu 24.04 droplet in the DigitalOcean panel, then from your machine:
 
 ```bash
-ssh root@159.223.143.29
+ssh root@185.170.196.219
 ```
 
 ## 2. System packages
@@ -334,7 +334,7 @@ restart `elearning` → reload nginx).
    # If you previously copied files with scp, convert to git:
    cd /srv
    mv elearning elearning.bak
-   git clone https://github.com/YOUR_USERNAME/YOUR_REPO.git elearning
+   git clone https://github.com/kamcho/E-learning.git elearning
    # restore production secrets + venv if needed:
    cp elearning.bak/.env elearning/.env
    # either move the old venv or recreate it:
@@ -346,12 +346,24 @@ restart `elearning` → reload nginx).
    ls -la /srv/elearning/deploy/update.sh
    ```
 
+   If the server was first deployed with **zip/scp** (no `.git` folder), run once:
+
+   ```bash
+   bash /srv/elearning/deploy/init-for-github-actions.sh
+   ```
+
+   Or from Windows (after uploading the script), with repo secrets configured:
+
+   ```powershell
+   .\deploy\set-github-secrets.ps1
+   ```
+
 2. In the GitHub repo → **Settings → Secrets and variables → Actions**,
    add these repository secrets:
 
    | Secret | Value |
    |---|---|
-   | `DROPLET_HOST` | `159.223.143.29` |
+   | `DROPLET_HOST` | `185.170.196.219` |
    | `DROPLET_USER` | `root` |
    | `DROPLET_SSH_PASSWORD` | your droplet root password |
    | `DROPLET_PORT` | `22` (optional) |

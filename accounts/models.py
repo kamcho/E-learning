@@ -54,6 +54,9 @@ pin_validator = RegexValidator(
 )
 
 
+from .counties import KENYA_COUNTY_CHOICES
+
+
 class MyUser(AbstractBaseUser, PermissionsMixin):
     """
     Custom user model for Soma Smart.
@@ -84,6 +87,13 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
         max_length=10,
         choices=Role.choices,
         default=Role.GUARDIAN,
+    )
+    county = models.CharField(
+        max_length=32,
+        choices=KENYA_COUNTY_CHOICES,
+        blank=True,
+        default='',
+        help_text='Kenyan county where the user is based (for regional focus).',
     )
     referral_code = models.CharField(
         max_length=16,
@@ -150,6 +160,20 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
     @property
     def is_admin_role(self):
         return self.role == Role.ADMIN
+
+    @property
+    def is_platform_admin(self):
+        """Staff-facing Soma Smart admin (dashboard, users, learners, billing)."""
+        return self.is_admin_role or self.is_staff or self.is_superuser
+
+    @property
+    def county_display(self):
+        from .counties import KENYA_COUNTY_LABELS
+        return KENYA_COUNTY_LABELS.get(self.county, '') or ''
+
+    @property
+    def needs_county(self):
+        return not bool((self.county or '').strip())
 
 
 class Student(models.Model):

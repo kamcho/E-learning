@@ -105,6 +105,7 @@ TEMPLATES = [
                 'django.template.context_processors.debug',
                 'accounts.context_processors.account_nav',
                 'accounts.context_processors.google_auth',
+                'accounts.context_processors.user_location',
             ],
         },
     },

@@ -1,48 +1,54 @@
-<div class="gd-metrics-grid">
-  <div class="gd-metric-card gd-metric-card--orange">
-    <div class="gd-metric-top">
-      <div class="gd-metric-icon" aria-hidden="true">&#128203;</div>
-      <div class="gd-metric-value gd-metric-value--split">
-        <span>{{ analytics.completed }}</span><span class="gd-metric-value-sep">/</span><span>{{ analytics.total_attempts }}</span>
+<div class="profile-stat-grid">
+  <article class="profile-stat-card">
+    <div class="profile-stat-top">
+      <div class="profile-stat-icon profile-stat-icon--orange" aria-hidden="true">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
       </div>
+      <div class="profile-stat-value">{{ analytics.completed }}<span class="profile-stat-value-sep">/</span>{{ analytics.total_attempts }}</div>
     </div>
-    <div class="gd-metric-label">Exam attempts</div>
-    <div class="gd-metric-footer">
-      <span class="gd-metric-footer-icon" aria-hidden="true">&#9989;</span>
-      <span>{{ analytics.completed }} finished · {{ analytics.total_attempts }} total</span>
+    <p class="profile-stat-label">Exam attempts</p>
+    <div class="profile-stat-footer">
+      <span>{{ analytics.completed }} finished</span>
+      <span class="profile-stat-footer-note">{{ analytics.total_attempts }} total</span>
     </div>
-  </div>
-  <div class="gd-metric-card gd-metric-card--blue">
-    <div class="gd-metric-top">
-      <div class="gd-metric-icon" aria-hidden="true">&#128200;</div>
-      <div class="gd-metric-value">{{ analytics.avg_score }}</div>
+  </article>
+  <article class="profile-stat-card">
+    <div class="profile-stat-top">
+      <div class="profile-stat-icon profile-stat-icon--blue" aria-hidden="true">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      </div>
+      <div class="profile-stat-value">{{ analytics.avg_score }}</div>
     </div>
-    <div class="gd-metric-label">Average score</div>
-    <div class="gd-metric-footer">
-      <span class="gd-metric-footer-icon" aria-hidden="true">&#128202;</span>
+    <p class="profile-stat-label">Average score</p>
+    <div class="profile-stat-footer">
       <span>Across all attempts</span>
+      <span class="profile-stat-footer-note">Score</span>
     </div>
-  </div>
-  <div class="gd-metric-card gd-metric-card--purple">
-    <div class="gd-metric-top">
-      <div class="gd-metric-icon" aria-hidden="true">&#127942;</div>
-      <div class="gd-metric-value">{{ analytics.best_score }}</div>
+  </article>
+  <article class="profile-stat-card">
+    <div class="profile-stat-top">
+      <div class="profile-stat-icon profile-stat-icon--purple" aria-hidden="true">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+      </div>
+      <div class="profile-stat-value">{{ analytics.best_score }}</div>
     </div>
-    <div class="gd-metric-label">Best score</div>
-    <div class="gd-metric-footer">
-      <span class="gd-metric-footer-icon" aria-hidden="true">&#11088;</span>
+    <p class="profile-stat-label">Best score</p>
+    <div class="profile-stat-footer">
       <span>Personal record</span>
+      <span class="profile-stat-footer-note">Highest</span>
     </div>
-  </div>
-  <div class="gd-metric-card gd-metric-card--green">
-    <div class="gd-metric-top">
-      <div class="gd-metric-icon" aria-hidden="true">&#128200;</div>
-      <div class="gd-metric-value">{{ analytics.completion_rate }}%</div>
+  </article>
+  <article class="profile-stat-card">
+    <div class="profile-stat-top">
+      <div class="profile-stat-icon profile-stat-icon--emerald" aria-hidden="true">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+      </div>
+      <div class="profile-stat-value">{{ analytics.completion_rate }}%</div>
     </div>
-    <div class="gd-metric-label">Completion rate</div>
-    <div class="gd-metric-footer">
-      <span class="gd-metric-footer-icon" aria-hidden="true">&#10003;</span>
+    <p class="profile-stat-label">Completion rate</p>
+    <div class="profile-stat-footer">
       <span>Exams finished</span>
+      <span class="profile-stat-footer-note">Rate</span>
     </div>
-  </div>
+  </article>
 </div>

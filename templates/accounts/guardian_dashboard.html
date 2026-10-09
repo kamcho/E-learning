@@ -85,7 +85,7 @@
     appearance: none;
     border: 1px solid var(--dash-border);
     background: var(--dash-input-bg) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%238b9aab' d='M6 8L1 3h10z'/%3E%3C/svg%3E") no-repeat right 0.85rem center;
-    border-radius: 10px;
+    border-radius: 6px;
     padding: 0.55rem 2rem 0.55rem 0.85rem;
     font-size: 0.85rem;
     font-weight: 600;
@@ -98,7 +98,7 @@
     align-items: center;
     gap: 0.4rem;
     padding: 0.55rem 1rem;
-    border-radius: 10px;
+    border-radius: 6px;
     font-size: 0.85rem;
     font-weight: 600;
     text-decoration: none;
@@ -146,118 +146,88 @@
     margin: 0 auto;
   }
 
-  /* Unified learner hero — replaces old command bar + strip */
   .gd-hero {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: var(--space-lg);
+    display: flex;
     align-items: center;
-    padding: 1.15rem 1.35rem;
+    justify-content: space-between;
+    gap: 1.25rem;
+    padding: 1.1rem 1.25rem;
     margin-bottom: var(--space-xl);
-    background: var(--dash-card);
-    border: 1px solid var(--dash-border);
-    border-radius: 18px;
-    box-shadow: var(--shadow-sm);
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
   }
 
   .gd-hero-identity {
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: 0.9rem;
     min-width: 0;
   }
 
   .gd-hero-avatar {
-    width: 64px;
-    height: 64px;
-    border-radius: 16px;
-    background: linear-gradient(145deg, var(--cs-crimson-mid) 0%, var(--cs-accent) 100%);
+    width: 48px;
+    height: 48px;
+    border-radius: 6px;
+    background: #4f46e5;
     display: flex;
     align-items: center;
     justify-content: center;
     font-family: var(--font-heading);
-    font-size: 1.25rem;
+    font-size: 0.95rem;
     font-weight: 800;
     color: #fff;
     flex-shrink: 0;
-    box-shadow: 0 8px 20px var(--cs-accent-glow);
   }
 
   .gd-hero-copy { min-width: 0; }
 
-  .gd-hero-kicker {
-    font-size: 0.72rem;
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--dash-muted);
-    margin: 0 0 0.2rem;
-  }
-
   .gd-hero-name {
     font-family: var(--font-heading);
-    font-size: 1.45rem;
+    font-size: 1.15rem;
     font-weight: 800;
-    color: var(--dash-text);
+    color: #1e293b;
     letter-spacing: -0.02em;
-    line-height: 1.15;
-    margin: 0 0 0.45rem;
+    line-height: 1.2;
+    margin: 0;
   }
 
   .gd-hero-meta {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 0.4rem 0.55rem;
-    font-size: 0.78rem;
-    color: var(--dash-muted);
+    gap: 0.35rem 0.45rem;
+    margin: 0.25rem 0 0;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: #64748b;
   }
 
-  .gd-hero-chip {
+  .gd-hero-dot {
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    background: #cbd5e1;
+  }
+
+  .gd-hero-status {
     display: inline-flex;
     align-items: center;
-    gap: 0.3rem;
-    padding: 0.2rem 0.6rem;
-    border-radius: 999px;
-    background: var(--dash-purple-light);
-    color: var(--dash-purple);
-    font-size: 0.72rem;
-    font-weight: 700;
+    gap: 0.35rem;
+    color: #059669;
+    font-weight: 600;
   }
 
-  .gd-hero-chip--live {
-    background: var(--cs-accent-dim);
-    color: var(--cs-accent);
-  }
-
-  .gd-hero-chip--live .gd-status-dot {
+  .gd-hero-status::before {
+    content: '';
     width: 7px;
     height: 7px;
     border-radius: 50%;
-    background: var(--cs-accent);
-    box-shadow: 0 0 0 3px var(--cs-accent-dim);
-  }
-
-  .gd-hero-enrolled {
-    color: var(--dash-muted);
+    background: #10b981;
   }
 
   .gd-hero-actions {
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0.65rem;
-  }
-
-  .gd-hero-tools {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 0.45rem;
-    flex-wrap: wrap;
-  }
-
-  .gd-hero-ctas {
     display: flex;
     align-items: center;
     justify-content: flex-end;
@@ -265,9 +235,23 @@
     flex-wrap: wrap;
   }
 
-  .gd-hero-ctas .gd-btn-primary {
-    min-width: 8.5rem;
-    justify-content: center;
+  .gd-hero-actions .gd-month-filter {
+    min-width: 9.5rem;
+    height: 36px;
+  }
+
+  .gd-hero-actions .gd-btn {
+    height: 36px;
+  }
+
+  @media (max-width: 900px) {
+    .gd-hero {
+      flex-direction: column;
+      align-items: stretch;
+    }
+    .gd-hero-actions {
+      justify-content: flex-start;
+    }
   }
 
   .gd-hero-empty {
@@ -276,37 +260,25 @@
     align-items: center;
     gap: var(--space-md);
     flex-wrap: wrap;
-    padding: 1.15rem 1.35rem;
+    padding: 1.1rem 1.25rem;
     margin-bottom: var(--space-xl);
-    background: var(--dash-card);
-    border: 1px solid var(--dash-border);
-    border-radius: 18px;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
   }
 
   .gd-hero-empty h1 {
     font-family: var(--font-heading);
-    font-size: 1.35rem;
+    font-size: 1.15rem;
     font-weight: 800;
-    color: var(--dash-text);
+    color: #1e293b;
     margin: 0 0 0.2rem;
   }
 
   .gd-hero-empty p {
     margin: 0;
     font-size: 0.88rem;
-    color: var(--dash-muted);
-  }
-
-  @media (max-width: 900px) {
-    .gd-hero {
-      grid-template-columns: 1fr;
-    }
-    .gd-hero-actions,
-    .gd-hero-tools,
-    .gd-hero-ctas {
-      justify-content: flex-start;
-      width: 100%;
-    }
+    color: #64748b;
   }
 
   .gd-command-bar {
@@ -441,8 +413,8 @@
 
   .gd-overview-row .chart-canvas-wrap {
     flex: 1;
-    min-height: 220px;
-    height: auto !important;
+    min-height: 320px;
+    height: 320px !important;
   }
 
   .gd-overview-row .gd-overview-activity {
@@ -459,7 +431,8 @@
 
   .gd-overview-row .gd-overview-activity .gd-bar-chart {
     flex: 1;
-    min-height: 96px;
+    min-height: 196px;
+    height: 196px;
   }
 
   .gd-overview-row .gd-overview-activity .gd-subject-pills {
@@ -527,21 +500,8 @@
     margin: 0.15rem 0 0;
   }
 
-  .gd-section--kpis .gd-metrics-grid {
+  .gd-section--kpis .profile-stat-grid {
     margin-bottom: 0;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-
-  @media (max-width: 1100px) {
-    .gd-section--kpis .gd-metrics-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-  }
-
-  @media (max-width: 640px) {
-    .gd-section--kpis .gd-metrics-grid {
-      grid-template-columns: 1fr;
-    }
   }
 
   .gd-dash-secondary .gd-card {
@@ -571,7 +531,7 @@
     }
 
     .gd-overview-row .chart-canvas-wrap {
-      height: 300px !important;
+      height: 400px !important;
       flex: none;
     }
 
@@ -602,7 +562,7 @@
   /* ── Profile card ── */
   .gd-profile-card {
     background: var(--dash-card);
-    border-radius: 18px;
+    border-radius: 8px;
     border: 1px solid var(--dash-border);
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
     overflow: hidden;
@@ -743,7 +703,7 @@
   .gd-icon-btn {
     width: 36px;
     height: 36px;
-    border-radius: 10px;
+    border-radius: 6px;
     border: 1px solid var(--dash-border);
     background: var(--dash-input-bg);
     display: flex;
@@ -885,7 +845,7 @@
 
   .gd-card {
     background: var(--dash-card);
-    border-radius: 18px;
+    border-radius: 8px;
     border: 1px solid var(--dash-border);
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.28);
     padding: 1.25rem;
@@ -1165,7 +1125,7 @@
 
   .gd-search-input {
     border: 1px solid var(--dash-border);
-    border-radius: 10px;
+    border-radius: 6px;
     padding: 0.5rem 0.85rem;
     font-size: 0.82rem;
     min-width: 200px;
@@ -1336,7 +1296,7 @@
       radial-gradient(ellipse 70% 80% at 0% 0%, rgba(61, 214, 198, 0.16), transparent 55%),
       var(--dash-card);
     border: 1px solid var(--dash-border);
-    border-radius: 20px;
+    border-radius: 8px;
     padding: 1.75rem 1.65rem;
   }
 
@@ -1375,7 +1335,7 @@
   .gd-onboard-cta {
     background: var(--dash-card);
     border: 1px solid var(--dash-border);
-    border-radius: 20px;
+    border-radius: 8px;
     padding: 1.5rem 1.35rem;
     display: flex;
     flex-direction: column;
@@ -1386,7 +1346,7 @@
   .gd-onboard-cta-icon {
     width: 2.75rem;
     height: 2.75rem;
-    border-radius: 14px;
+    border-radius: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1419,7 +1379,7 @@
   .gd-onboard-card {
     background: var(--dash-card);
     border: 1px solid var(--dash-border);
-    border-radius: 18px;
+    border-radius: 8px;
     padding: 1.25rem 1.2rem;
     display: flex;
     flex-direction: column;
@@ -1472,7 +1432,7 @@
   .gd-onboard-link-card {
     background: var(--dash-card);
     border: 1px solid var(--dash-border);
-    border-radius: 18px;
+    border-radius: 8px;
     padding: 1.25rem 1.2rem;
   }
 
@@ -1589,7 +1549,7 @@
   .gd-learner-modal {
     background: var(--dash-card);
     color: var(--dash-text);
-    border-radius: 20px;
+    border-radius: 8px;
     border: 1px solid var(--dash-border);
     box-shadow: 0 24px 64px rgba(0, 0, 0, 0.25);
     width: 100%;
@@ -1640,7 +1600,7 @@
     width: 100%;
     padding: 0.9rem 1rem;
     border: 2px solid var(--dash-border);
-    border-radius: 14px;
+    border-radius: 8px;
     background: var(--dash-input-bg);
     cursor: pointer;
     text-align: left;
@@ -1767,41 +1727,39 @@
         {{ active_student.first_name|first|upper }}{{ active_student.last_name|first|upper }}
       </div>
       <div class="gd-hero-copy">
-        <p class="gd-hero-kicker">Learner dashboard</p>
         <h1 class="gd-hero-name">{{ active_student.first_name }} {{ active_student.last_name }}</h1>
-        <div class="gd-hero-meta">
-          <span class="gd-hero-chip">{{ active_student.grade_level.name|default:"No grade" }}</span>
-          <span class="gd-hero-chip">{{ student_code }}</span>
-          <span class="gd-hero-chip gd-hero-chip--live"><span class="gd-status-dot"></span> Active</span>
+        <p class="gd-hero-meta">
+          <span>{{ active_student.grade_level.name|default:"No grade" }}</span>
+          <span class="gd-hero-dot" aria-hidden="true"></span>
+          <span>{{ student_code }}</span>
+          <span class="gd-hero-dot" aria-hidden="true"></span>
+          <span class="gd-hero-status">Active</span>
           {% if dashboard.enrolled_on %}
-          <span class="gd-hero-enrolled">Enrolled {{ dashboard.enrolled_on|date:"M d, Y" }}</span>
+          <span class="gd-hero-dot" aria-hidden="true"></span>
+          <span>Enrolled {{ dashboard.enrolled_on|date:"M d, Y" }}</span>
           {% endif %}
-        </div>
+        </p>
       </div>
     </div>
 
     <div class="gd-hero-actions">
-      <div class="gd-hero-tools">
-        {% if students|length > 1 %}
-        <button type="button" class="gd-btn gd-btn-outline" id="gd-change-learner-btn">Switch learner</button>
-        <select class="gd-select" id="student-switcher" aria-label="Select learner" hidden>
-          {% for student in students %}
-            <option value="{{ student.uuid }}" {% if active_student.uuid == student.uuid %}selected{% endif %}>
-              {{ student.first_name }} {{ student.last_name }}
-            </option>
-          {% endfor %}
-        </select>
-        {% endif %}
-        <input type="month" class="gd-month-filter" id="dashboard-month-filter" value="{{ dashboard_filters.month|default:'' }}" aria-label="Filter by month" title="Filter by month">
-        {% if dashboard_filters.month %}
-        <button type="button" class="gd-month-clear" id="dashboard-month-clear">Clear month</button>
-        {% endif %}
-        <a href="{% url 'accounts:add_learner' %}" class="gd-btn gd-btn-outline">+ Add</a>
-      </div>
-      <div class="gd-hero-ctas">
-        <a href="#exam-attempts" class="gd-btn gd-btn-outline">Exam history</a>
-        <a href="{% url 'core:exams_list' %}?student={{ active_student.uuid }}" class="gd-btn gd-btn-primary">Start exam</a>
-      </div>
+      {% if students|length > 1 %}
+      <button type="button" class="gd-btn gd-btn-outline" id="gd-change-learner-btn">Switch</button>
+      <select class="gd-select" id="student-switcher" aria-label="Select learner" hidden>
+        {% for student in students %}
+          <option value="{{ student.uuid }}" {% if active_student.uuid == student.uuid %}selected{% endif %}>
+            {{ student.first_name }} {{ student.last_name }}
+          </option>
+        {% endfor %}
+      </select>
+      {% endif %}
+      <input type="month" class="gd-month-filter" id="dashboard-month-filter" value="{{ dashboard_filters.month|default:'' }}" aria-label="Filter by month" title="Filter by month">
+      {% if dashboard_filters.month %}
+      <button type="button" class="gd-month-clear" id="dashboard-month-clear">Clear</button>
+      {% endif %}
+      <a href="{% url 'accounts:add_learner' %}" class="gd-btn gd-btn-outline">Add learner</a>
+      <a href="#exam-attempts" class="gd-btn gd-btn-outline">Exam history</a>
+      <a href="{% url 'core:exams_list' %}?student={{ active_student.uuid }}" class="gd-btn gd-btn-primary">Start exam</a>
     </div>
   </section>
 
@@ -2192,6 +2150,7 @@
   var learnerModal = document.getElementById('gd-learner-modal');
   if (learnerModal) {
     var mustSelect = {{ require_learner_selection|yesno:"true,false" }};
+    var countyRequired = {{ require_county_selection|yesno:"true,false" }};
     var confirmBtn = document.getElementById('gd-learner-modal-confirm');
     var cancelBtn = document.getElementById('gd-learner-modal-cancel');
     var optionsWrap = document.getElementById('gd-learner-modal-options');
@@ -2206,6 +2165,8 @@
     }
 
     function openLearnerModal() {
+      var countyModal = document.getElementById('county-location-modal');
+      if (countyRequired && countyModal && countyModal.classList.contains('is-open')) return;
       userPickedInModal = false;
       setSelected('', false);
       syncConfirmButton();
@@ -2270,10 +2231,27 @@
     }
 
     syncConfirmButton();
-    if (mustSelect) document.body.style.overflow = 'hidden';
+
+    // County modal must be completed first.
+    if (countyRequired) {
+      if (mustSelect) {
+        learnerModal.classList.remove('is-open');
+        learnerModal.dataset.autoOpen = '1';
+      }
+      window.addEventListener('county-saved', function () {
+        countyRequired = false;
+        if (mustSelect || learnerModal.dataset.autoOpen === '1') {
+          learnerModal.classList.add('is-open');
+          document.body.style.overflow = 'hidden';
+        }
+      });
+    } else if (mustSelect) {
+      document.body.style.overflow = 'hidden';
+    }
   }
 })();
 </script>
 {% include 'accounts/partials/attempt_score_chart_script.html' with chart_canvas_id='guardianAttemptScoreChart' chart_data_id='guardian-attempt-chart-data' %}
 {% include 'accounts/partials/subject_score_chart_script.html' with chart_canvas_id='guardianSubjectScoreChart' chart_data_id='guardian-subject-chart-data' %}
+{% include 'accounts/partials/county_location_modal.html' %}
 {% endblock %}

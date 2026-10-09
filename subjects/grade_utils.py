@@ -4,7 +4,7 @@ from subjects.models import GradeLevel
 
 # Canonical CBC progression (matches seed_kicd_curriculum.GRADE_LEVELS).
 GRADE_SLUG_ORDER = [
-    'pp1', 'pp2',
+    'play-group', 'pp1', 'pp2',
     'grade-1', 'grade-2', 'grade-3',
     'grade-4', 'grade-5', 'grade-6',
     'grade-7', 'grade-8', 'grade-9',

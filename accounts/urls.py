@@ -1,5 +1,6 @@
 from django.contrib.auth import views as auth_views
 from django.urls import path
+from django.views.generic import RedirectView
 
 from . import views
 from .forms import PinPasswordResetForm, PinSetPasswordForm
@@ -45,6 +46,7 @@ urlpatterns = [
     ),
     path('auth/google/', views.google_auth_view, name='google_auth'),
     path('complete-profile/', views.complete_profile_view, name='complete_profile'),
+    path('profile/county/', views.save_county_view, name='save_county'),
     path('signout/', views.signout_view, name='signout'),
     path('switch-role/', views.switch_role_view, name='switch_role'),
     path('dashboard/', views.guardian_dashboard_view, name='guardian_dashboard'),
@@ -60,6 +62,7 @@ urlpatterns = [
         name='teacher_question_detail',
     ),
     path('referral-dashboard/', views.referral_dashboard_view, name='referral_dashboard'),
+    path('admin/', RedirectView.as_view(pattern_name='accounts:admin_dashboard', permanent=False)),
     path('admin-dashboard/', views.admin_dashboard_view, name='admin_dashboard'),
     path('admin/users/', views.admin_users_list_view, name='admin_users_list'),
     path('admin/students/', views.admin_students_list_view, name='admin_students_list'),

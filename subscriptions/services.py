@@ -7,7 +7,7 @@ from .models import Payment, Subscription, SubscriptionPlan, TestCreditLog
 
 
 def _user_bypasses_subscription(user):
-    return user.is_authenticated and (user.is_admin_role or user.is_staff)
+    return user.is_authenticated and user.is_platform_admin
 
 
 def get_active_subscription(user):

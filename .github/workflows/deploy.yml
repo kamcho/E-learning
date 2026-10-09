@@ -23,11 +23,13 @@ jobs:
           host: ${{ secrets.DROPLET_HOST }}
           username: ${{ secrets.DROPLET_USER }}
           password: ${{ secrets.DROPLET_SSH_PASSWORD }}
-          port: ${{ secrets.DROPLET_PORT || 22 }}
+          port: 22
           script_stop: true
           command_timeout: 10m
           script: |
             set -euo pipefail
+            echo "==> Connected to $(hostname) ($(curl -s -m 3 ifconfig.me 2>/dev/null || echo unknown-ip))"
+
             # Avoid "dubious ownership" when Actions SSHs as root into a
             # repo owned by elearning:www-data
             git config --global --add safe.directory /srv/elearning
@@ -36,7 +38,8 @@ jobs:
 
             if [[ ! -d .git ]]; then
               echo "ERROR: /srv/elearning is not a git repo."
-              echo "Clone the GitHub repo there first (see DEPLOYMENT.md → GitHub Actions)."
+              echo "On the server run once: bash /srv/elearning/deploy/init-for-github-actions.sh"
+              echo "See DEPLOYMENT.md → GitHub Actions."
               exit 1
             fi
 

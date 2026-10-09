@@ -1,0 +1,485 @@
+{% if request.user.is_authenticated and needs_county %}
+<style>
+  .county-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    background: rgba(8, 12, 20, 0.78);
+    backdrop-filter: blur(5px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.25rem;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+  }
+  .county-overlay.is-open {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+  }
+
+  .county-modal {
+    width: min(440px, 100%);
+    max-height: min(92vh, 640px);
+    background: var(--dash-card, #ffffff);
+    color: var(--dash-text, #0f172a);
+    border: 1px solid var(--dash-border, rgba(15, 23, 42, 0.1));
+    border-radius: 18px;
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.35);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  html[data-theme="dark"] .county-modal {
+    background: var(--dash-card, #111827);
+    color: var(--dash-text, #eef2ff);
+  }
+
+  .county-modal-header {
+    padding: 1.25rem 1.35rem 1rem;
+    background: linear-gradient(135deg, #053d22 0%, #0a6e3e 55%, #0d8a4e 100%);
+    color: #fff;
+  }
+
+  .county-modal-kicker {
+    margin: 0 0 0.35rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    opacity: 0.8;
+  }
+
+  .county-modal-title {
+    margin: 0 0 0.35rem;
+    font-family: var(--font-heading, inherit);
+    font-size: 1.25rem;
+    font-weight: 800;
+  }
+
+  .county-modal-sub {
+    margin: 0;
+    font-size: 0.88rem;
+    line-height: 1.45;
+    opacity: 0.88;
+  }
+
+  .county-modal-body {
+    padding: 1rem 1.15rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    min-height: 0;
+    flex: 1;
+  }
+
+  .county-search-wrap {
+    position: relative;
+  }
+
+  .county-search {
+    width: 100%;
+    padding: 0.8rem 0.95rem 0.8rem 2.45rem;
+    border-radius: 12px;
+    border: 1.5px solid var(--dash-border, rgba(15, 23, 42, 0.12));
+    background: var(--dash-input-bg, #f8fafc);
+    color: var(--dash-text, #0f172a);
+    font-size: 0.95rem;
+  }
+
+  html[data-theme="dark"] .county-search {
+    background: var(--dash-input-bg, #0b1220);
+    color: var(--dash-text, #eef2ff);
+  }
+
+  .county-search:focus {
+    outline: none;
+    border-color: #0d8a4e;
+    box-shadow: 0 0 0 3px rgba(13, 138, 78, 0.2);
+  }
+
+  .county-search-icon {
+    position: absolute;
+    left: 0.85rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 1rem;
+    height: 1rem;
+    opacity: 0.55;
+    pointer-events: none;
+  }
+
+  .county-search-icon svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  .county-selected {
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.65rem;
+    padding: 0.65rem 0.85rem;
+    border-radius: 12px;
+    background: rgba(13, 138, 78, 0.12);
+    border: 1px solid rgba(13, 138, 78, 0.35);
+    color: var(--dash-text, #0f172a);
+    font-size: 0.9rem;
+    font-weight: 700;
+  }
+  .county-selected.is-visible { display: flex; }
+
+  .county-selected-clear {
+    border: none;
+    background: transparent;
+    color: var(--dash-muted, #64748b);
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+
+  .county-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    overflow-y: auto;
+    max-height: 280px;
+    border: 1px solid var(--dash-border, rgba(15, 23, 42, 0.1));
+    border-radius: 12px;
+    background: var(--dash-input-bg, #f8fafc);
+  }
+
+  html[data-theme="dark"] .county-list {
+    background: var(--dash-input-bg, #0b1220);
+  }
+
+  .county-option {
+    width: 100%;
+    text-align: left;
+    border: none;
+    background: transparent;
+    color: inherit;
+    padding: 0.72rem 0.9rem;
+    font-size: 0.92rem;
+    cursor: pointer;
+    border-bottom: 1px solid var(--dash-border, rgba(15, 23, 42, 0.06));
+  }
+
+  .county-option:last-child { border-bottom: none; }
+
+  .county-option:hover,
+  .county-option.is-active {
+    background: rgba(13, 138, 78, 0.12);
+  }
+
+  .county-option.is-selected {
+    background: rgba(13, 138, 78, 0.18);
+    font-weight: 700;
+    color: #0d8a4e;
+  }
+
+  .county-empty {
+    display: none;
+    padding: 1.25rem;
+    text-align: center;
+    color: var(--dash-muted, #64748b);
+    font-size: 0.88rem;
+  }
+  .county-empty.is-visible { display: block; }
+
+  .county-modal-footer {
+    padding: 0.9rem 1.15rem 1.2rem;
+    border-top: 1px solid var(--dash-border, rgba(15, 23, 42, 0.08));
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+  }
+
+  .county-save-btn {
+    width: 100%;
+    justify-content: center;
+    padding: 0.85rem 1rem;
+    border: none;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #0d8a4e, #065f36);
+    color: #fff;
+    font-weight: 700;
+    font-size: 0.95rem;
+    cursor: pointer;
+  }
+
+  .county-save-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  .county-error {
+    display: none;
+    margin: 0;
+    color: #dc2626;
+    font-size: 0.82rem;
+    text-align: center;
+  }
+  .county-error.is-visible { display: block; }
+
+  .county-hint {
+    margin: 0;
+    text-align: center;
+    font-size: 0.78rem;
+    color: var(--dash-muted, #64748b);
+  }
+</style>
+
+<div
+  class="county-overlay is-open"
+  id="county-location-modal"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="county-modal-title"
+  data-required="1"
+>
+  <div class="county-modal" role="document">
+    <div class="county-modal-header">
+      <p class="county-modal-kicker">Required</p>
+      <h2 class="county-modal-title" id="county-modal-title">Where are you based?</h2>
+      <p class="county-modal-sub">
+        Select your county to continue. This helps us focus learning support for your region.
+      </p>
+    </div>
+
+    <div class="county-modal-body">
+      <div class="county-search-wrap">
+        <span class="county-search-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="7"></circle>
+            <path d="M20 20l-3.5-3.5"></path>
+          </svg>
+        </span>
+        <input
+          type="search"
+          id="county-search"
+          class="county-search"
+          placeholder="Search county… e.g. Nairobi, Kisumu"
+          autocomplete="off"
+          aria-label="Search Kenyan counties"
+        >
+      </div>
+
+      <div class="county-selected" id="county-selected" aria-live="polite">
+        <span>Selected: <strong id="county-selected-label"></strong></span>
+        <button type="button" class="county-selected-clear" id="county-clear">Change</button>
+      </div>
+
+      <ul class="county-list" id="county-list" role="listbox" aria-label="Kenyan counties">
+        {% for slug, name in kenya_counties %}
+        <li>
+          <button
+            type="button"
+            class="county-option"
+            role="option"
+            data-slug="{{ slug }}"
+            data-name="{{ name }}"
+            aria-selected="false"
+          >{{ name }}</button>
+        </li>
+        {% endfor %}
+      </ul>
+      <p class="county-empty" id="county-empty">No county matches that search.</p>
+    </div>
+
+    <div class="county-modal-footer">
+      <p class="county-error" id="county-error" role="alert"></p>
+      <button type="button" class="county-save-btn" id="county-save" disabled>Save location &amp; continue</button>
+      <p class="county-hint">You must save your county before using the dashboard.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var overlay = document.getElementById('county-location-modal');
+  if (!overlay) return;
+
+  var search = document.getElementById('county-search');
+  var list = document.getElementById('county-list');
+  var empty = document.getElementById('county-empty');
+  var selectedWrap = document.getElementById('county-selected');
+  var selectedLabel = document.getElementById('county-selected-label');
+  var clearBtn = document.getElementById('county-clear');
+  var saveBtn = document.getElementById('county-save');
+  var errorEl = document.getElementById('county-error');
+  var options = Array.prototype.slice.call(list.querySelectorAll('.county-option'));
+  var selectedSlug = '';
+  var saved = false;
+  var saveUrl = '{% url "accounts:save_county" %}';
+
+  function getCookie(name) {
+    var match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+    return match ? decodeURIComponent(match[2]) : '';
+  }
+
+  function showError(message) {
+    errorEl.textContent = message || '';
+    errorEl.classList.toggle('is-visible', !!message);
+  }
+
+  function forceOpen() {
+    if (saved) return;
+    overlay.classList.add('is-open');
+    document.body.style.overflow = 'hidden';
+    var learnerOverlay = document.getElementById('gd-learner-modal');
+    if (learnerOverlay && learnerOverlay.classList.contains('is-open')) {
+      learnerOverlay.classList.remove('is-open');
+      learnerOverlay.dataset.autoOpen = '1';
+    }
+  }
+
+  function setSelected(slug, name) {
+    selectedSlug = slug || '';
+    options.forEach(function (btn) {
+      var on = btn.dataset.slug === selectedSlug;
+      btn.classList.toggle('is-selected', on);
+      btn.setAttribute('aria-selected', on ? 'true' : 'false');
+    });
+    if (selectedSlug) {
+      selectedLabel.textContent = name;
+      selectedWrap.classList.add('is-visible');
+      saveBtn.disabled = false;
+    } else {
+      selectedWrap.classList.remove('is-visible');
+      selectedLabel.textContent = '';
+      saveBtn.disabled = true;
+    }
+    showError('');
+  }
+
+  function filterList(query) {
+    var q = (query || '').trim().toLowerCase();
+    var visible = 0;
+    options.forEach(function (btn) {
+      var name = (btn.dataset.name || '').toLowerCase();
+      var slug = (btn.dataset.slug || '').toLowerCase();
+      var match = !q || name.indexOf(q) !== -1 || slug.indexOf(q) !== -1;
+      btn.parentElement.style.display = match ? '' : 'none';
+      if (match) visible += 1;
+    });
+    empty.classList.toggle('is-visible', visible === 0);
+    list.style.display = visible === 0 ? 'none' : '';
+  }
+
+  options.forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      setSelected(btn.dataset.slug, btn.dataset.name);
+      search.value = btn.dataset.name;
+      filterList('');
+    });
+  });
+
+  search.addEventListener('input', function () {
+    filterList(search.value);
+  });
+
+  search.addEventListener('keydown', function (e) {
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+    var first = options.find(function (btn) {
+      return btn.parentElement.style.display !== 'none';
+    });
+    if (first) {
+      setSelected(first.dataset.slug, first.dataset.name);
+      search.value = first.dataset.name;
+      filterList('');
+    }
+  });
+
+  clearBtn.addEventListener('click', function () {
+    setSelected('', '');
+    search.value = '';
+    filterList('');
+    search.focus();
+  });
+
+  // Block dismiss: Escape, backdrop click, browser back-focus tricks.
+  overlay.addEventListener('click', function (e) {
+    if (e.target === overlay) {
+      e.preventDefault();
+      e.stopPropagation();
+      forceOpen();
+      showError('Please select and save your county to continue.');
+    }
+  });
+
+  document.addEventListener('keydown', function (e) {
+    if (!saved && e.key === 'Escape') {
+      e.preventDefault();
+      e.stopPropagation();
+      forceOpen();
+      showError('Please select and save your county to continue.');
+    }
+  }, true);
+
+  saveBtn.addEventListener('click', function () {
+    if (!selectedSlug) {
+      showError('Please select your county.');
+      return;
+    }
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Saving…';
+    showError('');
+
+    fetch(saveUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': getCookie('csrftoken'),
+      },
+      credentials: 'same-origin',
+      body: JSON.stringify({ county: selectedSlug }),
+    })
+      .then(function (res) {
+        return res.json().then(function (data) { return { ok: res.ok, data: data }; });
+      })
+      .then(function (result) {
+        if (!result.ok || !result.data.ok) {
+          showError((result.data && result.data.error) || 'Could not save location.');
+          saveBtn.disabled = false;
+          saveBtn.textContent = 'Save location & continue';
+          forceOpen();
+          return;
+        }
+        saved = true;
+        overlay.classList.remove('is-open');
+        document.body.style.overflow = '';
+        var learnerModal = document.getElementById('gd-learner-modal');
+        if (learnerModal && learnerModal.dataset.autoOpen === '1') {
+          learnerModal.classList.add('is-open');
+          document.body.style.overflow = 'hidden';
+        }
+        window.dispatchEvent(new CustomEvent('county-saved', { detail: result.data }));
+      })
+      .catch(function () {
+        showError('Could not save location. Please try again.');
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Save location & continue';
+        forceOpen();
+      });
+  });
+
+  forceOpen();
+  window.setTimeout(function () { search.focus(); }, 50);
+
+  // If anything removes is-open before save, force it back.
+  var observer = new MutationObserver(function () {
+    if (!saved && !overlay.classList.contains('is-open')) {
+      forceOpen();
+    }
+  });
+  observer.observe(overlay, { attributes: true, attributeFilter: ['class'] });
+})();
+</script>
+{% endif %}

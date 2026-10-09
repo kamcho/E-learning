@@ -30,7 +30,7 @@ ADMIN_SUBSCRIPTIONS_PAGE_SIZE = 20
 
 
 def _admin_access_or_redirect(request):
-    if not (request.user.is_authenticated and (request.user.is_admin_role or request.user.is_staff)):
+    if not (request.user.is_authenticated and request.user.is_platform_admin):
         messages.error(request, "You don't have permission to view this page.")
         return redirect('core:landing')
     return None

@@ -1072,11 +1072,11 @@
 
   .exam-wizard {
     background: var(--clr-surface);
-    border-radius: var(--radius-xl);
+    border-radius: 8px;
     border: 1px solid var(--clr-border);
     box-shadow: var(--shadow-xl);
     width: 100%;
-    max-width: 480px;
+    max-width: 520px;
     overflow: hidden;
     transform: translateY(16px) scale(0.97);
     transition: transform 0.25s ease;
@@ -1085,9 +1085,19 @@
   .exam-wizard-overlay.is-open .exam-wizard { transform: translateY(0) scale(1); }
 
   .exam-wizard-top {
-    padding: 1.25rem 1.5rem 1rem;
+    padding: 1.1rem 1.35rem 0.85rem;
     border-bottom: 1px solid var(--clr-border);
-    background: linear-gradient(180deg, rgba(13, 138, 78, 0.06) 0%, transparent 100%);
+    background: var(--clr-surface-alt);
+  }
+
+  .exam-wizard-trail {
+    margin-top: 0.75rem;
+    margin-bottom: 0;
+    padding: 0.45rem 0.55rem;
+  }
+
+  .exam-wizard-trail:not(:has(.ew-trail-chip)) {
+    display: none;
   }
 
   .exam-wizard-helper {
@@ -1111,21 +1121,7 @@
 
   .exam-wizard-helper-name { font-weight: 800; font-size: 0.95rem; color: var(--clr-text); }
 
-  .exam-wizard-progress-track {
-    height: 5px; background: var(--clr-surface-alt);
-    border-radius: var(--radius-full); overflow: hidden; margin-bottom: 0.4rem;
-  }
-
-  .exam-wizard-progress-fill {
-    height: 100%; width: 0;
-    background: linear-gradient(90deg, var(--clr-primary), #10b981);
-    border-radius: var(--radius-full);
-    transition: width 0.4s ease;
-  }
-
-  .exam-wizard-step-label { font-size: 0.72rem; color: var(--clr-text-muted); font-weight: 600; }
-
-  .exam-wizard-body { padding: 1.35rem 1.5rem 1rem; min-height: 220px; position: relative; }
+  .exam-wizard-body { padding: 1.15rem 1.35rem 1rem; min-height: 220px; position: relative; }
 
   .exam-wizard-panel { display: none; animation: wizardFadeIn 0.3s ease; }
   .exam-wizard-panel.is-active { display: block; }
@@ -1149,41 +1145,87 @@
   .exam-wizard-options { display: flex; flex-direction: column; gap: 0.55rem; max-height: 42vh; overflow-y: auto; }
 
   .wizard-choice {
-    display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;
-    width: 100%; padding: 0.85rem 1rem;
-    border: 2px solid var(--clr-border); border-radius: var(--radius-lg);
-    background: var(--clr-surface); cursor: pointer; text-align: left;
-    transition: border-color 0.15s ease, background 0.15s ease, transform 0.15s ease;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 0.65rem;
+    width: 100%;
+    padding: 0.75rem 0.85rem;
+    border: 1px solid var(--clr-border);
+    border-radius: 8px;
+    background: var(--clr-surface);
+    cursor: pointer;
+    text-align: left;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
   }
 
   .wizard-choice:hover {
-    border-color: rgba(13, 138, 78, 0.45);
-    background: rgba(13, 138, 78, 0.04);
-    transform: translateX(3px);
+    border-color: rgba(99, 102, 241, 0.35);
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.08);
+    transform: translateY(-1px);
   }
 
-  .wizard-choice-name { font-weight: 700; font-size: 0.92rem; color: var(--clr-text); }
-  .wizard-choice-meta { font-size: 0.75rem; font-weight: 600; flex-shrink: 0; }
-  .wizard-choice-meta.is-custom { color: var(--clr-primary); }
-  .wizard-choice-meta.is-ready { color: var(--clr-text-muted); }
+  .wizard-choice-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 8px;
+    background: rgba(99, 102, 241, 0.1);
+    color: #6366f1;
+    font-weight: 800;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .wizard-choice-body { min-width: 0; }
+
+  .wizard-choice-name { font-weight: 800; font-size: 0.88rem; color: var(--clr-text); display: block; }
+  .wizard-choice-meta { font-size: 0.72rem; font-weight: 600; color: var(--clr-text-muted); display: block; margin-top: 0.1rem; }
+  .wizard-choice-meta.is-custom { color: #6366f1; }
+  .wizard-choice-meta.is-ready { color: #0d9488; }
+
+  .wizard-choice-chevron {
+    color: var(--clr-text-muted);
+    opacity: 0.45;
+    font-size: 1.1rem;
+    line-height: 1;
+  }
 
   .wizard-scope-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
 
   .wizard-scope-card {
-    display: flex; flex-direction: column; align-items: center; text-align: center;
-    gap: 0.35rem; padding: 1.1rem 0.75rem;
-    border: 2px solid var(--clr-border); border-radius: var(--radius-lg);
-    background: var(--clr-surface); cursor: pointer;
-    transition: border-color 0.15s ease, background 0.15s ease, transform 0.15s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    text-align: left;
+    gap: 0.25rem;
+    padding: 0.9rem 0.85rem;
+    border: 1px solid var(--clr-border);
+    border-radius: 8px;
+    background: var(--clr-surface);
+    cursor: pointer;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
   }
 
   .wizard-scope-card:hover {
-    border-color: var(--clr-primary);
-    background: rgba(13, 138, 78, 0.05);
+    border-color: rgba(99, 102, 241, 0.35);
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.08);
     transform: translateY(-2px);
   }
 
-  .wizard-scope-icon { font-size: 1.6rem; }
+  .wizard-scope-badge {
+    font-size: 0.62rem;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: #6366f1;
+    background: rgba(99, 102, 241, 0.1);
+    padding: 0.15rem 0.4rem;
+    border-radius: 4px;
+  }
+
   .wizard-scope-title { font-weight: 800; font-size: 0.88rem; color: var(--clr-text); }
   .wizard-scope-desc { font-size: 0.72rem; color: var(--clr-text-muted); line-height: 1.35; }
 
@@ -1267,10 +1309,7 @@
           <div class="exam-wizard-helper-name" id="exam-wizard-title">{{ selected_student.first_name }} {{ selected_student.last_name }}</div>
         </div>
       </div>
-      <div class="exam-wizard-progress-track">
-        <div class="exam-wizard-progress-fill" id="wizard-progress-fill"></div>
-      </div>
-      <div class="exam-wizard-step-label" id="wizard-progress-label">Step 1 of 5</div>
+      <nav class="ew-trail exam-wizard-trail" id="wizard-trail-picks" aria-label="Guide selections"></nav>
     </div>
 
     <div class="exam-wizard-body">
@@ -1298,14 +1337,14 @@
         <p class="exam-wizard-hint">A general test covers the whole subject. A strand test focuses on one CBC topic area.</p>
         <div class="wizard-scope-btns">
           <button type="button" class="wizard-scope-card" id="wizard-scope-general" data-scope="general">
-            <span class="wizard-scope-icon">📚</span>
+            <span class="wizard-scope-badge">Recommended</span>
             <span class="wizard-scope-title">General test</span>
             <span class="wizard-scope-desc">All topics in this subject</span>
           </button>
           <button type="button" class="wizard-scope-card" id="wizard-scope-strand" data-scope="strand">
-            <span class="wizard-scope-icon">🎯</span>
+            <span class="wizard-scope-badge">Focused</span>
             <span class="wizard-scope-title">Specific strand</span>
-            <span class="wizard-scope-desc">Focus on one CBC strand</span>
+            <span class="wizard-scope-desc">One CBC strand at a time</span>
           </button>
         </div>
       </div>
@@ -1368,18 +1407,16 @@
   {% include 'core/partials/exams_wizard_trail.html' %}
 
   <div class="ew-step ew-step--current">
-    <div class="ew-step-rail">
-      <div class="ew-step-marker">{{ exams_wizard.current_step_number }}</div>
-    </div>
     <div class="ew-step-card">
       <div class="ew-step-active-head">
-        <div class="ew-step-active-icon" aria-hidden="true">
-          {% if exams_wizard.current_phase == 'subject' %}📚
-          {% elif exams_wizard.current_phase == 'scope' %}🎯
-          {% elif exams_wizard.current_phase == 'strand' or exams_wizard.current_phase == 'sub_strand' %}🧵
-          {% else %}✅{% endif %}
-        </div>
-        <div>
+        <div class="ew-step-active-text">
+          <span class="ew-step-phase">
+            {% if exams_wizard.current_phase == 'subject' %}Subject
+            {% elif exams_wizard.current_phase == 'scope' %}Test focus
+            {% elif exams_wizard.current_phase == 'strand' %}Strand
+            {% elif exams_wizard.current_phase == 'sub_strand' %}Sub-strand
+            {% else %}Choose test{% endif %}
+          </span>
           <h2 class="ew-step-active-title">{{ exams_wizard.current_label }}</h2>
           <p class="ew-step-active-hint">{{ exams_wizard.current_hint }}</p>
         </div>
@@ -1547,6 +1584,36 @@
     {% if browse_subjects_by_grade|length > 1 or browse_all_grades %}
     <h3 class="grade-group-title">{{ group.grade_level.name }}</h3>
     {% endif %}
+    {% if exams_wizard %}
+    <div class="ew-choice-grid">
+      {% for item in group.subjects %}
+      <a href="{% url 'core:exams_list' %}?{{ exams_nav_student_prefix }}subject={{ item.subject.slug }}{% if browse_all_grades %}&grade={{ item.subject.grade_level.slug }}{% elif active_grade %}&grade={{ active_grade.slug }}{% endif %}"
+         class="ew-choice-card ew-choice-card--{% cycle '0' '1' '2' %}">
+        <span class="ew-choice-icon-wrap" aria-hidden="true">{{ item.subject.name|slice:":1"|upper }}</span>
+        <span class="ew-choice-main">
+          <span class="ew-choice-name">{{ item.subject.name }}</span>
+          <span class="ew-choice-desc">
+            {% if browse_all_grades or browse_subjects_by_grade|length > 1 %}{{ item.subject.grade_level.name }} · {% endif %}CBC practice &amp; revision
+          </span>
+          <span class="ew-choice-tags">
+            {% if item.count %}
+              <span class="ew-choice-tag ew-choice-tag--ready">{{ item.count }} test{{ item.count|pluralize }}</span>
+            {% else %}
+              <span class="ew-choice-tag ew-choice-tag--custom">Auto-build test</span>
+            {% endif %}
+            {% if item.question_count %}
+              <span class="ew-choice-tag">{{ item.question_count }} Qs</span>
+            {% endif %}
+            {% if selected_student %}
+              <span class="ew-choice-tag ew-choice-tag--{{ item.status_key }}">{{ item.status_label }}</span>
+            {% endif %}
+          </span>
+        </span>
+        <span class="ew-choice-arrow" aria-hidden="true">›</span>
+      </a>
+      {% endfor %}
+    </div>
+    {% else %}
     <div class="subject-browser-grid">
       {% for item in group.subjects %}
       <article class="subject-course-card subject-course-card--{% cycle '0' '1' '2' '3' %}">
@@ -1647,6 +1714,7 @@
       </article>
       {% endfor %}
     </div>
+    {% endif %}
   </div>
   {% empty %}
   <p style="color: var(--clr-text-muted); font-size: 0.9rem;">No subjects found{% if staff_exams_browse %} for this grade{% else %} for this learner's grade range{% endif %}.</p>
@@ -1666,31 +1734,43 @@
       {% endif %}
     </p>
   </div>
-  <div class="ew-choice-grid">
+  <div class="ew-choice-grid ew-choice-grid--focus">
     <a href="{% url 'core:exams_list' %}?{{ exams_nav_student_prefix }}subject={{ active_subject.slug }}&scope=general{% if exams_nav_grade %}&{{ exams_nav_grade }}{% endif %}"
-       class="ew-choice-card ew-choice-card--0 test-type-card">
-      <span class="ew-choice-icon-wrap"><span class="test-type-icon">📚</span></span>
-      <span class="ew-choice-name">Whole subject</span>
-      <span class="ew-choice-desc">Covers all topics in {{ active_subject.name }}</span>
-      {% if general_test_count %}
-        <span class="ew-choice-meta">{{ general_test_count }} test{{ general_test_count|pluralize }}</span>
-      {% else %}
-        <span class="ew-choice-meta">Custom test</span>
-      {% endif %}
+       class="ew-choice-card ew-choice-card--0 ew-choice-card--tile test-type-card">
+      <span class="ew-choice-icon-wrap" aria-hidden="true">W</span>
+      <span class="ew-choice-main">
+        <span class="ew-choice-name">Whole subject</span>
+        <span class="ew-choice-desc">All topics in {{ active_subject.name }}</span>
+        <span class="ew-choice-tags">
+          {% if general_test_count %}
+            <span class="ew-choice-tag ew-choice-tag--ready">{{ general_test_count }} test{{ general_test_count|pluralize }}</span>
+          {% else %}
+            <span class="ew-choice-tag ew-choice-tag--custom">Auto-build</span>
+          {% endif %}
+        </span>
+      </span>
     </a>
     <a href="{% url 'core:exams_list' %}?{{ exams_nav_student_prefix }}subject={{ active_subject.slug }}&scope=strand{% if exams_nav_grade %}&{{ exams_nav_grade }}{% endif %}"
-       class="ew-choice-card ew-choice-card--1 test-type-card">
-      <span class="ew-choice-icon-wrap"><span class="test-type-icon">🎯</span></span>
-      <span class="ew-choice-name">Strand</span>
-      <span class="ew-choice-desc">Focus on one CBC strand</span>
-      <span class="ew-choice-meta">{{ browse_strands|length }} strand{{ browse_strands|length|pluralize }}</span>
+       class="ew-choice-card ew-choice-card--1 ew-choice-card--tile test-type-card">
+      <span class="ew-choice-icon-wrap" aria-hidden="true">S</span>
+      <span class="ew-choice-main">
+        <span class="ew-choice-name">Strand</span>
+        <span class="ew-choice-desc">One CBC strand at a time</span>
+        <span class="ew-choice-tags">
+          <span class="ew-choice-tag">{{ browse_strands|length }} strand{{ browse_strands|length|pluralize }}</span>
+        </span>
+      </span>
     </a>
     <a href="{% url 'core:exams_list' %}?{{ exams_nav_student_prefix }}subject={{ active_subject.slug }}&scope=sub_strand{% if exams_nav_grade %}&{{ exams_nav_grade }}{% endif %}"
-       class="ew-choice-card ew-choice-card--2 test-type-card">
-      <span class="ew-choice-icon-wrap"><span class="test-type-icon">🔖</span></span>
-      <span class="ew-choice-name">Sub-strand</span>
-      <span class="ew-choice-desc">Narrow down to a specific sub-strand</span>
-      <span class="ew-choice-meta">{{ browse_sub_strands|length }} sub-strand{{ browse_sub_strands|length|pluralize }}</span>
+       class="ew-choice-card ew-choice-card--2 ew-choice-card--tile test-type-card">
+      <span class="ew-choice-icon-wrap" aria-hidden="true">SS</span>
+      <span class="ew-choice-main">
+        <span class="ew-choice-name">Sub-strand</span>
+        <span class="ew-choice-desc">Focused topic practice</span>
+        <span class="ew-choice-tags">
+          <span class="ew-choice-tag">{{ browse_sub_strands|length }} sub-strand{{ browse_sub_strands|length|pluralize }}</span>
+        </span>
+      </span>
     </a>
   </div>
 
@@ -1777,13 +1857,19 @@
     {% for item in browse_strands %}
       <a href="{% url 'core:exams_list' %}?{{ exams_nav_student_prefix }}subject={{ active_subject.slug }}&scope=strand&strand={{ item.strand.slug }}{% if exams_nav_grade %}&{{ exams_nav_grade }}{% endif %}"
          class="ew-choice-card ew-choice-card--{% cycle '0' '1' '2' %} topic-browser-card">
-        <span class="ew-choice-icon-wrap">🧵</span>
-        <span class="ew-choice-name">{{ item.strand.name }}</span>
-        {% if item.count %}
-          <span class="ew-choice-meta">{{ item.count }} test{{ item.count|pluralize }}</span>
-        {% else %}
-          <span class="ew-choice-meta">Custom test</span>
-        {% endif %}
+        <span class="ew-choice-icon-wrap" aria-hidden="true">{{ item.strand.name|slice:":1"|upper }}</span>
+        <span class="ew-choice-main">
+          <span class="ew-choice-name">{{ item.strand.name }}</span>
+          <span class="ew-choice-desc">CBC strand in {{ active_subject.name }}</span>
+          <span class="ew-choice-tags">
+            {% if item.count %}
+              <span class="ew-choice-tag ew-choice-tag--ready">{{ item.count }} test{{ item.count|pluralize }}</span>
+            {% else %}
+              <span class="ew-choice-tag ew-choice-tag--custom">Auto-build</span>
+            {% endif %}
+          </span>
+        </span>
+        <span class="ew-choice-arrow" aria-hidden="true">›</span>
       </a>
     {% empty %}
       <p style="color: var(--clr-text-muted); font-size: 0.9rem;">No strands defined for this subject yet.</p>
@@ -1811,14 +1897,19 @@
     {% for item in browse_sub_strands %}
       <a href="{% url 'core:exams_list' %}?{{ exams_nav_student_prefix }}subject={{ active_subject.slug }}&scope=sub_strand&sub_strand={{ item.sub_strand.slug }}{% if exams_nav_grade %}&{{ exams_nav_grade }}{% endif %}"
          class="ew-choice-card ew-choice-card--{% cycle '0' '1' '2' %} topic-browser-card">
-        <span class="ew-choice-icon-wrap">🔖</span>
-        <span class="ew-choice-name">{{ item.sub_strand.name }}</span>
-        <span class="ew-choice-desc">{{ item.strand.name }}</span>
-        {% if item.count %}
-          <span class="ew-choice-meta">{{ item.count }} test{{ item.count|pluralize }}</span>
-        {% else %}
-          <span class="ew-choice-meta">Custom test</span>
-        {% endif %}
+        <span class="ew-choice-icon-wrap" aria-hidden="true">{{ item.sub_strand.name|slice:":1"|upper }}</span>
+        <span class="ew-choice-main">
+          <span class="ew-choice-name">{{ item.sub_strand.name }}</span>
+          <span class="ew-choice-desc">Under {{ item.strand.name }}</span>
+          <span class="ew-choice-tags">
+            {% if item.count %}
+              <span class="ew-choice-tag ew-choice-tag--ready">{{ item.count }} test{{ item.count|pluralize }}</span>
+            {% else %}
+              <span class="ew-choice-tag ew-choice-tag--custom">Auto-build</span>
+            {% endif %}
+          </span>
+        </span>
+        <span class="ew-choice-arrow" aria-hidden="true">›</span>
       </a>
     {% empty %}
       <p style="color: var(--clr-text-muted); font-size: 0.9rem;">No sub-strands defined for this subject yet.</p>
@@ -1841,7 +1932,17 @@
 
 <!-- Results summary + grid -->
 {% if not show_subject_browser and not show_test_type_browser and not require_learner_selection %}
-{% if not exams_wizard %}
+{% if exams_wizard %}
+<div class="ew-tests-bar">
+  <p class="ew-tests-count">
+    <strong>{{ exam_entries|length }}</strong> test{{ exam_entries|length|pluralize }} ready
+    {% if active_subject %} · {{ active_subject.name }}{% endif %}
+  </p>
+  {% if active_subject %}
+  <a href="{% url 'core:exams_list' %}?{{ exams_nav_student_prefix }}subject={{ active_subject.slug }}{% if exams_nav_grade %}&{{ exams_nav_grade }}{% endif %}" class="subject-back-link">Change focus</a>
+  {% endif %}
+</div>
+{% elif not exams_wizard %}
 <div class="results-header">
   <div class="results-count">
     {{ exam_entries|length }} exam{{ exam_entries|length|pluralize }} found
@@ -1977,7 +2078,6 @@
       </div>
     </div>
   </div>
-</div>
 </div>
 {% endif %}
 
@@ -2118,8 +2218,7 @@
   var mustComplete = openOnLoad;
 
   var panels = wizard.querySelectorAll('[data-wizard-step]');
-  var progressFill = document.getElementById('wizard-progress-fill');
-  var progressLabel = document.getElementById('wizard-progress-label');
+  var trailEl = document.getElementById('wizard-trail-picks');
   var loadingText = document.getElementById('wizard-loading-text');
   var backBtn = document.getElementById('wizard-back-btn');
   var skipLink = document.getElementById('wizard-skip-link');
@@ -2134,13 +2233,33 @@
   };
 
   var history = [];
-  var TOTAL_STEPS = 5;
 
-  function setProgress(stepName) {
-    var map = { grade: 1, subject: 2, scope: 3, strand: 4, sub_strand: 4, difficulty: 5, complete: 5 };
-    var n = map[stepName] || 1;
-    progressFill.style.width = ((n / TOTAL_STEPS) * 100) + '%';
-    progressLabel.textContent = 'Step ' + n + ' of ' + TOTAL_STEPS;
+  function renderWizardTrail() {
+    if (!trailEl) return;
+    var picks = [];
+    if (state.gradeName) picks.push({ label: 'Grade', value: state.gradeName });
+    if (state.subjectName) picks.push({ label: 'Subject', value: state.subjectName });
+    if (state.scope === 'general') {
+      picks.push({ label: 'Focus', value: 'Whole subject' });
+    } else if (state.scope === 'strand' && state.strandName) {
+      picks.push({ label: 'Strand', value: state.strandName });
+    }
+    if (state.subStrandName) picks.push({ label: 'Sub-strand', value: state.subStrandName });
+    if (state.difficulty) picks.push({ label: 'Level', value: state.difficulty });
+
+    var html = '';
+    picks.forEach(function (pick, idx) {
+      if (idx > 0) html += '<span class="ew-trail-sep" aria-hidden="true"></span>';
+      html += '<span class="ew-trail-chip" role="listitem">'
+        + '<span class="ew-trail-chip-label">' + esc(pick.label) + '</span>'
+        + '<span class="ew-trail-chip-value">' + esc(pick.value) + '</span>'
+        + '</span>';
+    });
+    trailEl.innerHTML = html;
+  }
+
+  function setProgress() {
+    renderWizardTrail();
   }
 
   function showPanel(name) {
@@ -2170,6 +2289,7 @@
     state.scope = state.strand = state.strandName = '';
     state.subStrand = state.subStrandName = state.difficulty = '';
     state.cachedStrands = state.cachedSubStrands = [];
+    renderWizardTrail();
   }
 
   function fetchOptions(includeGrades) {
@@ -2229,8 +2349,11 @@
       btn.className = 'wizard-choice';
       var count = typeof item.count === 'number' ? item.count : 0;
       var meta = choiceMeta(count);
-      btn.innerHTML = '<span class="wizard-choice-name">' + esc(item.name) + '</span>'
-        + '<span class="wizard-choice-meta ' + meta.cls + '">' + meta.text + '</span>';
+      var initial = (item.name || '?').charAt(0).toUpperCase();
+      btn.innerHTML = '<span class="wizard-choice-icon">' + esc(initial) + '</span>'
+        + '<span class="wizard-choice-body"><span class="wizard-choice-name">' + esc(item.name) + '</span>'
+        + '<span class="wizard-choice-meta ' + meta.cls + '">' + meta.text + '</span></span>'
+        + '<span class="wizard-choice-chevron" aria-hidden="true">›</span>';
       btn.addEventListener('click', function () { onPick(item); });
       el.appendChild(btn);
     });

@@ -1,20 +1,22 @@
 <style>
   .exams-wizard-shell {
-    max-width: 1180px;
+    max-width: 1120px;
     margin: 0 auto;
+    padding-bottom: var(--space-2xl);
   }
 
+  /* ── Learner bar ── */
   .ew-learner-bar {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: var(--space-md);
     flex-wrap: wrap;
-    margin-bottom: var(--space-lg);
-    padding: 0.85rem 1.1rem;
+    margin-bottom: var(--space-md);
+    padding: 0.75rem 1rem;
     background: var(--clr-surface);
     border: 1px solid var(--clr-border);
-    border-radius: 16px;
+    border-radius: 8px;
   }
 
   .ew-learner-info {
@@ -25,15 +27,15 @@
   }
 
   .ew-learner-avatar {
-    width: 42px;
-    height: 42px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #8b1538 0%, #3dd6c6 100%);
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #6366f1 0%, #3dd6c6 100%);
     color: #fff;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.78rem;
+    font-size: 0.75rem;
     font-weight: 800;
     flex-shrink: 0;
   }
@@ -41,7 +43,7 @@
   .ew-learner-name {
     font-family: var(--font-heading);
     font-weight: 800;
-    font-size: 0.95rem;
+    font-size: 0.94rem;
     color: var(--clr-text);
   }
 
@@ -52,7 +54,7 @@
 
   .ew-learner-actions {
     display: flex;
-    gap: 0.5rem;
+    gap: 0.45rem;
     flex-wrap: wrap;
   }
 
@@ -62,8 +64,8 @@
     color: var(--clr-text-muted);
     background: var(--clr-surface-alt);
     border: 1px solid var(--clr-border);
-    border-radius: 10px;
-    padding: 0.42rem 0.85rem;
+    border-radius: 6px;
+    padding: 0.4rem 0.8rem;
     cursor: pointer;
     text-decoration: none;
     transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
@@ -71,190 +73,123 @@
 
   .ew-action-btn:hover {
     color: var(--clr-primary);
-    border-color: rgba(61, 214, 198, 0.35);
+    border-color: rgba(61, 214, 198, 0.4);
     background: rgba(61, 214, 198, 0.06);
   }
 
-  .ew-progress-card {
-    background: var(--clr-surface);
-    border: 1px solid var(--clr-border);
-    border-radius: 16px;
-    padding: 1rem 1.15rem 1.1rem;
-    margin-bottom: var(--space-lg);
-  }
-
-  .ew-progress-head {
+  /* ── Selection trail ── */
+  .ew-trail {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    justify-content: space-between;
-    gap: 0.75rem;
-    margin-bottom: 0.75rem;
-  }
-
-  .ew-progress-title {
-    font-family: var(--font-heading);
-    font-size: 0.92rem;
-    font-weight: 800;
-    color: var(--clr-text);
-  }
-
-  .ew-progress-count {
-    font-size: 0.78rem;
-    font-weight: 700;
-    color: var(--clr-text-muted);
-  }
-
-  .ew-progress-track {
-    height: 8px;
+    gap: 0.35rem 0.5rem;
+    margin-bottom: var(--space-md);
+    padding: 0.55rem 0.75rem;
     background: var(--clr-surface-alt);
-    border-radius: 999px;
-    overflow: hidden;
+    border: 1px solid var(--clr-border);
+    border-radius: 8px;
   }
 
-  .ew-progress-fill {
-    height: 100%;
-    border-radius: 999px;
-    background: linear-gradient(90deg, #c41e3a 0%, #3dd6c6 100%);
-    transition: width 0.35s ease;
+  .ew-trail:not(:has(.ew-trail-chip)) {
+    display: none;
   }
 
-  .ew-steps {
-    display: flex;
-    flex-direction: column;
-    gap: 0;
-  }
-
-  .ew-step {
-    display: grid;
-    grid-template-columns: 42px minmax(0, 1fr);
-    gap: 0.85rem;
-    position: relative;
-  }
-
-  .ew-step:not(:last-child) .ew-step-rail::after {
-    content: '';
-    position: absolute;
-    left: 50%;
-    top: 42px;
-    bottom: -0.65rem;
-    width: 2px;
-    transform: translateX(-50%);
-    background: linear-gradient(180deg, rgba(61, 214, 198, 0.45), rgba(61, 214, 198, 0.08));
-  }
-
-  .ew-step-rail {
-    position: relative;
-    display: flex;
-    justify-content: center;
-    padding-top: 0.35rem;
-  }
-
-  .ew-step-marker {
-    width: 34px;
-    height: 34px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.82rem;
-    font-weight: 800;
-    z-index: 1;
+  .ew-trail-sep {
+    width: 6px;
+    height: 6px;
+    border-right: 1.5px solid var(--clr-text-muted);
+    border-top: 1.5px solid var(--clr-text-muted);
+    transform: rotate(45deg);
+    opacity: 0.45;
     flex-shrink: 0;
   }
 
-  .ew-step--complete .ew-step-marker {
-    background: rgba(61, 214, 198, 0.15);
-    color: #3dd6c6;
-    border: 2px solid rgba(61, 214, 198, 0.35);
+  .ew-trail-chip {
+    display: inline-flex;
+    flex-direction: column;
+    gap: 0.05rem;
+    padding: 0.35rem 0.65rem;
+    border-radius: 6px;
+    background: var(--clr-surface);
+    border: 1px solid var(--clr-border);
+    text-decoration: none;
+    color: inherit;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
   }
 
-  .ew-step--current .ew-step-marker {
-    background: linear-gradient(135deg, #c41e3a, #3dd6c6);
-    color: #0a0f14;
-    box-shadow: 0 0 0 4px rgba(61, 214, 198, 0.15);
+  .ew-trail-chip:hover {
+    border-color: rgba(99, 102, 241, 0.45);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  }
+
+  .ew-trail-chip-label {
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--clr-text-muted);
+  }
+
+  .ew-trail-chip-value {
+    font-size: 0.82rem;
+    font-weight: 800;
+    color: var(--clr-text);
+    line-height: 1.2;
+  }
+
+  /* ── Current step panel ── */
+  .ew-step--current {
+    display: block;
   }
 
   .ew-step-card {
     background: var(--clr-surface);
     border: 1px solid var(--clr-border);
-    border-radius: 16px;
-    padding: 0.85rem 1rem;
-    margin-bottom: 0.85rem;
-  }
-
-  .ew-step--complete .ew-step-card {
-    background: var(--clr-surface-alt);
-    border-color: rgba(61, 214, 198, 0.12);
-  }
-
-  .ew-step--current .ew-step-card {
-    border-color: rgba(61, 214, 198, 0.28);
-    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.22);
+    border-radius: 8px;
     padding: 1rem 1.1rem 1.15rem;
     margin-bottom: var(--space-xl);
   }
 
-  .ew-step-card-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.65rem;
-    margin-bottom: 0.35rem;
-  }
-
-  .ew-step-label {
-    font-size: 0.68rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: var(--clr-text-muted);
-  }
-
-  .ew-step-change {
-    font-size: 0.72rem;
-    font-weight: 700;
-    color: var(--clr-primary);
-    text-decoration: none;
-  }
-
-  .ew-step-change:hover { text-decoration: underline; }
-
-  .ew-step-value {
-    font-family: var(--font-heading);
-    font-size: 1rem;
-    font-weight: 800;
-    color: var(--clr-text);
-    line-height: 1.35;
+  .ew-step--current .ew-step-card {
+    border-color: rgba(99, 102, 241, 0.22);
+    box-shadow: 0 8px 28px rgba(15, 23, 42, 0.08);
   }
 
   .ew-step-active-head {
     display: flex;
     align-items: flex-start;
-    gap: 0.85rem;
+    justify-content: space-between;
+    gap: 0.75rem;
     margin-bottom: 1rem;
     padding-bottom: 0.85rem;
     border-bottom: 1px solid var(--clr-border);
   }
 
-  .ew-step-active-icon {
-    width: 42px;
-    height: 42px;
-    border-radius: 12px;
-    background: rgba(61, 214, 198, 0.12);
-    color: #3dd6c6;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.2rem;
-    flex-shrink: 0;
+  .ew-step-active-text {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .ew-step-phase {
+    display: inline-block;
+    font-size: 0.65rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #6366f1;
+    background: rgba(99, 102, 241, 0.1);
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    margin-bottom: 0.35rem;
   }
 
   .ew-step-active-title {
     font-family: var(--font-heading);
-    font-size: 1.2rem;
+    font-size: 1.15rem;
     font-weight: 800;
     color: var(--clr-text);
-    margin: 0 0 0.25rem;
+    margin: 0 0 0.2rem;
+    line-height: 1.3;
   }
 
   .ew-step-active-hint {
@@ -265,19 +200,63 @@
   }
 
   .ew-step-body .subject-browser,
-  .ew-step-body .test-type-browser {
+  .ew-step-body .test-type-browser,
+  .ew-step-body .topic-browser {
     margin-bottom: 0;
   }
 
   .ew-step-body .subject-browser-header,
-  .ew-step-body .test-type-browser .subject-browser-header {
+  .ew-step-body .test-type-browser .subject-browser-header,
+  .ew-step-body .topic-browser .subject-browser-header {
     display: none;
   }
 
+  /* Grade segment (wizard) */
+  .exams-wizard-shell .grade-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    margin-bottom: 1rem;
+    padding: 0.35rem;
+    background: var(--clr-surface-alt);
+    border: 1px solid var(--clr-border);
+    border-radius: 8px;
+  }
+
+  .exams-wizard-shell .grade-tab {
+    padding: 0.4rem 0.85rem;
+    border-radius: 6px;
+    border: 1px solid transparent;
+    font-size: 0.8rem;
+    font-weight: 600;
+    background: transparent;
+  }
+
+  .exams-wizard-shell .grade-tab.active {
+    background: var(--clr-surface);
+    border-color: var(--clr-border);
+    color: var(--clr-text);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  }
+
+  .exams-wizard-shell .grade-group-title {
+    font-size: 0.72rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--clr-text-muted);
+    margin: 0 0 0.65rem;
+  }
+
+  /* ── Choice grids ── */
   .ew-choice-grid {
     display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.65rem;
+  }
+
+  .ew-choice-grid--focus {
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: var(--space-md);
   }
 
   .subject-browser-grid {
@@ -287,69 +266,242 @@
   }
 
   @media (max-width: 900px) {
-    .ew-choice-grid,
+    .ew-choice-grid { grid-template-columns: 1fr; }
+    .ew-choice-grid--focus { grid-template-columns: 1fr; }
     .subject-browser-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   }
 
   @media (max-width: 640px) {
-    .ew-choice-grid,
     .subject-browser-grid { grid-template-columns: 1fr; }
   }
 
+  /* ── Smart choice cards ── */
   .ew-choice-card {
-    display: flex;
-    flex-direction: column;
+    position: relative;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
     align-items: center;
-    text-align: center;
-    gap: 0.4rem;
-    padding: 1.15rem 1rem;
-    border: 2px solid var(--clr-border);
-    border-radius: 16px;
-    background: var(--clr-surface-alt);
+    gap: 0.75rem;
+    padding: 0.85rem 0.9rem;
+    border: 1px solid var(--clr-border);
+    border-radius: 8px;
+    background: var(--clr-surface);
     text-decoration: none;
     color: inherit;
-    transition: border-color 0.15s ease, background 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+    text-align: left;
+    overflow: hidden;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+  }
+
+  .ew-choice-card::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: var(--card-accent, #6366f1);
+    opacity: 0;
+    transition: opacity 0.15s ease;
   }
 
   .ew-choice-card:hover {
-    border-color: rgba(61, 214, 198, 0.45);
-    background: rgba(61, 214, 198, 0.06);
-    transform: translateY(-3px);
-    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.18);
+    border-color: rgba(99, 102, 241, 0.35);
+    box-shadow: 0 6px 20px rgba(15, 23, 42, 0.1);
+    transform: translateY(-2px);
   }
 
-  .ew-choice-card--0 { --card-accent: #3dd6c6; --card-soft: rgba(61, 214, 198, 0.12); }
-  .ew-choice-card--1 { --card-accent: #c41e3a; --card-soft: rgba(196, 30, 58, 0.12); }
-  .ew-choice-card--2 { --card-accent: #f4a261; --card-soft: rgba(244, 162, 97, 0.12); }
+  .ew-choice-card:hover::before {
+    opacity: 1;
+  }
+
+  .ew-choice-card--0 { --card-accent: #6366f1; --card-soft: rgba(99, 102, 241, 0.12); }
+  .ew-choice-card--1 { --card-accent: #0d9488; --card-soft: rgba(13, 148, 136, 0.12); }
+  .ew-choice-card--2 { --card-accent: #ea580c; --card-soft: rgba(234, 88, 12, 0.12); }
+
+  .ew-choice-card--tile {
+    grid-template-columns: 1fr;
+    text-align: center;
+    padding: 1.1rem 0.95rem;
+  }
+
+  .ew-choice-card--tile .ew-choice-main {
+    align-items: center;
+  }
+
+  .ew-choice-card--tile .ew-choice-tags {
+    justify-content: center;
+  }
+
+  .ew-choice-card--tile .ew-choice-arrow {
+    display: none;
+  }
 
   .ew-choice-icon-wrap {
-    width: 56px;
-    height: 56px;
-    border-radius: 14px;
-    background: var(--card-soft, rgba(61, 214, 198, 0.12));
+    width: 44px;
+    height: 44px;
+    border-radius: 8px;
+    background: var(--card-soft, rgba(99, 102, 241, 0.12));
+    color: var(--card-accent, #6366f1);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.5rem;
-    margin-bottom: 0.15rem;
+    font-size: 1rem;
+    font-weight: 800;
+    flex-shrink: 0;
+  }
+
+  .ew-choice-main {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    min-width: 0;
   }
 
   .ew-choice-name {
     font-weight: 800;
-    font-size: 0.92rem;
+    font-size: 0.9rem;
     color: var(--clr-text);
+    line-height: 1.3;
   }
 
   .ew-choice-desc {
     font-size: 0.76rem;
     color: var(--clr-text-muted);
-    line-height: 1.4;
+    line-height: 1.35;
+  }
+
+  .ew-choice-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+    margin-top: 0.25rem;
+  }
+
+  .ew-choice-tag {
+    font-size: 0.68rem;
+    font-weight: 700;
+    padding: 0.15rem 0.45rem;
+    border-radius: 4px;
+    background: var(--clr-surface-alt);
+    color: var(--clr-text-muted);
+    border: 1px solid var(--clr-border);
+  }
+
+  .ew-choice-tag--ready {
+    color: #0d9488;
+    background: rgba(13, 148, 136, 0.1);
+    border-color: rgba(13, 148, 136, 0.2);
+  }
+
+  .ew-choice-tag--custom {
+    color: #6366f1;
+    background: rgba(99, 102, 241, 0.1);
+    border-color: rgba(99, 102, 241, 0.2);
+  }
+
+  .ew-choice-tag--ongoing {
+    color: #ea580c;
+    background: rgba(234, 88, 12, 0.1);
+    border-color: rgba(234, 88, 12, 0.2);
+  }
+
+  .ew-choice-tag--completed {
+    color: #0d9488;
+    background: rgba(13, 148, 136, 0.1);
+    border-color: rgba(13, 148, 136, 0.2);
   }
 
   .ew-choice-meta {
     font-size: 0.72rem;
     font-weight: 700;
     color: var(--card-accent, var(--clr-primary));
-    margin-top: 0.15rem;
+  }
+
+  .ew-choice-arrow {
+    font-size: 1.25rem;
+    font-weight: 300;
+    color: var(--clr-text-muted);
+    line-height: 1;
+    flex-shrink: 0;
+    opacity: 0.5;
+    transition: transform 0.15s ease, opacity 0.15s ease;
+  }
+
+  .ew-choice-card:hover .ew-choice-arrow {
+    opacity: 1;
+    transform: translateX(2px);
+    color: var(--card-accent, #6366f1);
+  }
+
+  /* ── Test list inside wizard ── */
+  .ew-tests-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+  }
+
+  .ew-tests-count {
+    font-size: 0.84rem;
+    color: var(--clr-text-muted);
+    margin: 0;
+  }
+
+  .ew-tests-count strong {
+    color: var(--clr-text);
+    font-weight: 800;
+  }
+
+  .exams-wizard-shell .exams-grid {
+    gap: 0.75rem;
+  }
+
+  .exams-wizard-shell .exam-card {
+    border-radius: 8px;
+    padding: 1rem 1.05rem;
+    box-shadow: none;
+  }
+
+  .exams-wizard-shell .exam-card:hover {
+    border-color: rgba(99, 102, 241, 0.25);
+  }
+
+  .exams-wizard-shell .exam-title {
+    font-size: 0.98rem;
+  }
+
+  .exams-wizard-shell .exam-stat-row {
+    margin-bottom: 0.85rem;
+    padding: 0.65rem 0;
+  }
+
+  .exams-wizard-shell .exam-stat-val {
+    font-size: 1.15rem;
+  }
+
+  .exams-wizard-shell .exam-btn {
+    border-radius: 6px;
+    padding: 0.62rem 0.85rem;
+    font-size: 0.84rem;
+  }
+
+  .exams-wizard-shell .empty-state {
+    border: 1px dashed var(--clr-border);
+    border-radius: 8px;
+    background: var(--clr-surface-alt);
+  }
+
+  .subject-back-link {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--clr-text-muted);
+    text-decoration: none;
+  }
+
+  .subject-back-link:hover {
+    color: var(--clr-primary);
   }
 </style>

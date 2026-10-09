@@ -3,616 +3,473 @@
 {% block title %}My Subscription — Soma Smart{% endblock %}
 
 {% block extra_head %}
+{% include 'accounts/partials/gd_metric_cards_styles.html' %}
 <style>
   .mysub-page {
-    max-width: 960px;
+    max-width: 1080px;
     margin: 0 auto;
-    padding-bottom: var(--space-3xl);
   }
 
-  .mysub-top {
+  .mysub-head {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     justify-content: space-between;
-    gap: var(--space-lg);
+    gap: 1rem;
     flex-wrap: wrap;
-    margin-bottom: var(--space-xl);
+    margin-bottom: 1.25rem;
   }
-
-  .mysub-breadcrumb {
-    font-size: 0.8rem;
-    color: var(--clr-text-muted);
-    margin-bottom: 0.35rem;
-  }
-
-  .mysub-breadcrumb a {
-    color: var(--clr-text-muted);
-    text-decoration: none;
-  }
-
-  .mysub-breadcrumb a:hover { color: var(--clr-primary); }
 
   .mysub-title {
+    margin: 0;
     font-family: var(--font-heading);
-    font-size: 1.75rem;
+    font-size: 1.35rem;
     font-weight: 800;
     letter-spacing: -0.02em;
-    margin: 0;
     color: var(--clr-text);
   }
 
   .mysub-subtitle {
-    font-size: 0.9rem;
+    margin: 0.25rem 0 0;
+    font-size: 0.875rem;
     color: var(--clr-text-muted);
-    margin: 0.35rem 0 0;
   }
 
-  .mysub-top-actions {
+  .mysub-actions {
     display: flex;
     gap: 0.5rem;
     flex-wrap: wrap;
   }
 
-  /* ── Balance hero ── */
-  .mysub-hero {
-    position: relative;
-    border-radius: var(--radius-xl);
-    overflow: hidden;
-    margin-bottom: var(--space-xl);
-    box-shadow: var(--shadow-lg);
-    background: var(--grad-hero);
+  .mysub-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 36px;
+    padding: 0 0.9rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-decoration: none;
+    border: 1px solid #e2e8f0;
+    background: #fff;
+    color: #1e293b;
+  }
+
+  .mysub-btn-primary {
+    background: #0d8a4e;
+    border-color: #0d8a4e;
     color: #fff;
   }
 
-  .mysub-hero::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background:
-      radial-gradient(circle at 85% 20%, rgba(255,255,255,0.18) 0%, transparent 45%),
-      radial-gradient(circle at 10% 90%, rgba(0,0,0,0.12) 0%, transparent 50%);
-    pointer-events: none;
+  .mysub-plan {
+    display: grid;
+    grid-template-columns: minmax(0, 1.4fr) minmax(220px, 0.8fr);
+    gap: 1.25rem;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 1.25rem 1.35rem;
+    margin-bottom: 1.25rem;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
   }
 
-  .mysub-hero-inner {
-    position: relative;
-    padding: 1.5rem 1.65rem 1.35rem;
-  }
-
-  .mysub-hero-label {
-    font-size: 0.68rem;
+  .mysub-kicker {
+    margin: 0 0 0.3rem;
+    font-size: 0.7rem;
     font-weight: 700;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
-    letter-spacing: 0.08em;
-    opacity: 0.85;
-    margin-bottom: 0.35rem;
+    color: #64748b;
   }
 
-  .mysub-hero-balance {
-    font-family: var(--font-heading);
-    font-size: 2.35rem;
-    font-weight: 900;
-    line-height: 1.1;
-    margin-bottom: 0.25rem;
+  .mysub-plan-name {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: #1e293b;
   }
 
-  .mysub-hero-plan {
-    font-size: 0.95rem;
-    font-weight: 600;
-    opacity: 0.92;
-    margin-bottom: 1.15rem;
-  }
-
-  .mysub-hero-meta {
+  .mysub-plan-meta {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.5rem 1rem;
-    font-size: 0.82rem;
-    opacity: 0.9;
-    margin-bottom: 1.1rem;
+    gap: 0.35rem 0.7rem;
+    margin: 0.55rem 0 0;
+    font-size: 0.8125rem;
+    color: #64748b;
   }
 
-  .mysub-hero-meta span {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
+  .mysub-balance {
+    text-align: right;
+  }
+
+  .mysub-balance-value {
+    margin: 0;
+    font-size: 1.75rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    color: #1e293b;
+    line-height: 1.1;
+  }
+
+  .mysub-balance-label {
+    margin: 0.25rem 0 0;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #64748b;
   }
 
   .mysub-usage {
-    background: rgba(255, 255, 255, 0.15);
-    border-radius: var(--radius-lg);
-    padding: 0.75rem 0.9rem;
+    grid-column: 1 / -1;
+    padding-top: 0.9rem;
+    border-top: 1px solid #f1f5f9;
   }
 
   .mysub-usage-head {
     display: flex;
     justify-content: space-between;
+    margin-bottom: 0.4rem;
     font-size: 0.75rem;
     font-weight: 600;
-    margin-bottom: 0.45rem;
-    opacity: 0.95;
+    color: #64748b;
   }
 
   .mysub-usage-track {
-    height: 7px;
-    background: rgba(255, 255, 255, 0.25);
-    border-radius: var(--radius-full);
+    height: 6px;
+    background: #e2e8f0;
+    border-radius: 999px;
     overflow: hidden;
   }
 
   .mysub-usage-fill {
     height: 100%;
+    background: #0d8a4e;
+    border-radius: 999px;
+  }
+
+  .mysub-empty {
     background: #fff;
-    border-radius: var(--radius-full);
-    transition: width 0.5s ease;
-  }
-
-  .mysub-hero-empty {
-    padding: 2rem 1.65rem;
-    text-align: center;
-  }
-
-  .mysub-hero-empty-icon { font-size: 2.5rem; margin-bottom: 0.65rem; }
-  .mysub-hero-empty h2 {
-    font-family: var(--font-heading);
-    font-size: 1.35rem;
-    font-weight: 800;
-    margin: 0 0 0.4rem;
-  }
-  .mysub-hero-empty p {
-    margin: 0 0 1.1rem;
-    opacity: 0.9;
-    font-size: 0.9rem;
-    max-width: 360px;
-    margin-left: auto;
-    margin-right: auto;
-    line-height: 1.45;
-  }
-
-  /* ── Stat row ── */
-  .mysub-stats {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: var(--space-md);
-    margin-bottom: var(--space-xl);
-  }
-
-  @media (max-width: 640px) {
-    .mysub-stats { grid-template-columns: 1fr; }
-  }
-
-  .mysub-stat {
-    background: var(--clr-surface);
-    border: 1px solid var(--clr-border);
-    border-radius: var(--radius-lg);
-    padding: 1rem 1.1rem;
-    box-shadow: var(--shadow-sm);
-  }
-
-  .mysub-stat-icon {
-    width: 36px;
-    height: 36px;
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1rem;
-    margin-bottom: 0.55rem;
-  }
-
-  .mysub-stat-icon.green { background: rgba(13, 138, 78, 0.1); }
-  .mysub-stat-icon.gold { background: rgba(212, 160, 23, 0.12); }
-  .mysub-stat-icon.blue { background: rgba(59, 130, 246, 0.1); }
-
-  .mysub-stat-val {
-    font-family: var(--font-heading);
-    font-size: 1.45rem;
-    font-weight: 800;
-    color: var(--clr-text);
-    line-height: 1.1;
-  }
-
-  .mysub-stat-lbl {
-    font-size: 0.72rem;
-    font-weight: 600;
-    color: var(--clr-text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    margin-top: 0.2rem;
-  }
-
-  /* ── Quick top-up ── */
-  .mysub-section-title {
-    font-family: var(--font-heading);
-    font-size: 1.05rem;
-    font-weight: 800;
-    margin: 0 0 var(--space-md);
-    color: var(--clr-text);
-  }
-
-  .mysub-quick-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: var(--space-md);
-    margin-bottom: var(--space-2xl);
-  }
-
-  .mysub-quick-card {
-    display: flex;
-    flex-direction: column;
-    background: var(--clr-surface);
-    border: 1px solid var(--clr-border);
-    border-radius: var(--radius-lg);
-    padding: 1rem 1.1rem;
-    text-decoration: none;
-    color: inherit;
-    transition: border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
-  }
-
-  .mysub-quick-card:hover {
-    border-color: rgba(13, 138, 78, 0.4);
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-md);
-  }
-
-  .mysub-quick-card.featured {
-    border-color: var(--clr-primary);
-    background: linear-gradient(180deg, rgba(13, 138, 78, 0.04) 0%, var(--clr-surface) 100%);
-  }
-
-  .mysub-quick-name {
-    font-weight: 800;
-    font-size: 0.92rem;
-    margin-bottom: 0.2rem;
-  }
-
-  .mysub-quick-meta {
-    font-size: 0.78rem;
-    color: var(--clr-primary);
-    font-weight: 700;
-    margin-bottom: 0.5rem;
-  }
-
-  .mysub-quick-price {
-    font-family: var(--font-heading);
-    font-size: 1.25rem;
-    font-weight: 900;
-    color: var(--clr-text);
-    margin-top: auto;
-  }
-
-  .mysub-quick-cta {
-    font-size: 0.75rem;
-    font-weight: 700;
-    color: var(--clr-primary);
-    margin-top: 0.35rem;
-  }
-
-  /* ── Two-column lower ── */
-  .mysub-columns {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: var(--space-xl);
-  }
-
-  @media (max-width: 768px) {
-    .mysub-columns { grid-template-columns: 1fr; }
-  }
-
-  .mysub-panel {
-    background: var(--clr-surface);
-    border: 1px solid var(--clr-border);
-    border-radius: var(--radius-xl);
-    padding: 1.25rem 1.35rem;
-    box-shadow: var(--shadow-sm);
-  }
-
-  .mysub-panel-head {
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1.25rem;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: var(--space-md);
+    gap: 1rem;
+    flex-wrap: wrap;
   }
 
-  .mysub-panel-title {
-    font-family: var(--font-heading);
-    font-size: 1rem;
+  .mysub-empty h2 {
+    margin: 0 0 0.25rem;
+    font-size: 1.1rem;
     font-weight: 800;
+    color: #1e293b;
+  }
+
+  .mysub-empty p {
     margin: 0;
+    font-size: 0.875rem;
+    color: #64748b;
+    max-width: 460px;
   }
 
-  /* Activity feed */
-  .mysub-activity { list-style: none; padding: 0; margin: 0; }
-
-  .mysub-activity-item {
-    display: flex;
-    align-items: flex-start;
-    gap: 0.75rem;
-    padding: 0.7rem 0;
-    border-bottom: 1px solid var(--clr-border);
+  .mysub-page .profile-stat-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    margin-bottom: 0.25rem;
   }
 
-  .mysub-activity-item:last-child { border-bottom: none; }
-
-  .mysub-activity-dot {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.85rem;
-    flex-shrink: 0;
-  }
-
-  .mysub-activity-dot.add { background: rgba(13, 138, 78, 0.12); }
-  .mysub-activity-dot.use { background: rgba(59, 130, 246, 0.1); }
-
-  .mysub-activity-text {
-    font-size: 0.84rem;
+  .mysub-section {
+    margin: 1.5rem 0 0.75rem;
+    font-size: 0.95rem;
+    font-weight: 800;
     color: var(--clr-text);
-    line-height: 1.4;
-    flex: 1;
-    min-width: 0;
   }
 
-  .mysub-activity-text strong { font-weight: 700; }
-
-  .mysub-activity-time {
-    font-size: 0.72rem;
-    color: var(--clr-text-muted);
-    flex-shrink: 0;
-    white-space: nowrap;
+  .mysub-plans {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 0.85rem;
+    margin-bottom: 1.5rem;
   }
 
-  /* Payments */
-  .mysub-payment {
+  .mysub-plan-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 1rem 1.05rem;
+    text-decoration: none;
+    color: inherit;
+  }
+
+  .mysub-plan-card:hover { border-color: #86efac; }
+
+  .mysub-plan-card.is-featured { border-color: #0d8a4e; }
+
+  .mysub-plan-card strong { font-size: 0.92rem; color: #1e293b; }
+  .mysub-plan-card span { font-size: 0.75rem; color: #64748b; }
+  .mysub-plan-card em {
+    margin-top: 0.45rem;
+    font-style: normal;
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: #0d8a4e;
+  }
+
+  .mysub-columns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+
+  .mysub-panel {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 1rem 1.1rem 0.4rem;
+  }
+
+  .mysub-panel h3 {
+    margin: 0 0 0.35rem;
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: #1e293b;
+  }
+
+  .mysub-row {
     display: flex;
     align-items: center;
     gap: 0.75rem;
     padding: 0.75rem 0;
-    border-bottom: 1px solid var(--clr-border);
+    border-top: 1px solid #f1f5f9;
   }
 
-  .mysub-payment:last-child { border-bottom: none; }
+  .mysub-row p {
+    margin: 0;
+    flex: 1;
+    min-width: 0;
+    font-size: 0.84rem;
+    color: #334155;
+    line-height: 1.4;
+  }
 
-  .mysub-payment-icon {
-    width: 40px;
-    height: 40px;
-    border-radius: var(--radius-md);
-    background: rgba(13, 138, 78, 0.08);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.1rem;
+  .mysub-row time,
+  .mysub-amount {
     flex-shrink: 0;
-  }
-
-  .mysub-payment-body { flex: 1; min-width: 0; }
-
-  .mysub-payment-plan {
-    font-weight: 700;
-    font-size: 0.88rem;
-    color: var(--clr-text);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .mysub-payment-meta {
     font-size: 0.75rem;
-    color: var(--clr-text-muted);
-    margin-top: 2px;
+    font-weight: 600;
+    color: #94a3b8;
   }
 
-  .mysub-payment-right {
+  .mysub-amount {
     text-align: right;
-    flex-shrink: 0;
-  }
-
-  .mysub-payment-amount {
-    font-family: var(--font-heading);
+    color: #1e293b;
+    font-size: 0.88rem;
     font-weight: 800;
-    font-size: 0.92rem;
-    color: var(--clr-text);
   }
 
-  .mysub-status {
-    display: inline-block;
+  .mysub-amount small {
+    display: block;
+    margin-top: 0.15rem;
     font-size: 0.65rem;
     font-weight: 700;
-    text-transform: uppercase;
     letter-spacing: 0.04em;
-    padding: 0.15rem 0.45rem;
-    border-radius: var(--radius-full);
-    margin-top: 0.2rem;
+    text-transform: uppercase;
+    color: #64748b;
   }
 
-  .mysub-status.success { background: rgba(13, 138, 78, 0.12); color: var(--clr-primary); }
-  .mysub-status.pending { background: rgba(212, 160, 23, 0.12); color: #b8860b; }
-  .mysub-status.failed { background: rgba(193, 39, 45, 0.1); color: var(--clr-danger); }
+  .mysub-amount small.success { color: #0d8a4e; }
+  .mysub-amount small.pending { color: #b45309; }
+  .mysub-amount small.failed { color: #dc2626; }
 
-  .mysub-empty-sm {
-    text-align: center;
-    padding: 1.5rem 0.5rem;
-    color: var(--clr-text-muted);
-    font-size: 0.88rem;
+  .mysub-blank {
+    padding: 1.25rem 0 1rem;
+    font-size: 0.85rem;
+    color: #64748b;
+  }
+
+  @media (max-width: 800px) {
+    .mysub-plan,
+    .mysub-columns,
+    .mysub-page .profile-stat-grid { grid-template-columns: 1fr; }
+    .mysub-balance { text-align: left; }
   }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="mysub-page">
-
-  <div class="mysub-top">
+  <header class="mysub-head">
     <div>
-      <div class="mysub-breadcrumb">
-        <a href="{% url 'core:landing' %}">Home</a> / My subscription
-      </div>
       <h1 class="mysub-title">My subscription</h1>
       <p class="mysub-subtitle">Test credits, plan validity, and M-Pesa payments.</p>
     </div>
-    <div class="mysub-top-actions">
-      <a href="{% url 'core:exams_list' %}" class="btn btn-secondary" style="box-shadow: none;">Go to exams</a>
-      <a href="{% url 'subscriptions:plans' %}" class="btn btn-primary">View all plans</a>
+    <div class="mysub-actions">
+      <a href="{% url 'core:exams_list' %}" class="mysub-btn">Exam center</a>
+      <a href="{% url 'subscriptions:plans' %}" class="mysub-btn mysub-btn-primary">View plans</a>
     </div>
-  </div>
+  </header>
 
-  <!-- Balance hero -->
-  <div class="mysub-hero">
-    {% if active_subscription %}
-    <div class="mysub-hero-inner">
-      <div class="mysub-hero-label">Current balance</div>
-      <div class="mysub-hero-balance">{{ active_subscription.tests_balance_label }}</div>
-      <div class="mysub-hero-plan">{{ active_subscription.plan.name }}</div>
-      <div class="mysub-hero-meta">
-        <span>📅 Valid until {{ active_subscription.ends_at|date:"d M Y" }}</span>
+  {% if active_subscription %}
+  <section class="mysub-plan" aria-label="Current plan">
+    <div>
+      <p class="mysub-kicker">Current plan</p>
+      <h2 class="mysub-plan-name">{{ active_subscription.plan.name }}</h2>
+      <p class="mysub-plan-meta">
+        <span>Valid until {{ active_subscription.ends_at|date:"d M Y" }}</span>
         {% if days_remaining is not None %}
-          <span>⏳ {{ days_remaining }} day{{ days_remaining|pluralize }} left</span>
+        <span>{{ days_remaining }} day{{ days_remaining|pluralize }} left</span>
         {% endif %}
-        <span>✅ {{ active_subscription.tests_used }} test{{ active_subscription.tests_used|pluralize }} taken</span>
-      </div>
-      {% if not active_subscription.is_unlimited and tests_pool_total %}
-      <div class="mysub-usage">
-        <div class="mysub-usage-head">
-          <span>Tests used this period</span>
-          <span>{{ active_subscription.tests_used }} / {{ tests_pool_total }}</span>
-        </div>
-        <div class="mysub-usage-track">
-          <div class="mysub-usage-fill" style="width: {{ usage_percent }}%;"></div>
-        </div>
-      </div>
-      {% elif active_subscription.is_unlimited %}
-      <div class="mysub-usage">
-        <div class="mysub-usage-head">
-          <span>Unlimited access</span>
-          <span>No test limit</span>
-        </div>
-        <div class="mysub-usage-track">
-          <div class="mysub-usage-fill" style="width: 100%; opacity: 0.7;"></div>
-        </div>
-      </div>
-      {% endif %}
+        <span>{{ active_subscription.tests_used }} test{{ active_subscription.tests_used|pluralize }} taken</span>
+      </p>
     </div>
-    {% else %}
-    <div class="mysub-hero-empty">
-      <div class="mysub-hero-empty-icon">📱</div>
-      <h2>No active plan</h2>
-      <p>Pay KES 10 for a single test, or save with a weekly, monthly, or yearly pack via M-Pesa.</p>
-      <a href="{% url 'subscriptions:plans' %}" class="btn btn-primary" style="background: #fff; color: var(--clr-primary); box-shadow: var(--shadow-md);">
-        Choose a plan
-      </a>
+    <div class="mysub-balance">
+      <p class="mysub-balance-value">{{ active_subscription.tests_balance_label }}</p>
+      <p class="mysub-balance-label">Tests remaining</p>
+    </div>
+    {% if not active_subscription.is_unlimited and tests_pool_total %}
+    <div class="mysub-usage">
+      <div class="mysub-usage-head">
+        <span>Tests used this period</span>
+        <span>{{ active_subscription.tests_used }} / {{ tests_pool_total }}</span>
+      </div>
+      <div class="mysub-usage-track">
+        <div class="mysub-usage-fill" style="width: {{ usage_percent }}%;"></div>
+      </div>
+    </div>
+    {% elif active_subscription.is_unlimited %}
+    <div class="mysub-usage">
+      <div class="mysub-usage-head">
+        <span>Unlimited access</span>
+        <span>No test limit</span>
+      </div>
+      <div class="mysub-usage-track">
+        <div class="mysub-usage-fill" style="width: 100%;"></div>
+      </div>
     </div>
     {% endif %}
-  </div>
+  </section>
+  {% else %}
+  <section class="mysub-empty">
+    <div>
+      <h2>No active plan</h2>
+      <p>Pay KES 10 for a single test, or save with a weekly, monthly, or yearly pack via M-Pesa.</p>
+    </div>
+    <a href="{% url 'subscriptions:plans' %}" class="mysub-btn mysub-btn-primary">Choose a plan</a>
+  </section>
+  {% endif %}
 
-  <!-- Stats -->
-  <div class="mysub-stats">
-    <div class="mysub-stat">
-      <div class="mysub-stat-icon green">🎯</div>
-      <div class="mysub-stat-val">
-        {% if active_subscription %}
-          {% if active_subscription.is_unlimited %}∞{% else %}{{ active_subscription.tests_remaining|default:0 }}{% endif %}
-        {% else %}0{% endif %}
+  <div class="profile-stat-grid profile-stat-grid-3">
+    <article class="profile-stat-card">
+      <div class="profile-stat-top">
+        <div class="profile-stat-icon profile-stat-icon--emerald" aria-hidden="true">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+        </div>
+        <div class="profile-stat-value">
+          {% if active_subscription %}
+            {% if active_subscription.is_unlimited %}Unlimited{% else %}{{ active_subscription.tests_remaining|default:0 }}{% endif %}
+          {% else %}0{% endif %}
+        </div>
       </div>
-      <div class="mysub-stat-lbl">Tests available</div>
-    </div>
-    <div class="mysub-stat">
-      <div class="mysub-stat-icon blue">📝</div>
-      <div class="mysub-stat-val">{% if active_subscription %}{{ active_subscription.tests_used }}{% else %}0{% endif %}</div>
-      <div class="mysub-stat-lbl">Tests completed</div>
-    </div>
-    <div class="mysub-stat">
-      <div class="mysub-stat-icon gold">💰</div>
-      <div class="mysub-stat-val">KES {{ total_spent|floatformat:0 }}</div>
-      <div class="mysub-stat-lbl">Total spent</div>
-    </div>
+      <p class="profile-stat-label">Tests available</p>
+      <div class="profile-stat-footer">
+        <span>Ready to use</span>
+        <span class="profile-stat-footer-note">Balance</span>
+      </div>
+    </article>
+    <article class="profile-stat-card">
+      <div class="profile-stat-top">
+        <div class="profile-stat-icon profile-stat-icon--blue" aria-hidden="true">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        </div>
+        <div class="profile-stat-value">{% if active_subscription %}{{ active_subscription.tests_used }}{% else %}0{% endif %}</div>
+      </div>
+      <p class="profile-stat-label">Tests completed</p>
+      <div class="profile-stat-footer">
+        <span>This plan</span>
+        <span class="profile-stat-footer-note">Used</span>
+      </div>
+    </article>
+    <article class="profile-stat-card">
+      <div class="profile-stat-top">
+        <div class="profile-stat-icon profile-stat-icon--amber" aria-hidden="true">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        </div>
+        <div class="profile-stat-value">KES {{ total_spent|floatformat:0 }}</div>
+      </div>
+      <p class="profile-stat-label">Total spent</p>
+      <div class="profile-stat-footer">
+        <span>Successful payments</span>
+        <span class="profile-stat-footer-note">M-Pesa</span>
+      </div>
+    </article>
   </div>
 
-  <!-- Quick top-up -->
   {% if quick_plans %}
-  <h2 class="mysub-section-title">Top up quickly</h2>
-  <div class="mysub-quick-grid">
+  <h2 class="mysub-section">Top up</h2>
+  <div class="mysub-plans">
     {% for plan in quick_plans %}
-    <a href="{% url 'subscriptions:subscribe' plan.slug %}" class="mysub-quick-card {% if plan.slug == 'monthly-pack' %}featured{% endif %}">
-      <div class="mysub-quick-name">{{ plan.name }}</div>
-      <div class="mysub-quick-meta">{{ plan.tests_label }} · {{ plan.duration_days }}d</div>
-      <div class="mysub-quick-price">KES {{ plan.price_kes|floatformat:0 }}</div>
-      <div class="mysub-quick-cta">Pay with M-Pesa →</div>
+    <a href="{% url 'subscriptions:subscribe' plan.slug %}" class="mysub-plan-card{% if plan.slug == 'monthly-pack' %} is-featured{% endif %}">
+      <strong>{{ plan.name }}</strong>
+      <span>{{ plan.tests_label }} · {{ plan.duration_days }} days</span>
+      <em>KES {{ plan.price_kes|floatformat:0 }}</em>
     </a>
     {% endfor %}
   </div>
   {% endif %}
 
-  <!-- Activity + payments -->
   <div class="mysub-columns">
-    <div class="mysub-panel">
-      <div class="mysub-panel-head">
-        <h3 class="mysub-panel-title">Recent activity</h3>
-      </div>
+    <section class="mysub-panel">
+      <h3>Recent activity</h3>
       {% if credit_logs %}
-      <ul class="mysub-activity">
         {% for log in credit_logs %}
-        <li class="mysub-activity-item">
-          <div class="mysub-activity-dot {% if log.delta > 0 %}add{% else %}use{% endif %}">
-            {% if log.delta > 0 %}+{% else %}−{% endif %}
-          </div>
-          <div class="mysub-activity-text">
+        <div class="mysub-row">
+          <p>
             {% if log.reason == 'purchase' %}
               {% if log.delta > 0 %}
-                <strong>+{{ log.delta }}</strong> test credit{{ log.delta|pluralize }} from
-                {% if log.payment and log.payment.plan %}{{ log.payment.plan.name }}{% else %}purchase{% endif %}
+                Added {{ log.delta }} test credit{{ log.delta|pluralize }}
+                {% if log.payment and log.payment.plan %} from {{ log.payment.plan.name }}{% endif %}
               {% else %}
-                <strong>Unlimited access</strong> from
-                {% if log.payment and log.payment.plan %}{{ log.payment.plan.name }}{% else %}purchase{% endif %}
+                Unlimited access
+                {% if log.payment and log.payment.plan %} from {{ log.payment.plan.name }}{% endif %}
               {% endif %}
             {% elif log.reason == 'consume' %}
-              <strong>1 test</strong> started
-              {% if log.note %}<span style="color: var(--clr-text-muted);"> · exam</span>{% endif %}
+              Started 1 test
             {% else %}
               Credit adjustment ({{ log.delta }})
             {% endif %}
-            {% if log.balance_after is not None %}
-              <span style="color: var(--clr-text-muted);"> — {{ log.balance_after }} left</span>
-            {% endif %}
-          </div>
-          <span class="mysub-activity-time">{{ log.created_at|date:"d M" }}</span>
-        </li>
+            {% if log.balance_after is not None %} · {{ log.balance_after }} left{% endif %}
+          </p>
+          <time datetime="{{ log.created_at|date:'Y-m-d' }}">{{ log.created_at|date:"d M" }}</time>
+        </div>
         {% endfor %}
-      </ul>
       {% else %}
-      <div class="mysub-empty-sm">No activity yet. Your test credits will show here.</div>
+      <p class="mysub-blank">No activity yet. Test credits will show here.</p>
       {% endif %}
-    </div>
+    </section>
 
-    <div class="mysub-panel">
-      <div class="mysub-panel-head">
-        <h3 class="mysub-panel-title">Payment history</h3>
-      </div>
+    <section class="mysub-panel">
+      <h3>Payment history</h3>
       {% if payments %}
         {% for payment in payments %}
-        <div class="mysub-payment">
-          <div class="mysub-payment-icon">📱</div>
-          <div class="mysub-payment-body">
-            <div class="mysub-payment-plan">{{ payment.plan.name }}</div>
-            <div class="mysub-payment-meta">
-              {{ payment.created_at|date:"d M Y, H:i" }}
-              {% if payment.mpesa_receipt_number %}
-                · {{ payment.mpesa_receipt_number }}
-              {% endif %}
-            </div>
-          </div>
-          <div class="mysub-payment-right">
-            <div class="mysub-payment-amount">KES {{ payment.amount_kes|floatformat:0 }}</div>
-            <span class="mysub-status {{ payment.status }}">{{ payment.get_status_display }}</span>
+        <div class="mysub-row">
+          <p>
+            {{ payment.plan.name }}
+            <br>
+            <span style="color:#94a3b8;">{{ payment.created_at|date:"d M Y, H:i" }}{% if payment.mpesa_receipt_number %} · {{ payment.mpesa_receipt_number }}{% endif %}</span>
+          </p>
+          <div class="mysub-amount">
+            KES {{ payment.amount_kes|floatformat:0 }}
+            <small class="{{ payment.status }}">{{ payment.get_status_display }}</small>
           </div>
         </div>
         {% endfor %}
       {% else %}
-      <div class="mysub-empty-sm">No payments yet. Pay with M-Pesa when you choose a plan.</div>
+      <p class="mysub-blank">No payments yet.</p>
       {% endif %}
-    </div>
+    </section>
   </div>
-
 </div>
 {% endblock %}

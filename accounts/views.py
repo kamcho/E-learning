@@ -47,7 +47,7 @@ def _resolve_post_login_redirect(request, user, next_url=None):
         require_https=request.is_secure(),
     ):
         return next_url
-    if user.is_admin_role:
+    if user.is_platform_admin:
         return reverse('accounts:admin_dashboard')
     if user.is_guardian:
         return reverse('accounts:guardian_dashboard')
@@ -270,6 +270,32 @@ def signout_view(request):
     return redirect('core:landing')
 
 
+@login_required(login_url='accounts:signin')
+@require_POST
+def save_county_view(request):
+    """Save the user's Kenyan county from the post-signup location modal."""
+    from .counties import KENYA_COUNTY_LABELS, KENYA_COUNTY_SLUGS
+
+    try:
+        payload = json.loads(request.body.decode('utf-8')) if request.body else {}
+    except json.JSONDecodeError:
+        payload = {}
+
+    county = (payload.get('county') or request.POST.get('county') or '').strip().lower()
+    if county not in KENYA_COUNTY_SLUGS:
+        return JsonResponse({'ok': False, 'error': 'Please select a valid Kenyan county.'}, status=400)
+
+    user = request.user
+    user.county = county
+    user.save(update_fields=['county', 'updated_at'])
+    return JsonResponse({
+        'ok': True,
+        'county': county,
+        'county_label': KENYA_COUNTY_LABELS.get(county, county),
+        'message': f'Location saved: {KENYA_COUNTY_LABELS.get(county, county)}.',
+    })
+
+
 def _get_guardian_students(user):
     """Return all learners linked to a guardian account."""
     students = []
@@ -407,6 +433,8 @@ def guardian_dashboard_view(request):
         messages.error(request, "The guardian dashboard is only available to guardian accounts.")
         return redirect('core:landing')
 
+    from .counties import KENYA_COUNTIES
+
     students = _get_guardian_students(user)
     active_student = None
     student_uuid = request.GET.get('student', '').strip()
@@ -417,6 +445,7 @@ def guardian_dashboard_view(request):
         )
 
     require_learner_selection = bool(students) and active_student is None
+    require_county_selection = user.needs_county
 
     student_index = 0
     if active_student:
@@ -501,6 +530,9 @@ def guardian_dashboard_view(request):
         'achievements': dashboard.get('achievements'),
         'pathway_suggestions': analytics_ctx.get('pathway_suggestions'),
         'require_learner_selection': require_learner_selection,
+        'require_county_selection': require_county_selection,
+        'needs_county': require_county_selection,
+        'kenya_counties': KENYA_COUNTIES,
         'dashboard_filters': dashboard_filters,
         'dashboard_query': dashboard_query,
         'dashboard_hidden_params': build_dashboard_query_params(
@@ -562,7 +594,7 @@ def add_learner_view(request):
 
 
 def _is_admin(user):
-    return user.is_admin_role or user.is_staff
+    return user.is_authenticated and user.is_platform_admin
 
 
 def _admin_access_or_redirect(request):
@@ -738,7 +770,7 @@ def _build_attempt_score_chart(days=7, student=None, date_range=None):
 
 
 GRADE_SLUG_ORDER = [
-    'pp1', 'pp2',
+    'play-group', 'pp1', 'pp2',
     'grade-1', 'grade-2', 'grade-3', 'grade-4', 'grade-5', 'grade-6',
     'grade-7', 'grade-8', 'grade-9', 'grade-10', 'grade-11', 'grade-12',
 ]

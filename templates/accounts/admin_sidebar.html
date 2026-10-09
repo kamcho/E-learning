@@ -1,359 +1,272 @@
-{% load static %}
-
-{# ── Reusable SVG icon macros ── #}
-{% comment %}Icons are 16×16 stroke-based SVG, colour inherits from parent.{% endcomment %}
-
-<aside class="admin-sidebar">
-
-  {# ── Brand ── #}
-  <a href="{% url 'core:landing' %}" class="admin-sidebar-brand">
-    <span class="logo-icon">S</span>
-    <span class="sidebar-brand-text">
-      <span class="sidebar-brand-name">Soma Smart</span>
-      <span class="sidebar-brand-sub">CBC Learning Platform</span>
-    </span>
-  </a>
-
-  {# ── Navigation ── #}
-  <nav class="admin-nav">
-
-    {% if request.user.is_authenticated %}
-
-      {# ── Overview / role-specific primary links ── #}
-      <div class="admin-nav-label">Overview</div>
-
-      {% if request.user.is_admin_role %}
-
-        <a href="{% url 'accounts:admin_dashboard' %}"
-           class="{% if request.resolver_match.url_name == 'admin_dashboard' %}active{% endif %}">
-          <span class="admin-nav-icon">
-            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="1" y="1" width="6" height="6" rx="1.2"/>
-              <rect x="9" y="1" width="6" height="6" rx="1.2"/>
-              <rect x="1" y="9" width="6" height="6" rx="1.2"/>
-              <rect x="9" y="9" width="6" height="6" rx="1.2"/>
-            </svg>
-          </span>
-          Dashboard
-        </a>
-
-        <a href="{% url 'accounts:admin_users_list' %}"
-           class="{% if request.resolver_match.url_name == 'admin_users_list' %}active{% endif %}">
-          <span class="admin-nav-icon">
-            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="6" cy="5" r="2.5"/>
-              <path d="M1 14c0-2.76 2.24-5 5-5h.5"/>
-              <circle cx="12" cy="10" r="2.5"/>
-              <path d="M9.5 14.5h5"/>
-              <path d="M12 12v5"/>
-            </svg>
-          </span>
-          Users
-        </a>
-
-        <a href="{% url 'accounts:admin_students_list' %}"
-           class="{% if request.resolver_match.url_name == 'admin_students_list' %}active{% endif %}">
-          <span class="admin-nav-icon">
-            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M8 2 L15 5.5 L8 9 L1 5.5 Z"/>
-              <path d="M4 7.2v3.8c0 0 1.5 1.5 4 1.5s4-1.5 4-1.5V7.2"/>
-              <path d="M15 5.5v4"/>
-            </svg>
-          </span>
-          Students
-        </a>
-
-        <a href="{% url 'subscriptions:admin_payments_list' %}"
-           class="{% if request.resolver_match.url_name == 'admin_payments_list' %}active{% endif %}">
-          <span class="admin-nav-icon">
-            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="1.5" y="3.5" width="13" height="9" rx="1.5"/>
-              <path d="M1.5 7h13"/>
-              <path d="M4.5 10.5h2"/>
-            </svg>
-          </span>
-          Payments
-        </a>
-
-        <a href="{% url 'subscriptions:admin_subscriptions_list' %}"
-           class="{% if request.resolver_match.url_name == 'admin_subscriptions_list' %}active{% endif %}">
-          <span class="admin-nav-icon">
-            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M3 4.5h10a1 1 0 011 1v7a1 1 0 01-1 1H3a1 1 0 01-1-1v-7a1 1 0 011-1z"/>
-              <path d="M5.5 2.5h5a1 1 0 011 1V4.5H4.5v-1a1 1 0 011-1z"/>
-              <path d="M6 8h4M6 10.5h2.5"/>
-            </svg>
-          </span>
-          Subscriptions
-        </a>
-
-      {% elif request.user.is_teacher %}
-
-        <a href="{% url 'accounts:teacher_dashboard' %}"
-           class="{% if 'teacher_' in request.resolver_match.url_name %}active{% endif %}">
-          <span class="admin-nav-icon">
-            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="1" y="1" width="6" height="6" rx="1.2"/>
-              <rect x="9" y="1" width="6" height="6" rx="1.2"/>
-              <rect x="1" y="9" width="6" height="6" rx="1.2"/>
-              <rect x="9" y="9" width="6" height="6" rx="1.2"/>
-            </svg>
-          </span>
-          Teacher Dashboard
-        </a>
-
-      {% elif request.user.is_guardian %}
-
-        <a href="{% url 'accounts:guardian_dashboard' %}"
-           class="{% if request.resolver_match.url_name == 'guardian_dashboard' %}active{% endif %}">
-          <span class="admin-nav-icon">
-            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="8" cy="5" r="2.8"/>
-              <path d="M2 14c0-3.31 2.69-6 6-6s6 2.69 6 6"/>
-            </svg>
-          </span>
-          My Learners
-        </a>
-
-        <a href="{% url 'accounts:add_learner' %}"
-           class="{% if request.resolver_match.url_name == 'add_learner' %}active{% endif %}">
-          <span class="admin-nav-icon">
-            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="6.5" cy="5" r="2.5"/>
-              <path d="M1 14c0-3 2.46-5 5.5-5"/>
-              <path d="M12 10v4M10 12h4"/>
-            </svg>
-          </span>
-          Add Learner
-        </a>
-
-      {% elif request.user.is_referral %}
-
-        <a href="{% url 'accounts:referral_dashboard' %}"
-           class="{% if request.resolver_match.url_name == 'referral_dashboard' %}active{% endif %}">
-          <span class="admin-nav-icon">
-            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="8" cy="8" r="6.5"/>
-              <circle cx="8" cy="8" r="2.5"/>
-              <path d="M8 1.5v3M8 11.5v3M1.5 8h3M11.5 8h3"/>
-            </svg>
-          </span>
-          Referral Dashboard
-        </a>
-
-      {% endif %}
-
-      {# ── Exams ── #}
-      <div class="admin-nav-label">Exams</div>
-
-      <a href="{% url 'core:exams_list' %}"
-         class="{% if request.resolver_match.url_name == 'exams_list' %}active{% endif %}">
-        <span class="admin-nav-icon">
-          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="2" y="1.5" width="12" height="13" rx="1.5"/>
-            <path d="M5 5.5h6M5 8h6M5 10.5h3.5"/>
-            <path d="M10.5 10l1 1 2-2"/>
-          </svg>
-        </span>
-        Exam Center
-      </a>
-
-      {% if request.user.is_admin_role or request.user.is_teacher %}
-        <a href="{% url 'core:quiz_builder_list' %}"
-           class="{% if 'quiz' in request.resolver_match.url_name %}active{% endif %}">
-          <span class="admin-nav-icon">
-            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M9.5 2H3.5A1.5 1.5 0 002 3.5v9A1.5 1.5 0 003.5 14h9a1.5 1.5 0 001.5-1.5V6.5L9.5 2z"/>
-              <path d="M9.5 2v4.5H14"/>
-              <path d="M6 9l1.5 1.5L11 7"/>
-            </svg>
-          </span>
-          Quiz Builder
-        </a>
-
-        <a href="{% url 'core:bulk_question_import' %}"
-           class="{% if request.resolver_match.url_name == 'bulk_question_import' %}active{% endif %}">
-          <span class="admin-nav-icon">
-            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M8 2v8M5 7l3 3 3-3"/>
-              <path d="M3 12.5h10"/>
-              <path d="M5 14.5h6"/>
-            </svg>
-          </span>
-          Bulk Import
-        </a>
-      {% endif %}
-
-      {% if request.user.is_guardian %}
-        <a href="{% url 'subscriptions:my_subscription' %}"
-           class="{% if request.resolver_match.app_name == 'subscriptions' %}active{% endif %}">
-          <span class="admin-nav-icon">
-            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="1.5" y="3.5" width="13" height="9" rx="1.5"/>
-              <path d="M1.5 7h13"/>
-              <path d="M4.5 10.5h2"/>
-            </svg>
-          </span>
-          Subscription
-        </a>
-      {% endif %}
-
-      {# ── Curriculum (admin / staff only) ── #}
-      {% if request.user.is_admin_role %}
-        <div class="admin-nav-label">Curriculum</div>
-
-        <a href="{% url 'subjects:grade_level_list' %}"
-           class="{% if 'grade_level' in request.resolver_match.url_name %}active{% endif %}">
-          <span class="admin-nav-icon">
-            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M2 13h12M3 13V6l5-4 5 4v7"/>
-              <rect x="6" y="9" width="4" height="4"/>
-            </svg>
-          </span>
-          Grade Levels
-        </a>
-
-        <a href="{% url 'subjects:discipline_list' %}"
-           class="{% if 'discipline' in request.resolver_match.url_name %}active{% endif %}">
-          <span class="admin-nav-icon">
-            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M2 13.5V4c0-.83.67-1.5 1.5-1.5h9c.83 0 1.5.67 1.5 1.5v9.5"/>
-              <path d="M2 13.5h12"/>
-              <path d="M5.5 2.5v5l2.5-1.5 2.5 1.5v-5"/>
-            </svg>
-          </span>
-          Disciplines
-        </a>
-
-        <a href="{% url 'subjects:subject_list' %}"
-           class="{% if 'subject' in request.resolver_match.url_name %}active{% endif %}">
-          <span class="admin-nav-icon">
-            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M3 2.5h8a1 1 0 011 1V12H3a1 1 0 01-1-1V3.5a1 1 0 011-1z"/>
-              <path d="M12 12a1 1 0 001 1H4a1 1 0 01-1-1"/>
-              <path d="M5 6h5M5 8.5h3"/>
-            </svg>
-          </span>
-          Subjects
-        </a>
-
-        {# ── Engagement ── #}
-        <div class="admin-nav-label">Engagement</div>
-
-        <a href="{% url 'achievements:achievement_list' %}"
-           class="{% if request.resolver_match.app_name == 'achievements' %}active{% endif %}">
-          <span class="admin-nav-icon">
-            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M8 1l1.6 3.3 3.6.5-2.6 2.5.6 3.6L8 9.3l-3.2 1.6.6-3.6-2.6-2.5 3.6-.5z"/>
-              <path d="M5.5 13.5l2.5-1.5 2.5 1.5"/>
-              <path d="M8 12v3"/>
-            </svg>
-          </span>
-          Achievements
-        </a>
-
-      {% endif %}
-
-    {% else %}
-
-      {# ── Unauthenticated ── #}
-      <div class="admin-nav-label">Get Started</div>
-
-      <a href="{% url 'core:landing' %}">
-        <span class="admin-nav-icon">
-          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M2 13V6l6-4.5L14 6v7H2z"/>
-            <rect x="6" y="9" width="4" height="4"/>
-          </svg>
-        </span>
-        Home
-      </a>
-
-      <a href="{% url 'accounts:signin' %}">
-        <span class="admin-nav-icon">
-          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M6 3H3a1 1 0 00-1 1v8a1 1 0 001 1h3"/>
-            <path d="M10.5 5L13.5 8l-3 3"/>
-            <path d="M13.5 8H6"/>
-          </svg>
-        </span>
-        Log In
-      </a>
-
-      <a href="{% url 'accounts:signup' %}">
-        <span class="admin-nav-icon">
-          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="6.5" cy="5" r="2.5"/>
-            <path d="M1 14c0-3 2.46-5 5.5-5"/>
-            <path d="M12 10v4M10 12h4"/>
-          </svg>
-        </span>
-        Sign Up
-      </a>
-
-    {% endif %}
-
-    {# ── Site ── #}
-    <div class="admin-nav-label">Site</div>
-
-    <a href="{% url 'core:landing' %}">
-      <span class="admin-nav-icon">
-        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="8" cy="8" r="6.5"/>
-          <path d="M1.5 8h13"/>
-          <path d="M8 1.5c-2 2-3 4-3 6.5s1 4.5 3 6.5"/>
-          <path d="M8 1.5c2 2 3 4 3 6.5s-1 4.5-3 6.5"/>
+<aside class="admin-sidebar dashboard-sidebar" aria-label="Account navigation">
+  <div class="dashboard-sidebar-brand">
+    <a href="{% url 'core:landing' %}" class="logo">
+      <span class="logo-mark" aria-hidden="true">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+          <path d="M12 2L2 7l10 5 10-5-10-5z" fill="currentColor" opacity=".9"/>
+          <path d="M2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
       </span>
-      Public Site
+      Soma Smart
     </a>
+    <p class="dashboard-sidebar-workspace">{% if request.user.is_platform_admin %}Admin console{% else %}My account{% endif %}</p>
+  </div>
 
-    {% if request.user.is_authenticated and request.user.is_staff %}
-      <a href="{% url 'admin:index' %}" target="_blank" rel="noopener">
-        <span class="admin-nav-icon">
-          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="8" cy="8" r="2"/>
-            <path d="M8 1v2M8 13v2M1 8h2M13 8h2"/>
-            <path d="M3.05 3.05l1.41 1.41M11.54 11.54l1.41 1.41M3.05 12.95l1.41-1.41M11.54 4.46l1.41-1.41"/>
-          </svg>
-        </span>
-        Django Admin
-        <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" style="width:10px;height:10px;margin-left:auto;opacity:0.45;">
-          <path d="M2 10 L10 2M6 2h4v4"/>
-        </svg>
-      </a>
+  <nav class="dashboard-nav">
+    {% if request.user.is_authenticated %}
+    <div>
+      <p class="dashboard-nav-section-label">Menu</p>
+      <ul class="dashboard-nav-list">
+        {% if request.user.is_platform_admin %}
+        <li>
+          <a href="{% url 'accounts:admin_dashboard' %}" class="dashboard-nav-link{% if request.resolver_match.url_name == 'admin_dashboard' %} is-active{% endif %}">
+            <span class="dashboard-nav-icon dashboard-nav-icon--blue" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+            </span>
+            <span class="dashboard-nav-label">Dashboard</span>
+          </a>
+        </li>
+        <li>
+          <a href="{% url 'accounts:admin_users_list' %}" class="dashboard-nav-link{% if request.resolver_match.url_name == 'admin_users_list' %} is-active{% endif %}">
+            <span class="dashboard-nav-icon dashboard-nav-icon--blue" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            </span>
+            <span class="dashboard-nav-label">Users</span>
+          </a>
+        </li>
+        <li>
+          <a href="{% url 'accounts:admin_students_list' %}" class="dashboard-nav-link{% if request.resolver_match.url_name == 'admin_students_list' %} is-active{% endif %}">
+            <span class="dashboard-nav-icon dashboard-nav-icon--green" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c0 1.7 2.7 3 6 3s6-1.3 6-3v-5"/></svg>
+            </span>
+            <span class="dashboard-nav-label">Learners</span>
+          </a>
+        </li>
+        <li>
+          <a href="{% url 'subscriptions:admin_subscriptions_list' %}" class="dashboard-nav-link{% if request.resolver_match.url_name == 'admin_subscriptions_list' %} is-active{% endif %}">
+            <span class="dashboard-nav-icon dashboard-nav-icon--amber" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            </span>
+            <span class="dashboard-nav-label">Subscriptions</span>
+          </a>
+        </li>
+        <li>
+          <a href="{% url 'subscriptions:admin_payments_list' %}" class="dashboard-nav-link{% if request.resolver_match.url_name == 'admin_payments_list' %} is-active{% endif %}">
+            <span class="dashboard-nav-icon dashboard-nav-icon--orange" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+            </span>
+            <span class="dashboard-nav-label">Payments</span>
+          </a>
+        </li>
+        <li>
+          <a href="{% url 'core:quiz_builder_list' %}" class="dashboard-nav-link{% if request.resolver_match.url_name == 'quiz_builder_list' or request.resolver_match.url_name == 'quiz_create' or request.resolver_match.url_name == 'quiz_edit' %} is-active{% endif %}">
+            <span class="dashboard-nav-icon dashboard-nav-icon--indigo" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+            </span>
+            <span class="dashboard-nav-label">Exams</span>
+          </a>
+        </li>
+        {% elif request.user.is_teacher %}
+        <li>
+          <a href="{% url 'accounts:teacher_dashboard' %}" class="dashboard-nav-link{% if 'teacher_' in request.resolver_match.url_name %} is-active{% endif %}">
+            <span class="dashboard-nav-icon dashboard-nav-icon--blue" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+            </span>
+            <span class="dashboard-nav-label">Dashboard</span>
+          </a>
+        </li>
+        {% elif request.user.is_guardian %}
+        <li>
+          <a href="{% url 'accounts:guardian_dashboard' %}" class="dashboard-nav-link{% if request.resolver_match.url_name == 'guardian_dashboard' %} is-active{% endif %}">
+            <span class="dashboard-nav-icon dashboard-nav-icon--blue" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            </span>
+            <span class="dashboard-nav-label">Dashboard</span>
+          </a>
+        </li>
+        <li>
+          <a href="{% url 'accounts:add_learner' %}" class="dashboard-nav-link{% if request.resolver_match.url_name == 'add_learner' %} is-active{% endif %}">
+            <span class="dashboard-nav-icon dashboard-nav-icon--purple" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+            </span>
+            <span class="dashboard-nav-label">Add learner</span>
+          </a>
+        </li>
+        {% elif request.user.is_referral %}
+        <li>
+          <a href="{% url 'accounts:referral_dashboard' %}" class="dashboard-nav-link{% if request.resolver_match.url_name == 'referral_dashboard' %} is-active{% endif %}">
+            <span class="dashboard-nav-icon dashboard-nav-icon--blue" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
+            </span>
+            <span class="dashboard-nav-label">Dashboard</span>
+          </a>
+        </li>
+        {% endif %}
+
+        <li>
+          <a href="{% url 'core:exams_list' %}" class="dashboard-nav-link{% if request.resolver_match.url_name == 'exams_list' %} is-active{% endif %}">
+            <span class="dashboard-nav-icon dashboard-nav-icon--purple" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            </span>
+            <span class="dashboard-nav-label">Exam center</span>
+          </a>
+        </li>
+
+        {% if request.user.is_platform_admin %}
+        <li>
+          <a href="{% url 'core:bulk_question_import' %}" class="dashboard-nav-link{% if request.resolver_match.url_name == 'bulk_question_import' %} is-active{% endif %}">
+            <span class="dashboard-nav-icon dashboard-nav-icon--green" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            </span>
+            <span class="dashboard-nav-label">Bulk import</span>
+          </a>
+        </li>
+        {% elif request.user.is_teacher %}
+        <li>
+          <a href="{% url 'core:quiz_builder_list' %}" class="dashboard-nav-link{% if 'quiz' in request.resolver_match.url_name %} is-active{% endif %}">
+            <span class="dashboard-nav-icon dashboard-nav-icon--green" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+            </span>
+            <span class="dashboard-nav-label">Quiz builder</span>
+          </a>
+        </li>
+        <li>
+          <a href="{% url 'core:bulk_question_import' %}" class="dashboard-nav-link{% if request.resolver_match.url_name == 'bulk_question_import' %} is-active{% endif %}">
+            <span class="dashboard-nav-icon dashboard-nav-icon--indigo" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            </span>
+            <span class="dashboard-nav-label">Bulk import</span>
+          </a>
+        </li>
+        {% endif %}
+
+        {% if request.user.is_guardian %}
+        <li>
+          <a href="{% url 'subscriptions:my_subscription' %}" class="dashboard-nav-link{% if request.resolver_match.app_name == 'subscriptions' %} is-active{% endif %}">
+            <span class="dashboard-nav-icon dashboard-nav-icon--teal" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+            </span>
+            <span class="dashboard-nav-label">Subscription</span>
+          </a>
+        </li>
+        {% endif %}
+
+        {% if request.user.is_platform_admin %}
+        <li>
+          <a href="{% url 'subjects:grade_level_list' %}" class="dashboard-nav-link{% if 'grade_level' in request.resolver_match.url_name %} is-active{% endif %}">
+            <span class="dashboard-nav-icon dashboard-nav-icon--blue" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+            </span>
+            <span class="dashboard-nav-label">Grade levels</span>
+          </a>
+        </li>
+        <li>
+          <a href="{% url 'subjects:discipline_list' %}" class="dashboard-nav-link{% if 'discipline' in request.resolver_match.url_name %} is-active{% endif %}">
+            <span class="dashboard-nav-icon dashboard-nav-icon--amber" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+            </span>
+            <span class="dashboard-nav-label">Disciplines</span>
+          </a>
+        </li>
+        <li>
+          <a href="{% url 'subjects:subject_list' %}" class="dashboard-nav-link{% if 'subject' in request.resolver_match.url_name %} is-active{% endif %}">
+            <span class="dashboard-nav-icon dashboard-nav-icon--green" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+            </span>
+            <span class="dashboard-nav-label">Subjects</span>
+          </a>
+        </li>
+        <li>
+          <a href="{% url 'achievements:achievement_list' %}" class="dashboard-nav-link{% if request.resolver_match.app_name == 'achievements' %} is-active{% endif %}">
+            <span class="dashboard-nav-icon dashboard-nav-icon--rose" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+            </span>
+            <span class="dashboard-nav-label">Achievements</span>
+          </a>
+        </li>
+        {% endif %}
+      </ul>
+    </div>
+
+    <div>
+      <p class="dashboard-nav-section-label">Explore</p>
+      <ul class="dashboard-nav-list">
+        <li>
+          <a href="{% url 'core:landing' %}" class="dashboard-nav-link">
+            <span class="dashboard-nav-icon dashboard-nav-icon--green" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            </span>
+            <span class="dashboard-nav-label">Public site</span>
+          </a>
+        </li>
+        <li>
+          <a href="{% url 'core:landing' %}#how-it-works" class="dashboard-nav-link">
+            <span class="dashboard-nav-icon dashboard-nav-icon--blue" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </span>
+            <span class="dashboard-nav-label">How it works</span>
+          </a>
+        </li>
+        {% if request.user.is_staff %}
+        <li>
+          <a href="{% url 'admin:index' %}" class="dashboard-nav-link" target="_blank" rel="noopener">
+            <span class="dashboard-nav-icon dashboard-nav-icon--slate" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+            </span>
+            <span class="dashboard-nav-label">Django admin</span>
+          </a>
+        </li>
+        {% endif %}
+      </ul>
+    </div>
+    {% else %}
+    <div>
+      <p class="dashboard-nav-section-label">Menu</p>
+      <ul class="dashboard-nav-list">
+        <li>
+          <a href="{% url 'core:landing' %}" class="dashboard-nav-link">
+            <span class="dashboard-nav-icon dashboard-nav-icon--blue" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+            </span>
+            <span class="dashboard-nav-label">Home</span>
+          </a>
+        </li>
+        <li>
+          <a href="{% url 'accounts:signin' %}" class="dashboard-nav-link">
+            <span class="dashboard-nav-icon dashboard-nav-icon--slate" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+            </span>
+            <span class="dashboard-nav-label">Log in</span>
+          </a>
+        </li>
+        <li>
+          <a href="{% url 'accounts:signup' %}" class="dashboard-nav-link">
+            <span class="dashboard-nav-icon dashboard-nav-icon--green" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+            </span>
+            <span class="dashboard-nav-label">Sign up</span>
+          </a>
+        </li>
+      </ul>
+    </div>
     {% endif %}
-
   </nav>
 
-  {# ── User profile footer ── #}
   {% if request.user.is_authenticated %}
-  <div class="sidebar-footer">
-    <div class="sidebar-user-card">
-      <div class="sidebar-avatar">
-        {% with name=request.user.get_full_name %}
-          {% if name %}
-            {{ name|truncatechars:2|upper|slice:":2" }}
-          {% else %}
-            {{ request.user.phone|slice:"-2:" }}
-          {% endif %}
-        {% endwith %}
+  <div class="dashboard-sidebar-footer">
+    <a href="{% url 'accounts:signout' %}" class="dashboard-nav-link">
+      <span class="dashboard-nav-icon dashboard-nav-icon--slate" aria-hidden="true">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      </span>
+      <span class="dashboard-nav-label">Sign out</span>
+    </a>
+    <div class="dashboard-user-card">
+      <div class="dashboard-user-avatar" aria-hidden="true">{{ request.user.first_name|slice:":1"|upper }}{{ request.user.last_name|slice:":1"|upper }}</div>
+      <div class="dashboard-user-info">
+        <div class="dashboard-user-name">{{ request.user.full_name }}</div>
+        <div class="dashboard-user-meta">{% if request.user.email %}{{ request.user.email }}{% else %}{{ request.user.phone }}{% endif %}</div>
       </div>
-      <div class="sidebar-user-info">
-        <span class="sidebar-user-name">
-          {{ request.user.get_full_name|default:request.user.phone|truncatechars:22 }}
-        </span>
-        <span class="sidebar-user-role">{{ request.user.role|capfirst }}</span>
-      </div>
-      <a href="{% url 'accounts:signout' %}" class="sidebar-signout" title="Sign out">
-        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M10 3h3a1 1 0 011 1v8a1 1 0 01-1 1h-3"/>
-          <path d="M6.5 11L3.5 8l3-3"/>
-          <path d="M3.5 8H11"/>
-        </svg>
-      </a>
     </div>
   </div>
   {% endif %}
-
 </aside>
