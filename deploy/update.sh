@@ -31,6 +31,9 @@ echo "==> Installing Python dependencies"
 sudo -u "$APP_USER" "$VENV/pip" install --upgrade pip
 sudo -u "$APP_USER" "$VENV/pip" install -r requirements.txt
 
+echo "==> Stopping app before migrations (free DB connections)"
+systemctl stop elearning || true
+
 echo "==> Running migrations"
 sudo -u "$APP_USER" "$VENV/python" manage.py migrate --noinput
 
