@@ -175,10 +175,21 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
     def needs_county(self):
         return not bool((self.county or '').strip())
 
+    @property
+    def dashboard_url(self):
+        from django.urls import reverse
+        if self.is_platform_admin:
+            return reverse('accounts:admin_dashboard')
+        if self.is_teacher:
+            return reverse('accounts:teacher_dashboard')
+        if self.is_referral:
+            return reverse('accounts:referral_dashboard')
+        return reverse('accounts:guardian_dashboard')
+
 
 class Student(models.Model):
     first_name = models.CharField(max_length=50)
-    middle_name = models.CharField(max_length=50)
+    middle_name = models.CharField(max_length=50, blank=True, default='')
     last_name = models.CharField(max_length=50)
     uuid = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     grade_level = models.ForeignKey('subjects.GradeLevel', on_delete=models.SET_NULL, null=True, blank=True)

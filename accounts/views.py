@@ -297,10 +297,22 @@ def save_county_view(request):
 
 
 def _get_guardian_students(user):
-    """Return all learners linked to a guardian account."""
+    """Return all learners linked to a guardian account with attempt stats."""
     students = []
-    for link in user.linked_students.prefetch_related('students__grade_level'):
-        students.extend(link.students.all())
+    seen = set()
+    for link in user.linked_students.prefetch_related('students__grade_level', 'students__attempts'):
+        for student in link.students.all():
+            if student.pk not in seen:
+                seen.add(student.pk)
+                attempts = [a for a in student.attempts.all() if a.is_active]
+                student.total_attempts_count = len(attempts)
+                student.completed_attempts_count = sum(1 for a in attempts if a.is_complete)
+                completed_scores = [a.score for a in attempts if a.is_complete and a.score is not None]
+                student.avg_score_display = (
+                    round(sum(completed_scores) / len(completed_scores))
+                    if completed_scores else None
+                )
+                students.append(student)
     return students
 
 
@@ -438,13 +450,76 @@ def guardian_dashboard_view(request):
     students = _get_guardian_students(user)
     active_student = None
     student_uuid = request.GET.get('student', '').strip()
+    viewing_learner = False
+
     if students and student_uuid:
         active_student = next(
             (student for student in students if str(student.uuid) == student_uuid),
             None,
         )
+        if active_student:
+            viewing_learner = True
+            request.session['active_student_uuid'] = str(active_student.uuid)
 
-    require_learner_selection = bool(students) and active_student is None
+    # Calculate aggregate metrics across all linked learners for the guardian dashboard
+    all_completed_scores = []
+    learners_total_attempts = 0
+    learners_total_completed = 0
+    for s in students:
+        learners_total_attempts += getattr(s, 'total_attempts_count', 0)
+        learners_total_completed += getattr(s, 'completed_attempts_count', 0)
+        for a in s.attempts.all():
+            if a.is_active and a.is_complete and a.score is not None:
+                all_completed_scores.append(a.score)
+
+    learners_avg_score = (
+        round(sum(all_completed_scores) / len(all_completed_scores))
+        if all_completed_scores else None
+    )
+    learners_avg_score_display = f"{learners_avg_score}%" if learners_avg_score is not None else "—"
+
+    # Subscription info for the guardian dashboard
+    from subscriptions.models import Subscription
+    active_sub = (
+        user.subscriptions
+        .filter(status=Subscription.Status.ACTIVE, ends_at__gt=timezone.now())
+        .select_related('plan')
+        .first()
+    )
+    if active_sub:
+        subscription_info = {
+            'is_active': True,
+            'plan_name': active_sub.plan.name,
+            'status_label': 'Active Subscription',
+            'footer_note': (
+                'Unlimited tests' if active_sub.is_unlimited
+                else f'{active_sub.tests_remaining} tests left'
+            ),
+            'ends_at': active_sub.ends_at,
+            'plan': active_sub.plan,
+        }
+    else:
+        latest_sub = user.subscriptions.select_related('plan').first()
+        if latest_sub:
+            subscription_info = {
+                'is_active': False,
+                'plan_name': f'{latest_sub.plan.name}',
+                'status_label': 'Plan Expired',
+                'footer_note': 'Renew subscription',
+                'ends_at': latest_sub.ends_at,
+                'plan': latest_sub.plan,
+            }
+        else:
+            subscription_info = {
+                'is_active': False,
+                'plan_name': 'Free Plan',
+                'status_label': 'No Active Plan',
+                'footer_note': 'Upgrade for full access',
+                'ends_at': None,
+                'plan': None,
+            }
+
+    require_learner_selection = False
     require_county_selection = user.needs_county
 
     student_index = 0
@@ -488,11 +563,11 @@ def guardian_dashboard_view(request):
     else:
         dashboard = {
             'analytics': {
-                'total_attempts': 0,
-                'completed': 0,
-                'completion_rate': 0,
-                'avg_score': 0,
-                'best_score': 0,
+                'total_attempts': learners_total_attempts,
+                'completed': learners_total_completed,
+                'completion_rate': round((learners_total_completed / learners_total_attempts * 100)) if learners_total_attempts else 0,
+                'avg_score': learners_avg_score or 0,
+                'best_score': max(all_completed_scores) if all_completed_scores else 0,
             },
             'weekly_bars': [],
             'max_bar': 1,
@@ -507,6 +582,12 @@ def guardian_dashboard_view(request):
         attempts_page = None
         attempt_courses = []
         dashboard_query = ''
+
+    # Pre-build stat card link URLs
+    first_learner_report_url = (
+        f"{reverse('accounts:guardian_dashboard')}?{urlencode({'student': str(students[0].uuid)})}"
+        if students else '#'
+    )
 
     context = {
         'guardian': user,
@@ -545,6 +626,15 @@ def guardian_dashboard_view(request):
         'analytics_period_choices': ANALYTICS_PERIOD_CHOICES,
         'status_choices': STATUS_CHOICES,
         'analytics_period_label': analytics_ctx.get('analytics_period_label', ''),
+        'viewing_learner': viewing_learner,
+        'learners_avg_score': learners_avg_score,
+        'learners_avg_score_display': learners_avg_score_display,
+        'learners_total_completed': learners_total_completed,
+        'learners_total_attempts': learners_total_attempts,
+        'subscription_info': subscription_info,
+        'first_learner_report_url': first_learner_report_url,
+        'exam_center_url': reverse('core:exams_list'),
+        'plans_url': reverse('subscriptions:plans'),
     }
     return render(request, 'accounts/guardian_dashboard.html', context)
 

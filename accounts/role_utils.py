@@ -13,7 +13,7 @@ def role_label(role_value):
 
 def redirect_path_for_role(user):
     """Default landing page after a role change."""
-    if user.is_platform_admin:
+    if user.is_admin_role:
         return reverse('accounts:admin_dashboard')
     if user.is_guardian:
         return reverse('accounts:guardian_dashboard')
@@ -21,6 +21,6 @@ def redirect_path_for_role(user):
         return reverse('accounts:teacher_dashboard')
     if user.is_referral:
         return reverse('accounts:referral_dashboard')
-    if user.is_staff:
+    if user.is_platform_admin:
         return reverse('accounts:admin_dashboard')
     return reverse('core:landing')

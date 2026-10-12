@@ -321,3 +321,48 @@ class PrivacyPolicyTests(TestCase):
         self.assertContains(response, 'Google user data')
         self.assertContains(response, 'Limited use')
         self.assertContains(response, 'Retention and deletion')
+
+
+class LandingPageNavbarTests(TestCase):
+    def setUp(self):
+        self.guardian = User.objects.create_user(
+            phone='0722222222',
+            password='1234',
+            role=Role.GUARDIAN,
+            first_name='Parent',
+            last_name='User',
+        )
+        self.admin = User.objects.create_user(
+            phone='0733333333',
+            password='1234',
+            role=Role.ADMIN,
+            first_name='Admin',
+            last_name='User',
+        )
+
+    def test_anonymous_user_does_not_see_dashboard_or_curriculum_builder_in_navbar(self):
+        response = self.client.get(reverse('core:landing'))
+        self.assertEqual(response.status_code, 200)
+        html = response.content.decode('utf-8')
+        # Check navbar-links and navbar-drawer-links blocks
+        navbar_chunk = html[html.find('<div class="navbar-links">'):html.find('</div>\n\n      <div class="navbar-actions">')]
+        self.assertNotIn('Curriculum Builder', navbar_chunk)
+        self.assertNotIn('Dashboard', navbar_chunk)
+
+    def test_authenticated_guardian_sees_dashboard_link_not_curriculum_builder_in_navbar(self):
+        self.client.force_login(self.guardian)
+        response = self.client.get(reverse('core:landing'))
+        self.assertEqual(response.status_code, 200)
+        html = response.content.decode('utf-8')
+        navbar_chunk = html[html.find('<div class="navbar-links">'):html.find('</div>\n\n      <div class="navbar-actions">')]
+        self.assertNotIn('Curriculum Builder', navbar_chunk)
+        self.assertIn(f'<a href="{reverse("accounts:guardian_dashboard")}">Dashboard</a>', navbar_chunk)
+
+    def test_authenticated_admin_sees_admin_dashboard_in_navbar(self):
+        self.client.force_login(self.admin)
+        response = self.client.get(reverse('core:landing'))
+        self.assertEqual(response.status_code, 200)
+        html = response.content.decode('utf-8')
+        navbar_chunk = html[html.find('<div class="navbar-links">'):html.find('</div>\n\n      <div class="navbar-actions">')]
+        self.assertNotIn('Curriculum Builder', navbar_chunk)
+        self.assertIn(f'<a href="{reverse("accounts:admin_dashboard")}">Dashboard</a>', navbar_chunk)

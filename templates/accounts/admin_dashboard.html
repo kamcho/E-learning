@@ -4,6 +4,7 @@
 
 {% block extra_head %}
 {% include 'accounts/partials/admin_list_styles.html' %}
+{% include 'components/stat_card_styles.html' %}
 <style>
   .admin-page-header {
     display: flex;
@@ -62,87 +63,7 @@
     color: var(--clr-primary);
   }
 
-  .admin-stats-row {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: var(--space-lg);
-    margin-bottom: var(--space-xl);
-  }
 
-  @media (max-width: 1200px) { .admin-stats-row { grid-template-columns: repeat(2, 1fr); } }
-  @media (max-width: 576px) { .admin-stats-row { grid-template-columns: 1fr; } }
-
-  .admin-stat-card {
-    background: var(--clr-surface);
-    border-radius: var(--radius-xl);
-    padding: var(--space-lg) var(--space-xl);
-    box-shadow: var(--shadow-sm);
-    border: 1px solid var(--clr-border);
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-md);
-    transition: transform var(--transition-fast), box-shadow var(--transition-fast);
-  }
-
-  .admin-stat-card:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-md);
-  }
-
-  .admin-stat-top {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-  }
-
-  .admin-stat-icon {
-    width: 48px;
-    height: 48px;
-    border-radius: var(--radius-lg);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.35rem;
-  }
-
-  .admin-stat-icon.blue { background: rgba(59, 130, 246, 0.12); }
-  .admin-stat-icon.purple { background: rgba(139, 92, 246, 0.12); }
-  .admin-stat-icon.orange { background: rgba(249, 115, 22, 0.12); }
-  .admin-stat-icon.green { background: rgba(13, 138, 78, 0.12); }
-
-  .admin-stat-label {
-    font-size: 0.82rem;
-    font-weight: 600;
-    color: var(--clr-text-muted);
-  }
-
-  .admin-stat-value {
-    font-family: var(--font-heading);
-    font-size: 2.1rem;
-    font-weight: 800;
-    color: var(--clr-text);
-    line-height: 1;
-  }
-
-  .admin-stat-meta {
-    display: flex;
-    gap: var(--space-lg);
-    padding-top: var(--space-sm);
-    border-top: 1px solid var(--clr-border);
-  }
-
-  .admin-stat-meta-item {
-    font-size: 0.78rem;
-    color: var(--clr-text-light);
-  }
-
-  .admin-stat-meta-item strong {
-    display: block;
-    font-size: 0.9rem;
-    color: var(--clr-text);
-    font-weight: 700;
-    margin-top: 2px;
-  }
 
   .admin-panel {
     background: var(--clr-surface);
@@ -331,66 +252,14 @@
   </div>
 </div>
 
-<div class="admin-stats-row">
-  <div class="admin-stat-card" data-searchable>
-    <div class="admin-stat-top">
-      <div>
-        <div class="admin-stat-label">Total Users</div>
-        <div class="admin-stat-value">{{ user_stats.total }}</div>
-      </div>
-      <div class="admin-stat-icon blue">&#128100;</div>
-    </div>
-    <div class="admin-stat-meta">
-      <div class="admin-stat-meta-item">Active<strong>{{ user_stats.active }}</strong></div>
-      <div class="admin-stat-meta-item">Guardians<strong>{{ user_stats.guardians }}</strong></div>
-      <div class="admin-stat-meta-item">Teachers<strong>{{ user_stats.teachers }}</strong></div>
-    </div>
-  </div>
+<div class="stat-card-grid admin-stats-row">
+  {% include 'components/stat_card.html' with icon='users' icon_color='blue' value=user_stats.total label='Total users' footer_val=user_stats.active footer_unit='active' footer_note='Accounts' %}
 
-  <div class="admin-stat-card" data-searchable>
-    <div class="admin-stat-top">
-      <div>
-        <div class="admin-stat-label">Total Students</div>
-        <div class="admin-stat-value">{{ student_stats.total }}</div>
-      </div>
-      <div class="admin-stat-icon purple">&#127891;</div>
-    </div>
-    <div class="admin-stat-meta">
-      <div class="admin-stat-meta-item">Guardian Links<strong>{{ student_stats.linked }}</strong></div>
-      <div class="admin-stat-meta-item">Partners<strong>{{ user_stats.partners }}</strong></div>
-      <div class="admin-stat-meta-item">Admins<strong>{{ user_stats.admins }}</strong></div>
-    </div>
-  </div>
+  {% include 'components/stat_card.html' with icon='students' icon_color='orange' value=student_stats.total label='Total students' footer_val=student_stats.linked footer_unit='linked' footer_note='Guardian links' %}
 
-  <div class="admin-stat-card" data-searchable>
-    <div class="admin-stat-top">
-      <div>
-        <div class="admin-stat-label">Active Subjects</div>
-        <div class="admin-stat-value">{{ curriculum_counts.subjects }}</div>
-      </div>
-      <div class="admin-stat-icon orange">&#128218;</div>
-    </div>
-    <div class="admin-stat-meta">
-      <div class="admin-stat-meta-item">Grade Levels<strong>{{ curriculum_counts.grade_levels }}</strong></div>
-      <div class="admin-stat-meta-item">Disciplines<strong>{{ curriculum_counts.disciplines }}</strong></div>
-      <div class="admin-stat-meta-item">Strands<strong>{{ curriculum_counts.strands }}</strong></div>
-    </div>
-  </div>
+  {% include 'components/stat_card.html' with icon='book' icon_color='amber' value=curriculum_counts.subjects label='Active subjects' footer_val=curriculum_counts.grade_levels footer_unit='grades' footer_note='Curriculum' %}
 
-  <div class="admin-stat-card" data-searchable>
-    <div class="admin-stat-top">
-      <div>
-        <div class="admin-stat-label">Active Quizzes</div>
-        <div class="admin-stat-value">{{ content_counts.quizzes }}</div>
-      </div>
-      <div class="admin-stat-icon green">&#9997;</div>
-    </div>
-    <div class="admin-stat-meta">
-      <div class="admin-stat-meta-item">Questions<strong>{{ content_counts.questions }}</strong></div>
-      <div class="admin-stat-meta-item">Attempts<strong>{{ content_counts.attempts }}</strong></div>
-      <div class="admin-stat-meta-item">Completed<strong>{{ content_counts.completed_attempts }}</strong></div>
-    </div>
-  </div>
+  {% include 'components/stat_card.html' with icon='quiz' icon_color='emerald' value=content_counts.quizzes label='Active quizzes' footer_val=content_counts.completed_attempts footer_unit='completed' footer_note='Learner attempts' %}
 </div>
 
 {% include 'accounts/partials/attempt_score_chart.html' with attempt_chart=attempt_chart chart_canvas_id='attemptScoreChart' chart_data_id='attempt-chart-data' %}

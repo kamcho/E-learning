@@ -1,0 +1,70 @@
+{% if href %}
+<a href="{{ href }}" class="stat-card stat-card--clickable{% if extra_classes %} {{ extra_classes }}{% endif %}"{% if searchable|default:True %} data-searchable{% endif %}{% if card_id %} id="{{ card_id }}"{% endif %}>
+{% else %}
+<article class="stat-card{% if extra_classes %} {{ extra_classes }}{% endif %}"{% if searchable|default:True %} data-searchable{% endif %}{% if card_id %} id="{{ card_id }}"{% endif %}>
+{% endif %}
+  <div class="stat-card-main">
+    <div class="stat-card-top">
+      <div class="stat-card-icon stat-card-icon--{{ icon_color|default:'blue' }}" aria-hidden="true">
+        {% if icon_svg %}
+          {{ icon_svg|safe }}
+        {% elif icon == 'users' or icon == 'user' %}
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+          </svg>
+        {% elif icon == 'students' or icon == 'student' or icon == 'academic' %}
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
+            <path d="M6 12v5c3 3 9 3 12 0v-5"/>
+          </svg>
+        {% elif icon == 'book' or icon == 'curriculum' or icon == 'subject' or icon == 'books' %}
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+          </svg>
+        {% elif icon == 'quiz' or icon == 'exam' or icon == 'check' or icon == 'quizzes' %}
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 11l3 3L22 4"/>
+            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+          </svg>
+        {% elif icon == 'currency' or icon == 'dollar' or icon == 'revenue' or icon == 'money' %}
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="1" x2="12" y2="23"/>
+            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+          </svg>
+        {% elif icon == 'refresh' or icon == 'refund' or icon == 'repeat' or icon == 'pending' %}
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="23 4 23 10 17 10"/>
+            <polyline points="1 20 1 14 7 14"/>
+            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+          </svg>
+        {% elif icon == 'chart' or icon == 'trend' or icon == 'score' %}
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+          </svg>
+        {% else %}
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="16" x2="12" y2="12"/>
+            <line x1="12" y1="8" x2="12.01" y2="8"/>
+          </svg>
+        {% endif %}
+      </div>
+      <div class="stat-card-value">{{ value }}</div>
+    </div>
+    <div class="stat-card-label">{{ label }}</div>
+  </div>
+  {% if footer_highlight or footer_left or footer_val is not None or footer_note or footer_right %}
+  <div class="stat-card-footer">
+    <span class="stat-card-footer-highlight">{% if footer_highlight %}{{ footer_highlight }}{% elif footer_left %}{{ footer_left }}{% elif footer_val is not None %}{{ footer_val }}{% if footer_unit %} {{ footer_unit }}{% endif %}{% endif %}</span>
+    <span class="stat-card-footer-note">{% if footer_note %}{{ footer_note }}{% elif footer_right %}{{ footer_right }}{% endif %}</span>
+  </div>
+  {% endif %}
+{% if href %}
+</a>
+{% else %}
+</article>
+{% endif %}

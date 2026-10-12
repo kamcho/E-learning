@@ -10,6 +10,7 @@
 {% include 'accounts/partials/pathway_suggestion_styles.html' %}
 {% include 'accounts/partials/student_achievements_styles.html' %}
 {% include 'accounts/partials/gd_metric_cards_styles.html' %}
+{% include 'components/stat_card_styles.html' %}
 {% include 'accounts/partials/guardian_dashboard_crimson_theme.html' %}
 <style>
   .guardian-dash-main {
@@ -1700,26 +1701,508 @@
   }
 
   .gd-pick-learner-hint-icon { font-size: 2.5rem; margin-bottom: 0.75rem; }
+
+  /* ── User Dashboard Header ── */
+  .gd-user-dashboard-header {
+    background: var(--dash-card, var(--cs-surface));
+    border: 1px solid var(--dash-border, var(--cs-border));
+    border-radius: 16px;
+    padding: 1.5rem 1.75rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .gd-user-dashboard-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--cs-crimson, #c1272d) 0%, var(--dash-purple, var(--cs-accent, #0d8a4e)) 100%);
+  }
+
+  .gd-user-header-inner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+  }
+
+  .gd-user-header-identity {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    min-width: 0;
+  }
+
+  .gd-user-header-avatar {
+    width: 56px;
+    height: 56px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, var(--cs-crimson, #c1272d) 0%, #d4a017 100%);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-heading);
+    font-size: 1.35rem;
+    font-weight: 800;
+    flex-shrink: 0;
+    box-shadow: 0 6px 18px rgba(193, 39, 45, 0.25);
+  }
+
+  .gd-user-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--dash-purple, var(--cs-accent, #0d8a4e));
+    background: rgba(13, 138, 78, 0.1);
+    padding: 0.2rem 0.65rem;
+    border-radius: 999px;
+    margin-bottom: 0.35rem;
+  }
+
+  .gd-user-title {
+    margin: 0;
+    font-family: var(--font-heading);
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--dash-text, var(--cs-text));
+    line-height: 1.2;
+  }
+
+  .gd-user-subtitle {
+    margin: 0.25rem 0 0;
+    font-size: 0.88rem;
+    color: var(--dash-muted, var(--cs-text-muted));
+    line-height: 1.4;
+  }
+
+  .gd-user-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  /* ── Linked Learners Section ── */
+  .gd-learners-section {
+    margin-bottom: 2.25rem;
+  }
+
+  .gd-learners-section-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 1.1rem;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .gd-learners-title-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .gd-learners-title {
+    margin: 0;
+    font-family: var(--font-heading);
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: var(--dash-text, var(--cs-text));
+    letter-spacing: -0.01em;
+  }
+
+  .gd-learners-count-badge {
+    background: rgba(13, 138, 78, 0.12);
+    color: var(--dash-purple, var(--cs-accent, #0d8a4e));
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0.2rem 0.65rem;
+    border-radius: 999px;
+  }
+
+  .gd-learners-subtitle {
+    margin: 0.25rem 0 0;
+    font-size: 0.85rem;
+    color: var(--dash-muted, var(--cs-text-muted));
+  }
+
+  .gd-learners-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+    gap: 1.15rem;
+  }
+
+  .gd-learner-link-card {
+    background: var(--dash-card, var(--cs-surface));
+    border: 1.5px solid var(--dash-border, var(--cs-border));
+    border-radius: 14px;
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    text-decoration: none;
+    color: inherit;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+    min-height: 165px;
+  }
+
+  .gd-learner-link-card:hover {
+    transform: translateY(-3px);
+    border-color: var(--dash-purple, var(--cs-accent, #0d8a4e));
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
+  }
+
+  .gd-learner-link-card.is-active {
+    border-color: var(--dash-purple, var(--cs-accent, #0d8a4e));
+    background: var(--dash-card, var(--cs-surface));
+    box-shadow: 0 0 0 2px rgba(13, 138, 78, 0.2), 0 8px 24px rgba(13, 138, 78, 0.1);
+  }
+
+  html[data-theme="dark"] .gd-learner-link-card.is-active {
+    box-shadow: 0 0 0 2px rgba(61, 214, 198, 0.3), 0 8px 28px rgba(0, 0, 0, 0.45);
+  }
+
+  .gd-learner-card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.9rem;
+  }
+
+  .gd-learner-card-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #c1272d 0%, #3dd6c6 100%);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-heading);
+    font-size: 1rem;
+    font-weight: 800;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  }
+
+  .gd-learner-badge {
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 0.25rem 0.65rem;
+    border-radius: 999px;
+    background: var(--dash-ring-bg, rgba(0, 0, 0, 0.05));
+    color: var(--dash-muted, var(--cs-text-muted));
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.15s ease;
+  }
+
+  .gd-learner-badge.is-active {
+    background: rgba(13, 138, 78, 0.15);
+    color: var(--dash-purple, var(--cs-accent, #0d8a4e));
+    font-weight: 800;
+  }
+
+  html[data-theme="dark"] .gd-learner-badge.is-active {
+    background: rgba(61, 214, 198, 0.2);
+    color: #3dd6c6;
+  }
+
+  .gd-pulse-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+    display: inline-block;
+    animation: gd-pulse 2s infinite;
+  }
+
+  .gd-learner-card-content {
+    flex: 1;
+  }
+
+  .gd-learner-card-name {
+    margin: 0 0 0.35rem;
+    font-family: var(--font-heading);
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: var(--dash-text, var(--cs-text));
+    line-height: 1.25;
+  }
+
+  .gd-learner-card-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.85rem;
+    flex-wrap: wrap;
+  }
+
+  .gd-learner-grade-pill {
+    font-size: 0.74rem;
+    font-weight: 700;
+    color: var(--dash-purple, var(--cs-accent, #0d8a4e));
+    background: rgba(13, 138, 78, 0.1);
+    padding: 0.15rem 0.55rem;
+    border-radius: 999px;
+  }
+
+  .gd-learner-code-pill {
+    font-size: 0.72rem;
+    color: var(--dash-muted, var(--cs-text-muted));
+    font-weight: 600;
+  }
+
+  .gd-learner-card-stats {
+    display: flex;
+    gap: 1.25rem;
+    padding-top: 0.65rem;
+    border-top: 1px solid var(--dash-border, var(--cs-border));
+    margin-bottom: 0.75rem;
+  }
+
+  .gd-learner-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+
+  .gd-learner-stat-val {
+    font-family: var(--font-heading);
+    font-size: 1rem;
+    font-weight: 800;
+    color: var(--dash-text, var(--cs-text));
+    line-height: 1;
+  }
+
+  .gd-learner-stat-label {
+    font-size: 0.68rem;
+    color: var(--dash-muted, var(--cs-text-muted));
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .gd-learner-card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    margin-top: auto;
+  }
+
+  .gd-learner-card-cta {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--dash-muted, var(--cs-text-muted));
+    transition: color 0.15s ease;
+  }
+
+  .gd-learner-link-card:hover .gd-learner-card-cta,
+  .gd-learner-card-cta.is-active {
+    color: var(--dash-purple, var(--cs-accent, #0d8a4e));
+  }
+
+  /* Add Learner Card */
+  .gd-learner-link-card--add {
+    border: 2px dashed var(--dash-border, var(--cs-border));
+    background: transparent;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 1.5rem 1.25rem;
+  }
+
+  .gd-learner-link-card--add:hover {
+    border-color: var(--dash-purple, var(--cs-accent, #0d8a4e));
+    background: rgba(13, 138, 78, 0.04);
+  }
+
+  .gd-learner-add-icon-wrap {
+    margin-bottom: 0.75rem;
+  }
+
+  .gd-learner-add-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: rgba(13, 138, 78, 0.12);
+    color: var(--dash-purple, var(--cs-accent, #0d8a4e));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0 auto;
+    transition: transform 0.2s ease, background 0.2s ease;
+  }
+
+  .gd-learner-link-card--add:hover .gd-learner-add-icon {
+    transform: scale(1.1);
+    background: var(--dash-purple, var(--cs-accent, #0d8a4e));
+    color: #fff;
+  }
+
+  .gd-learner-add-title {
+    margin: 0 0 0.25rem;
+    font-family: var(--font-heading);
+    font-size: 1rem;
+    font-weight: 800;
+    color: var(--dash-text, var(--cs-text));
+  }
+
+  .gd-learner-add-text {
+    margin: 0;
+    font-size: 0.78rem;
+    color: var(--dash-muted, var(--cs-text-muted));
+    line-height: 1.35;
+  }
+
+  .gd-active-learner-divider {
+    border: none;
+    border-top: 1px solid var(--dash-border, var(--cs-border));
+    margin: 2.5rem 0 2rem;
+  }
+
+  .gd-stat-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1.25rem;
+    margin-bottom: 2rem;
+  }
+
+  @media (max-width: 1024px) {
+    .gd-stat-cards-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 600px) {
+    .gd-stat-cards-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .gd-subscription-panel {
+    background: var(--dash-card, var(--cs-surface));
+    border: 1px solid var(--dash-border, var(--cs-border));
+    border-radius: 16px;
+    padding: 1.5rem 1.75rem;
+    margin-top: 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
+  }
+
+  .gd-subscription-panel-left {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    min-width: 0;
+  }
+
+  .gd-subscription-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: rgba(212, 160, 23, 0.12);
+    color: var(--cs-warm, #d4a017);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    flex-shrink: 0;
+  }
+
+  .gd-subscription-panel-title {
+    margin: 0;
+    font-family: var(--font-heading);
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: var(--dash-text, var(--cs-text));
+  }
+
+  .gd-subscription-panel-desc {
+    margin: 0.25rem 0 0;
+    font-size: 0.85rem;
+    color: var(--dash-muted, var(--cs-text-muted));
+  }
+
+  .gd-learner-report-topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    padding: 0.75rem 1.25rem;
+    background: var(--dash-card, var(--cs-surface));
+    border: 1px solid var(--dash-border, var(--cs-border));
+    border-radius: 12px;
+    flex-wrap: wrap;
+  }
+
+  .gd-back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: var(--dash-purple, var(--cs-accent, #0d8a4e));
+    text-decoration: none;
+    transition: transform 0.15s ease;
+  }
+
+  .gd-back-link:hover {
+    transform: translateX(-3px);
+    text-decoration: underline;
+  }
+
+  .gd-learner-quick-switch {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+  }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="gd-dashboard">
 
-{% if require_learner_selection %}
-  <div class="gd-hero-empty">
-    <div>
-      <h1>Learner Dashboard</h1>
-      <p>Select a learner to view exam analytics and history.</p>
+{% if students %}
+  {% if viewing_learner and active_student %}
+  <!-- Specific Learner Report View -->
+  <div class="gd-learner-report-topbar">
+    <a href="{% url 'accounts:guardian_dashboard' %}" class="gd-back-link">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      Back to Guardian Dashboard
+    </a>
+    <div class="gd-learner-quick-switch">
+      {% if students|length > 1 %}
+      <span style="font-size:0.82rem; color:var(--dash-muted); font-weight:600;">Switch learner:</span>
+      <select class="gd-select" id="learner-report-switcher" onchange="window.location.href='?student=' + this.value" aria-label="Switch learner">
+        {% for st in students %}
+          <option value="{{ st.uuid }}" {% if st.uuid == active_student.uuid %}selected{% endif %}>
+            {{ st.first_name }} {{ st.last_name }} ({{ st.grade_level.name|default:"No grade" }})
+          </option>
+        {% endfor %}
+      </select>
+      {% endif %}
     </div>
-    <a href="{% url 'accounts:add_learner' %}" class="gd-btn gd-btn-outline">+ Add learner</a>
   </div>
-  <div class="gd-pick-learner-hint">
-    <div class="gd-pick-learner-hint-icon">👋</div>
-    <p style="font-weight: 700; color: var(--dash-text); margin-bottom: 0.35rem;">Who are you viewing?</p>
-    <p style="font-size: 0.9rem; margin: 0; color: var(--dash-muted);">Choose a learner to see their dashboard.</p>
-  </div>
-{% elif active_student %}
 
   <section class="gd-hero" aria-label="Active learner">
     <div class="gd-hero-identity">
@@ -1727,7 +2210,8 @@
         {{ active_student.first_name|first|upper }}{{ active_student.last_name|first|upper }}
       </div>
       <div class="gd-hero-copy">
-        <h1 class="gd-hero-name">{{ active_student.first_name }} {{ active_student.last_name }}</h1>
+        <div style="font-size:0.74rem; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:var(--dash-purple, var(--cs-accent, #0d8a4e)); margin-bottom:0.25rem;">Viewing Learner Report</div>
+        <h2 class="gd-hero-name" style="font-size:1.6rem; margin:0 0 0.35rem;">{{ active_student.first_name }} {{ active_student.last_name }}</h2>
         <p class="gd-hero-meta">
           <span>{{ active_student.grade_level.name|default:"No grade" }}</span>
           <span class="gd-hero-dot" aria-hidden="true"></span>
@@ -1744,7 +2228,7 @@
 
     <div class="gd-hero-actions">
       {% if students|length > 1 %}
-      <button type="button" class="gd-btn gd-btn-outline" id="gd-change-learner-btn">Switch</button>
+      <button type="button" class="gd-btn gd-btn-outline" id="gd-change-learner-btn">Switch Modal</button>
       <select class="gd-select" id="student-switcher" aria-label="Select learner" hidden>
         {% for student in students %}
           <option value="{{ student.uuid }}" {% if active_student.uuid == student.uuid %}selected{% endif %}>
@@ -1757,7 +2241,7 @@
       {% if dashboard_filters.month %}
       <button type="button" class="gd-month-clear" id="dashboard-month-clear">Clear</button>
       {% endif %}
-      <a href="{% url 'accounts:add_learner' %}" class="gd-btn gd-btn-outline">Add learner</a>
+      <a href="{% url 'accounts:student_analytics' active_student.uuid %}" class="gd-btn gd-btn-outline">Full analytics</a>
       <a href="#exam-attempts" class="gd-btn gd-btn-outline">Exam history</a>
       <a href="{% url 'core:exams_list' %}?student={{ active_student.uuid }}" class="gd-btn gd-btn-primary">Start exam</a>
     </div>
@@ -1973,6 +2457,106 @@
     {% endif %}
   </section>
 
+  {% else %}
+  <!-- Guardian / User Dashboard View -->
+  <section class="gd-user-dashboard-header" aria-label="Guardian Overview" style="background:transparent; border:none; box-shadow:none; padding:0.5rem 0 1.5rem; margin-bottom:1.5rem; border-radius:0;">
+    <div class="gd-user-badge" style="margin-bottom:0.5rem;">Guardian Dashboard</div>
+    <h1 class="gd-user-title">Welcome{% if guardian.first_name %}, {{ guardian.first_name }}{% elif request.user.first_name %}, {{ request.user.first_name }}{% endif %}</h1>
+    <p class="gd-user-subtitle" style="margin-top:0.35rem;">
+      Overview of your learners' CBC competency progress, assessments, and subscription.
+    </p>
+  </section>
+
+  <!-- Aggregate Stat Cards Grid -->
+  <div class="gd-stat-cards-grid">
+    {% include 'components/stat_card.html' with label="Learners Avg Score" value=learners_avg_score_display icon="chart" icon_color="emerald" footer_highlight=learners_avg_score|yesno:"Average score,No exams yet" footer_note="Across all learners" card_id="stat-learners-avg" href=first_learner_report_url %}
+    {% include 'components/stat_card.html' with label="Linked Learners" value=students|length icon="students" icon_color="blue" footer_highlight=students|length|stringformat:"s"|add:" active" footer_note="Enrolled learners" card_id="stat-linked-learners" href="#linked-learners" %}
+    {% include 'components/stat_card.html' with label="Exams Completed" value=learners_total_completed icon="quiz" icon_color="purple" footer_highlight=learners_total_attempts|stringformat:"s"|add:" total taken" footer_note="CBC assessments" card_id="stat-exams-completed" href=exam_center_url %}
+    {% include 'components/stat_card.html' with label="Subscription" value=subscription_info.plan_name icon="currency" icon_color=subscription_info.is_active|yesno:"emerald,amber" footer_highlight=subscription_info.status_label footer_note=subscription_info.footer_note card_id="stat-subscription" href=plans_url %}
+  </div>
+
+  <!-- Linked Learners Section (Link Cards) -->
+  <section class="gd-learners-section" id="linked-learners" aria-label="Linked Learners">
+    <div class="gd-learners-section-head">
+      <div class="gd-learners-title-wrap">
+        <h2 class="gd-learners-title">Linked Learners</h2>
+        <span class="gd-learners-count-badge">{{ students|length }} learner{{ students|length|pluralize }}</span>
+      </div>
+      <p class="gd-learners-subtitle">Click a learner card below to view their detailed performance report and exam history.</p>
+    </div>
+
+    <div class="gd-learners-cards-grid">
+      {% for s in students %}
+      <a href="{% url 'accounts:guardian_dashboard' %}?student={{ s.uuid }}"
+         class="gd-learner-link-card"
+         id="learner-card-{{ s.uuid }}"
+         title="View report for {{ s.first_name }} {{ s.last_name }}">
+        <div class="gd-learner-card-top">
+          <div class="gd-learner-card-avatar" aria-hidden="true">
+            {{ s.first_name|first|upper }}{{ s.last_name|first|upper }}
+          </div>
+          <span class="gd-learner-badge">Active</span>
+        </div>
+
+        <div class="gd-learner-card-content">
+          <h3 class="gd-learner-card-name">{{ s.first_name }} {{ s.last_name }}</h3>
+          <div class="gd-learner-card-meta">
+            <span class="gd-learner-grade-pill">{{ s.grade_level.name|default:"Grade not set" }}</span>
+            <span class="gd-learner-code-pill">STU-00{{ forloop.counter }}</span>
+          </div>
+
+          <div class="gd-learner-card-stats">
+            <div class="gd-learner-stat">
+              <span class="gd-learner-stat-val">{{ s.completed_attempts_count|default:"0" }}</span>
+              <span class="gd-learner-stat-label">Exams Done</span>
+            </div>
+            {% if s.avg_score_display is not None %}
+            <div class="gd-learner-stat">
+              <span class="gd-learner-stat-val">{{ s.avg_score_display }}%</span>
+              <span class="gd-learner-stat-label">Avg Score</span>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="gd-learner-card-footer">
+          <span class="gd-learner-card-cta">View Learner Report &rarr;</span>
+        </div>
+      </a>
+      {% endfor %}
+
+      <!-- Add Learner Card -->
+      <a href="{% url 'accounts:add_learner' %}" class="gd-learner-link-card gd-learner-link-card--add" id="learner-card-add" title="Add a new learner">
+        <div class="gd-learner-add-icon-wrap">
+          <div class="gd-learner-add-icon">+</div>
+        </div>
+        <div class="gd-learner-add-body">
+          <h3 class="gd-learner-add-title">Add New Learner</h3>
+          <p class="gd-learner-add-text">Link another child to track their CBE assessments and scores.</p>
+        </div>
+        <span class="gd-learner-card-cta" style="color:var(--dash-purple, var(--cs-accent, #0d8a4e)); font-weight:700;">+ Add Learner</span>
+      </a>
+    </div>
+  </section>
+
+  <!-- Subscription Overview Panel -->
+  <div class="gd-subscription-panel">
+    <div class="gd-subscription-panel-left">
+      <div class="gd-subscription-icon">&#128179;</div>
+      <div>
+        <h3 class="gd-subscription-panel-title">Subscription: {{ subscription_info.plan_name }}</h3>
+        <p class="gd-subscription-panel-desc">
+          {{ subscription_info.status_label }} &middot; {{ subscription_info.footer_note }}{% if subscription_info.ends_at %} &middot; Valid until {{ subscription_info.ends_at|date:"M d, Y" }}{% endif %}
+        </p>
+      </div>
+    </div>
+    <div style="display:flex; gap:0.75rem; flex-wrap:wrap;">
+      <a href="{% url 'subscriptions:plans' %}" class="gd-btn gd-btn-primary">View Plans &amp; Upgrade</a>
+      <a href="{% url 'core:exams_list' %}" class="gd-btn gd-btn-outline">Browse Exams</a>
+    </div>
+  </div>
+  {% endif %}
+
 {% else %}
 <section class="gd-onboard" aria-label="Get started">
   <div class="gd-onboard-hero">
@@ -1981,7 +2565,7 @@
       <h1>Set up your first learner</h1>
       <p>
         Your guardian account is ready. Add a child to unlock exam practice,
-        progress tracking, and AI tutor help — all aligned to CBC.
+        progress tracking, and AI tutor help — all aligned to CBE.
       </p>
       <div class="gd-onboard-actions">
         <a href="{% url 'accounts:add_learner' %}" class="gd-btn gd-btn-primary">+ Add learner</a>
@@ -2008,12 +2592,12 @@
     <article class="gd-onboard-card">
       <span class="gd-onboard-card-num" aria-hidden="true">1</span>
       <h3>Add a learner</h3>
-      <p>Enter their name and grade so exams match the right CBC level.</p>
+      <p>Enter their name and grade so exams match the right CBE level.</p>
     </article>
     <article class="gd-onboard-card">
       <span class="gd-onboard-card-num" aria-hidden="true">2</span>
       <h3>Start practice</h3>
-      <p>Open Exam Center, pick a subject, and take KEPSEA/KJSEA-style tests.</p>
+      <p>Open Exam Center, pick a subject, and take KPSEA, KJSEA, or KCBE-style tests.</p>
     </article>
     <article class="gd-onboard-card">
       <span class="gd-onboard-card-num" aria-hidden="true">3</span>
@@ -2168,7 +2752,7 @@
       var countyModal = document.getElementById('county-location-modal');
       if (countyRequired && countyModal && countyModal.classList.contains('is-open')) return;
       userPickedInModal = false;
-      setSelected('', false);
+      setSelected(selectedUuid || '', false);
       syncConfirmButton();
       learnerModal.classList.add('is-open');
       document.body.style.overflow = 'hidden';

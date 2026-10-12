@@ -1334,7 +1334,7 @@
 
       <div class="exam-wizard-panel" data-wizard-step="scope">
         <h2 class="exam-wizard-question" id="wizard-scope-question">General test or a specific strand?</h2>
-        <p class="exam-wizard-hint">A general test covers the whole subject. A strand test focuses on one CBC topic area.</p>
+        <p class="exam-wizard-hint">A general test covers the whole subject. A strand test focuses on one CBE topic area.</p>
         <div class="wizard-scope-btns">
           <button type="button" class="wizard-scope-card" id="wizard-scope-general" data-scope="general">
             <span class="wizard-scope-badge">Recommended</span>
@@ -1344,7 +1344,7 @@
           <button type="button" class="wizard-scope-card" id="wizard-scope-strand" data-scope="strand">
             <span class="wizard-scope-badge">Focused</span>
             <span class="wizard-scope-title">Specific strand</span>
-            <span class="wizard-scope-desc">One CBC strand at a time</span>
+            <span class="wizard-scope-desc">One CBE strand at a time</span>
           </button>
         </div>
       </div>
@@ -1593,7 +1593,7 @@
         <span class="ew-choice-main">
           <span class="ew-choice-name">{{ item.subject.name }}</span>
           <span class="ew-choice-desc">
-            {% if browse_all_grades or browse_subjects_by_grade|length > 1 %}{{ item.subject.grade_level.name }} · {% endif %}CBC practice &amp; revision
+            {% if browse_all_grades or browse_subjects_by_grade|length > 1 %}{{ item.subject.grade_level.name }} · {% endif %}CBE practice &amp; revision
           </span>
           <span class="ew-choice-tags">
             {% if item.count %}
@@ -1755,7 +1755,7 @@
       <span class="ew-choice-icon-wrap" aria-hidden="true">S</span>
       <span class="ew-choice-main">
         <span class="ew-choice-name">Strand</span>
-        <span class="ew-choice-desc">One CBC strand at a time</span>
+        <span class="ew-choice-desc">One CBE strand at a time</span>
         <span class="ew-choice-tags">
           <span class="ew-choice-tag">{{ browse_strands|length }} strand{{ browse_strands|length|pluralize }}</span>
         </span>
@@ -1860,7 +1860,7 @@
         <span class="ew-choice-icon-wrap" aria-hidden="true">{{ item.strand.name|slice:":1"|upper }}</span>
         <span class="ew-choice-main">
           <span class="ew-choice-name">{{ item.strand.name }}</span>
-          <span class="ew-choice-desc">CBC strand in {{ active_subject.name }}</span>
+          <span class="ew-choice-desc">CBE strand in {{ active_subject.name }}</span>
           <span class="ew-choice-tags">
             {% if item.count %}
               <span class="ew-choice-tag ew-choice-tag--ready">{{ item.count }} test{{ item.count|pluralize }}</span>
@@ -2402,7 +2402,7 @@
       'Great choice, ' + studentFirstName + '! What subject in ' + state.gradeName + '?';
 
     runLoading(
-        ['Finding the best match for you…', 'Checking your CBC curriculum…', 'Preparing your options…'],
+        ['Finding the best match for you…', 'Checking your CBE curriculum…', 'Preparing your options…'],
       function () { return fetchOptions(false); },
       function (data) {
         renderChoices('wizard-subject-options', data.subjects || [], function (item) {

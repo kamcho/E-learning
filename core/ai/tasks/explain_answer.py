@@ -2,7 +2,7 @@ from ..client import OpenAIClient
 
 EXPLAIN_ANSWER_TASK = 'explain_answer'
 
-SYSTEM_PROMPT = """You are a friendly CBC (Competency-Based Curriculum) tutor for Kenyan learners.
+SYSTEM_PROMPT = """You are a friendly CBE (Competency-Based Education) tutor for Kenyan learners.
 Explain quiz answers clearly and briefly using simple language suited to the learner's level.
 Focus on why the correct answer is right. If the learner picked a wrong answer, gently explain
 their mistake without being discouraging. Keep responses under 150 words."""

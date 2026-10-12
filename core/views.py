@@ -1512,7 +1512,7 @@ def _build_exams_wizard_trail(
     phase_labels = {
         'subject': ('Choose subject', 'Pick a subject to explore tests and practice areas.'),
         'scope': ('Test focus', 'Choose whether to test the whole subject or a specific topic.'),
-        'strand': ('Choose strand', 'Select the CBC strand to practise.'),
+        'strand': ('Choose strand', 'Select the CBE strand to practise.'),
         'sub_strand': ('Choose sub-strand', 'Narrow down to a specific sub-strand.'),
         'tests': ('Choose test', 'Pick an exam to start or continue.'),
     }

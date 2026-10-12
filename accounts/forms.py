@@ -117,15 +117,11 @@ class StudentForm(forms.ModelForm):
 
     class Meta:
         model = Student
-        fields = ['first_name', 'middle_name', 'last_name', 'grade_level', 'gender', 'dob']
+        fields = ['first_name', 'last_name', 'grade_level', 'gender', 'dob']
         widgets = {
             'first_name': forms.TextInput(attrs={
                 'class': 'form-input',
                 'placeholder': 'First Name',
-            }),
-            'middle_name': forms.TextInput(attrs={
-                'class': 'form-input',
-                'placeholder': 'Middle Name',
             }),
             'last_name': forms.TextInput(attrs={
                 'class': 'form-input',

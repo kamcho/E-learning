@@ -11,7 +11,12 @@ class GoogleAuthError(Exception):
 
 def get_google_client_ids():
     """Return configured Google OAuth Web client IDs."""
-    return list(getattr(settings, 'GOOGLE_CLIENT_IDS', []) or [])
+    if hasattr(settings, 'GOOGLE_CLIENT_ID') and not settings.GOOGLE_CLIENT_ID:
+        return []
+    ids = list(getattr(settings, 'GOOGLE_CLIENT_IDS', []) or [])
+    if not ids and getattr(settings, 'GOOGLE_CLIENT_ID', ''):
+        ids = [item.strip() for item in settings.GOOGLE_CLIENT_ID.split(',') if item.strip()]
+    return ids
 
 
 def verify_google_credential(credential):

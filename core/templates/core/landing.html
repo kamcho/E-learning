@@ -4,9 +4,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Soma Smart — fun, interactive CBC learning for PP1 to Grade 9. KEPSEA and KJSEA practice, notes, and AI-powered tutors that inspire every child.">
-  <meta name="keywords" content="CBC, Kenya, KEPSEA, KJSEA, e-learning, PP1, Grade 9, practice questions, AI tutor, online exams">
-  <title>Soma Smart — Fun CBC Learning & Exam Practice</title>
+  <meta name="description" content="Soma Smart — fun, interactive CBE learning for PP1 to Grade 9. KPSEA, KJSEA, and KCBE practice, notes, and AI-powered tutors that inspire every child.">
+  <meta name="keywords" content="CBE, Kenya, KPSEA, KJSEA, KCBE, Kenya Certificate of Basic Education, e-learning, PP1, Grade 9, practice questions, AI tutor, online exams">
+  <title>Soma Smart — Fun CBE Learning & Exam Practice</title>
   <script>
     (function () {
       try {
@@ -41,7 +41,7 @@
         <a href="#about">About</a>
         <a href="#pricing">Pricing</a>
         {% if request.user.is_authenticated %}
-          <a href="{% url 'subjects:grade_level_list' %}">Curriculum Builder</a>
+          <a href="{{ request.user.dashboard_url }}">Dashboard</a>
           <a href="{% url 'subscriptions:plans' %}">Subscriptions</a>
         {% endif %}
       </div>
@@ -87,14 +87,9 @@
       <a href="#about">About</a>
       <a href="#pricing">Pricing</a>
       {% if request.user.is_authenticated %}
-        <a href="{% url 'subjects:grade_level_list' %}">Curriculum Builder</a>
+        <a href="{{ request.user.dashboard_url }}">Dashboard</a>
         <a href="{% url 'core:exams_list' %}">Exam Center</a>
         <a href="{% url 'subscriptions:plans' %}">Subscriptions</a>
-        {% if request.user.is_guardian %}
-          <a href="{% url 'accounts:guardian_dashboard' %}">My Dashboard</a>
-        {% elif request.user.is_platform_admin %}
-          <a href="{% url 'accounts:admin_dashboard' %}">Admin Dashboard</a>
-        {% endif %}
       {% endif %}
     </div>
     <div class="navbar-drawer-actions">
@@ -124,7 +119,7 @@
       <div class="hero-content">
         <div class="hero-badge">
           <span class="badge-dot"></span>
-          PP1 to Grade 9 · KEPSEA &amp; KJSEA ready
+          PP1 to Grade 9 · KPSEA, KJSEA &amp; KCBE ready
         </div>
 
         <h1>
@@ -134,7 +129,7 @@
 
         <p class="hero-description">
           Making revision fun, interactive, and accessible for every child from PP1 to Grade 9 —
-          with KEPSEA and KJSEA practice, notes, and AI tutors that guide learners every step.
+          with KPSEA, KJSEA, and KCBE practice, notes, and AI tutors that guide learners every step.
         </p>
 
         <div class="hero-cta">
@@ -205,7 +200,7 @@
         <div class="floating-card card-bottom">
           <div class="card-icon gold">🏆</div>
           <div class="card-info">
-            <div class="card-title">CBC Aligned</div>
+            <div class="card-title">CBE Aligned</div>
             <div class="card-subtitle">KICD Approved Content</div>
           </div>
         </div>
@@ -218,10 +213,10 @@
     <div class="container">
       <div class="section-header reveal">
         <span class="section-tag">✦ Why Soma Smart</span>
-        <h2 class="section-title">Everything a CBC Learner Needs</h2>
+        <h2 class="section-title">Everything a CBE Learner Needs</h2>
         <p class="section-subtitle">
           We combine interactive content, smart assessments, and real-time
-          feedback to make the CBC experience engaging and effective.
+          feedback to make the CBE experience engaging and effective.
         </p>
       </div>
 
@@ -231,7 +226,7 @@
           <h3>Interactive Lessons</h3>
           <p>
             Rich multimedia lessons with videos, animations and quizzes
-            covering all CBC strands and sub-strands.
+            covering all CBE strands and sub-strands.
           </p>
         </div>
 
@@ -240,7 +235,7 @@
           <h3>Smart Assessments</h3>
           <p>
             Formative and summative assessments that adapt to the learner's
-            pace, aligned to CBC competency benchmarks.
+            pace, aligned to CBE competency benchmarks.
           </p>
         </div>
 
@@ -293,10 +288,10 @@
           <p>
             No account needed. Pick a grade and topic, then take a short
             multiple-choice practice test with instant marking — the same
-            revision flow families use for KEPSEA and KJSEA prep.
+            revision flow families use for KPSEA, KJSEA, and KCBE prep.
           </p>
           <ul class="demo-highlights">
-            <li>7 CBC-aligned practice questions</li>
+            <li>7 CBE-aligned practice questions</li>
             <li>Instant correct / incorrect feedback</li>
             <li>AI tutor explanations when you miss an answer</li>
             <li>Works on phone, tablet, or laptop</li>
@@ -312,7 +307,7 @@
             <ol class="demo-preview-steps">
               <li>
                 <strong>Choose grade &amp; subject</strong>
-                <span>PP1–Grade 9 topics aligned to CBC strands</span>
+                <span>PP1–Grade 9 topics aligned to CBE strands</span>
               </li>
               <li>
                 <strong>Answer 7 questions</strong>
@@ -354,8 +349,8 @@
         </li>
         <li class="how-step reveal">
           <span class="how-step-num" aria-hidden="true">03</span>
-          <h3>Practise KEPSEA &amp; KJSEA</h3>
-          <p>Pick a subject, start a test, and revise with notes plus AI feedback that explains answers.</p>
+          <h3>Practise KPSEA, KJSEA &amp; KCBE</h3>
+          <p>Pick a subject, start a test, and revise for KPSEA, KJSEA, or KCBE with notes plus AI feedback that explains answers.</p>
         </li>
         <li class="how-step reveal">
           <span class="how-step-num" aria-hidden="true">04</span>
@@ -375,17 +370,17 @@
           <h2 class="section-title">Education should inspire, not intimidate</h2>
           <p>
             Soma Smart exists to make learning and revision fun, interactive, and accessible
-            for every child from PP1 to Grade 9. We believe CBC success comes from practice
+            for every child from PP1 to Grade 9. We believe CBE success comes from practice
             that builds confidence — not fear of exams.
           </p>
           <p>
-            Families use Soma Smart for KEPSEA and KJSEA practice questions, clear notes,
+            Families use Soma Smart for KPSEA, KJSEA, and KCBE (Kenya Certificate of Basic Education) practice questions, clear notes,
             and AI-powered analysis that tutors learners through mistakes. Parents see real
             progress; children stay curious.
           </p>
           <ul class="about-points">
-            <li>Built for Kenya’s Competency-Based Curriculum</li>
-            <li>KEPSEA &amp; KJSEA practice that feels approachable</li>
+            <li>Built for Kenya’s Competency-Based Education (CBE)</li>
+            <li>KPSEA, KJSEA &amp; KCBE practice that feels approachable</li>
             <li>AI tutors that explain — they don’t just mark</li>
             <li>Guardian dashboards made for busy parents</li>
           </ul>
@@ -395,7 +390,7 @@
             <h3>Who we serve</h3>
             <p><strong>Learners</strong> — PP1 to Grade 9 revising at their own pace.</p>
             <p><strong>Guardians</strong> — tracking progress without the guesswork.</p>
-            <p><strong>Teachers &amp; partners</strong> — aligning practice to CBC strands.</p>
+            <p><strong>Teachers &amp; partners</strong> — aligning practice to CBE strands.</p>
           </div>
           <div class="about-aside-card about-aside-card--accent">
             <h3>Our promise</h3>
@@ -406,12 +401,12 @@
     </div>
   </section>
 
-  <!-- ═══════════════ CBC LEVELS ═══════════════ -->
+  <!-- ═══════════════ CBE LEVELS ═══════════════ -->
   <section class="levels" id="levels">
     <div class="container">
       <div class="section-header reveal">
         <span class="section-tag">📖 Curriculum Levels</span>
-        <h2 class="section-title">Content for Every CBC Level</h2>
+        <h2 class="section-title">Content for Every CBE Level</h2>
         <p class="section-subtitle">
           From the foundation years all the way to Senior School, our content
           maps precisely to the KICD curriculum design.
@@ -538,7 +533,7 @@
     <div class="container reveal">
       <h2 class="section-title">Ready to start practising?</h2>
       <p class="section-subtitle">
-        Join Kenyan families using Soma Smart for fun revision, KEPSEA &amp; KJSEA practice,
+        Join Kenyan families using Soma Smart for fun revision, KPSEA, KJSEA &amp; KCBE practice,
         and AI tutors that inspire every learner.
       </p>
       <div class="cta-buttons">
@@ -580,7 +575,7 @@
             Soma Smart
           </div>
           <p>
-            A trusted CBC e-learning platform. Empowering every
+            A trusted CBE e-learning platform. Empowering every
             learner to achieve their full potential through quality,
             curriculum-aligned digital education.
           </p>
@@ -598,7 +593,7 @@
         </div>
 
         <div class="footer-col">
-          <h4>CBC Levels</h4>
+          <h4>CBE Levels</h4>
           <ul>
             <li><a href="#levels">Pre-Primary</a></li>
             <li><a href="#levels">Lower Primary</a></li>
