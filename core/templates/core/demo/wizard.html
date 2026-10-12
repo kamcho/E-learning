@@ -17,7 +17,7 @@
       {% if not request.user.is_authenticated %}
       <p class="demo-hero-kicker">No account needed</p>
       {% else %}
-      <p class="demo-hero-kicker">Welcome back, {{ request.user.first_name|default:request.user.username }}</p>
+      <p class="demo-hero-kicker">Welcome back{% if request.user.first_name %}, {{ request.user.first_name }}{% endif %}</p>
       {% endif %}
       <h1 class="demo-hero-title">Try a free practice test</h1>
       <p class="demo-hero-sub">Pick your grade and topic — we'll build a {{ demo_question_count }}-question quiz with instant marking and AI help when you miss an answer.</p>
