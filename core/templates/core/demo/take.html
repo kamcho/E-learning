@@ -130,8 +130,13 @@
     <div class="demo-sidebar-card demo-cta-card">
       <div style="font-size:2rem;">🪙</div>
       <strong style="color:var(--demo-text);">{{ correct_count }} correct so far</strong>
+      {% if not request.user.is_authenticated %}
       <p>Sign up to save progress, earn achievements, and track every learner.</p>
       <a href="{% url 'accounts:signup' %}" class="demo-btn demo-btn-primary" style="width:100%;">Create free account</a>
+      {% else %}
+      <p>Want full-length timed assessments with progress tracking?</p>
+      <a href="{% url 'core:exams_list' %}" class="demo-btn demo-btn-primary" style="width:100%;">Go to Exam Center</a>
+      {% endif %}
     </div>
   </aside>
 </div>

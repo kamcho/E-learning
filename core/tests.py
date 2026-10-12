@@ -160,9 +160,21 @@ class DemoPracticeTests(TestCase):
         response = self.client.get(reverse('core:demo_wizard'))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Try a free practice test')
+        self.assertContains(response, 'No account needed')
+        self.assertContains(response, 'Create free account')
         self.assertContains(response, 'Choose a grade')
         self.assertEqual(response.context['phase'], 'grade')
         self.assertIsNone(response.context['active_grade'])
+
+    def test_demo_wizard_renders_for_authenticated_user(self):
+        user = User.objects.create_user(phone='0722000000', password='1234', first_name='Jane')
+        self.client.force_login(user)
+        response = self.client.get(reverse('core:demo_wizard'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Welcome back, Jane')
+        self.assertContains(response, 'Go to Exam Center')
+        self.assertNotContains(response, 'No account needed')
+        self.assertNotContains(response, 'Create free account')
 
     def test_demo_wizard_requires_grade_before_subjects(self):
         response = self.client.get(reverse('core:demo_wizard'), {'grade': self.grade.slug})

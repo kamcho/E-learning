@@ -14,11 +14,19 @@
 <div class="demo-shell">
   <header class="demo-hero">
     <div>
+      {% if not request.user.is_authenticated %}
       <p class="demo-hero-kicker">No account needed</p>
+      {% else %}
+      <p class="demo-hero-kicker">Welcome back, {{ request.user.first_name|default:request.user.username }}</p>
+      {% endif %}
       <h1 class="demo-hero-title">Try a free practice test</h1>
       <p class="demo-hero-sub">Pick your grade and topic — we'll build a {{ demo_question_count }}-question quiz with instant marking and AI help when you miss an answer.</p>
     </div>
+    {% if not request.user.is_authenticated %}
     <a href="{% url 'accounts:signup' %}" class="demo-hero-cta">Create free account</a>
+    {% else %}
+    <a href="{% url 'core:exams_list' %}" class="demo-hero-cta">Go to Exam Center</a>
+    {% endif %}
   </header>
 
   {% if active_demo and not active_demo.completed %}
