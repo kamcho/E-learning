@@ -67,6 +67,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.humanize',
 
     # Project apps
     'core',
@@ -259,8 +260,13 @@ MPESA_CONSUMER_KEY = os.environ.get('MPESA_CONSUMER_KEY', '')
 MPESA_CONSUMER_SECRET = os.environ.get('MPESA_CONSUMER_SECRET', '')
 MPESA_SHORTCODE = os.environ.get('MPESA_SHORTCODE', '')
 MPESA_PASSKEY = os.environ.get('MPESA_PASSKEY', '')
-# Public base URL Safaricom can reach for callbacks (use ngrok URL in local dev)
-MPESA_CALLBACK_BASE_URL = os.environ.get('MPESA_CALLBACK_BASE_URL', 'http://127.0.0.1:8000')
+# Public base URL Safaricom can reach for callbacks (use ngrok URL in local dev).
+# Also accepts MPESA_CALLBACK_URL if that is what is set in .env.
+MPESA_CALLBACK_BASE_URL = (
+    os.environ.get('MPESA_CALLBACK_BASE_URL')
+    or os.environ.get('MPESA_CALLBACK_URL')
+    or 'http://127.0.0.1:8000'
+)
 
 # Require active subscription for guardians to start exams (set false for local dev)
 SUBSCRIPTION_REQUIRED = os.environ.get('SUBSCRIPTION_REQUIRED', 'true').lower() == 'true'

@@ -1,302 +1,505 @@
 {% extends 'base.html' %}
-
-
+{% load humanize %}
 
 {% block title %}Subscription Plans — Soma Smart{% endblock %}
 
-
-
 {% block extra_head %}
-
 <style>
-
-  .sub-page { max-width: 1100px; margin: 0 auto; }
-
-  .sub-hero {
-
-    background: var(--grad-hero);
-
-    color: #fff;
-
-    border-radius: var(--radius-xl);
-
-    padding: var(--space-2xl);
-
-    margin-bottom: var(--space-2xl);
-
-    box-shadow: var(--shadow-lg);
-
+  .sp {
+    --sp-green: var(--clr-primary);
+    max-width: 1180px;
+    margin: 0 auto;
   }
 
-  .sub-hero h1 {
-
-    font-family: var(--font-heading);
-
-    font-size: 2rem;
-
-    font-weight: 800;
-
-    margin: 0 0 var(--space-sm);
-
-  }
-
-  .sub-hero p { opacity: 0.9; margin: 0; max-width: 560px; }
-
-  .sub-active-banner {
-
-    background: rgba(13, 138, 78, 0.1);
-
-    border: 1px solid rgba(13, 138, 78, 0.2);
-
-    border-radius: var(--radius-lg);
-
-    padding: var(--space-md) var(--space-lg);
-
-    margin-bottom: var(--space-xl);
-
-    display: flex;
-
-    justify-content: space-between;
-
-    align-items: center;
-
-    flex-wrap: wrap;
-
-    gap: var(--space-sm);
-
-  }
-
-  .plans-grid {
-
+  .sp-hero {
     display: grid;
-
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-
-    gap: var(--space-xl);
-
+    grid-template-columns: minmax(0, 1.35fr) minmax(240px, 0.75fr);
+    gap: 1.5rem;
+    align-items: end;
+    margin-bottom: 1.5rem;
   }
 
-  .plan-card {
-
-    background: var(--clr-surface);
-
-    border: 1px solid var(--clr-border);
-
-    border-radius: var(--radius-xl);
-
-    padding: var(--space-xl);
-
-    box-shadow: var(--shadow-sm);
-
-    display: flex;
-
-    flex-direction: column;
-
-    transition: transform var(--transition-base), box-shadow var(--transition-base);
-
-  }
-
-  .plan-card:hover {
-
-    transform: translateY(-4px);
-
-    box-shadow: var(--shadow-md);
-
-  }
-
-  .plan-card.featured {
-
-    border-color: var(--clr-primary);
-
-    box-shadow: 0 0 0 2px rgba(13, 138, 78, 0.15);
-
-  }
-
-  .plan-name {
-
-    font-family: var(--font-heading);
-
-    font-size: 1.35rem;
-
-    font-weight: 800;
-
-    margin-bottom: var(--space-xs);
-
-  }
-
-  .plan-price {
-
-    font-family: var(--font-heading);
-
-    font-size: 2rem;
-
-    font-weight: 900;
-
-    color: var(--clr-primary);
-
-    line-height: 1;
-
-  }
-
-  .plan-price span { font-size: 0.9rem; font-weight: 600; color: var(--clr-text-muted); }
-
-  .plan-tests {
-
-    font-size: 0.82rem;
-
+  .sp-kicker {
+    margin: 0 0 0.45rem;
+    font-size: 0.72rem;
     font-weight: 700;
-
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
     color: var(--clr-primary);
-
-    margin-top: 0.35rem;
-
   }
 
-  .plan-desc {
-
-    font-size: 0.88rem;
-
-    color: var(--clr-text-muted);
-
-    margin: var(--space-md) 0 var(--space-lg);
-
-    line-height: 1.5;
-
-    flex: 1;
-
-  }
-
-  .plan-features {
-
-    list-style: none;
-
-    padding: 0;
-
-    margin: 0 0 var(--space-lg);
-
-  }
-
-  .plan-features li {
-
-    font-size: 0.85rem;
-
-    padding: 0.35rem 0;
-
+  .sp-hero h1 {
+    margin: 0;
+    font-family: var(--font-heading);
+    font-size: clamp(1.7rem, 3vw, 2.35rem);
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    line-height: 1.12;
     color: var(--clr-text);
-
   }
 
-  .plan-features li::before { content: '✓ '; color: var(--clr-primary); font-weight: 700; }
+  .sp-hero p {
+    margin: 0.65rem 0 0;
+    max-width: 42rem;
+    font-size: 1rem;
+    line-height: 1.55;
+    color: var(--clr-text-muted);
+  }
 
-  .plan-meta {
+  .sp-trust {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    margin-top: 1rem;
+  }
 
+  .sp-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    height: 32px;
+    padding: 0 0.75rem;
+    border-radius: 999px;
+    border: 1px solid var(--clr-border);
+    background: var(--clr-surface);
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--clr-text);
+  }
+
+  .sp-chip svg {
+    width: 14px;
+    height: 14px;
+    color: var(--clr-primary);
+    flex-shrink: 0;
+  }
+
+  .sp-aside {
+    background: var(--clr-surface);
+    border: 1px solid var(--clr-border);
+    border-radius: 16px;
+    padding: 1rem 1.1rem;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .sp-aside h2 {
+    margin: 0 0 0.55rem;
     font-size: 0.78rem;
-
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
     color: var(--clr-text-light);
-
-    margin-bottom: var(--space-lg);
-
   }
 
+  .sp-aside-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.45rem 0;
+    border-top: 1px solid var(--clr-border);
+    font-size: 0.82rem;
+  }
+
+  .sp-aside-row:first-of-type { border-top: none; padding-top: 0; }
+  .sp-aside-row span { color: var(--clr-text-muted); }
+  .sp-aside-row strong { color: var(--clr-text); font-weight: 700; }
+
+  .sp-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.85rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.25rem;
+    padding: 0.9rem 1.1rem;
+    border-radius: 14px;
+    border: 1px solid color-mix(in srgb, var(--clr-primary) 28%, var(--clr-border));
+    background: color-mix(in srgb, var(--clr-primary) 8%, var(--clr-surface));
+  }
+
+  .sp-banner p { margin: 0; font-size: 0.9rem; color: var(--clr-text); }
+  .sp-banner strong { font-weight: 700; }
+  .sp-banner span { color: var(--clr-text-muted); }
+
+  .sp-banner a {
+    display: inline-flex;
+    align-items: center;
+    height: 36px;
+    padding: 0 0.9rem;
+    border-radius: 8px;
+    background: var(--clr-surface);
+    border: 1px solid var(--clr-border);
+    color: var(--clr-text);
+    font-size: 0.82rem;
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  .sp-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1rem;
+    align-items: stretch;
+  }
+
+  .sp-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
+    padding: 1.2rem 1.15rem 1.15rem;
+    border-radius: 18px;
+    border: 1px solid var(--clr-border);
+    background: var(--clr-surface);
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  }
+
+  .sp-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-md);
+    border-color: color-mix(in srgb, var(--clr-primary) 35%, var(--clr-border));
+  }
+
+  .sp-card.is-popular {
+    border-color: var(--clr-primary);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--clr-primary) 45%, transparent), var(--shadow-md);
+    background:
+      radial-gradient(120% 80% at 100% 0%, color-mix(in srgb, var(--clr-primary) 14%, transparent), transparent 55%),
+      var(--clr-surface);
+  }
+
+  .sp-card.is-value {
+    border-color: color-mix(in srgb, var(--clr-accent) 55%, var(--clr-border));
+  }
+
+  .sp-badge {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    height: 24px;
+    padding: 0 0.55rem;
+    border-radius: 999px;
+    font-size: 0.65rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .sp-badge-popular {
+    background: var(--clr-primary);
+    color: #fff;
+  }
+
+  .sp-badge-value {
+    background: var(--clr-accent);
+    color: #1a1404;
+  }
+
+  .sp-type {
+    margin: 0 0 0.35rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--clr-text-light);
+  }
+
+  .sp-name {
+    margin: 0 2.4rem 0.55rem 0;
+    font-family: var(--font-heading);
+    font-size: 1.2rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    color: var(--clr-text);
+  }
+
+  .sp-price {
+    display: flex;
+    align-items: baseline;
+    gap: 0.35rem;
+    flex-wrap: wrap;
+  }
+
+  .sp-price b {
+    font-family: var(--font-heading);
+    font-size: 1.85rem;
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    line-height: 1;
+    color: var(--clr-text);
+  }
+
+  .sp-price em {
+    font-style: normal;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--clr-text-muted);
+  }
+
+  .sp-rate {
+    margin: 0.4rem 0 0;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--clr-primary);
+  }
+
+  .sp-desc {
+    margin: 0.75rem 0 0.9rem;
+    min-height: 3.2em;
+    font-size: 0.84rem;
+    line-height: 1.5;
+    color: var(--clr-text-muted);
+  }
+
+  .sp-features {
+    list-style: none;
+    margin: 0 0 1.1rem;
+    padding: 0.75rem 0 0;
+    border-top: 1px solid var(--clr-border);
+    flex: 1;
+  }
+
+  .sp-features li {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    padding: 0.32rem 0;
+    font-size: 0.84rem;
+    color: var(--clr-text);
+  }
+
+  .sp-features svg {
+    width: 16px;
+    height: 16px;
+    margin-top: 0.12rem;
+    color: var(--clr-primary);
+    flex-shrink: 0;
+  }
+
+  .sp-cta {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 44px;
+    border-radius: 10px;
+    background: var(--clr-primary);
+    color: #fff;
+    font-size: 0.9rem;
+    font-weight: 700;
+    text-decoration: none;
+    border: 0;
+    box-shadow: 0 8px 18px color-mix(in srgb, var(--clr-primary) 28%, transparent);
+  }
+
+  .sp-card:not(.is-popular) .sp-cta {
+    background: transparent;
+    color: var(--clr-primary);
+    border: 1.5px solid color-mix(in srgb, var(--clr-primary) 45%, var(--clr-border));
+    box-shadow: none;
+  }
+
+  .sp-card:not(.is-popular) .sp-cta:hover {
+    background: color-mix(in srgb, var(--clr-primary) 10%, var(--clr-surface));
+  }
+
+  .sp-meta {
+    margin: 0.55rem 0 0;
+    text-align: center;
+    font-size: 0.72rem;
+    color: var(--clr-text-light);
+  }
+
+  .sp-faq {
+    margin-top: 2rem;
+    display: grid;
+    grid-template-columns: 220px minmax(0, 1fr);
+    gap: 1.25rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--clr-border);
+  }
+
+  .sp-faq h2 {
+    margin: 0;
+    font-family: var(--font-heading);
+    font-size: 1.15rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+  }
+
+  .sp-faq p.lead {
+    margin: 0.4rem 0 0;
+    font-size: 0.85rem;
+    color: var(--clr-text-muted);
+  }
+
+  .sp-faq details {
+    border-top: 1px solid var(--clr-border);
+    padding: 0.85rem 0;
+  }
+
+  .sp-faq details:first-of-type { border-top: none; padding-top: 0; }
+
+  .sp-faq summary {
+    cursor: pointer;
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: var(--clr-text);
+    list-style: none;
+  }
+
+  .sp-faq summary::-webkit-details-marker { display: none; }
+
+  .sp-faq details p {
+    margin: 0.45rem 0 0;
+    font-size: 0.85rem;
+    line-height: 1.55;
+    color: var(--clr-text-muted);
+  }
+
+  .sp-empty {
+    padding: 2.5rem 1rem;
+    text-align: center;
+    color: var(--clr-text-muted);
+    background: var(--clr-surface);
+    border: 1px dashed var(--clr-border);
+    border-radius: 16px;
+  }
+
+  @media (max-width: 1100px) {
+    .sp-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+
+  @media (max-width: 800px) {
+    .sp-hero,
+    .sp-faq { grid-template-columns: 1fr; }
+  }
+
+  @media (max-width: 640px) {
+    .sp-grid { grid-template-columns: 1fr; }
+  }
 </style>
-
 {% endblock %}
-
-
 
 {% block content %}
-
-<div class="sub-page">
-
-  <div class="sub-hero">
-
-    <h1>Pay per test or save with a pack</h1>
-
-    <p>Start with one test for KES 10, grab a weekly or monthly pack, or go unlimited for the year. Pay with M-Pesa.</p>
-
-  </div>
-
-
+<div class="sp">
+  <header class="sp-hero">
+    <div>
+      <p class="sp-kicker">Subscriptions</p>
+      <h1>Pay per test, or save with a pack</h1>
+      <p>CBC practice credits land on your account the moment M-Pesa confirms. Start with one exam, or go unlimited for the year.</p>
+      <div class="sp-trust">
+        <span class="sp-chip">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+          M-Pesa STK Push
+        </span>
+        <span class="sp-chip">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          Instant credits
+        </span>
+        <span class="sp-chip">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          Shared with linked learners
+        </span>
+      </div>
+    </div>
+    {% if plans %}
+    <aside class="sp-aside" aria-label="Price per test">
+      <h2>Effective rate</h2>
+      {% for plan in plans %}
+      <div class="sp-aside-row">
+        <span>{{ plan.name }}</span>
+        {% if plan.kes_per_test %}
+        <strong>KES {{ plan.kes_per_test|floatformat:1 }}/test</strong>
+        {% else %}
+        <strong>Unlimited</strong>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </aside>
+    {% endif %}
+  </header>
 
   {% if active_subscription %}
-
-  <div class="sub-active-banner">
-
-    <div>
-
+  <div class="sp-banner">
+    <p>
       <strong>{{ active_subscription.plan.name }}</strong>
-
-      &middot; {{ active_subscription.tests_balance_label }}
-
-      &middot; valid until {{ active_subscription.ends_at|date:"d M Y" }}
-
-    </div>
-
-    <a href="{% url 'subscriptions:my_subscription' %}" class="btn btn-secondary" style="box-shadow: none;">My balance</a>
-
+      <span> · {{ active_subscription.tests_balance_label }} · valid until {{ active_subscription.ends_at|date:"d M Y" }}</span>
+    </p>
+    <a href="{% url 'subscriptions:my_subscription' %}">View my balance</a>
   </div>
-
   {% endif %}
-
-
 
   {% if plans %}
-
-  <div class="plans-grid">
-
+  <div class="sp-grid">
     {% for plan in plans %}
-
-    <div class="plan-card {% if plan.slug == 'monthly-pack' %}featured{% endif %}">
-
-      <div class="plan-name">{{ plan.name }}</div>
-
-      <div class="plan-price">KES {{ plan.price_kes|floatformat:0 }}</div>
-
-      <div class="plan-tests">{{ plan.tests_label }} &middot; {{ plan.duration_days }} day{{ plan.duration_days|pluralize }}</div>
-
-      {% if plan.description %}
-
-        <p class="plan-desc">{{ plan.description }}</p>
-
+    <article class="sp-card{% if plan.slug == 'monthly-pack' %} is-popular{% elif plan.slug == 'yearly-unlimited' %} is-value{% endif %}">
+      {% if plan.slug == 'monthly-pack' %}
+      <span class="sp-badge sp-badge-popular">Most popular</span>
+      {% elif plan.slug == 'yearly-unlimited' %}
+      <span class="sp-badge sp-badge-value">Best value</span>
       {% endif %}
 
-      <ul class="plan-features">
-
+      <p class="sp-type">{{ plan.get_plan_type_display }}</p>
+      <h2 class="sp-name">{{ plan.name }}</h2>
+      <div class="sp-price">
+        <b>KES {{ plan.price_kes|floatformat:0|intcomma }}</b>
+        <em>/ {{ plan.price_period_label }}</em>
+      </div>
+      {% if plan.kes_per_test %}
+      <p class="sp-rate">{{ plan.tests_label }} · about KES {{ plan.kes_per_test|floatformat:1 }} each</p>
+      {% else %}
+      <p class="sp-rate">{{ plan.tests_label }} · {{ plan.duration_label }}</p>
+      {% endif %}
+      {% if plan.description %}
+      <p class="sp-desc">{{ plan.description }}</p>
+      {% endif %}
+      <ul class="sp-features">
         {% for feature in plan.features %}
-
-          <li>{{ feature }}</li>
-
+        <li>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="20 6 9 17 4 12"/></svg>
+          <span>{{ feature }}</span>
+        </li>
+        {% empty %}
+        <li>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="20 6 9 17 4 12"/></svg>
+          <span>{{ plan.tests_label }} · {{ plan.duration_label }}</span>
+        </li>
         {% endfor %}
-
       </ul>
-
-      <p class="plan-meta">M-Pesa STK Push on your phone</p>
-
-      <a href="{% url 'subscriptions:subscribe' plan.slug %}" class="btn btn-primary" style="width: 100%; justify-content: center;">
-
-        Pay with M-Pesa
-
-      </a>
-
-    </div>
-
+      <a class="sp-cta" href="{% url 'subscriptions:subscribe' plan.slug %}">Pay with M-Pesa</a>
+      <p class="sp-meta">Prompt on your phone · {{ plan.duration_label }} validity</p>
+    </article>
     {% endfor %}
-
   </div>
-
   {% else %}
-
-  <div class="empty-state">
-
-    <div class="empty-state-icon">💳</div>
-
+  <div class="sp-empty">
     <p>No subscription plans available yet.</p>
-
   </div>
-
   {% endif %}
 
+  <section class="sp-faq">
+    <div>
+      <h2>How billing works</h2>
+      <p class="lead">Short answers before you pay.</p>
+    </div>
+    <div>
+      <details open>
+        <summary>How do I pay?</summary>
+        <p>Choose a plan, enter the M-Pesa number, and approve the STK Push on your phone. Credits appear as soon as Safaricom confirms the payment.</p>
+      </details>
+      <details>
+        <summary>Do unused tests roll over?</summary>
+        <p>Credits stay on the account until the plan end date. After that unused tests expire with the subscription.</p>
+      </details>
+      <details>
+        <summary>Can more than one learner use a pack?</summary>
+        <p>Yes. Tests are shared across the learners linked to your guardian account, up to the plan’s learner limit.</p>
+      </details>
+    </div>
+  </section>
 </div>
-
 {% endblock %}
-

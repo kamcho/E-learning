@@ -8,8 +8,11 @@ from datetime import datetime
 
 import requests
 from django.conf import settings
+from requests.exceptions import JSONDecodeError, RequestException
 
 logger = logging.getLogger(__name__)
+
+SANDBOX_SHORTCODE = '174379'
 
 
 class MpesaConfigError(Exception):
@@ -46,6 +49,50 @@ def mpesa_base_url():
     return 'https://sandbox.safaricom.co.ke'
 
 
+def _environment_hint():
+    env = (settings.MPESA_ENVIRONMENT or 'sandbox').strip().lower()
+    shortcode = str(settings.MPESA_SHORTCODE or '').strip()
+    if env != 'production' and shortcode and shortcode != SANDBOX_SHORTCODE:
+        return (
+            ' Your paybill/till looks like a live shortcode, but MPESA_ENVIRONMENT '
+            'is sandbox. Set MPESA_ENVIRONMENT=production in .env (or use sandbox '
+            f'shortcode {SANDBOX_SHORTCODE}).'
+        )
+    if env == 'production' and shortcode == SANDBOX_SHORTCODE:
+        return (
+            ' MPESA_ENVIRONMENT is production but the shortcode is the sandbox till '
+            f'({SANDBOX_SHORTCODE}). Use sandbox, or a live shortcode.'
+        )
+    return ''
+
+
+def _parse_daraja_json(response, action: str):
+    """Parse a Daraja HTTP body; never leak raw JSON decode errors to users."""
+    text = (response.text or '').strip()
+    if not text:
+        logger.error('%s empty body status=%s url=%s', action, response.status_code, response.url)
+        raise MpesaAPIError(
+            f'M-Pesa {action} returned an empty response (HTTP {response.status_code}).'
+            f'{_environment_hint()}'
+        )
+    try:
+        return response.json()
+    except (ValueError, JSONDecodeError):
+        snippet = ' '.join(text.split())[:180]
+        logger.error(
+            '%s non-JSON status=%s url=%s body=%s',
+            action,
+            response.status_code,
+            response.url,
+            snippet,
+        )
+        raise MpesaAPIError(
+            f'M-Pesa {action} failed (HTTP {response.status_code}). '
+            'Confirm consumer key/secret and that MPESA_ENVIRONMENT matches the Daraja app.'
+            f'{_environment_hint()}'
+        ) from None
+
+
 def normalize_mpesa_phone(phone: str) -> str:
     """Normalize Kenyan numbers to 2547XXXXXXXX."""
     digits = ''.join(ch for ch in (phone or '') if ch.isdigit())
@@ -64,15 +111,20 @@ def get_access_token() -> str:
     credentials = base64.b64encode(
         f'{cfg["MPESA_CONSUMER_KEY"]}:{cfg["MPESA_CONSUMER_SECRET"]}'.encode(),
     ).decode()
-    response = requests.get(
-        url,
-        headers={'Authorization': f'Basic {credentials}'},
-        timeout=30,
-    )
-    data = response.json()
+    try:
+        response = requests.get(
+            url,
+            headers={'Authorization': f'Basic {credentials}'},
+            timeout=30,
+        )
+    except RequestException as exc:
+        logger.exception('M-Pesa OAuth request failed')
+        raise MpesaAPIError('Could not reach M-Pesa. Check your internet connection.') from exc
+    data = _parse_daraja_json(response, 'authentication')
     if response.status_code != 200 or 'access_token' not in data:
         logger.error('M-Pesa OAuth failed: %s', data)
-        raise MpesaAPIError('Could not authenticate with M-Pesa.', data)
+        error = data.get('errorMessage') or data.get('error_description') or 'Could not authenticate with M-Pesa.'
+        raise MpesaAPIError(f'{error}{_environment_hint()}', data)
     return data['access_token']
 
 
@@ -91,8 +143,13 @@ def initiate_stk_push(*, phone_number: str, amount: int, account_reference: str,
     token = get_access_token()
     timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
     shortcode = cfg['MPESA_SHORTCODE']
+    callback_base = (
+        getattr(settings, 'MPESA_CALLBACK_BASE_URL', '')
+        or getattr(settings, 'MPESA_CALLBACK_URL', '')
+        or 'http://127.0.0.1:8000'
+    )
     callback_url = (
-        f'{settings.MPESA_CALLBACK_BASE_URL.rstrip("/")}'
+        f'{str(callback_base).rstrip("/")}'
         f'/subscriptions/mpesa/callback/'
     )
 
@@ -111,17 +168,24 @@ def initiate_stk_push(*, phone_number: str, amount: int, account_reference: str,
     }
 
     url = f'{mpesa_base_url()}/mpesa/stkpush/v1/processrequest'
-    response = requests.post(
-        url,
-        json=payload,
-        headers={'Authorization': f'Bearer {token}'},
-        timeout=30,
-    )
-    data = response.json()
-    if response.status_code != 200 or data.get('ResponseCode') != '0':
+    try:
+        response = requests.post(
+            url,
+            json=payload,
+            headers={'Authorization': f'Bearer {token}'},
+            timeout=30,
+        )
+    except RequestException as exc:
+        logger.exception('STK push request failed')
+        raise MpesaAPIError('Could not reach M-Pesa to send the STK push.') from exc
+    data = _parse_daraja_json(response, 'STK push')
+    if response.status_code != 200 or str(data.get('ResponseCode')) != '0':
         logger.error('STK push failed: %s', data)
         raise MpesaAPIError(
-            data.get('ResponseDescription', 'STK push request failed.'),
+            data.get('CustomerMessage')
+            or data.get('ResponseDescription')
+            or data.get('errorMessage')
+            or 'STK push request failed.',
             data,
         )
     return data
@@ -140,10 +204,14 @@ def query_stk_status(checkout_request_id: str):
         'CheckoutRequestID': checkout_request_id,
     }
     url = f'{mpesa_base_url()}/mpesa/stkpushquery/v1/query'
-    response = requests.post(
-        url,
-        json=payload,
-        headers={'Authorization': f'Bearer {token}'},
-        timeout=30,
-    )
-    return response.json()
+    try:
+        response = requests.post(
+            url,
+            json=payload,
+            headers={'Authorization': f'Bearer {token}'},
+            timeout=30,
+        )
+    except RequestException as exc:
+        logger.exception('STK query request failed')
+        raise MpesaAPIError('Could not reach M-Pesa to check payment status.') from exc
+    return _parse_daraja_json(response, 'STK query')

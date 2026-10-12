@@ -55,6 +55,35 @@ class SubscriptionPlan(models.Model):
             return '1 test'
         return f'{self.max_tests} tests'
 
+    @property
+    def duration_label(self):
+        days = self.duration_days or 0
+        if days == 7:
+            return '7 days'
+        if days == 30:
+            return '30 days'
+        if days == 365:
+            return '1 year'
+        return f'{days} day{"s" if days != 1 else ""}'
+
+    @property
+    def price_period_label(self):
+        if self.plan_type == self.PlanType.SINGLE_TEST or self.max_tests == 1:
+            return 'test'
+        if self.duration_days == 7:
+            return 'week'
+        if self.duration_days == 30:
+            return 'month'
+        if (self.duration_days or 0) >= 360:
+            return 'year'
+        return self.duration_label
+
+    @property
+    def kes_per_test(self):
+        if self.is_unlimited or not self.max_tests:
+            return None
+        return self.price_kes / self.max_tests
+
 
 class Subscription(models.Model):
     class Status(models.TextChoices):
