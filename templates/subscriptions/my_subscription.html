@@ -50,14 +50,27 @@
     font-size: 0.85rem;
     font-weight: 600;
     text-decoration: none;
-    border: 1px solid #e2e8f0;
-    background: #fff;
-    color: #1e293b;
+    border: 1px solid var(--clr-border);
+    background: var(--clr-surface);
+    color: var(--clr-text);
+    transition: background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
+  }
+
+  .mysub-btn:hover {
+    border-color: var(--clr-primary);
+    color: var(--clr-primary);
+    background: var(--clr-surface-alt);
   }
 
   .mysub-btn-primary {
-    background: #0d8a4e;
-    border-color: #0d8a4e;
+    background: var(--clr-primary);
+    border-color: var(--clr-primary);
+    color: #fff;
+  }
+
+  .mysub-btn-primary:hover {
+    background: var(--clr-primary-light);
+    border-color: var(--clr-primary-light);
     color: #fff;
   }
 
@@ -65,12 +78,12 @@
     display: grid;
     grid-template-columns: minmax(0, 1.4fr) minmax(220px, 0.8fr);
     gap: 1.25rem;
-    background: #fff;
-    border: 1px solid #e2e8f0;
+    background: var(--clr-surface);
+    border: 1px solid var(--clr-border);
     border-radius: 8px;
     padding: 1.25rem 1.35rem;
     margin-bottom: 1.25rem;
-    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+    box-shadow: var(--shadow-sm);
   }
 
   .mysub-kicker {
@@ -79,14 +92,14 @@
     font-weight: 700;
     letter-spacing: 0.06em;
     text-transform: uppercase;
-    color: #64748b;
+    color: var(--clr-primary);
   }
 
   .mysub-plan-name {
     margin: 0;
     font-size: 1.25rem;
     font-weight: 800;
-    color: #1e293b;
+    color: var(--clr-text);
   }
 
   .mysub-plan-meta {
@@ -95,7 +108,7 @@
     gap: 0.35rem 0.7rem;
     margin: 0.55rem 0 0;
     font-size: 0.8125rem;
-    color: #64748b;
+    color: var(--clr-text-muted);
   }
 
   .mysub-balance {
@@ -107,7 +120,7 @@
     font-size: 1.75rem;
     font-weight: 800;
     letter-spacing: -0.03em;
-    color: #1e293b;
+    color: var(--clr-text);
     line-height: 1.1;
   }
 
@@ -115,13 +128,13 @@
     margin: 0.25rem 0 0;
     font-size: 0.75rem;
     font-weight: 600;
-    color: #64748b;
+    color: var(--clr-text-muted);
   }
 
   .mysub-usage {
     grid-column: 1 / -1;
     padding-top: 0.9rem;
-    border-top: 1px solid #f1f5f9;
+    border-top: 1px solid var(--clr-border);
   }
 
   .mysub-usage-head {
@@ -130,25 +143,26 @@
     margin-bottom: 0.4rem;
     font-size: 0.75rem;
     font-weight: 600;
-    color: #64748b;
+    color: var(--clr-text-muted);
   }
 
   .mysub-usage-track {
     height: 6px;
-    background: #e2e8f0;
+    background: var(--clr-surface-alt);
+    border: 1px solid var(--clr-border);
     border-radius: 999px;
     overflow: hidden;
   }
 
   .mysub-usage-fill {
     height: 100%;
-    background: #0d8a4e;
+    background: var(--clr-primary);
     border-radius: 999px;
   }
 
   .mysub-empty {
-    background: #fff;
-    border: 1px solid #e2e8f0;
+    background: var(--clr-surface);
+    border: 1px solid var(--clr-border);
     border-radius: 8px;
     padding: 1.5rem;
     margin-bottom: 1.25rem;
@@ -157,19 +171,20 @@
     justify-content: space-between;
     gap: 1rem;
     flex-wrap: wrap;
+    box-shadow: var(--shadow-sm);
   }
 
   .mysub-empty h2 {
     margin: 0 0 0.25rem;
     font-size: 1.1rem;
     font-weight: 800;
-    color: #1e293b;
+    color: var(--clr-text);
   }
 
   .mysub-empty p {
     margin: 0;
     font-size: 0.875rem;
-    color: #64748b;
+    color: var(--clr-text-muted);
     max-width: 460px;
   }
 
@@ -196,26 +211,42 @@
     display: flex;
     flex-direction: column;
     gap: 0.2rem;
-    background: #fff;
-    border: 1px solid #e2e8f0;
+    background: var(--clr-surface);
+    border: 1px solid var(--clr-border);
     border-radius: 8px;
     padding: 1rem 1.05rem;
     text-decoration: none;
     color: inherit;
+    box-shadow: var(--shadow-sm);
+    transition: border-color var(--transition-fast), transform var(--transition-fast), box-shadow var(--transition-fast);
   }
 
-  .mysub-plan-card:hover { border-color: #86efac; }
+  .mysub-plan-card:hover {
+    border-color: var(--clr-primary-light);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+  }
 
-  .mysub-plan-card.is-featured { border-color: #0d8a4e; }
+  .mysub-plan-card.is-featured {
+    border-color: var(--clr-primary);
+  }
 
-  .mysub-plan-card strong { font-size: 0.92rem; color: #1e293b; }
-  .mysub-plan-card span { font-size: 0.75rem; color: #64748b; }
+  .mysub-plan-card strong {
+    font-size: 0.92rem;
+    color: var(--clr-text);
+  }
+
+  .mysub-plan-card span {
+    font-size: 0.75rem;
+    color: var(--clr-text-muted);
+  }
+
   .mysub-plan-card em {
     margin-top: 0.45rem;
     font-style: normal;
     font-size: 1.05rem;
     font-weight: 800;
-    color: #0d8a4e;
+    color: var(--clr-primary);
   }
 
   .mysub-columns {
@@ -225,17 +256,18 @@
   }
 
   .mysub-panel {
-    background: #fff;
-    border: 1px solid #e2e8f0;
+    background: var(--clr-surface);
+    border: 1px solid var(--clr-border);
     border-radius: 8px;
     padding: 1rem 1.1rem 0.4rem;
+    box-shadow: var(--shadow-sm);
   }
 
   .mysub-panel h3 {
     margin: 0 0 0.35rem;
     font-size: 0.95rem;
     font-weight: 800;
-    color: #1e293b;
+    color: var(--clr-text);
   }
 
   .mysub-row {
@@ -243,7 +275,7 @@
     align-items: center;
     gap: 0.75rem;
     padding: 0.75rem 0;
-    border-top: 1px solid #f1f5f9;
+    border-top: 1px solid var(--clr-border);
   }
 
   .mysub-row p {
@@ -251,8 +283,13 @@
     flex: 1;
     min-width: 0;
     font-size: 0.84rem;
-    color: #334155;
+    color: var(--clr-text);
     line-height: 1.4;
+  }
+
+  .mysub-row-sub {
+    color: var(--clr-text-light);
+    font-size: 0.78rem;
   }
 
   .mysub-row time,
@@ -260,12 +297,12 @@
     flex-shrink: 0;
     font-size: 0.75rem;
     font-weight: 600;
-    color: #94a3b8;
+    color: var(--clr-text-light);
   }
 
   .mysub-amount {
     text-align: right;
-    color: #1e293b;
+    color: var(--clr-text);
     font-size: 0.88rem;
     font-weight: 800;
   }
@@ -277,17 +314,43 @@
     font-weight: 700;
     letter-spacing: 0.04em;
     text-transform: uppercase;
-    color: #64748b;
+    color: var(--clr-text-muted);
   }
 
-  .mysub-amount small.success { color: #0d8a4e; }
-  .mysub-amount small.pending { color: #b45309; }
-  .mysub-amount small.failed { color: #dc2626; }
+  .mysub-amount small.success { color: var(--clr-primary); }
+  .mysub-amount small.pending { color: var(--clr-accent); }
+  .mysub-amount small.failed { color: var(--clr-danger); }
 
   .mysub-blank {
     padding: 1.25rem 0 1rem;
     font-size: 0.85rem;
-    color: #64748b;
+    color: var(--clr-text-muted);
+  }
+
+  /* Specific dark theme polish */
+  [data-theme="dark"] .mysub-btn-primary {
+    color: #0f1419;
+  }
+
+  [data-theme="dark"] .mysub-btn-primary:hover {
+    color: #0f1419;
+  }
+
+  [data-theme="dark"] .mysub-plan-card.is-featured {
+    background: rgba(20, 184, 102, 0.08);
+  }
+
+  [data-theme="dark"] .mysub-amount small.pending {
+    color: #facc15;
+  }
+
+  [data-theme="dark"] .mysub-amount small.failed {
+    color: #ff6b74;
+  }
+
+  [data-theme="dark"] .mysub-usage-track {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: transparent;
   }
 
   @media (max-width: 800px) {
@@ -458,7 +521,7 @@
           <p>
             {{ payment.plan.name }}
             <br>
-            <span style="color:#94a3b8;">{{ payment.created_at|date:"d M Y, H:i" }}{% if payment.mpesa_receipt_number %} · {{ payment.mpesa_receipt_number }}{% endif %}</span>
+            <span class="mysub-row-sub">{{ payment.created_at|date:"d M Y, H:i" }}{% if payment.mpesa_receipt_number %} · {{ payment.mpesa_receipt_number }}{% endif %}</span>
           </p>
           <div class="mysub-amount">
             KES {{ payment.amount_kes|floatformat:0 }}
