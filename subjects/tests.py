@@ -92,6 +92,7 @@ class CurriculumImportTests(TestCase):
             'order': 1,
         })
         self.assertIn('Religious Education Grade 1', client.chat.call_args.kwargs['user_prompt'])
+        self.assertTrue(client.chat.call_args.kwargs['json_mode'])
 
     def test_invalid_ai_response_is_rejected(self):
         client = Mock()

@@ -20,7 +20,14 @@ class OpenAIClient:
     def is_configured(self):
         return bool(self.api_key)
 
-    def chat(self, *, system_prompt: str, user_prompt: str, temperature: float = 0.4) -> str:
+    def chat(
+        self,
+        *,
+        system_prompt: str,
+        user_prompt: str,
+        temperature: float = 0.4,
+        json_mode: bool = False,
+    ) -> str:
         if not self.is_configured():
             raise AIConfigurationError(
                 'OpenAI is not configured. Set the OPENAI_API_KEY environment variable.'
@@ -39,15 +46,18 @@ class OpenAIClient:
 
         for attempt in range(attempts):
             try:
-                response = client.chat.completions.create(
-                    model=self.model,
-                    temperature=temperature,
-                    max_tokens=self.max_tokens,
-                    messages=[
+                request = {
+                    'model': self.model,
+                    'temperature': temperature,
+                    'max_tokens': self.max_tokens,
+                    'messages': [
                         {'role': 'system', 'content': system_prompt},
                         {'role': 'user', 'content': user_prompt},
                     ],
-                )
+                }
+                if json_mode:
+                    request['response_format'] = {'type': 'json_object'}
+                response = client.chat.completions.create(**request)
                 content = response.choices[0].message.content
                 if not content or not content.strip():
                     raise AITaskError('OpenAI returned an empty response.')

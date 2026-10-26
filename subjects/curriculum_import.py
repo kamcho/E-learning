@@ -112,6 +112,7 @@ def parse_curriculum_text(text, subject, client=None):
         system_prompt=SYSTEM_PROMPT,
         user_prompt=f'Subject: {subject.name}\n\nPasted curriculum:\n{text}',
         temperature=0,
+        json_mode=True,
     )
     try:
         parsed = json.loads(response)
