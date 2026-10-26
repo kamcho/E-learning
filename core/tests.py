@@ -1,8 +1,10 @@
 from django.contrib.auth import get_user_model
-from django.test import TestCase
+from django.contrib.auth.models import AnonymousUser
+from django.test import RequestFactory, TestCase
 from django.urls import reverse
 
 from accounts.models import LinkedStudents, Role, Student
+from core.error_views import server_error
 from core.models import Option, Question, Quiz
 from core.question_import import bulk_create_questions, validate_question_item
 from subjects.models import Discipline, GradeLevel, Strand, Subject, SubStrand
@@ -366,3 +368,44 @@ class LandingPageNavbarTests(TestCase):
         navbar_chunk = html[html.find('<div class="navbar-links">'):html.find('</div>\n\n      <div class="navbar-actions">')]
         self.assertNotIn('Curriculum Builder', navbar_chunk)
         self.assertIn(f'<a href="{reverse("accounts:admin_dashboard")}">Dashboard</a>', navbar_chunk)
+
+
+class ServerErrorDiagnosticsTests(TestCase):
+    def setUp(self):
+        self.request_factory = RequestFactory()
+
+    def test_platform_admin_can_copy_current_traceback(self):
+        admin = User.objects.create_user(
+            phone='0744444444',
+            password='1234',
+            role=Role.ADMIN,
+            first_name='Admin',
+            last_name='User',
+        )
+        request = self.request_factory.get('/')
+        request._cached_user = admin
+
+        try:
+            raise RuntimeError('dashboard failure marker')
+        except RuntimeError:
+            response = server_error(request)
+
+        content = response.content.decode('utf-8')
+        self.assertEqual(response.status_code, 500)
+        self.assertIn('Copy traceback', content)
+        self.assertIn('RuntimeError: dashboard failure marker', content)
+        self.assertIn("Path: /", content)
+
+    def test_traceback_is_not_shown_to_anonymous_visitors(self):
+        request = self.request_factory.get('/')
+        request._cached_user = AnonymousUser()
+
+        try:
+            raise RuntimeError('private failure marker')
+        except RuntimeError:
+            response = server_error(request)
+
+        content = response.content.decode('utf-8')
+        self.assertEqual(response.status_code, 500)
+        self.assertNotIn('Copy traceback', content)
+        self.assertNotIn('private failure marker', content)

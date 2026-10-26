@@ -106,6 +106,49 @@
       border: 1px solid var(--border);
       background: transparent;
     }
+    .diagnostics {
+      margin-top: 1.4rem;
+      border-top: 1px solid var(--border);
+      padding-top: 1rem;
+      text-align: left;
+    }
+    .diagnostics summary {
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 0.85rem;
+    }
+    .diagnostics p {
+      margin: 0.75rem 0;
+      font-size: 0.8rem;
+    }
+    .diagnostics textarea {
+      display: block;
+      width: 100%;
+      min-height: 12rem;
+      resize: vertical;
+      padding: 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--bg);
+      color: var(--text);
+      font: 0.78rem/1.45 ui-monospace, SFMono-Regular, Consolas, monospace;
+    }
+    .diagnostics button {
+      margin-top: 0.65rem;
+      padding: 0.65rem 0.9rem;
+      border: 0;
+      border-radius: 10px;
+      background: var(--green);
+      color: #fff;
+      cursor: pointer;
+      font: inherit;
+      font-weight: 700;
+    }
+    .copy-status {
+      display: inline-block;
+      margin-left: 0.5rem;
+      font-size: 0.82rem;
+    }
   </style>
 </head>
 <body>
@@ -119,6 +162,44 @@
       <a class="primary" href="/">Back home</a>
       <a class="secondary" href="/accounts/signin/">Sign in</a>
     </div>
+    {% if diagnostic_report %}
+    <details class="diagnostics">
+      <summary>Administrator diagnostics</summary>
+      <p>This traceback may contain sensitive information. Review it before sharing.</p>
+      <textarea id="diagnostic-report" readonly spellcheck="false">{{ diagnostic_report }}</textarea>
+      <button type="button" id="copy-diagnostic-report">Copy traceback</button>
+      <span class="copy-status" id="copy-diagnostic-status" role="status" aria-live="polite"></span>
+    </details>
+    <script>
+      (function () {
+        var button = document.getElementById('copy-diagnostic-report');
+        var report = document.getElementById('diagnostic-report');
+        var status = document.getElementById('copy-diagnostic-status');
+
+        button.addEventListener('click', function () {
+          function copied() {
+            status.textContent = 'Traceback copied.';
+          }
+
+          function selectAndCopy() {
+            report.focus();
+            report.select();
+            if (document.execCommand('copy')) {
+              copied();
+            } else {
+              status.textContent = 'Copy failed. Select and copy the text above.';
+            }
+          }
+
+          if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(report.value).then(copied, selectAndCopy);
+          } else {
+            selectAndCopy();
+          }
+        });
+      })();
+    </script>
+    {% endif %}
   </main>
 </body>
 </html>
