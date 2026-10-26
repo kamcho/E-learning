@@ -5,7 +5,20 @@ from django.urls import reverse
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django import forms
+from django.db import IntegrityError
 from django.db.models import Count
+
+from core.ai.exceptions import AIServiceError
+from core.forms import QuestionCreateForm
+from core.models import Option, Question
+
+from .curriculum_import import (
+    CurriculumImportError,
+    create_curriculum,
+    load_curriculum_preview,
+    parse_curriculum_text,
+    sign_curriculum_preview,
+)
 from .models import (
     GradeLevel, Discipline, Subject, Strand, 
     SubStrand, StrandObjective, SubStrandObjective
@@ -15,9 +28,6 @@ from .forms import (
     StrandForm, SubStrandForm, StrandObjectiveForm, 
     SubStrandObjectiveForm
 )
-
-from core.forms import QuestionCreateForm
-from core.models import Option, Question
 
 
 def admin_curriculum_required(view_func):
@@ -216,7 +226,34 @@ def subject_detail(request, slug):
         .order_by('order', 'name')
     )
 
-    if request.method == 'POST':
+    action = request.POST.get('action', 'create_strand') if request.method == 'POST' else None
+    curriculum_text = ''
+    curriculum_preview = None
+    curriculum_preview_token = ''
+
+    if request.method == 'POST' and action == 'parse_curriculum':
+        curriculum_text = request.POST.get('curriculum_text', '')
+        form = StrandForm(initial={'subject': subject})
+        try:
+            curriculum_preview = parse_curriculum_text(curriculum_text, subject)
+            curriculum_preview_token = sign_curriculum_preview(curriculum_preview)
+        except (AIServiceError, CurriculumImportError) as exc:
+            messages.error(request, str(exc))
+    elif request.method == 'POST' and action == 'import_curriculum':
+        form = StrandForm(initial={'subject': subject})
+        try:
+            curriculum = load_curriculum_preview(request.POST.get('preview_token', ''))
+            created_strands, created_sub_strands = create_curriculum(subject, curriculum)
+        except (AIServiceError, CurriculumImportError, IntegrityError) as exc:
+            messages.error(request, f'Curriculum import failed: {exc}')
+        else:
+            messages.success(
+                request,
+                f'Curriculum imported: {created_strands} strand(s) and '
+                f'{created_sub_strands} sub-strand(s) created. Existing entries were kept.',
+            )
+            return redirect('subjects:subject_detail', slug=subject.slug)
+    elif request.method == 'POST':
         form = StrandForm(request.POST)
         if form.is_valid():
             strand = form.save(commit=False)
@@ -235,6 +272,9 @@ def subject_detail(request, slug):
         'strands': strands,
         'strand_count': strands.count(),
         'form': form,
+        'curriculum_text': curriculum_text,
+        'curriculum_preview': curriculum_preview,
+        'curriculum_preview_token': curriculum_preview_token,
     })
 
 

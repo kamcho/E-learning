@@ -158,6 +158,8 @@ class StrandForm(forms.ModelForm):
         return cleaned_data
 
 class SubStrandForm(forms.ModelForm):
+    slug = forms.SlugField(required=False)
+
     class Meta:
         model = SubStrand
         fields = ['name', 'slug', 'order', 'strand', 'is_active']

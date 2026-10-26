@@ -48,6 +48,25 @@
     margin-right: var(--space-sm);
     flex-shrink: 0;
   }
+
+  .curriculum-paste {
+    width: 100%;
+    min-height: 10rem;
+    resize: vertical;
+    padding: var(--space-sm);
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-md);
+    font: 0.9rem/1.5 ui-monospace, SFMono-Regular, Consolas, monospace;
+  }
+
+  .curriculum-preview-list {
+    padding-left: 1.25rem;
+    margin-bottom: var(--space-md);
+  }
+
+  .curriculum-preview-list ul {
+    margin-top: 0.25rem;
+  }
 </style>
 {% endblock %}
 
@@ -127,10 +146,57 @@
   </div>
 
   <div>
+    <div class="card" style="margin-bottom: var(--space-md);">
+      <h2 class="card-title">✨ Import curriculum with AI</h2>
+      <p class="page-subtitle" style="margin-bottom: var(--space-sm);">
+        Paste a table or curriculum text. AI will organize it into strands and sub-strands for you to review before anything is saved.
+      </p>
+      <form method="post" novalidate>
+        {% csrf_token %}
+        <input type="hidden" name="action" value="parse_curriculum">
+        <label class="form-label" for="curriculum-text">Curriculum text</label>
+        <textarea class="curriculum-paste" id="curriculum-text" name="curriculum_text" maxlength="12000" required>{{ curriculum_text }}</textarea>
+        <button type="submit" class="btn btn-secondary" style="width: 100%; justify-content: center; margin-top: var(--space-sm);">
+          Parse with AI
+        </button>
+      </form>
+
+      {% if curriculum_preview %}
+        <div style="margin-top: var(--space-md);">
+          <h3>Review parsed curriculum</h3>
+          <ol class="curriculum-preview-list">
+            {% for strand in curriculum_preview %}
+              <li>
+                <strong>{{ strand.name }}</strong>
+                {% if strand.sub_strands %}
+                  <ul>
+                    {% for sub_strand in strand.sub_strands %}
+                      <li>{{ sub_strand.name }}</li>
+                    {% endfor %}
+                  </ul>
+                {% else %}
+                  <ul><li>No sub-strands detected</li></ul>
+                {% endif %}
+              </li>
+            {% endfor %}
+          </ol>
+          <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="import_curriculum">
+            <input type="hidden" name="preview_token" value="{{ curriculum_preview_token }}">
+            <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center;">
+              Confirm and create curriculum
+            </button>
+          </form>
+        </div>
+      {% endif %}
+    </div>
+
     <div class="card">
       <h2 class="card-title">➕ Add Strand</h2>
       <form method="post" novalidate>
         {% csrf_token %}
+        <input type="hidden" name="action" value="create_strand">
 
         {% for field in form %}
           {% if field.is_hidden %}
