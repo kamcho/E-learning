@@ -113,6 +113,8 @@ class SubjectForm(forms.ModelForm):
         return cleaned_data
 
 class StrandForm(forms.ModelForm):
+    slug = forms.SlugField(required=False)
+
     class Meta:
         model = Strand
         fields = ['name', 'slug', 'order', 'subject', 'is_active']

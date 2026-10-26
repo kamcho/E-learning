@@ -1,5 +1,6 @@
 """Public error pages used when DEBUG is False."""
 
+import logging
 import sys
 import traceback
 from datetime import timezone as datetime_timezone
@@ -9,6 +10,9 @@ from django.http import HttpResponseServerError
 from django.shortcuts import render
 from django.template import loader
 from django.utils import timezone
+
+
+logger = logging.getLogger(__name__)
 
 
 def _error_page(request, *, status, code, title, message, hint):
@@ -64,8 +68,13 @@ def server_error(request):
     cannot turn this page into another 500.
     """
     report = None
-    user = getattr(request, '_cached_user', None)
     exc_info = sys.exc_info()
+    user = getattr(request, '_cached_user', None)
+    if user is None:
+        try:
+            user = getattr(request, 'user', None)
+        except Exception:
+            logger.exception('Unable to resolve request user while rendering a 500 page')
     if (
         user is not None
         and user.is_authenticated

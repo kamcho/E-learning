@@ -2,6 +2,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AnonymousUser
 from django.test import RequestFactory, TestCase
 from django.urls import reverse
+from django.utils.functional import SimpleLazyObject
 
 from accounts.models import LinkedStudents, Role, Student
 from core.error_views import server_error
@@ -395,6 +396,27 @@ class ServerErrorDiagnosticsTests(TestCase):
         self.assertIn('Copy traceback', content)
         self.assertIn('RuntimeError: dashboard failure marker', content)
         self.assertIn("Path: /", content)
+
+    def test_platform_admin_diagnostics_resolve_a_lazy_request_user(self):
+        admin = User.objects.create_user(
+            phone='0744444444',
+            password='1234',
+            role=Role.ADMIN,
+            first_name='Admin',
+            last_name='User',
+        )
+        request = self.request_factory.get('/')
+        request.user = SimpleLazyObject(lambda: admin)
+
+        try:
+            raise RuntimeError('lazy dashboard failure marker')
+        except RuntimeError:
+            response = server_error(request)
+
+        content = response.content.decode('utf-8')
+        self.assertEqual(response.status_code, 500)
+        self.assertIn('Copy traceback', content)
+        self.assertIn('RuntimeError: lazy dashboard failure marker', content)
 
     def test_traceback_is_not_shown_to_anonymous_visitors(self):
         request = self.request_factory.get('/')
