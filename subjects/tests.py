@@ -101,6 +101,20 @@ class CurriculumImportTests(TestCase):
         with self.assertRaises(CurriculumImportError):
             parse_curriculum_text('a curriculum table', self.subject, client=client)
 
+    def test_parse_curriculum_accepts_json_object_with_strands(self):
+        client = Mock()
+        client.chat.return_value = json.dumps({
+            'strands': [{
+                'name': 'Creation',
+                'sub_strands': ['Self Awareness'],
+            }],
+        })
+
+        result = parse_curriculum_text('a curriculum table', self.subject, client=client)
+
+        self.assertEqual(result[0]['name'], 'Creation')
+        self.assertEqual(result[0]['sub_strands'][0]['name'], 'Self Awareness')
+
     def test_create_curriculum_creates_strands_and_sub_strands(self):
         curriculum = [{
             'name': 'Creation',
