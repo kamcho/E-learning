@@ -12,7 +12,7 @@ from subjects.curriculum_import import (
     parse_curriculum_text,
 )
 
-from subjects.forms import StrandForm
+from subjects.forms import StrandForm, SubStrandForm
 from subjects.models import Discipline, GradeLevel, Subject
 
 
@@ -46,6 +46,16 @@ class StrandFormTests(TestCase):
             form.cleaned_data['slug'],
             'creation-religious-education-grade-1',
         )
+
+    def test_strand_and_substrand_slug_inputs_use_the_standard_form_style(self):
+        for form_class in (StrandForm, SubStrandForm):
+            with self.subTest(form=form_class.__name__):
+                widget = form_class().fields['slug'].widget
+                self.assertEqual(widget.attrs.get('class'), 'form-input')
+                self.assertEqual(
+                    widget.attrs.get('placeholder'),
+                    'Leave blank to auto-generate',
+                )
 
 
 class CurriculumImportTests(TestCase):

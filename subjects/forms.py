@@ -113,7 +113,13 @@ class SubjectForm(forms.ModelForm):
         return cleaned_data
 
 class StrandForm(forms.ModelForm):
-    slug = forms.SlugField(required=False)
+    slug = forms.SlugField(
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-input',
+            'placeholder': 'Leave blank to auto-generate',
+        }),
+    )
 
     class Meta:
         model = Strand
@@ -122,10 +128,6 @@ class StrandForm(forms.ModelForm):
             'name': forms.TextInput(attrs={
                 'class': 'form-input', 
                 'placeholder': 'e.g. Human Body'
-            }),
-            'slug': forms.TextInput(attrs={
-                'class': 'form-input', 
-                'placeholder': 'Leave blank to auto-generate'
             }),
             'order': forms.NumberInput(attrs={
                 'class': 'form-input', 
@@ -158,7 +160,13 @@ class StrandForm(forms.ModelForm):
         return cleaned_data
 
 class SubStrandForm(forms.ModelForm):
-    slug = forms.SlugField(required=False)
+    slug = forms.SlugField(
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-input',
+            'placeholder': 'Leave blank to auto-generate',
+        }),
+    )
 
     class Meta:
         model = SubStrand
@@ -167,10 +175,6 @@ class SubStrandForm(forms.ModelForm):
             'name': forms.TextInput(attrs={
                 'class': 'form-input', 
                 'placeholder': 'e.g. Digestive System'
-            }),
-            'slug': forms.TextInput(attrs={
-                'class': 'form-input', 
-                'placeholder': 'Leave blank to auto-generate'
             }),
             'order': forms.NumberInput(attrs={
                 'class': 'form-input', 
