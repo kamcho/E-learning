@@ -61,7 +61,7 @@
         You chose: <strong style="color:var(--demo-text);">{{ row.selected_text }}</strong>
         · Correct: <strong style="color:var(--demo-accent);">{{ row.correct_text }}</strong>
       </p>
-      <div class="demo-ai-box demo-ai-trigger" data-question-uuid="{{ row.question_uuid }}">
+      <div class="demo-ai-box demo-ai-trigger" data-question-uuid="{{ row.question_uuid }}" data-speech-region>
         <button type="button" class="demo-btn demo-btn-outline demo-ai-btn" style="margin-top:0.75rem;">Explain with AI tutor</button>
         <div class="demo-ai-loading" hidden role="status" aria-live="polite">
           <span class="demo-ai-spinner" aria-hidden="true"></span>
@@ -73,8 +73,13 @@
             <span class="demo-ai-loading-sub">Preparing a short explanation for this answer</span>
           </span>
         </div>
-        <div class="demo-ai-text" hidden></div>
+        <div class="demo-ai-text" data-speech-text hidden></div>
         <div class="demo-ai-text demo-ai-error" hidden style="color:#f87171;"></div>
+        <div class="explanation-speech-controls">
+          <button type="button" class="demo-btn demo-btn-outline" data-speech-speak hidden>Listen to explanation</button>
+          <button type="button" class="demo-btn demo-btn-outline" data-speech-stop hidden>Stop speaking</button>
+          <span data-speech-status role="status" aria-live="polite"></span>
+        </div>
       </div>
     </div>
     {% endif %}
@@ -84,6 +89,8 @@
 {% endblock %}
 
 {% block extra_js %}
+{% load static %}
+<script src="{% static 'js/explanation-speech.js' %}" defer></script>
 <script>
 (function () {
   document.querySelectorAll('.demo-ai-trigger').forEach(function (wrap) {

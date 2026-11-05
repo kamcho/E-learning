@@ -759,9 +759,14 @@
             <button type="button" class="btn-ai-explain" data-attempt-uuid="{{ attempt.uuid }}" data-question-uuid="{{ row.question_uuid }}">
               ✨ Explain answer
             </button>
-            <div class="ai-explanation-box" id="ai-explanation-{{ row.question_uuid }}">
+            <div class="ai-explanation-box" id="ai-explanation-{{ row.question_uuid }}" data-speech-region>
               <div class="ai-explanation-label">AI Tutor</div>
-              <div class="ai-explanation-text"></div>
+              <div class="ai-explanation-text" data-speech-text></div>
+              <div class="explanation-speech-controls">
+                <button type="button" class="btn btn-secondary" data-speech-speak hidden>Listen to explanation</button>
+                <button type="button" class="btn btn-secondary" data-speech-stop hidden>Stop speaking</button>
+                <span data-speech-status role="status" aria-live="polite"></span>
+              </div>
             </div>
           </div>
         {% endif %}
@@ -770,6 +775,8 @@
   {% endif %}
 </div>
 
+{% load static %}
+<script src="{% static 'js/explanation-speech.js' %}" defer></script>
 <script>
 (function () {
   function getCookie(name) {

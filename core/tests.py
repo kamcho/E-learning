@@ -214,6 +214,7 @@ class DemoPracticeTests(TestCase):
         response = self.client.get(take_url)
         self.assertContains(response, 'Not quite')
         self.assertContains(response, 'demo-ai-box')
+        self.assertContains(response, 'Listen to explanation')
 
     def test_old_demo_url_redirects_to_exam_url_and_preserves_query(self):
         response = self.client.get('/demo/?grade=grade-6')
