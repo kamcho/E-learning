@@ -389,8 +389,8 @@
   <header class="sp-hero">
     <div>
       <p class="sp-kicker">Subscriptions</p>
-      <h1>Pay per test, or save with a pack</h1>
-      <p>CBE practice credits land on your account the moment M-Pesa confirms. Start with one exam, or go unlimited for the year.</p>
+      <h1>Pay per practice exam</h1>
+      <p>Pay once for the learner taking the exam. The price is based on their grade, and M-Pesa confirms payment instantly.</p>
       <div class="sp-trust">
         <span class="sp-chip">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
@@ -408,12 +408,12 @@
     </div>
     {% if plans %}
     <aside class="sp-aside" aria-label="Price per test">
-      <h2>Effective rate</h2>
+      <h2>Price per exam</h2>
       {% for plan in plans %}
       <div class="sp-aside-row">
         <span>{{ plan.name }}</span>
         {% if plan.kes_per_test %}
-        <strong>KES {{ plan.kes_per_test|floatformat:1 }}/test</strong>
+        <strong>KES {{ plan.kes_per_test|floatformat:1 }}/exam</strong>
         {% else %}
         <strong>Unlimited</strong>
         {% endif %}
@@ -436,12 +436,7 @@
   {% if plans %}
   <div class="sp-grid">
     {% for plan in plans %}
-    <article class="sp-card{% if plan.slug == 'monthly-pack' %} is-popular{% elif plan.slug == 'yearly-unlimited' %} is-value{% endif %}">
-      {% if plan.slug == 'monthly-pack' %}
-      <span class="sp-badge sp-badge-popular">Most popular</span>
-      {% elif plan.slug == 'yearly-unlimited' %}
-      <span class="sp-badge sp-badge-value">Best value</span>
-      {% endif %}
+    <article class="sp-card">
 
       <p class="sp-type">{{ plan.get_plan_type_display }}</p>
       <h2 class="sp-name">{{ plan.name }}</h2>
@@ -457,6 +452,9 @@
       {% if plan.description %}
       <p class="sp-desc">{{ plan.description }}</p>
       {% endif %}
+      {% if plan.grade_band %}
+      <p class="sp-rate">Charged only for a learner in this grade band</p>
+      {% endif %}
       <ul class="sp-features">
         {% for feature in plan.features %}
         <li>
@@ -470,8 +468,8 @@
         </li>
         {% endfor %}
       </ul>
-      <a class="sp-cta" href="{% url 'subscriptions:subscribe' plan.slug %}">Pay with M-Pesa</a>
-      <p class="sp-meta">Prompt on your phone · {{ plan.duration_label }} validity</p>
+      <a class="sp-cta" href="{% url 'core:exams_list' %}">Choose learner &amp; exam</a>
+      <p class="sp-meta">M-Pesa prompt · exam credit valid {{ plan.duration_label }}</p>
     </article>
     {% endfor %}
   </div>
@@ -489,15 +487,15 @@
     <div>
       <details open>
         <summary>How do I pay?</summary>
-        <p>Choose a plan, enter the M-Pesa number, and approve the STK Push on your phone. Credits appear as soon as Safaricom confirms the payment.</p>
+        <p>Choose the learner and exam. The price is KES 10 for Play Group–Grade 3, KES 15 for Grades 4–6, or KES 20 for Grades 7–12. Enter the M-Pesa number and approve the STK Push on your phone.</p>
       </details>
       <details>
-        <summary>Do unused tests roll over?</summary>
-        <p>Credits stay on the account until the plan end date. After that unused tests expire with the subscription.</p>
+        <summary>How long is an exam credit valid?</summary>
+        <p>Each paid exam credit is for the selected learner and is valid for 30 days after payment.</p>
       </details>
       <details>
-        <summary>Can more than one learner use a pack?</summary>
-        <p>Yes. Tests are shared across the learners linked to your guardian account, up to the plan’s learner limit.</p>
+        <summary>Can learners share exam credits?</summary>
+        <p>No. Each exam credit is linked to the learner whose exam you selected at checkout.</p>
       </details>
     </div>
   </section>

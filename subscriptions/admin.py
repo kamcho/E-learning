@@ -6,7 +6,7 @@ from .models import Payment, Subscription, SubscriptionPlan, TestCreditLog
 @admin.register(SubscriptionPlan)
 class SubscriptionPlanAdmin(admin.ModelAdmin):
     list_display = (
-        'name', 'slug', 'plan_type', 'price_kes', 'max_tests',
+        'name', 'slug', 'plan_type', 'grade_band', 'price_kes', 'max_tests',
         'duration_days', 'is_active', 'sort_order',
     )
     list_filter = ('is_active', 'plan_type')
@@ -17,7 +17,7 @@ class SubscriptionPlanAdmin(admin.ModelAdmin):
 @admin.register(Subscription)
 class SubscriptionAdmin(admin.ModelAdmin):
     list_display = (
-        'user', 'plan', 'status', 'tests_remaining', 'tests_used',
+        'user', 'student', 'plan', 'status', 'tests_remaining', 'tests_used',
         'starts_at', 'ends_at', 'created_at',
     )
     list_filter = ('status', 'plan')
@@ -28,7 +28,7 @@ class SubscriptionAdmin(admin.ModelAdmin):
 @admin.register(Payment)
 class PaymentAdmin(admin.ModelAdmin):
     list_display = (
-        'uuid', 'user', 'plan', 'amount_kes', 'status',
+        'uuid', 'user', 'student', 'plan', 'amount_kes', 'status',
         'mpesa_receipt_number', 'created_at',
     )
     list_filter = ('status', 'plan')

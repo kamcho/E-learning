@@ -6,6 +6,11 @@ from django.utils import timezone
 
 
 class SubscriptionPlan(models.Model):
+    class GradeBand(models.TextChoices):
+        PLAY_GROUP_TO_GRADE_3 = 'play-group-grade-3', 'Play Group–Grade 3'
+        GRADE_4_TO_6 = 'grade-4-6', 'Grades 4–6'
+        GRADE_7_TO_12 = 'grade-7-12', 'Grades 7–12'
+
     class PlanType(models.TextChoices):
         SINGLE_TEST = 'single_test', 'Single test'
         TEST_PACK = 'test_pack', 'Test pack'
@@ -19,6 +24,13 @@ class SubscriptionPlan(models.Model):
         max_length=20,
         choices=PlanType.choices,
         default=PlanType.TEST_PACK,
+    )
+    grade_band = models.CharField(
+        max_length=24,
+        choices=GradeBand.choices,
+        blank=True,
+        default='',
+        help_text='Grade band this per-exam plan applies to.',
     )
     price_kes = models.DecimalField(max_digits=10, decimal_places=2)
     duration_days = models.PositiveIntegerField(default=30)
@@ -52,7 +64,7 @@ class SubscriptionPlan(models.Model):
         if self.is_unlimited:
             return 'Unlimited tests'
         if self.max_tests == 1:
-            return '1 test'
+            return '1 exam' if self.grade_band else '1 test'
         return f'{self.max_tests} tests'
 
     @property
@@ -68,6 +80,8 @@ class SubscriptionPlan(models.Model):
 
     @property
     def price_period_label(self):
+        if self.grade_band:
+            return 'exam'
         if self.plan_type == self.PlanType.SINGLE_TEST or self.max_tests == 1:
             return 'test'
         if self.duration_days == 7:
@@ -96,6 +110,13 @@ class Subscription(models.Model):
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
+        related_name='subscriptions',
+    )
+    student = models.ForeignKey(
+        'accounts.Student',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
         related_name='subscriptions',
     )
     plan = models.ForeignKey(
@@ -166,6 +187,13 @@ class Payment(models.Model):
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
+        related_name='subscription_payments',
+    )
+    student = models.ForeignKey(
+        'accounts.Student',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
         related_name='subscription_payments',
     )
     subscription = models.ForeignKey(

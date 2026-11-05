@@ -322,8 +322,19 @@ systemctl restart elearning
 ### Automatic (GitHub Actions)
 
 On every push to `main`, GitHub Actions SSHs into the droplet and runs
-`deploy/update.sh` (git pull → pip install → migrate → collectstatic →
+`deploy/update.sh` (git pull → pip install → migrate → seed subscription prices → collectstatic →
 restart `elearning` → reload nginx).
+
+The deployment scripts seed the per-exam prices after migrations:
+
+| Learner grade | Price per exam |
+|---|---:|
+| Play Group–Grade 3 | KES 10 |
+| Grades 4–6 | KES 15 |
+| Grades 7–12 | KES 20 |
+
+Each paid exam credit is attached to the learner selected at checkout and is
+valid for 30 days.
 
 **One-time setup**
 
@@ -389,6 +400,7 @@ cd /srv/elearning
 sudo -u elearning git pull
 sudo -u elearning .venv/bin/pip install -r requirements.txt
 sudo -u elearning .venv/bin/python manage.py migrate
+sudo -u elearning .venv/bin/python manage.py seed_subscription_plans
 sudo -u elearning .venv/bin/python manage.py collectstatic --noinput
 systemctl restart elearning
 ```

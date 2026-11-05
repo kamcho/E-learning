@@ -37,6 +37,9 @@ systemctl stop elearning || true
 echo "==> Running migrations"
 sudo -u "$APP_USER" "$VENV/python" manage.py migrate --noinput
 
+echo "==> Syncing subscription prices"
+sudo -u "$APP_USER" "$VENV/python" manage.py seed_subscription_plans
+
 echo "==> Collecting static files"
 sudo -u "$APP_USER" "$VENV/python" manage.py collectstatic --noinput
 

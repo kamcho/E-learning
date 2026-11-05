@@ -109,6 +109,7 @@ fi
 
 echo "==> Django migrate + static"
 sudo -u "$APP_USER" .venv/bin/python manage.py migrate --noinput
+sudo -u "$APP_USER" .venv/bin/python manage.py seed_subscription_plans
 sudo -u "$APP_USER" .venv/bin/python manage.py collectstatic --noinput
 
 echo "==> systemd"

@@ -418,9 +418,9 @@
   <section class="mysub-empty">
     <div>
       <h2>No active plan</h2>
-      <p>Pay KES 10 for a single test, or save with a weekly, monthly, or yearly pack via M-Pesa.</p>
+      <p>Pay per exam based on each learner’s grade: KES 10 for Play Group–Grade 3, KES 15 for Grades 4–6, or KES 20 for Grades 7–12.</p>
     </div>
-    <a href="{% url 'subscriptions:plans' %}" class="mysub-btn mysub-btn-primary">Choose a plan</a>
+    <a href="{% url 'core:exams_list' %}" class="mysub-btn mysub-btn-primary">Choose learner &amp; exam</a>
   </section>
   {% endif %}
 
@@ -471,12 +471,12 @@
   </div>
 
   {% if quick_plans %}
-  <h2 class="mysub-section">Top up</h2>
+  <h2 class="mysub-section">Exam prices</h2>
   <div class="mysub-plans">
     {% for plan in quick_plans %}
-    <a href="{% url 'subscriptions:subscribe' plan.slug %}" class="mysub-plan-card{% if plan.slug == 'monthly-pack' %} is-featured{% endif %}">
+    <a href="{% url 'core:exams_list' %}" class="mysub-plan-card">
       <strong>{{ plan.name }}</strong>
-      <span>{{ plan.tests_label }} · {{ plan.duration_days }} days</span>
+      <span>{{ plan.tests_label }} · {{ plan.get_grade_band_display }}</span>
       <em>KES {{ plan.price_kes|floatformat:0 }}</em>
     </a>
     {% endfor %}

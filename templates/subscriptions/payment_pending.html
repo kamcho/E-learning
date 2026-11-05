@@ -37,6 +37,7 @@
     <p style="color: var(--clr-text-muted); line-height: 1.5;">
       We sent an M-Pesa STK push to <strong>{{ payment.phone_number }}</strong>.
       Enter your PIN to pay <strong>KES {{ payment.amount_kes|floatformat:0 }}</strong> for {{ plan.name }}.
+      {% if payment.student %}This exam credit is for {{ payment.student.first_name }} {{ payment.student.last_name }}.{% endif %}
     </p>
     <p class="pending-status" id="pending-status">Waiting for payment confirmation…</p>
     <p style="font-size: 0.78rem; color: var(--clr-text-light); margin-top: var(--space-lg);">

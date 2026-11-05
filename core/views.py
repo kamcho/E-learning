@@ -130,6 +130,7 @@ def test_info_view(request, quiz_uuid, student_uuid):
 
     from django.conf import settings as django_settings
     from subscriptions.models import SubscriptionPlan
+    from subscriptions.pricing import grade_band_for_student
     from subscriptions.services import (
         consume_test_credit,
         get_active_subscription,
@@ -143,11 +144,15 @@ def test_info_view(request, quiz_uuid, student_uuid):
     can_start_exam = True
     single_test_plan = None
     if subscription_required:
-        active_subscription = get_active_subscription(request.user)
-        can_start_exam = user_can_start_exam(request.user)
-        single_test_plan = SubscriptionPlan.objects.filter(
-            slug='single-test', is_active=True,
-        ).first()
+        grade_band = grade_band_for_student(student)
+        active_subscription = get_active_subscription(request.user, student)
+        can_start_exam = user_can_start_exam(request.user, student)
+        if grade_band:
+            single_test_plan = SubscriptionPlan.objects.filter(
+                grade_band=grade_band,
+                is_active=True,
+                max_tests=1,
+            ).first()
 
     next_param = request.GET.get('next', '').strip()
     cancel_url = _resolve_next_url(next_param)
@@ -176,12 +181,25 @@ def test_info_view(request, quiz_uuid, student_uuid):
                 messages.info(request, f"Continuing for {student.first_name}: {quiz.title}")
             else:
                 if subscription_required and not can_start_exam:
+                    if not single_test_plan:
+                        messages.warning(
+                            request,
+                            'A practice exam price is not configured for this learner’s grade yet. Please contact support.',
+                        )
+                        return redirect('core:test_info', quiz_uuid=quiz.uuid, student_uuid=student.uuid)
                     messages.warning(
                         request,
-                        'You need a test credit to start. Pay KES 10 for one test or choose a pack.',
+                        f'You need an exam credit for {student.first_name}. '
+                        f'Pay KES {single_test_plan.price_kes:.0f} for one exam.',
                     )
-                    plans_url = reverse('subscriptions:plans')
-                    return redirect(f'{plans_url}?next={quote(request.get_full_path(), safe="")}')
+                    subscribe_url = reverse(
+                        'subscriptions:subscribe',
+                        kwargs={'plan_slug': single_test_plan.slug},
+                    )
+                    return redirect(
+                        f'{subscribe_url}?student={student.uuid}'
+                        f'&next={quote(request.get_full_path(), safe="")}'
+                    )
 
                 # Fresh start or retake — always create a NEW row.
                 attempt = UserAttempts.objects.create(
@@ -204,7 +222,11 @@ def test_info_view(request, quiz_uuid, student_uuid):
                             request,
                             'Could not start the exam — no test credits remaining.',
                         )
-                        return redirect('subscriptions:plans')
+                        return redirect(
+                            'core:test_info',
+                            quiz_uuid=quiz.uuid,
+                            student_uuid=student.uuid,
+                        )
 
                 if all_count == 0:
                     messages.success(request, f"Test started for {student.first_name}: {quiz.title}")

@@ -1,6 +1,6 @@
 """Subscription lifecycle and test-credit helpers."""
 
-from django.db import transaction
+from django.db import models, transaction
 from django.utils import timezone
 
 from .models import Payment, Subscription, SubscriptionPlan, TestCreditLog
@@ -10,32 +10,45 @@ def _user_bypasses_subscription(user):
     return user.is_authenticated and user.is_platform_admin
 
 
-def get_active_subscription(user):
+def _active_subscriptions(user, student=None):
+    subscriptions = Subscription.objects.filter(
+        user=user,
+        status=Subscription.Status.ACTIVE,
+        ends_at__gt=timezone.now(),
+    ).select_related('plan', 'student')
+    if student:
+        subscriptions = subscriptions.filter(
+            models.Q(student=student)
+            | models.Q(student__isnull=True, plan__grade_band=''),
+        ).order_by(
+            models.Case(
+                models.When(student=student, then=models.Value(0)),
+                default=models.Value(1),
+                output_field=models.IntegerField(),
+            ),
+            '-ends_at',
+        )
+    else:
+        subscriptions = subscriptions.order_by('-ends_at')
+    return subscriptions
+
+
+def get_active_subscription(user, student=None):
     if not user.is_authenticated:
         return None
-    return (
-        Subscription.objects
-        .filter(
-            user=user,
-            status=Subscription.Status.ACTIVE,
-            ends_at__gt=timezone.now(),
-        )
-        .select_related('plan')
-        .order_by('-ends_at')
-        .first()
-    )
+    return _active_subscriptions(user, student).first()
 
 
-def user_can_start_exam(user):
+def user_can_start_exam(user, student=None):
     """Guardian can start a new exam if they have credits or unlimited access."""
     if not user.is_authenticated:
         return False
     if _user_bypasses_subscription(user):
         return True
-    subscription = get_active_subscription(user)
-    if not subscription:
-        return False
-    return subscription.has_tests_available
+    available = _active_subscriptions(user, student).filter(
+        models.Q(tests_remaining__isnull=True) | models.Q(tests_remaining__gt=0),
+    )
+    return available.exists()
 
 
 def user_has_active_subscription(user):
@@ -85,7 +98,16 @@ def activate_subscription_from_payment(payment: Payment):
     duration = timezone.timedelta(days=plan.duration_days)
     credits_granted = _credits_for_plan(plan)
 
-    active = get_active_subscription(payment.user)
+    active_subscriptions = Subscription.objects.filter(
+        user=payment.user,
+        status=Subscription.Status.ACTIVE,
+        ends_at__gt=now,
+    )
+    if payment.student_id:
+        active_subscriptions = active_subscriptions.filter(student_id=payment.student_id)
+    else:
+        active_subscriptions = active_subscriptions.filter(student__isnull=True)
+    active = active_subscriptions.order_by('-ends_at').first()
 
     if active:
         subscription = (
@@ -110,6 +132,7 @@ def activate_subscription_from_payment(payment: Payment):
         if subscription is None:
             subscription = Subscription.objects.create(
                 user=payment.user,
+                student=payment.student,
                 plan=plan,
                 status=Subscription.Status.PENDING,
             )
@@ -127,9 +150,10 @@ def activate_subscription_from_payment(payment: Payment):
         subscription.tests_used = 0
 
     subscription.plan = plan
+    subscription.student = payment.student
     subscription.status = Subscription.Status.ACTIVE
     subscription.save(update_fields=[
-        'plan', 'status', 'starts_at', 'ends_at',
+        'plan', 'student', 'status', 'starts_at', 'ends_at',
         'tests_remaining', 'tests_used', 'updated_at',
     ])
 
@@ -185,11 +209,14 @@ def consume_test_credit(user, attempt):
     if _user_bypasses_subscription(user):
         return None
 
-    subscription = get_active_subscription(user)
+    subscription = (
+        _active_subscriptions(user, attempt.student)
+        .filter(models.Q(tests_remaining__isnull=True) | models.Q(tests_remaining__gt=0))
+        .select_for_update()
+        .first()
+    )
     if not subscription:
-        raise ValueError('No active subscription')
-
-    subscription = Subscription.objects.select_for_update().get(pk=subscription.pk)
+        raise ValueError('No active subscription with test credits')
 
     if subscription.tests_remaining is None:
         return subscription

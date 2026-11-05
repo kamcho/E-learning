@@ -5,81 +5,69 @@ from subscriptions.models import SubscriptionPlan
 
 PLANS = [
     {
-        'slug': 'single-test',
-        'name': 'Single Test',
-        'description': 'Pay once, take one CBC practice exam. Perfect for trying Soma Smart.',
+        'slug': 'exam-play-group-grade-3',
+        'name': 'Play Group–Grade 3 Exam',
+        'description': 'One practice exam for a linked learner in Play Group through Grade 3.',
         'plan_type': SubscriptionPlan.PlanType.SINGLE_TEST,
+        'grade_band': SubscriptionPlan.GradeBand.PLAY_GROUP_TO_GRADE_3,
         'price_kes': 10,
         'duration_days': 30,
         'max_tests': 1,
-        'max_learners': 3,
+        'max_learners': 1,
         'features': [
-            '1 practice test',
+            '1 exam for one linked learner',
+            'For Play Group to Grade 3',
             'Use within 30 days',
-            'All linked learners',
             'Full results & analytics',
         ],
         'sort_order': 1,
     },
     {
-        'slug': 'weekly-pack',
-        'name': 'Weekly Pack',
-        'description': 'Fifteen tests for a week of focused revision.',
-        'plan_type': SubscriptionPlan.PlanType.TEST_PACK,
-        'price_kes': 70,
-        'duration_days': 7,
-        'max_tests': 15,
-        'max_learners': 3,
+        'slug': 'exam-grade-4-6',
+        'name': 'Grade 4–6 Exam',
+        'description': 'One practice exam for a linked learner in Grades 4–6.',
+        'plan_type': SubscriptionPlan.PlanType.SINGLE_TEST,
+        'grade_band': SubscriptionPlan.GradeBand.GRADE_4_TO_6,
+        'price_kes': 15,
+        'duration_days': 30,
+        'max_tests': 1,
+        'max_learners': 1,
         'features': [
-            '15 practice tests',
-            'Valid for 7 days',
-            'All linked learners',
-            'Guardian dashboard',
+            '1 exam for one linked learner',
+            'For Grades 4–6',
+            'Use within 30 days',
+            'Full results & analytics',
         ],
         'sort_order': 2,
     },
     {
-        'slug': 'monthly-pack',
-        'name': 'Monthly Pack',
-        'description': 'Best for regular practice — one hundred tests for the month.',
-        'plan_type': SubscriptionPlan.PlanType.TEST_PACK,
-        'price_kes': 200,
+        'slug': 'exam-grade-7-12',
+        'name': 'Grade 7–12 Exam',
+        'description': 'One practice exam for a linked learner in Grades 7–12.',
+        'plan_type': SubscriptionPlan.PlanType.SINGLE_TEST,
+        'grade_band': SubscriptionPlan.GradeBand.GRADE_7_TO_12,
+        'price_kes': 20,
         'duration_days': 30,
-        'max_tests': 100,
-        'max_learners': 3,
+        'max_tests': 1,
+        'max_learners': 1,
         'features': [
-            '100 practice tests',
-            'Valid for 30 days',
-            'All linked learners',
-            'Guardian dashboard & analytics',
+            '1 exam for one linked learner',
+            'For Grades 7–12',
+            'Use within 30 days',
+            'Full results & analytics',
         ],
         'sort_order': 3,
     },
-    {
-        'slug': 'yearly-unlimited',
-        'name': 'Yearly Unlimited',
-        'description': 'Unlimited CBC practice exams for a full year.',
-        'plan_type': SubscriptionPlan.PlanType.UNLIMITED,
-        'price_kes': 1500,
-        'duration_days': 365,
-        'max_tests': None,
-        'max_learners': 5,
-        'features': [
-            'Unlimited practice tests',
-            'Valid for 365 days',
-            'Up to 5 learners',
-            'Guardian dashboard & analytics',
-            'Best value for serious prep',
-        ],
-        'sort_order': 4,
-    },
 ]
 
-LEGACY_SLUGS = ('family-monthly', 'family-term', 'family-annual')
+LEGACY_SLUGS = (
+    'single-test', 'weekly-pack', 'monthly-pack', 'yearly-unlimited',
+    'family-monthly', 'family-term', 'family-annual',
+)
 
 
 class Command(BaseCommand):
-    help = 'Seed Soma Smart test-credit subscription plans.'
+    help = 'Seed Soma Smart grade-banded pay-per-exam plans.'
 
     def handle(self, *args, **options):
         deactivated = SubscriptionPlan.objects.filter(slug__in=LEGACY_SLUGS).update(is_active=False)

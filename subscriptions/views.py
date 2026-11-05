@@ -1,5 +1,7 @@
 import json
 import logging
+from urllib.parse import quote
+from uuid import UUID
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -22,6 +24,7 @@ from .services import (
     parse_stk_callback,
     user_has_active_subscription,
 )
+from .pricing import grade_band_for_student
 
 logger = logging.getLogger(__name__)
 
@@ -153,6 +156,30 @@ def plans_view(request):
 def subscribe_view(request, plan_slug):
     plan = get_object_or_404(SubscriptionPlan, slug=plan_slug, is_active=True)
     initial_phone = request.user.phone or ''
+    student = None
+    next_url = request.GET.get('next', '').strip()
+
+    if plan.grade_band:
+        from accounts.models import Student
+
+        student_uuid = request.GET.get('student', '')
+        if request.method == 'POST' and request.POST.get('student') != student_uuid:
+            messages.error(request, 'The learner selection changed. Please choose the exam again.')
+            return redirect('core:exams_list')
+        try:
+            student_pk = UUID(student_uuid)
+        except ValueError:
+            student_pk = None
+        if student_pk:
+            student = Student.objects.filter(uuid=student_pk).select_related('grade_level').first()
+        if not student or not request.user.is_guardian or not request.user.linked_students.filter(
+            students=student,
+        ).exists():
+            messages.error(request, 'Choose one of your linked learners to pay for their exam.')
+            return redirect('core:exams_list')
+        if grade_band_for_student(student) != plan.grade_band:
+            messages.error(request, 'That price does not match the selected learner’s grade.')
+            return redirect('core:exams_list')
 
     if request.method == 'POST':
         form = SubscribeForm(request.POST)
@@ -160,6 +187,7 @@ def subscribe_view(request, plan_slug):
             phone = form.cleaned_data['phone_number']
             payment = Payment.objects.create(
                 user=request.user,
+                student=student,
                 plan=plan,
                 amount_kes=plan.price_kes,
                 phone_number=phone,
@@ -177,7 +205,13 @@ def subscribe_view(request, plan_slug):
                 payment.result_description = str(exc)[:255]
                 payment.save(update_fields=['status', 'result_description', 'updated_at'])
                 messages.error(request, str(exc))
-                return redirect('subscriptions:subscribe', plan_slug=plan.slug)
+                retry_url = reverse('subscriptions:subscribe', kwargs={'plan_slug': plan.slug})
+                query = []
+                if student:
+                    query.append(f'student={student.uuid}')
+                if next_url:
+                    query.append(f'next={quote(next_url, safe="")}')
+                return redirect(f'{retry_url}?{"&".join(query)}' if query else retry_url)
 
             payment.merchant_request_id = stk_response.get('MerchantRequestID', '')
             payment.checkout_request_id = stk_response.get('CheckoutRequestID', '')
@@ -194,8 +228,10 @@ def subscribe_view(request, plan_slug):
 
     return render(request, 'subscriptions/subscribe.html', {
         'plan': plan,
+        'student': student,
+        'next_url': next_url,
         'form': form,
-        'active_subscription': get_active_subscription(request.user),
+        'active_subscription': get_active_subscription(request.user, student),
     })
 
 

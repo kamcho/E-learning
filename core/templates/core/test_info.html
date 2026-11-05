@@ -302,11 +302,11 @@
 
       {% if needs_credit %}
         <div class="test-paywall">
-          <strong>Test credit required.</strong>
+          <strong>Exam credit required for {{ student.first_name }}.</strong>
           {% if single_test_plan %}
-            Pay <strong>KES {{ single_test_plan.price_kes|floatformat:0 }}</strong> for one test, or choose a weekly/monthly pack.
+            Pay <strong>KES {{ single_test_plan.price_kes|floatformat:0 }}</strong> for one exam for {{ student.first_name }}.
           {% else %}
-            Choose a plan to start this exam.
+            There is no price configured for this learner’s grade yet. Please contact support.
           {% endif %}
         </div>
       {% endif %}
@@ -314,15 +314,11 @@
       <div class="test-actions">
         {% if needs_credit %}
           {% if single_test_plan %}
-            <a href="{% url 'subscriptions:subscribe' single_test_plan.slug %}?next={{ request.get_full_path|urlencode }}"
+            <a href="{% url 'subscriptions:subscribe' single_test_plan.slug %}?student={{ student.uuid }}&amp;next={{ request.get_full_path|urlencode }}"
                class="btn btn-primary btn-test-start" style="text-align: center;">
-              Pay KES {{ single_test_plan.price_kes|floatformat:0 }} — 1 test
+              Pay KES {{ single_test_plan.price_kes|floatformat:0 }} — 1 exam for {{ student.first_name }}
             </a>
           {% endif %}
-          <a href="{% url 'subscriptions:plans' %}?next={{ request.get_full_path|urlencode }}"
-             class="btn btn-secondary btn-test-start" style="text-align: center;">
-            View all plans
-          </a>
         {% else %}
         <form method="post" action="{% url 'core:test_info' quiz.uuid student.uuid %}">
           {% csrf_token %}

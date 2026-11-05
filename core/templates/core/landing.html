@@ -470,10 +470,10 @@
     <div class="container">
       <div class="section-header reveal">
         <span class="section-tag">💳 Pricing</span>
-        <h2 class="section-title">Pay Per Test or Save with a Pack</h2>
+        <h2 class="section-title">Simple prices for every learner</h2>
         <p class="section-subtitle">
-          One test for KES 10, weekly and monthly packs, or unlimited yearly access.
-          Pay securely with M-Pesa STK Push.
+          One practice exam costs KES 10 for Play Group–Grade 3, KES 15 for Grades 4–6,
+          or KES 20 for Grades 7–12. Pay securely with M-Pesa.
         </p>
       </div>
 
@@ -489,10 +489,7 @@
       {% if subscription_plans %}
       <div class="pricing-grid">
         {% for plan in subscription_plans %}
-        <div class="pricing-card reveal {% if plan.slug == 'monthly-pack' %}featured{% endif %}">
-          {% if plan.slug == 'yearly-unlimited' %}
-          <span class="pricing-badge">Best value</span>
-          {% endif %}
+        <div class="pricing-card reveal">
           <h3>{{ plan.name }}</h3>
           <div class="pricing-amount">KES {{ plan.price_kes|floatformat:0 }}</div>
           <p style="font-size: 0.82rem; font-weight: 700; color: var(--clr-primary); margin: 0.25rem 0 0.5rem;">
@@ -511,15 +508,10 @@
             {% endfor %}
           </ul>
           <p class="pricing-mpesa">📱 Pay with M-Pesa</p>
-          {% if request.user.is_authenticated %}
-            <a href="{% url 'subscriptions:subscribe' plan.slug %}" class="btn btn-primary" style="width: 100%; justify-content: center;">
-              Subscribe now
-            </a>
-          {% else %}
-            <a href="{% url 'accounts:signup' %}?next={% url 'subscriptions:subscribe' plan.slug %}" class="btn btn-primary" style="width: 100%; justify-content: center;">
-              Sign up to subscribe
-            </a>
-          {% endif %}
+          <a href="{% if request.user.is_authenticated %}{% url 'core:exams_list' %}{% else %}{% url 'accounts:signup' %}?next={% url 'core:exams_list' %}{% endif %}"
+             class="btn btn-primary" style="width: 100%; justify-content: center;">
+            Choose learner &amp; exam
+          </a>
         </div>
         {% endfor %}
       </div>
