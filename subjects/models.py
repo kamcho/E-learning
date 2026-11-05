@@ -119,7 +119,7 @@ class SubStrand(models.Model):
     class Meta:
         verbose_name = "Sub Strand"
         verbose_name_plural = "Sub Strands"
-        unique_together = ('name','strand', 'strand__subject')
+        unique_together = ('name', 'strand')
         ordering = ('name',)
 
     def __str__(self):
