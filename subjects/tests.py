@@ -293,6 +293,29 @@ class CurriculumNameEditingTests(TestCase):
             last_name='Admin',
         )
 
+    def test_curriculum_detail_pages_show_name_edit_controls_to_admins(self):
+        self.client.force_login(self.admin)
+        pages = (
+            (
+                reverse('subjects:subject_detail', kwargs={'slug': self.subject.slug}),
+                'Edit Subject Name',
+            ),
+            (
+                reverse('subjects:strand_detail', kwargs={'slug': self.strand.slug}),
+                'Edit Strand Name',
+            ),
+            (
+                reverse('subjects:sub_strand_detail', kwargs={'slug': self.sub_strand.slug}),
+                'Edit Sub-strand Name',
+            ),
+        )
+
+        for url, edit_label in pages:
+            with self.subTest(page=edit_label):
+                response = self.client.get(url)
+                self.assertEqual(response.status_code, 200)
+                self.assertContains(response, edit_label)
+
     def test_admin_can_rename_subject_strand_and_sub_strand_without_changing_slugs(self):
         self.client.force_login(self.admin)
         name_changes = (
@@ -321,6 +344,56 @@ class CurriculumNameEditingTests(TestCase):
                 obj.refresh_from_db()
                 self.assertEqual(obj.name, data['name'])
                 self.assertEqual(obj.slug, old_slug)
+
+    def test_duplicate_names_are_rejected_for_each_curriculum_level(self):
+        from subjects.models import Strand, SubStrand
+
+        other_subject = Subject.objects.create(
+            name='Existing Subject',
+            slug='existing-subject-grade-6',
+            grade_level=self.subject.grade_level,
+            discipline=self.subject.discipline,
+        )
+        other_strand = Strand.objects.create(
+            name='Existing Strand',
+            order=2,
+            slug='existing-strand',
+            subject=self.subject,
+        )
+        SubStrand.objects.create(
+            name='Existing Sub-strand',
+            order=2,
+            slug='existing-sub-strand',
+            strand=self.strand,
+        )
+        self.client.force_login(self.admin)
+
+        cases = (
+            (
+                reverse('subjects:subject_detail', kwargs={'slug': self.subject.slug}),
+                {'action': 'rename_subject', 'name': other_subject.name},
+                'subject_name_form',
+                'A subject with this name already exists',
+            ),
+            (
+                reverse('subjects:strand_detail', kwargs={'slug': self.strand.slug}),
+                {'action': 'rename_strand', 'name': other_strand.name},
+                'strand_name_form',
+                'A strand with this name already exists',
+            ),
+            (
+                reverse('subjects:sub_strand_detail', kwargs={'slug': self.sub_strand.slug}),
+                {'action': 'rename_substrand', 'name': 'Existing Sub-strand'},
+                'sub_strand_name_form',
+                'A sub-strand with this name already exists',
+            ),
+        )
+        for url, data, form_name, error in cases:
+            with self.subTest(form=form_name):
+                response = self.client.post(url, data)
+                self.assertEqual(response.status_code, 200)
+                self.assertContains(response, error)
+                self.assertTrue(response.context[form_name].errors)
 
     def test_non_admin_cannot_rename_strand_or_sub_strand(self):
         teacher = get_user_model().objects.create_user(

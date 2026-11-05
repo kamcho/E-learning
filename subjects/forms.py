@@ -1,4 +1,5 @@
 from django import forms
+from django.core.exceptions import ValidationError
 from django.utils.text import slugify
 from .models import (
     GradeLevel, Discipline, Subject, Strand, 
@@ -138,7 +139,7 @@ class SubjectNameForm(forms.ModelForm):
             grade_level=self.instance.grade_level,
             name=name,
         ).exclude(pk=self.instance.pk).exists():
-            raise forms.ValidationError('A subject with this name already exists for this grade.')
+            raise ValidationError('A subject with this name already exists for this grade.')
         return name
 
 
@@ -207,7 +208,7 @@ class StrandNameForm(forms.ModelForm):
             subject=self.instance.subject,
             name=name,
         ).exclude(pk=self.instance.pk).exists():
-            raise forms.ValidationError('A strand with this name already exists for this subject.')
+            raise ValidationError('A strand with this name already exists for this subject.')
         return name
 
 
@@ -274,7 +275,7 @@ class SubStrandNameForm(forms.ModelForm):
             strand=self.instance.strand,
             name=name,
         ).exclude(pk=self.instance.pk).exists():
-            raise forms.ValidationError('A sub-strand with this name already exists for this strand.')
+            raise ValidationError('A sub-strand with this name already exists for this strand.')
         return name
 
 
