@@ -149,15 +149,16 @@
             </a>
             {% endif %}
           {% else %}
+            <a href="{% url 'core:demo_wizard' %}" class="btn btn-start-exam">
+              Start Exam
+              <span class="btn-icon">→</span>
+            </a>
             <a href="{% url 'accounts:signup' %}" class="btn btn-primary">
               Get Started
               <span class="btn-icon">→</span>
             </a>
             <a href="{% url 'accounts:signin' %}" class="btn btn-outline">
               Log In
-            </a>
-            <a href="{% url 'core:demo_wizard' %}" class="btn btn-outline">
-              Try free demo
             </a>
             {% if google_client_id %}
             <div class="hero-google" style="width:100%;max-width:360px;margin-top:0.35rem;">
@@ -297,7 +298,10 @@
             <li>Works on phone, tablet, or laptop</li>
           </ul>
           <div class="demo-panel-actions">
-            <a href="{% url 'core:demo_wizard' %}" class="btn btn-primary">Start free demo</a>
+            <a href="{% url 'core:demo_wizard' %}" class="btn btn-start-exam">
+              Start Exam
+              <span class="btn-icon">→</span>
+            </a>
             <a href="{% url 'accounts:signup' %}" class="btn btn-outline">Create account</a>
           </div>
         </div>

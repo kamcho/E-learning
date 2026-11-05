@@ -343,6 +343,14 @@ class LandingPageNavbarTests(TestCase):
             last_name='User',
         )
 
+    def test_anonymous_landing_page_highlights_start_exam(self):
+        response = self.client.get(reverse('core:landing'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Start Exam', count=2)
+        self.assertContains(response, 'class="btn btn-start-exam"')
+        self.assertNotContains(response, 'Try free demo')
+        self.assertNotContains(response, 'Start free demo')
+
     def test_anonymous_user_does_not_see_dashboard_or_curriculum_builder_in_navbar(self):
         response = self.client.get(reverse('core:landing'))
         self.assertEqual(response.status_code, 200)

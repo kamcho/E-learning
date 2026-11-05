@@ -267,6 +267,37 @@ button {
   box-shadow: 0 8px 30px rgba(212,160,23,0.5);
 }
 
+.btn-start-exam {
+  padding: 1rem 2.25rem;
+  border: 2px solid rgba(255,255,255,0.85);
+  background: linear-gradient(110deg, #f0ad00 0%, #fff09a 48%, #f5c842 100%);
+  color: #173b25;
+  font-size: 1.08rem;
+  font-weight: 800;
+  box-shadow: 0 0 0 4px rgba(255,220,90,0.2), 0 8px 28px rgba(240,173,0,0.55);
+  animation: start-exam-glow 2.2s ease-in-out infinite;
+}
+
+.btn-start-exam:hover {
+  transform: translateY(-3px) scale(1.03);
+  box-shadow: 0 0 0 6px rgba(255,220,90,0.25), 0 12px 34px rgba(240,173,0,0.7);
+}
+
+@keyframes start-exam-glow {
+  0%, 100% {
+    box-shadow: 0 0 0 4px rgba(255,220,90,0.2), 0 8px 28px rgba(240,173,0,0.55);
+  }
+  50% {
+    box-shadow: 0 0 0 7px rgba(255,220,90,0.28), 0 10px 34px rgba(240,173,0,0.72);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn-start-exam {
+    animation: none;
+  }
+}
+
 .btn-outline {
   border: 2px solid rgba(255,255,255,0.4);
   color: #fff;
