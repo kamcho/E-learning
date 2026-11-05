@@ -186,6 +186,17 @@ class DemoPracticeTests(TestCase):
         self.assertEqual(response.context['active_grade'], self.grade)
         self.assertContains(response, self.subject.name)
 
+    def test_grade_three_exam_link_renders_subject_step(self):
+        grade_three = GradeLevel.objects.create(
+            name='Grade 3',
+            slug='grade-3',
+            level='Lower Primary',
+        )
+        response = self.client.get(reverse('core:exam_wizard'), {'grade': grade_three.slug})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['phase'], 'subject')
+        self.assertEqual(response.context['active_grade'], grade_three)
+
     def test_exam_start_builds_seven_question_session(self):
         response = self.client.post(reverse('core:exam_start'), {
             'grade': self.grade.slug,

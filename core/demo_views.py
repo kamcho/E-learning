@@ -169,13 +169,14 @@ def demo_wizard_view(request):
     def grade_sort_key(grade):
         return (grade_ranks.get(grade.slug, len(grade_ranks)), grade.name)
 
-    all_grades = sorted(GradeLevel.objects.all(), key=grade_sort_key)
+    all_grades_queryset = GradeLevel.objects.all()
+    all_grades = sorted(all_grades_queryset, key=grade_sort_key)
     browse_all_grades = grade_slug == 'all'
     active_grade = None
     if browse_all_grades:
         active_grade = None
     elif grade_slug:
-        active_grade = resolve_grade_from_slug(grade_slug, all_grades)
+        active_grade = resolve_grade_from_slug(grade_slug, all_grades_queryset)
 
     active_subject = None
     if subject_slug:

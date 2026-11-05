@@ -120,7 +120,8 @@
             btn.textContent = 'Try again';
             return;
           }
-          textEl.textContent = result.data.explanation || '';
+          textEl.textContent = 'The correct answer is {{ row.correct_text|escapejs }}. '
+            + (result.data.explanation || '');
           textEl.hidden = false;
         })
         .catch(function () {
