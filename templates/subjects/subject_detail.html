@@ -147,6 +147,26 @@
 
   <div>
     <div class="card" style="margin-bottom: var(--space-md);">
+      <h2 class="card-title">Edit Subject Name</h2>
+      <form method="post" novalidate>
+        {% csrf_token %}
+        <input type="hidden" name="action" value="rename_subject">
+        <div class="form-group">
+          <label class="form-label" for="{{ subject_name_form.name.id_for_label }}">Subject name</label>
+          {{ subject_name_form.name }}
+          {% if subject_name_form.name.errors %}
+            <div style="color: var(--clr-danger); font-size: 0.82rem; margin-top: 4px;">
+              {{ subject_name_form.name.errors.0 }}
+            </div>
+          {% endif %}
+        </div>
+        <button type="submit" class="btn btn-secondary" style="width: 100%; justify-content: center;">
+          Save Subject Name
+        </button>
+      </form>
+    </div>
+
+    <div class="card" style="margin-bottom: var(--space-md);">
       <h2 class="card-title">✨ Import curriculum with AI</h2>
       <p class="page-subtitle" style="margin-bottom: var(--space-sm);">
         Paste a table or curriculum text. AI will organize it into strands and sub-strands for you to review before anything is saved.

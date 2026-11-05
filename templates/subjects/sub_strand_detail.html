@@ -193,6 +193,28 @@
 
   <!-- Right Side: Add Objective Form -->
   <div>
+    {% if can_edit_curriculum %}
+    <div class="card" style="margin-bottom: var(--space-md);">
+      <h2 class="card-title">Edit Sub-strand Name</h2>
+      <form method="post" novalidate>
+        {% csrf_token %}
+        <input type="hidden" name="action" value="rename_substrand">
+        <div class="form-group">
+          <label class="form-label" for="{{ sub_strand_name_form.name.id_for_label }}">Sub-strand name</label>
+          {{ sub_strand_name_form.name }}
+          {% if sub_strand_name_form.name.errors %}
+            <div style="color: var(--clr-danger); font-size: 0.82rem; margin-top: 4px;">
+              {{ sub_strand_name_form.name.errors.0 }}
+            </div>
+          {% endif %}
+        </div>
+        <button type="submit" class="btn btn-secondary" style="width: 100%; justify-content: center;">
+          Save Sub-strand Name
+        </button>
+      </form>
+    </div>
+    {% endif %}
+
     <div class="card">
       <h2 class="card-title">➕ Add Sub-strand Objective</h2>
       <form method="post" novalidate>

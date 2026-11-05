@@ -252,3 +252,198 @@ class CurriculumImportTests(TestCase):
         )
         self.assertRedirects(response, reverse('core:landing'), fetch_redirect_response=False)
         self.assertEqual(self.subject.strands.count(), 0)
+
+
+class CurriculumNameEditingTests(TestCase):
+    def setUp(self):
+        grade = GradeLevel.objects.create(
+            name='Grade 6',
+            slug='grade-6',
+            level='Upper Primary',
+        )
+        discipline = Discipline.objects.create(
+            name='Agriculture and Nutrition',
+            slug='agriculture-and-nutrition',
+        )
+        self.subject = Subject.objects.create(
+            name='Agriculture and Nutrition',
+            slug='agriculture-and-nutrition-grade-6',
+            grade_level=grade,
+            discipline=discipline,
+        )
+        from subjects.models import Strand, SubStrand
+
+        self.strand = Strand.objects.create(
+            name='Crop Production',
+            order=1,
+            slug='crop-production-agriculture-and-nutrition-grade-6',
+            subject=self.subject,
+        )
+        self.sub_strand = SubStrand.objects.create(
+            name='Planting',
+            order=1,
+            slug='planting-crop-production',
+            strand=self.strand,
+        )
+        self.admin = get_user_model().objects.create_user(
+            phone='0744444450',
+            password='1234',
+            role=Role.ADMIN,
+            first_name='Curriculum',
+            last_name='Admin',
+        )
+
+    def test_admin_can_rename_subject_strand_and_sub_strand_without_changing_slugs(self):
+        self.client.force_login(self.admin)
+        name_changes = (
+            (
+                reverse('subjects:subject_detail', kwargs={'slug': self.subject.slug}),
+                {'action': 'rename_subject', 'name': 'Agriculture and Nutrition Grade 6'},
+                self.subject,
+            ),
+            (
+                reverse('subjects:strand_detail', kwargs={'slug': self.strand.slug}),
+                {'action': 'rename_strand', 'name': 'Growing Crops'},
+                self.strand,
+            ),
+            (
+                reverse('subjects:sub_strand_detail', kwargs={'slug': self.sub_strand.slug}),
+                {'action': 'rename_substrand', 'name': 'Preparing the Soil'},
+                self.sub_strand,
+            ),
+        )
+
+        for url, data, obj in name_changes:
+            with self.subTest(model=obj.__class__.__name__):
+                old_slug = obj.slug
+                response = self.client.post(url, data)
+                self.assertRedirects(response, url)
+                obj.refresh_from_db()
+                self.assertEqual(obj.name, data['name'])
+                self.assertEqual(obj.slug, old_slug)
+
+    def test_non_admin_cannot_rename_strand_or_sub_strand(self):
+        teacher = get_user_model().objects.create_user(
+            phone='0744444451',
+            password='1234',
+            role=Role.TEACHER,
+            first_name='Teacher',
+            last_name='User',
+        )
+        self.client.force_login(teacher)
+
+        strand_url = reverse('subjects:strand_detail', kwargs={'slug': self.strand.slug})
+        response = self.client.post(
+            strand_url,
+            {'action': 'rename_strand', 'name': 'Unauthorized Strand Name'},
+        )
+        self.assertRedirects(response, strand_url)
+        self.strand.refresh_from_db()
+        self.assertEqual(self.strand.name, 'Crop Production')
+
+        sub_strand_url = reverse(
+            'subjects:sub_strand_detail',
+            kwargs={'slug': self.sub_strand.slug},
+        )
+        response = self.client.post(
+            sub_strand_url,
+            {'action': 'rename_substrand', 'name': 'Unauthorized Sub-strand Name'},
+        )
+        self.assertRedirects(response, sub_strand_url)
+        self.sub_strand.refresh_from_db()
+        self.assertEqual(self.sub_strand.name, 'Planting')
+
+
+class SubjectImportTests(TestCase):
+    def setUp(self):
+        self.grade = GradeLevel.objects.create(
+            name='Grade 10',
+            slug='grade-10',
+            level='Senior Secondary',
+        )
+        self.disciplines = {
+            slug: Discipline.objects.create(name=name, slug=slug)
+            for name, slug in (
+                ('Technical & Applied', 'technical-applied'),
+                ('Creative & Psychomotor', 'creative-psychomotor'),
+                ('Language & Communication', 'language-communication'),
+                ('Environment & Social', 'environment-social'),
+                ('Mathematics & Science', 'mathematics-science'),
+                ('Religious & Moral', 'religious-moral'),
+            )
+        }
+        self.admin = get_user_model().objects.create_user(
+            phone='0744444452',
+            password='1234',
+            role=Role.ADMIN,
+            first_name='Curriculum',
+            last_name='Admin',
+        )
+
+    def test_grade_subject_parser_previews_then_creates_subjects(self):
+        from subjects.models import Subject
+
+        url = reverse('subjects:subject_list') + '?grade=grade-10'
+        self.client.force_login(self.admin)
+        ai_response = json.dumps({
+            'subjects': [
+                {'name': 'Applied Sciences', 'discipline': 'Technical & Applied'},
+                {'name': 'Arts & Sports', 'discipline': 'Creative & Psychomotor'},
+                {'name': 'Foreign Languages', 'discipline': 'Language & Communication'},
+                {'name': 'Humanities', 'discipline': 'Environment & Social'},
+                {'name': 'Languages', 'discipline': 'Language & Communication'},
+                {'name': 'Pure Sciences', 'discipline': 'Mathematics & Science'},
+                {'name': 'Religious Education', 'discipline': 'Religious Education'},
+                {'name': 'Technical Studies', 'discipline': 'Technical & Applied'},
+            ],
+        })
+
+        with patch('subjects.subject_import.OpenAIClient') as openai_client:
+            openai_client.return_value.chat.return_value = ai_response
+            response = self.client.post(url, {
+                'action': 'parse_subjects',
+                'subject_text': '## Grade 10 Designs\n\n- [Applied Sciences](https://example.test)',
+            })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.context['subject_preview']), 8)
+        self.assertContains(response, 'Review 8 subjects')
+        self.assertEqual(Subject.objects.filter(grade_level=self.grade).count(), 0)
+
+        response = self.client.post(url, {
+            'action': 'import_subjects',
+            'preview_token': response.context['subject_preview_token'],
+        })
+
+        self.assertRedirects(response, url)
+        subjects = Subject.objects.filter(grade_level=self.grade)
+        self.assertEqual(subjects.count(), 8)
+        self.assertEqual(
+            subjects.get(name='Applied Sciences').discipline,
+            self.disciplines['technical-applied'],
+        )
+        self.assertEqual(
+            subjects.get(name='Religious Education').discipline,
+            self.disciplines['religious-moral'],
+        )
+
+    def test_subject_preview_cannot_be_applied_to_another_grade(self):
+        from subjects.subject_import import (
+            SubjectImportError,
+            load_subject_preview,
+            sign_subject_preview,
+        )
+
+        subject_data = [{
+            'name': 'Applied Sciences',
+            'discipline': 'Technical & Applied',
+        }]
+        token = sign_subject_preview(self.grade, subject_data)
+        another_grade = GradeLevel.objects.create(
+            name='Grade 11',
+            slug='grade-11',
+            level='Senior Secondary',
+        )
+
+        with self.assertRaises(SubjectImportError):
+            load_subject_preview(token, another_grade)

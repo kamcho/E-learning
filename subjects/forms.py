@@ -73,6 +73,14 @@ class DisciplineForm(forms.ModelForm):
         return cleaned_data
 
 class SubjectForm(forms.ModelForm):
+    slug = forms.SlugField(
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-input',
+            'placeholder': 'Leave blank to auto-generate',
+        }),
+    )
+
     class Meta:
         model = Subject
         fields = ['name', 'slug', 'grade_level', 'discipline', 'is_active']
@@ -111,6 +119,28 @@ class SubjectForm(forms.ModelForm):
                 cleaned_data['slug'] = f"{base_slug}-{counter}"
                 counter += 1
         return cleaned_data
+
+
+class SubjectNameForm(forms.ModelForm):
+    class Meta:
+        model = Subject
+        fields = ['name']
+        widgets = {
+            'name': forms.TextInput(attrs={
+                'class': 'form-input',
+                'placeholder': 'Subject name',
+            }),
+        }
+
+    def clean_name(self):
+        name = self.cleaned_data['name']
+        if Subject.objects.filter(
+            grade_level=self.instance.grade_level,
+            name=name,
+        ).exclude(pk=self.instance.pk).exists():
+            raise forms.ValidationError('A subject with this name already exists for this grade.')
+        return name
+
 
 class StrandForm(forms.ModelForm):
     slug = forms.SlugField(
@@ -159,6 +189,28 @@ class StrandForm(forms.ModelForm):
                 counter += 1
         return cleaned_data
 
+
+class StrandNameForm(forms.ModelForm):
+    class Meta:
+        model = Strand
+        fields = ['name']
+        widgets = {
+            'name': forms.TextInput(attrs={
+                'class': 'form-input',
+                'placeholder': 'Strand name',
+            }),
+        }
+
+    def clean_name(self):
+        name = self.cleaned_data['name']
+        if Strand.objects.filter(
+            subject=self.instance.subject,
+            name=name,
+        ).exclude(pk=self.instance.pk).exists():
+            raise forms.ValidationError('A strand with this name already exists for this subject.')
+        return name
+
+
 class SubStrandForm(forms.ModelForm):
     slug = forms.SlugField(
         required=False,
@@ -203,6 +255,28 @@ class SubStrandForm(forms.ModelForm):
                 cleaned_data['slug'] = f"{base_slug}-{counter}"
                 counter += 1
         return cleaned_data
+
+
+class SubStrandNameForm(forms.ModelForm):
+    class Meta:
+        model = SubStrand
+        fields = ['name']
+        widgets = {
+            'name': forms.TextInput(attrs={
+                'class': 'form-input',
+                'placeholder': 'Sub-strand name',
+            }),
+        }
+
+    def clean_name(self):
+        name = self.cleaned_data['name']
+        if SubStrand.objects.filter(
+            strand=self.instance.strand,
+            name=name,
+        ).exclude(pk=self.instance.pk).exists():
+            raise forms.ValidationError('A sub-strand with this name already exists for this strand.')
+        return name
+
 
 class StrandObjectiveForm(forms.ModelForm):
     class Meta:

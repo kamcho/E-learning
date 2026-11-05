@@ -153,6 +153,28 @@
   </div>
 
   <div>
+    {% if can_edit_curriculum %}
+    <div class="card" style="margin-bottom: var(--space-md);">
+      <h2 class="card-title">Edit Strand Name</h2>
+      <form method="post" novalidate>
+        {% csrf_token %}
+        <input type="hidden" name="action" value="rename_strand">
+        <div class="form-group">
+          <label class="form-label" for="{{ strand_name_form.name.id_for_label }}">Strand name</label>
+          {{ strand_name_form.name }}
+          {% if strand_name_form.name.errors %}
+            <div style="color: var(--clr-danger); font-size: 0.82rem; margin-top: 4px;">
+              {{ strand_name_form.name.errors.0 }}
+            </div>
+          {% endif %}
+        </div>
+        <button type="submit" class="btn btn-secondary" style="width: 100%; justify-content: center;">
+          Save Strand Name
+        </button>
+      </form>
+    </div>
+    {% endif %}
+
     <div class="card">
       <h2 class="card-title">➕ Add Sub-strand</h2>
       <form method="post" novalidate>

@@ -19,6 +19,13 @@ from .curriculum_import import (
     parse_curriculum_text,
     sign_curriculum_preview,
 )
+from .subject_import import (
+    SubjectImportError,
+    create_subjects,
+    load_subject_preview,
+    parse_subject_text,
+    sign_subject_preview,
+)
 from .models import (
     GradeLevel, Discipline, Subject, Strand, 
     SubStrand, StrandObjective, SubStrandObjective
@@ -26,8 +33,13 @@ from .models import (
 from .forms import (
     GradeLevelForm, DisciplineForm, SubjectForm, 
     StrandForm, SubStrandForm, StrandObjectiveForm, 
-    SubStrandObjectiveForm
+    SubStrandObjectiveForm, SubjectNameForm, StrandNameForm,
+    SubStrandNameForm,
 )
+
+
+def _is_curriculum_admin(user):
+    return user.is_authenticated and (user.is_admin_role or user.is_staff)
 
 
 def admin_curriculum_required(view_func):
@@ -36,7 +48,7 @@ def admin_curriculum_required(view_func):
     @wraps(view_func)
     def wrapper(request, *args, **kwargs):
         user = request.user
-        if not (user.is_admin_role or user.is_staff):
+        if not _is_curriculum_admin(user):
             messages.error(request, "You don't have permission to access curriculum configuration.")
             if user.is_guardian:
                 return redirect('accounts:guardian_dashboard')
@@ -191,14 +203,50 @@ def subject_list(request):
                 subjects = subjects.filter(grade_level=active_grade)
 
     subjects = subjects.order_by('grade_level__name', 'name')
+    subject_import_text = ''
+    subject_preview = None
+    subject_preview_token = ''
 
     if request.method == 'POST':
-        form = SubjectForm(request.POST)
-        if form.is_valid():
-            subject = form.save()
-            messages.success(request, f"Subject '{subject.name}' created successfully!")
-            return _subject_list_redirect(request)
-        messages.error(request, "Failed to create Subject. Please correct the errors below.")
+        action = request.POST.get('action', 'create_subject')
+        if action == 'parse_subjects':
+            subject_import_text = request.POST.get('subject_text', '')
+            form = SubjectForm(initial={'grade_level': active_grade} if active_grade else None)
+            if not active_grade:
+                messages.error(request, 'Select one grade before parsing subjects.')
+            else:
+                try:
+                    subject_preview = parse_subject_text(subject_import_text)
+                    subject_preview_token = sign_subject_preview(active_grade, subject_preview)
+                except (AIServiceError, SubjectImportError) as exc:
+                    messages.error(request, str(exc))
+        elif action == 'import_subjects':
+            form = SubjectForm(initial={'grade_level': active_grade} if active_grade else None)
+            if not active_grade:
+                messages.error(request, 'Select one grade before creating imported subjects.')
+            else:
+                try:
+                    preview = load_subject_preview(
+                        request.POST.get('preview_token', ''),
+                        active_grade,
+                    )
+                    created, already_existing = create_subjects(active_grade, preview)
+                except (AIServiceError, SubjectImportError, IntegrityError) as exc:
+                    messages.error(request, f'Subject import failed: {exc}')
+                else:
+                    messages.success(
+                        request,
+                        f'{created} subject(s) created for {active_grade.name}; '
+                        f'{already_existing} already existed.',
+                    )
+                    return _subject_list_redirect(request)
+        else:
+            form = SubjectForm(request.POST)
+            if form.is_valid():
+                subject = form.save()
+                messages.success(request, f"Subject '{subject.name}' created successfully!")
+                return _subject_list_redirect(request)
+            messages.error(request, "Failed to create Subject. Please correct the errors below.")
     else:
         initial = {}
         if active_grade:
@@ -211,6 +259,9 @@ def subject_list(request):
         'all_grade_levels': all_grade_levels,
         'active_grade': active_grade,
         'show_all_grades': show_all_grades,
+        'subject_import_text': subject_import_text,
+        'subject_preview': subject_preview,
+        'subject_preview_token': subject_preview_token,
     })
 
 @admin_curriculum_required
@@ -227,11 +278,20 @@ def subject_detail(request, slug):
     )
 
     action = request.POST.get('action', 'create_strand') if request.method == 'POST' else None
+    subject_name_form = SubjectNameForm(instance=subject)
     curriculum_text = ''
     curriculum_preview = None
     curriculum_preview_token = ''
 
-    if request.method == 'POST' and action == 'parse_curriculum':
+    if request.method == 'POST' and action == 'rename_subject':
+        subject_name_form = SubjectNameForm(request.POST, instance=subject)
+        if subject_name_form.is_valid():
+            subject_name_form.save()
+            messages.success(request, 'Subject name updated successfully.')
+            return redirect('subjects:subject_detail', slug=subject.slug)
+        messages.error(request, 'Failed to update subject name. Please correct the error below.')
+        form = StrandForm(initial={'subject': subject})
+    elif request.method == 'POST' and action == 'parse_curriculum':
         curriculum_text = request.POST.get('curriculum_text', '')
         form = StrandForm(initial={'subject': subject})
         try:
@@ -272,6 +332,7 @@ def subject_detail(request, slug):
         'strands': strands,
         'strand_count': strands.count(),
         'form': form,
+        'subject_name_form': subject_name_form,
         'curriculum_text': curriculum_text,
         'curriculum_preview': curriculum_preview,
         'curriculum_preview_token': curriculum_preview_token,
@@ -290,10 +351,22 @@ def strand_detail(request, slug):
     objectives = strand.strand_objectives.all().order_by('order', 'name')
 
     action = request.POST.get('action') if request.method == 'POST' else None
+    strand_name_form = StrandNameForm(instance=strand)
+    substrand_form = SubStrandForm(prefix='substrand', initial={'strand': strand})
+    objective_form = StrandObjectiveForm(prefix='objective', initial={'strand': strand})
 
-    if request.method == 'POST' and action == 'create_substrand':
+    if request.method == 'POST' and action == 'rename_strand':
+        if not _is_curriculum_admin(request.user):
+            messages.error(request, "You don't have permission to edit curriculum names.")
+            return redirect('subjects:strand_detail', slug=strand.slug)
+        strand_name_form = StrandNameForm(request.POST, instance=strand)
+        if strand_name_form.is_valid():
+            strand_name_form.save()
+            messages.success(request, 'Strand name updated successfully.')
+            return redirect('subjects:strand_detail', slug=strand.slug)
+        messages.error(request, 'Failed to update strand name. Please correct the error below.')
+    elif request.method == 'POST' and action == 'create_substrand':
         substrand_form = SubStrandForm(request.POST, prefix='substrand')
-        objective_form = StrandObjectiveForm(prefix='objective', initial={'strand': strand})
         if substrand_form.is_valid():
             sub_strand = substrand_form.save(commit=False)
             sub_strand.strand = strand
@@ -302,7 +375,6 @@ def strand_detail(request, slug):
             return redirect('subjects:strand_detail', slug=strand.slug)
         messages.error(request, "Failed to create Sub-strand.")
     elif request.method == 'POST' and action == 'create_objective':
-        substrand_form = SubStrandForm(prefix='substrand', initial={'strand': strand})
         objective_form = StrandObjectiveForm(request.POST, prefix='objective')
         if objective_form.is_valid():
             objective = objective_form.save(commit=False)
@@ -311,9 +383,6 @@ def strand_detail(request, slug):
             messages.success(request, f"Objective '{objective.name}' added to Strand!")
             return redirect('subjects:strand_detail', slug=strand.slug)
         messages.error(request, "Failed to add Objective.")
-    else:
-        substrand_form = SubStrandForm(prefix='substrand', initial={'strand': strand})
-        objective_form = StrandObjectiveForm(prefix='objective', initial={'strand': strand})
 
     substrand_form.fields['strand'].widget = forms.HiddenInput()
     objective_form.fields['strand'].widget = forms.HiddenInput()
@@ -323,8 +392,10 @@ def strand_detail(request, slug):
         'sub_strands': sub_strands,
         'sub_strand_count': sub_strands.count(),
         'objectives': objectives,
+        'strand_name_form': strand_name_form,
         'substrand_form': substrand_form,
         'objective_form': objective_form,
+        'can_edit_curriculum': _is_curriculum_admin(request.user),
     })
 
 
@@ -345,7 +416,21 @@ def sub_strand_detail(request, slug):
         .order_by('-created_at')
     )
 
-    if request.method == 'POST':
+    action = request.POST.get('action') if request.method == 'POST' else None
+    sub_strand_name_form = SubStrandNameForm(instance=sub_strand)
+
+    if request.method == 'POST' and action == 'rename_substrand':
+        if not _is_curriculum_admin(request.user):
+            messages.error(request, "You don't have permission to edit curriculum names.")
+            return redirect('subjects:sub_strand_detail', slug=sub_strand.slug)
+        sub_strand_name_form = SubStrandNameForm(request.POST, instance=sub_strand)
+        if sub_strand_name_form.is_valid():
+            sub_strand_name_form.save()
+            messages.success(request, 'Sub-strand name updated successfully.')
+            return redirect('subjects:sub_strand_detail', slug=sub_strand.slug)
+        messages.error(request, 'Failed to update sub-strand name. Please correct the error below.')
+        form = SubStrandObjectiveForm(initial={'sub_strand': sub_strand})
+    elif request.method == 'POST':
         form = SubStrandObjectiveForm(request.POST)
         if form.is_valid():
             obj = form.save(commit=False)
@@ -357,7 +442,7 @@ def sub_strand_detail(request, slug):
             messages.error(request, "Failed to add Objective.")
     else:
         form = SubStrandObjectiveForm(initial={'sub_strand': sub_strand})
-        form.fields['sub_strand'].widget = forms.HiddenInput()
+    form.fields['sub_strand'].widget = forms.HiddenInput()
 
     return render(request, 'subjects/sub_strand_detail.html', {
         'sub_strand': sub_strand,
@@ -365,6 +450,8 @@ def sub_strand_detail(request, slug):
         'questions': questions,
         'question_count': len(questions),
         'form': form,
+        'sub_strand_name_form': sub_strand_name_form,
+        'can_edit_curriculum': _is_curriculum_admin(request.user),
     })
 
 

@@ -149,10 +149,55 @@
   </div>
 
   <div>
+    {% if active_grade %}
+    <div class="card" style="margin-bottom: var(--space-md);">
+      <h2 class="card-title">✨ Parse Subjects with AI</h2>
+      <p class="page-subtitle" style="margin-bottom: var(--space-sm);">
+        Paste a curriculum list or Markdown page excerpt. Review the subjects and assigned disciplines before creating them for {{ active_grade.name }}.
+      </p>
+      <form method="post" action="{% url 'subjects:subject_list' %}?grade={{ active_grade.slug }}" novalidate>
+        {% csrf_token %}
+        <input type="hidden" name="action" value="parse_subjects">
+        <label class="form-label" for="subject-import-text">Curriculum text</label>
+        <textarea
+          class="curriculum-paste"
+          id="subject-import-text"
+          name="subject_text"
+          maxlength="12000"
+          required
+          style="width: 100%; min-height: 10rem; resize: vertical; padding: var(--space-sm); border: 1px solid var(--clr-border); border-radius: var(--radius-md);"
+        >{{ subject_import_text }}</textarea>
+        <button type="submit" class="btn btn-secondary" style="width: 100%; justify-content: center; margin-top: var(--space-sm);">
+          Parse Subjects
+        </button>
+      </form>
+
+      {% if subject_preview %}
+      <div style="margin-top: var(--space-md);">
+        <h3>Review {{ subject_preview|length }} subject{{ subject_preview|length|pluralize }}</h3>
+        <ul style="padding-left: 1.25rem;">
+          {% for item in subject_preview %}
+            <li><strong>{{ item.name }}</strong> <span class="list-item-meta">— {{ item.discipline_name }}</span></li>
+          {% endfor %}
+        </ul>
+        <form method="post" action="{% url 'subjects:subject_list' %}?grade={{ active_grade.slug }}">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="import_subjects">
+          <input type="hidden" name="preview_token" value="{{ subject_preview_token }}">
+          <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center;">
+            Confirm and create subjects
+          </button>
+        </form>
+      </div>
+      {% endif %}
+    </div>
+    {% endif %}
+
     <div class="card">
       <h2 class="card-title">➕ Create Subject</h2>
       <form method="post" action="{% if show_all_grades %}{% url 'subjects:subject_list' %}?grade=all{% elif active_grade %}{% url 'subjects:subject_list' %}?grade={{ active_grade.slug }}{% else %}{% url 'subjects:subject_list' %}{% endif %}" novalidate>
         {% csrf_token %}
+        <input type="hidden" name="action" value="create_subject">
 
         {% for field in form %}
           <div class="form-group">
