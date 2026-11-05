@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Practice Results — Soma Smart Demo{% endblock %}
+{% block title %}Practice Exam Results — Soma Smart{% endblock %}
 
 {% block body_class %} demo-page{% endblock %}
 {% block main_extra_class %}demo-main{% endblock %}
@@ -13,14 +13,14 @@
 <div class="demo-shell">
   <header class="demo-hero">
     <div>
-      <p class="demo-hero-kicker">Practice complete</p>
+      <p class="demo-hero-kicker">Exam complete</p>
       <h1 class="demo-hero-title">{{ demo.score }}% — {{ demo.correct_count }}/{{ question_count }} correct</h1>
       <p class="demo-hero-sub">
         {{ demo.subject_name }} · {{ demo.topic_label }} · {{ demo.grade_name }}
       </p>
     </div>
     <div style="display:flex;flex-direction:column;gap:0.5rem;">
-      <a href="{% url 'core:demo_wizard' %}?restart=1" class="demo-btn demo-btn-outline" style="color:#fff;border-color:rgba(255,255,255,0.35);">Try another topic</a>
+      <a href="{% url 'core:exam_wizard' %}?restart=1" class="demo-btn demo-btn-outline" style="color:#fff;border-color:rgba(255,255,255,0.35);">Start another exam</a>
       {% if not request.user.is_authenticated %}
       <a href="{% url 'accounts:signup' %}" class="demo-hero-cta">Save progress — sign up</a>
       {% else %}
@@ -95,7 +95,7 @@
       var errEl = wrap.querySelector('.demo-ai-error');
       btn.hidden = true;
       loading.hidden = false;
-      fetch('{% url "core:demo_explain" %}', {
+      fetch('{% url "core:exam_explain" %}', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

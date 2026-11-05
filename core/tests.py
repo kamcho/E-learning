@@ -159,51 +159,51 @@ class DemoPracticeTests(TestCase):
             Option.objects.create(question=question, option='Wrong', is_correct=False)
             Option.objects.create(question=question, option='Correct', is_correct=True)
 
-    def test_demo_wizard_renders_anonymously(self):
-        response = self.client.get(reverse('core:demo_wizard'))
+    def test_exam_wizard_renders_anonymously(self):
+        response = self.client.get(reverse('core:exam_wizard'))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Try a free practice test')
+        self.assertContains(response, 'Start a free practice exam')
         self.assertContains(response, 'No account needed')
         self.assertContains(response, 'Create free account')
         self.assertContains(response, 'Choose a grade')
         self.assertEqual(response.context['phase'], 'grade')
         self.assertIsNone(response.context['active_grade'])
 
-    def test_demo_wizard_renders_for_authenticated_user(self):
+    def test_exam_wizard_renders_for_authenticated_user(self):
         user = User.objects.create_user(phone='0722000000', password='1234', first_name='Jane')
         self.client.force_login(user)
-        response = self.client.get(reverse('core:demo_wizard'))
+        response = self.client.get(reverse('core:exam_wizard'))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Welcome back, Jane')
         self.assertContains(response, 'Go to Exam Center')
         self.assertNotContains(response, 'No account needed')
         self.assertNotContains(response, 'Create free account')
 
-    def test_demo_wizard_requires_grade_before_subjects(self):
-        response = self.client.get(reverse('core:demo_wizard'), {'grade': self.grade.slug})
+    def test_exam_wizard_requires_grade_before_subjects(self):
+        response = self.client.get(reverse('core:exam_wizard'), {'grade': self.grade.slug})
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context['phase'], 'subject')
         self.assertEqual(response.context['active_grade'], self.grade)
         self.assertContains(response, self.subject.name)
 
-    def test_demo_start_builds_seven_question_session(self):
-        response = self.client.post(reverse('core:demo_start'), {
+    def test_exam_start_builds_seven_question_session(self):
+        response = self.client.post(reverse('core:exam_start'), {
             'grade': self.grade.slug,
             'subject': self.subject.slug,
             'scope': 'general',
         })
         self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.url, reverse('core:demo_take'))
+        self.assertEqual(response.url, reverse('core:exam_take'))
         session = self.client.session['practice_demo']
         self.assertEqual(len(session['question_ids']), 7)
 
-    def test_demo_take_grades_answer_and_shows_feedback(self):
-        self.client.post(reverse('core:demo_start'), {
+    def test_exam_take_grades_answer_and_shows_feedback(self):
+        self.client.post(reverse('core:exam_start'), {
             'grade': self.grade.slug,
             'subject': self.subject.slug,
             'scope': 'general',
         })
-        take_url = reverse('core:demo_take')
+        take_url = reverse('core:exam_take')
         response = self.client.get(take_url)
         self.assertEqual(response.status_code, 200)
         question_uuid = self.client.session['practice_demo']['question_ids'][0]
@@ -214,6 +214,20 @@ class DemoPracticeTests(TestCase):
         response = self.client.get(take_url)
         self.assertContains(response, 'Not quite')
         self.assertContains(response, 'demo-ai-box')
+
+    def test_old_demo_url_redirects_to_exam_url_and_preserves_query(self):
+        response = self.client.get('/demo/?grade=grade-6')
+        self.assertEqual(response.status_code, 301)
+        self.assertEqual(response.url, '/exam/?grade=grade-6')
+
+    def test_exam_grade_choices_follow_curriculum_order(self):
+        GradeLevel.objects.create(name='Grade 10', slug='grade-10', level='Senior Secondary')
+        GradeLevel.objects.create(name='Grade 1', slug='grade-1', level='Lower Primary')
+        response = self.client.get(reverse('core:exam_wizard'))
+        self.assertEqual(
+            [grade.slug for grade in response.context['all_grades']],
+            ['grade-1', 'grade-6', 'grade-10'],
+        )
 
 
 class AutoCustomQuizTests(TestCase):
@@ -348,8 +362,9 @@ class LandingPageNavbarTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Start Exam', count=2)
         self.assertContains(response, 'class="btn btn-start-exam"')
-        self.assertNotContains(response, 'Try free demo')
-        self.assertNotContains(response, 'Start free demo')
+        self.assertContains(response, 'Start Exam')
+        self.assertContains(response, 'Free practice exam')
+        self.assertNotContains(response, 'free demo')
 
     def test_anonymous_user_does_not_see_dashboard_or_curriculum_builder_in_navbar(self):
         response = self.client.get(reverse('core:landing'))

@@ -26,6 +26,7 @@ from core.exam_filters import (
     sub_strands_for_wizard,
     subjects_for_wizard,
 )
+from subjects.grade_utils import GRADE_SLUG_ORDER
 from subjects.models import GradeLevel, Strand, Subject, SubStrand
 
 
@@ -71,7 +72,7 @@ def _build_demo_wizard_trail(*, phase, grade, subject, scope, strand, sub_strand
     if subject or phase in ('scope', 'strand', 'sub_strand', 'ready'):
         steps.append({
             'key': 'focus',
-            'label': 'Test focus',
+            'label': 'Exam focus',
             'icon': '🎯',
             'value': scope_labels.get(scope) if scope else None,
             'rank': rank,
@@ -90,7 +91,7 @@ def _build_demo_wizard_trail(*, phase, grade, subject, scope, strand, sub_strand
         rank += 1
 
     if phase != 'grade':
-        steps.append({'key': 'tests', 'label': 'Practice test', 'icon': '✅', 'value': None, 'rank': rank})
+        steps.append({'key': 'tests', 'label': 'Practice exam', 'icon': '✅', 'value': None, 'rank': rank})
 
     phase_to_key = {
         'grade': 'grade',
@@ -130,11 +131,11 @@ def _build_demo_wizard_trail(*, phase, grade, subject, scope, strand, sub_strand
 
     labels = {
         'grade': ('Choose a grade', "Select the learner's grade to see matching subjects."),
-        'subject': ('Choose a subject', 'Pick a subject for your free 7-question practice test.'),
+        'subject': ('Choose a subject', 'Pick a subject for your free 7-question practice exam.'),
         'scope': ('Test focus', 'Whole subject, one strand, or a specific sub-strand.'),
         'strand': ('Choose a strand', 'Select the strand you want to practise.'),
         'sub_strand': ('Choose a sub-strand', 'Pick a focused sub-strand topic.'),
-        'ready': ('Ready to start', f'We will build a {DEMO_QUESTION_COUNT}-question practice quiz for you.'),
+        'ready': ('Ready to start', f'We will build a {DEMO_QUESTION_COUNT}-question practice exam for you.'),
     }
     current_label, current_hint = labels.get(phase, ('Continue', ''))
 
@@ -155,7 +156,7 @@ def demo_wizard_view(request):
         active_demo = None
 
     if active_demo and not active_demo.get('completed') and request.GET.get('continue') == '1':
-        return redirect('core:demo_take')
+        return redirect('core:exam_take')
 
     grade_slug = request.GET.get('grade', '').strip()
     subject_slug = request.GET.get('subject', '').strip()
@@ -163,7 +164,12 @@ def demo_wizard_view(request):
     strand_slug = request.GET.get('strand', '').strip()
     sub_strand_slug = request.GET.get('sub_strand', '').strip()
 
-    all_grades = GradeLevel.objects.all().order_by('name')
+    grade_ranks = {slug: rank for rank, slug in enumerate(GRADE_SLUG_ORDER)}
+
+    def grade_sort_key(grade):
+        return (grade_ranks.get(grade.slug, len(grade_ranks)), grade.name)
+
+    all_grades = sorted(GradeLevel.objects.all(), key=grade_sort_key)
     browse_all_grades = grade_slug == 'all'
     active_grade = None
     if browse_all_grades:
@@ -195,8 +201,12 @@ def demo_wizard_view(request):
 
     browse_subjects = []
     if grade_chosen:
-        grades_for_browse = all_grades if browse_all_grades else GradeLevel.objects.filter(pk=active_grade.pk)
-        for subject in Subject.objects.filter(is_active=True, grade_level__in=grades_for_browse).select_related('grade_level').order_by('grade_level__name', 'name'):
+        grades_for_browse = all_grades if browse_all_grades else [active_grade]
+        subjects = Subject.objects.filter(
+            is_active=True,
+            grade_level__in=grades_for_browse,
+        ).select_related('grade_level')
+        for subject in sorted(subjects, key=lambda item: (grade_sort_key(item.grade_level), item.name)):
             browse_subjects.append({'subject': subject})
 
     browse_strands = []
@@ -248,13 +258,13 @@ def demo_start_view(request):
 
     all_grades = GradeLevel.objects.all()
     if grade_slug == 'all':
-        messages.error(request, 'Please pick a specific grade for the demo test.')
-        return redirect('core:demo_wizard')
+        messages.error(request, 'Please pick a specific grade for the practice exam.')
+        return redirect('core:exam_wizard')
 
     grade = resolve_grade_from_slug(grade_slug, all_grades) if grade_slug else None
     if not grade:
-        messages.error(request, 'Please pick a grade for the demo test.')
-        return redirect('core:demo_wizard')
+        messages.error(request, 'Please pick a grade for the practice exam.')
+        return redirect('core:exam_wizard')
 
     subject = get_object_or_404(Subject, slug=subject_slug, is_active=True, grade_level=grade)
     strand = None
@@ -266,7 +276,7 @@ def demo_start_view(request):
         strand = sub_strand.strand
         if strand.subject_id != subject.pk:
             messages.error(request, 'That topic does not belong to the selected subject.')
-            return redirect('core:demo_wizard')
+            return redirect('core:exam_wizard')
 
     questions = select_demo_questions(
         subject=subject,
@@ -277,14 +287,14 @@ def demo_start_view(request):
     if not questions:
         messages.error(
             request,
-            'Not enough practice questions found for this selection. Try whole subject or another topic.',
+            'Not enough questions found for this selection. Try the whole subject or another topic.',
         )
         params = f'?subject={subject.slug}&scope={scope}&grade={grade.slug}'
         if strand_slug:
             params += f'&strand={strand_slug}'
         if sub_strand_slug:
             params += f'&sub_strand={sub_strand_slug}'
-        return redirect(reverse('core:demo_wizard') + params)
+        return redirect(reverse('core:exam_wizard') + params)
 
     demo = start_demo_session(
         grade=grade,
@@ -295,21 +305,21 @@ def demo_start_view(request):
         questions=questions,
     )
     save_demo_session(request, demo)
-    return redirect('core:demo_take')
+    return redirect('core:exam_take')
 
 
 @require_http_methods(['GET', 'POST'])
 def demo_take_view(request):
     demo = get_demo_session(request)
     if not demo or demo.get('completed'):
-        messages.info(request, 'Start a new practice test to continue.')
-        return redirect('core:demo_wizard')
+        messages.info(request, 'Start a new practice exam to continue.')
+        return redirect('core:exam_wizard')
 
     questions = load_demo_questions(demo)
     if not questions:
         clear_demo_session(request)
-        messages.error(request, 'This practice session expired. Please start again.')
-        return redirect('core:demo_wizard')
+        messages.error(request, 'This exam session expired. Please start again.')
+        return redirect('core:exam_wizard')
 
     question_count = len(questions)
     answers = demo.get('answers', {})
@@ -324,23 +334,23 @@ def demo_take_view(request):
             if answered_count >= question_count:
                 finalize_demo(demo, questions)
                 save_demo_session(request, demo)
-                return redirect('core:demo_results')
-            return redirect('core:demo_take')
+                return redirect('core:exam_results')
+            return redirect('core:exam_take')
 
         if answered_count >= question_count:
             finalize_demo(demo, questions)
             save_demo_session(request, demo)
-            return redirect('core:demo_results')
+            return redirect('core:exam_results')
 
         current_question = questions[answered_count]
         qid = str(current_question.uuid)
         if qid in answers:
-            return redirect('core:demo_take')
+            return redirect('core:exam_take')
 
         option_uuid = request.POST.get('answer', '').strip()
         if not option_uuid:
             messages.error(request, 'Please select an answer before submitting.')
-            return redirect('core:demo_take')
+            return redirect('core:exam_take')
 
         feedback = grade_demo_answer(current_question, option_uuid)
         answers[qid] = option_uuid
@@ -349,7 +359,7 @@ def demo_take_view(request):
         demo['feedback'][qid] = feedback
         demo['feedback_index'] = answered_count
         save_demo_session(request, demo)
-        return redirect('core:demo_take')
+        return redirect('core:exam_take')
 
     feedback_index = demo.get('feedback_index')
     showing_feedback = feedback_index is not None
@@ -361,7 +371,7 @@ def demo_take_view(request):
     if display_index >= question_count:
         finalize_demo(demo, questions)
         save_demo_session(request, demo)
-        return redirect('core:demo_results')
+        return redirect('core:exam_results')
 
     current_question = questions[display_index]
     qid = str(current_question.uuid)
@@ -413,7 +423,7 @@ def demo_take_view(request):
 def demo_results_view(request):
     demo = get_demo_session(request)
     if not demo:
-        return redirect('core:demo_wizard')
+        return redirect('core:exam_wizard')
 
     questions = load_demo_questions(demo)
     if not demo.get('completed'):
@@ -453,7 +463,7 @@ def demo_explain_view(request):
 
     demo = get_demo_session(request)
     if not demo:
-        return JsonResponse({'error': 'No active demo session.'}, status=400)
+        return JsonResponse({'error': 'No active exam session.'}, status=400)
 
     try:
         payload = json.loads(request.body.decode('utf-8'))

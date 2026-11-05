@@ -36,7 +36,7 @@
       </a>
 
       <div class="navbar-links">
-        <a href="#demo">Demo</a>
+        <a href="#exam">Practice exam</a>
         <a href="#how-it-works">How it works</a>
         <a href="#about">About</a>
         <a href="#pricing">Pricing</a>
@@ -82,7 +82,7 @@
       <span class="brand-text" style="color: var(--clr-text);">Soma Smart</span>
     </div>
     <div class="navbar-drawer-links">
-      <a href="#demo">Demo</a>
+      <a href="#exam">Practice exam</a>
       <a href="#how-it-works">How it works</a>
       <a href="#about">About</a>
       <a href="#pricing">Pricing</a>
@@ -149,7 +149,7 @@
             </a>
             {% endif %}
           {% else %}
-            <a href="{% url 'core:demo_wizard' %}" class="btn btn-start-exam">
+            <a href="{% url 'core:exam_wizard' %}" class="btn btn-start-exam">
               Start Exam
               <span class="btn-icon">→</span>
             </a>
@@ -280,15 +280,15 @@
   </section>
 
   <!-- ═══════════════ FREE DEMO ═══════════════ -->
-  <section class="demo-section" id="demo">
+  <section class="demo-section" id="exam">
     <div class="container">
       <div class="demo-panel reveal">
         <div class="demo-panel-copy">
-          <span class="section-tag">✦ Free demo</span>
-          <h2 class="section-title">Try Soma Smart before you sign up</h2>
+          <span class="section-tag">✦ Free practice exam</span>
+          <h2 class="section-title">Take a real practice exam before you sign up</h2>
           <p>
             No account needed. Pick a grade and topic, then take a short
-            multiple-choice practice test with instant marking — the same
+            multiple-choice exam with instant marking — the same
             revision flow families use for KPSEA, KJSEA, and KCBE prep.
           </p>
           <ul class="demo-highlights">
@@ -298,14 +298,14 @@
             <li>Works on phone, tablet, or laptop</li>
           </ul>
           <div class="demo-panel-actions">
-            <a href="{% url 'core:demo_wizard' %}" class="btn btn-start-exam">
+            <a href="{% url 'core:exam_wizard' %}" class="btn btn-start-exam">
               Start Exam
               <span class="btn-icon">→</span>
             </a>
             <a href="{% url 'accounts:signup' %}" class="btn btn-outline">Create account</a>
           </div>
         </div>
-        <aside class="demo-panel-aside" aria-label="Demo preview">
+        <aside class="demo-panel-aside" aria-label="Practice exam preview">
           <div class="demo-preview-card">
             <p class="demo-preview-kicker">What you'll do</p>
             <ol class="demo-preview-steps">
@@ -589,7 +589,7 @@
           <h4>Platform</h4>
           <ul>
             <li><a href="#features">Features</a></li>
-            <li><a href="#demo">Free demo</a></li>
+            <li><a href="#exam">Free practice exam</a></li>
             <li><a href="#how-it-works">How it works</a></li>
             <li><a href="{% url 'core:exams_list' %}">Exam Center</a></li>
             <li><a href="{% url 'subscriptions:plans' %}">Pricing</a></li>

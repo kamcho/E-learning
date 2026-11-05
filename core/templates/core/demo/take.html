@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Practice Quiz — Soma Smart Demo{% endblock %}
+{% block title %}Practice Exam — Soma Smart{% endblock %}
 
 {% block body_class %} demo-page{% endblock %}
 {% block main_extra_class %}demo-main demo-quiz-page{% endblock %}
@@ -15,7 +15,7 @@
 <header class="demo-quiz-header">
   <div class="demo-quiz-header-inner">
     <div>
-      <h1 class="demo-quiz-title">Practice Quiz</h1>
+      <h1 class="demo-quiz-title">Practice Exam</h1>
       <p class="demo-quiz-meta">
         Question {{ question_number }} of {{ question_count }}
         · {{ demo.subject_name }}
@@ -105,7 +105,7 @@
           {% endfor %}
         </div>
         <div class="demo-q-actions">
-          <a href="{% url 'core:demo_wizard' %}?restart=1" class="demo-btn demo-btn-outline">Quit demo</a>
+          <a href="{% url 'core:exam_wizard' %}?restart=1" class="demo-btn demo-btn-outline">Quit exam</a>
           <button type="submit" class="demo-btn demo-btn-primary">Submit answer ✓</button>
         </div>
       </form>
@@ -153,7 +153,7 @@
   var errEl = document.getElementById('demo-ai-error');
   var retryBtn = document.getElementById('demo-ai-retry');
   var qid = box.dataset.questionUuid;
-  var explainUrl = '{% url "core:demo_explain" %}';
+  var explainUrl = '{% url "core:exam_explain" %}';
   var csrfToken = '{{ csrf_token }}';
 
   function loadExplanation() {
