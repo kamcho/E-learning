@@ -323,6 +323,25 @@ button {
   font-size: 0.8rem;
 }
 
+.speech-voice-choice {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  color: var(--clr-text-muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.speech-voice-choice select {
+  max-width: 220px;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-md);
+  background: var(--clr-surface);
+  color: var(--clr-text);
+  font: inherit;
+}
+
 .btn-secondary {
   background: var(--clr-primary);
   color: #fff;
