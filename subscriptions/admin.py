@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Payment, Subscription, SubscriptionPlan, TestCreditLog
+from .models import GuestDemoPayment, Payment, Subscription, SubscriptionPlan, TestCreditLog
 
 
 @admin.register(SubscriptionPlan)
@@ -38,6 +38,24 @@ class PaymentAdmin(admin.ModelAdmin):
     )
     raw_id_fields = ('user', 'subscription', 'plan')
     readonly_fields = ('callback_payload', 'created_at', 'updated_at')
+
+
+@admin.register(GuestDemoPayment)
+class GuestDemoPaymentAdmin(admin.ModelAdmin):
+    list_display = (
+        'uuid', 'demo_id', 'plan', 'amount_kes', 'phone_number',
+        'status', 'mpesa_receipt_number', 'created_at',
+    )
+    list_filter = ('status', 'plan')
+    search_fields = (
+        'demo_id', 'phone_number', 'checkout_request_id',
+        'merchant_request_id', 'mpesa_receipt_number',
+    )
+    raw_id_fields = ('plan',)
+    readonly_fields = (
+        'session_token_hash', 'demo_id', 'callback_payload',
+        'created_at', 'updated_at',
+    )
 
 
 @admin.register(TestCreditLog)

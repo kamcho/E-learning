@@ -1,5 +1,7 @@
+import hashlib
 import json
 import logging
+import secrets
 from urllib.parse import quote
 from uuid import UUID
 
@@ -11,10 +13,11 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_GET, require_POST
+from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
+from accounts.ratelimit import rate_limit
 from .forms import SubscribeForm
-from .models import Payment, Subscription, SubscriptionPlan
+from .models import GuestDemoPayment, Payment, Subscription, SubscriptionPlan
 from .mpesa import MpesaAPIError, MpesaConfigError, initiate_stk_push, query_stk_status
 from .services import (
     activate_subscription_from_payment,
@@ -24,12 +27,65 @@ from .services import (
     parse_stk_callback,
     user_has_active_subscription,
 )
-from .pricing import grade_band_for_student
+from .pricing import grade_band_for_grade, grade_band_for_student
 
 logger = logging.getLogger(__name__)
 
 ADMIN_PAYMENTS_PAGE_SIZE = 20
 ADMIN_SUBSCRIPTIONS_PAGE_SIZE = 20
+
+
+def _guest_demo_token_hash(request, *, create=False):
+    token = request.session.get('guest_demo_payment_token')
+    if not token and create:
+        token = secrets.token_urlsafe(32)
+        request.session['guest_demo_payment_token'] = token
+    if not token:
+        return ''
+    return hashlib.sha256(token.encode('utf-8')).hexdigest()
+
+
+def _guest_demo_payment_for_request(request, payment_uuid):
+    demo = request.session.get('practice_demo')
+    if not demo or not demo.get('demo_id'):
+        return None
+    token_hash = _guest_demo_token_hash(request)
+    if not token_hash:
+        return None
+    return GuestDemoPayment.objects.filter(
+        uuid=payment_uuid,
+        session_token_hash=token_hash,
+        demo_id=demo['demo_id'],
+    ).first()
+
+
+def _update_guest_demo_payment(payment, parsed, *, callback_payload=None):
+    raw_result_code = parsed.get('result_code')
+    try:
+        result_code = int(raw_result_code) if raw_result_code is not None else None
+    except (TypeError, ValueError):
+        result_code = None
+    payment.result_code = result_code
+    payment.result_description = (parsed.get('result_description') or '')[:255]
+    if parsed.get('mpesa_receipt_number'):
+        payment.mpesa_receipt_number = parsed['mpesa_receipt_number']
+    if parsed.get('phone_number'):
+        payment.phone_number = str(parsed['phone_number'])
+    if callback_payload is not None:
+        payment.callback_payload = callback_payload
+
+    if payment.status == GuestDemoPayment.Status.PENDING:
+        if result_code == 0:
+            payment.status = GuestDemoPayment.Status.SUCCESS
+        elif result_code == 1032:
+            payment.status = GuestDemoPayment.Status.CANCELLED
+        elif result_code is not None:
+            payment.status = GuestDemoPayment.Status.FAILED
+
+    payment.save(update_fields=[
+        'result_code', 'result_description', 'mpesa_receipt_number',
+        'phone_number', 'callback_payload', 'status', 'updated_at',
+    ])
 
 
 def _admin_access_or_redirect(request):
@@ -235,6 +291,140 @@ def subscribe_view(request, plan_slug):
     })
 
 
+@require_http_methods(['GET', 'POST'])
+@rate_limit(
+    key='guest_demo_checkout',
+    limit=5,
+    window=3600,
+    by='ip',
+    methods=['POST'],
+    json_error='Too many payment attempts. Please wait and try again.',
+)
+def guest_demo_checkout_view(request):
+    from core.demo import get_demo_session
+
+    demo = get_demo_session(request)
+    if not demo or demo.get('completed'):
+        return redirect('core:exam_wizard')
+    if request.user.is_authenticated:
+        return redirect('core:exam_take')
+    if len(demo.get('answers', {})) < 3:
+        return redirect('core:exam_take')
+    from core.demo_views import _guest_demo_payment_succeeded
+
+    if _guest_demo_payment_succeeded(request, demo):
+        return redirect('core:exam_take')
+
+    from subjects.models import GradeLevel
+
+    grade = GradeLevel.objects.filter(slug=demo.get('grade_slug', '')).first()
+    grade_band = grade_band_for_grade(grade)
+    plan = SubscriptionPlan.objects.filter(
+        is_active=True,
+        plan_type=SubscriptionPlan.PlanType.SINGLE_TEST,
+        grade_band=grade_band,
+    ).first() if grade_band else None
+    form = SubscribeForm(request.POST or None)
+
+    if request.method == 'POST' and plan and form.is_valid():
+        token_hash = _guest_demo_token_hash(request, create=True)
+        pending_payment = GuestDemoPayment.objects.filter(
+            session_token_hash=token_hash,
+            demo_id=demo['demo_id'],
+            status=GuestDemoPayment.Status.PENDING,
+        ).exclude(checkout_request_id='').first()
+        if pending_payment:
+            return redirect(
+                'subscriptions:guest_demo_payment_pending',
+                payment_uuid=pending_payment.uuid,
+            )
+        payment = GuestDemoPayment.objects.create(
+            session_token_hash=token_hash,
+            demo_id=demo['demo_id'],
+            plan=plan,
+            amount_kes=plan.price_kes,
+            phone_number=form.cleaned_data['phone_number'],
+            status=GuestDemoPayment.Status.PENDING,
+        )
+        try:
+            stk_response = initiate_stk_push(
+                phone_number=payment.phone_number,
+                amount=int(plan.price_kes),
+                account_reference=str(payment.uuid)[:12],
+                description='Practice exam',
+            )
+        except (MpesaConfigError, MpesaAPIError, ValueError) as exc:
+            payment.status = GuestDemoPayment.Status.FAILED
+            payment.result_description = str(exc)[:255]
+            payment.save(update_fields=['status', 'result_description', 'updated_at'])
+            form.add_error(None, str(exc))
+        else:
+            payment.merchant_request_id = stk_response.get('MerchantRequestID', '')
+            payment.checkout_request_id = stk_response.get('CheckoutRequestID', '')
+            payment.save(update_fields=[
+                'merchant_request_id', 'checkout_request_id', 'updated_at',
+            ])
+            return redirect(
+                'subscriptions:guest_demo_payment_pending',
+                payment_uuid=payment.uuid,
+            )
+
+    return render(request, 'subscriptions/guest_demo_checkout.html', {
+        'demo': demo,
+        'plan': plan,
+        'form': form,
+    })
+
+
+def guest_demo_payment_pending_view(request, payment_uuid):
+    payment = _guest_demo_payment_for_request(request, payment_uuid)
+    if not payment:
+        return redirect('core:exam_take')
+    return render(request, 'subscriptions/guest_demo_payment_pending.html', {
+        'payment': payment,
+        'plan': payment.plan,
+    })
+
+
+@require_GET
+def guest_demo_payment_status_view(request, payment_uuid):
+    payment = _guest_demo_payment_for_request(request, payment_uuid)
+    if not payment:
+        return JsonResponse({'status': 'not_found'}, status=404)
+
+    if payment.status == GuestDemoPayment.Status.PENDING and payment.checkout_request_id:
+        try:
+            query_data = query_stk_status(payment.checkout_request_id)
+            result_code = query_data.get('ResultCode')
+            if str(result_code) == '0':
+                _update_guest_demo_payment(payment, {
+                    'result_code': 0,
+                    'result_description': query_data.get('ResultDesc', 'Payment successful.'),
+                })
+                payment.refresh_from_db()
+            elif str(result_code) == '1032':
+                _update_guest_demo_payment(payment, {
+                    'result_code': 1032,
+                    'result_description': query_data.get('ResultDesc', 'Payment cancelled.'),
+                })
+                payment.refresh_from_db()
+            elif result_code not in (None,) and str(result_code) != '4999':
+                _update_guest_demo_payment(payment, {
+                    'result_code': int(result_code) if str(result_code).isdigit() else -1,
+                    'result_description': query_data.get('ResultDesc', 'Payment failed.'),
+                })
+                payment.refresh_from_db()
+        except (MpesaConfigError, MpesaAPIError) as exc:
+            logger.warning('Guest STK query failed for %s: %s', payment.uuid, exc)
+
+    return JsonResponse({
+        'status': payment.status,
+        'result_description': payment.result_description,
+        'mpesa_receipt_number': payment.mpesa_receipt_number,
+        'redirect_url': reverse('core:exam_take') if payment.status == GuestDemoPayment.Status.SUCCESS else None,
+    })
+
+
 @login_required(login_url='accounts:signin')
 def payment_pending_view(request, payment_uuid):
     payment = get_object_or_404(
@@ -313,12 +503,31 @@ def mpesa_callback_view(request):
 
     payment = Payment.objects.filter(
         checkout_request_id=checkout_id,
-    ).first()
+    ).first() if checkout_id else None
     if not payment and merchant_id:
         payment = Payment.objects.filter(merchant_request_id=merchant_id).first()
 
+    guest_payment = None
     if not payment:
+        if checkout_id:
+            guest_payment = GuestDemoPayment.objects.filter(
+                checkout_request_id=checkout_id,
+            ).first()
+        if not guest_payment and merchant_id:
+            guest_payment = GuestDemoPayment.objects.filter(
+                merchant_request_id=merchant_id,
+            ).first()
+
+    if not payment and not guest_payment:
         logger.warning('M-Pesa callback for unknown payment: %s', checkout_id)
+        return JsonResponse({'ResultCode': 0, 'ResultDesc': 'Accepted'})
+
+    if guest_payment:
+        _update_guest_demo_payment(
+            guest_payment,
+            parsed,
+            callback_payload=payload,
+        )
         return JsonResponse({'ResultCode': 0, 'ResultDesc': 'Accepted'})
 
     payment.callback_payload = payload

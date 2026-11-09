@@ -1,3 +1,5 @@
+import hashlib
+
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AnonymousUser
 from django.test import RequestFactory, TestCase
@@ -9,6 +11,7 @@ from core.error_views import server_error
 from core.models import Option, Question, Quiz
 from core.question_import import bulk_create_questions, validate_question_item
 from subjects.models import Discipline, GradeLevel, Strand, Subject, SubStrand
+from subscriptions.models import GuestDemoPayment, SubscriptionPlan
 
 User = get_user_model()
 
@@ -147,6 +150,14 @@ class DemoPracticeTests(TestCase):
         )
         cls.strand = Strand.objects.create(name='Plants', slug='plants-g6', subject=cls.subject)
         cls.sub_strand = SubStrand.objects.create(name='Roots', slug='roots-g6', strand=cls.strand)
+        cls.single_exam_plan = SubscriptionPlan.objects.create(
+            name='Grade 4–6 Exam',
+            slug='grade-4-6-exam',
+            plan_type=SubscriptionPlan.PlanType.SINGLE_TEST,
+            grade_band=SubscriptionPlan.GradeBand.GRADE_4_TO_6,
+            price_kes=15,
+            max_tests=1,
+        )
 
         for index in range(8):
             question = Question.objects.create(
@@ -226,6 +237,63 @@ class DemoPracticeTests(TestCase):
         self.assertContains(response, 'Not quite')
         self.assertContains(response, 'demo-ai-box')
         self.assertContains(response, 'Listen to explanation')
+
+    def test_guest_must_pay_after_three_questions_and_can_resume_in_same_session(self):
+        self.client.post(reverse('core:exam_start'), {
+            'grade': self.grade.slug,
+            'subject': self.subject.slug,
+            'scope': 'general',
+        })
+        take_url = reverse('core:exam_take')
+
+        for index in range(3):
+            demo = self.client.session['practice_demo']
+            question = Question.objects.get(uuid=demo['question_ids'][index])
+            correct = question.options.filter(is_correct=True).first()
+            self.client.post(take_url, {'action': 'submit', 'answer': str(correct.uuid)})
+            self.client.get(take_url)
+            response = self.client.post(take_url, {'action': 'continue'})
+
+        checkout_url = reverse('subscriptions:guest_demo_checkout')
+        self.assertRedirects(response, checkout_url)
+        response = self.client.get(checkout_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Pay with M-Pesa')
+        self.assertContains(response, 'no account is needed')
+        question_four = Question.objects.get(
+            uuid=self.client.session['practice_demo']['question_ids'][3],
+        )
+        response = self.client.post(take_url, {
+            'action': 'submit',
+            'answer': str(question_four.options.filter(is_correct=True).first().uuid),
+        })
+        self.assertRedirects(response, checkout_url)
+        self.assertEqual(len(self.client.session['practice_demo']['answers']), 3)
+        self.assertRedirects(
+            self.client.get(reverse('core:exam_results')),
+            checkout_url,
+        )
+
+        token = 'session-bound-token'
+        session = self.client.session
+        session['guest_demo_payment_token'] = token
+        session.save()
+        demo = self.client.session['practice_demo']
+        GuestDemoPayment.objects.create(
+            session_token_hash=hashlib.sha256(token.encode()).hexdigest(),
+            demo_id=demo['demo_id'],
+            plan=self.single_exam_plan,
+            amount_kes=self.single_exam_plan.price_kes,
+            phone_number='254712345678',
+            status=GuestDemoPayment.Status.SUCCESS,
+        )
+        response = self.client.get(take_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['question_number'], 4)
+        self.assertRedirects(
+            self.client.get(reverse('core:exam_results')),
+            take_url,
+        )
 
     def test_old_demo_url_redirects_to_exam_url_and_preserves_query(self):
         response = self.client.get('/demo/?grade=grade-6')

@@ -4,13 +4,14 @@ from unittest.mock import patch
 from django.contrib.auth import get_user_model
 from django.core.management import call_command
 from django.test import TestCase, override_settings
+from django.urls import reverse
 from django.utils import timezone
 
 from accounts.models import Role, Student
 from messenger.models import SmsMessage
 from subjects.models import GradeLevel
-from subscriptions.models import Payment, Subscription, SubscriptionPlan
-from subscriptions.pricing import grade_band_for_student
+from subscriptions.models import GuestDemoPayment, Payment, Subscription, SubscriptionPlan
+from subscriptions.pricing import grade_band_for_grade, grade_band_for_student
 from subscriptions.services import activate_subscription_from_payment, user_can_start_exam
 
 User = get_user_model()
@@ -159,6 +160,12 @@ class GradeBandPricingTests(TestCase):
             ],
         )
 
+    def test_grade_band_can_be_resolved_without_a_student_account(self):
+        self.assertEqual(
+            grade_band_for_grade(self.grade_6),
+            SubscriptionPlan.GradeBand.GRADE_4_TO_6,
+        )
+
     def test_learner_exam_credit_is_not_available_to_another_learner(self):
         user = User.objects.create_user(
             phone='0722333444',
@@ -212,3 +219,74 @@ class GradeBandPricingTests(TestCase):
                 SubscriptionPlan.GradeBand.GRADE_7_TO_12: 20,
             },
         )
+
+
+class GuestDemoCheckoutTests(TestCase):
+    def setUp(self):
+        self.grade = GradeLevel.objects.create(
+            name='Grade 6',
+            slug='grade-6',
+            level='Upper Primary',
+        )
+        self.plan = SubscriptionPlan.objects.create(
+            name='Grades 4–6 exam',
+            slug='guest-grade-4-6-exam',
+            plan_type=SubscriptionPlan.PlanType.SINGLE_TEST,
+            grade_band=SubscriptionPlan.GradeBand.GRADE_4_TO_6,
+            price_kes=15,
+            max_tests=1,
+        )
+        session = self.client.session
+        session['practice_demo'] = {
+            'demo_id': 'e62a1ddc-241f-4b13-819e-7de8c78ba640',
+            'grade_slug': self.grade.slug,
+            'answers': {'q1': 'a', 'q2': 'b', 'q3': 'c'},
+            'completed': False,
+        }
+        session.save()
+
+    @patch('subscriptions.views.initiate_stk_push')
+    def test_guest_checkout_starts_session_bound_payment_without_login(self, mock_stk_push):
+        mock_stk_push.return_value = {
+            'MerchantRequestID': 'merchant-guest-1',
+            'CheckoutRequestID': 'checkout-guest-1',
+        }
+
+        response = self.client.get(reverse('subscriptions:guest_demo_checkout'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'KES 15')
+
+        response = self.client.post(
+            reverse('subscriptions:guest_demo_checkout'),
+            {'phone_number': '0712345678'},
+        )
+        payment = GuestDemoPayment.objects.get()
+        self.assertRedirects(
+            response,
+            reverse(
+                'subscriptions:guest_demo_payment_pending',
+                kwargs={'payment_uuid': payment.uuid},
+            ),
+        )
+        self.assertEqual(payment.status, GuestDemoPayment.Status.PENDING)
+        self.assertEqual(payment.phone_number, '254712345678')
+        self.assertEqual(payment.demo_id, self.client.session['practice_demo']['demo_id'])
+        self.assertContains(self.client.get(
+            reverse(
+                'subscriptions:guest_demo_payment_pending',
+                kwargs={'payment_uuid': payment.uuid},
+            ),
+        ), 'Check your phone')
+
+        with patch(
+            'subscriptions.views.query_stk_status',
+            return_value={'ResultCode': '0', 'ResultDesc': 'Payment successful'},
+        ):
+            status_response = self.client.get(
+                reverse(
+                    'subscriptions:guest_demo_payment_status',
+                    kwargs={'payment_uuid': payment.uuid},
+                ),
+            )
+        self.assertEqual(status_response.json()['status'], GuestDemoPayment.Status.SUCCESS)
+        self.assertEqual(GuestDemoPayment.objects.get().status, GuestDemoPayment.Status.SUCCESS)

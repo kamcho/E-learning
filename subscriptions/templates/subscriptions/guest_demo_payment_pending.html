@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+
+{% block title %}Complete M-Pesa Payment{% endblock %}
+
+{% block content %}
+<section style="max-width:520px;margin:2rem auto;padding:2rem;text-align:center;background:var(--clr-surface);border:1px solid var(--clr-border);border-radius:16px;box-shadow:var(--shadow-sm);">
+  <h1 style="font-family:var(--font-heading);">Check your phone</h1>
+  <p style="color:var(--clr-text-muted);line-height:1.5;">
+    We sent an M-Pesa prompt to <strong>{{ payment.phone_number }}</strong>.
+    Enter your PIN to pay KES {{ payment.amount_kes|floatformat:0 }} and unlock the rest of this practice exam.
+  </p>
+  <p id="payment-status" role="status" aria-live="polite">Waiting for payment confirmation…</p>
+  <p><a href="{% url 'core:exam_take' %}">Return to your practice exam</a></p>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  var statusUrl = '{% url "subscriptions:guest_demo_payment_status" payment.uuid %}';
+  var statusEl = document.getElementById('payment-status');
+  var polls = 0;
+  var maxPolls = 60;
+
+  function poll() {
+    polls += 1;
+    fetch(statusUrl, { headers: { 'Accept': 'application/json' } })
+      .then(function (response) {
+        if (!response.ok) throw new Error('Unable to check payment status.');
+        return response.json();
+      })
+      .then(function (data) {
+        if (data.status === 'success') {
+          statusEl.textContent = 'Payment successful! Returning to your exam…';
+          if (data.mpesa_receipt_number) {
+            statusEl.textContent += ' Receipt: ' + data.mpesa_receipt_number;
+          }
+          setTimeout(function () {
+            window.location.href = data.redirect_url;
+          }, 1200);
+          return;
+        }
+        if (data.status === 'failed' || data.status === 'cancelled') {
+          statusEl.textContent = data.result_description || 'Payment failed. Please return to the exam and try again.';
+          return;
+        }
+        if (polls < maxPolls) setTimeout(poll, 3000);
+        else statusEl.textContent = 'Still waiting. Return to the exam to check again.';
+      })
+      .catch(function () {
+        if (polls < maxPolls) setTimeout(poll, 4000);
+        else statusEl.textContent = 'Could not check payment status. Return to the exam to try again.';
+      });
+  }
+
+  setTimeout(poll, 2000);
+})();
+</script>
+{% endblock %}

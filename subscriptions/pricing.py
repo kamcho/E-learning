@@ -8,11 +8,11 @@ _GRADE_4_TO_6 = {'grade-4', 'grade-5', 'grade-6'}
 _GRADE_7_TO_12 = set(GRADE_SLUG_ORDER) - _PLAY_GROUP_TO_GRADE_3 - _GRADE_4_TO_6
 
 
-def grade_band_for_student(student):
-    if not student or not student.grade_level_id:
+def grade_band_for_grade(grade):
+    if not grade:
         return ''
 
-    slug = student.grade_level.slug
+    slug = grade.slug
     if slug in _PLAY_GROUP_TO_GRADE_3:
         return SubscriptionPlan.GradeBand.PLAY_GROUP_TO_GRADE_3
     if slug in _GRADE_4_TO_6:
@@ -20,3 +20,9 @@ def grade_band_for_student(student):
     if slug in _GRADE_7_TO_12:
         return SubscriptionPlan.GradeBand.GRADE_7_TO_12
     return ''
+
+
+def grade_band_for_student(student):
+    if not student or not student.grade_level_id:
+        return ''
+    return grade_band_for_grade(student.grade_level)

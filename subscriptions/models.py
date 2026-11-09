@@ -231,6 +231,44 @@ class Payment(models.Model):
         return f'Payment {self.uuid} — {self.status} — KES {self.amount_kes}'
 
 
+class GuestDemoPayment(models.Model):
+    class Status(models.TextChoices):
+        PENDING = 'pending', 'Pending'
+        SUCCESS = 'success', 'Success'
+        FAILED = 'failed', 'Failed'
+        CANCELLED = 'cancelled', 'Cancelled'
+
+    uuid = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    session_token_hash = models.CharField(max_length=64, db_index=True)
+    demo_id = models.CharField(max_length=36, db_index=True)
+    plan = models.ForeignKey(
+        SubscriptionPlan,
+        on_delete=models.PROTECT,
+        related_name='guest_demo_payments',
+    )
+    amount_kes = models.DecimalField(max_digits=10, decimal_places=2)
+    phone_number = models.CharField(max_length=20)
+    status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        default=Status.PENDING,
+    )
+    merchant_request_id = models.CharField(max_length=64, blank=True, db_index=True)
+    checkout_request_id = models.CharField(max_length=64, blank=True, db_index=True)
+    mpesa_receipt_number = models.CharField(max_length=32, blank=True)
+    result_code = models.IntegerField(null=True, blank=True)
+    result_description = models.CharField(max_length=255, blank=True)
+    callback_payload = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ('-created_at',)
+
+    def __str__(self):
+        return f'Guest demo payment {self.uuid} — {self.status} — KES {self.amount_kes}'
+
+
 class TestCreditLog(models.Model):
     """Audit trail for test credit purchases and consumption."""
 

@@ -1,3 +1,4 @@
+import hashlib
 import json
 
 from django.contrib import messages
@@ -332,11 +333,24 @@ def demo_take_view(request):
         if action == 'continue':
             demo['feedback_index'] = None
             save_demo_session(request, demo)
+            if (
+                answered_count >= 3
+                and not request.user.is_authenticated
+                and not _guest_demo_payment_succeeded(request, demo)
+            ):
+                return redirect('subscriptions:guest_demo_checkout')
             if answered_count >= question_count:
                 finalize_demo(demo, questions)
                 save_demo_session(request, demo)
                 return redirect('core:exam_results')
             return redirect('core:exam_take')
+
+        if (
+            answered_count >= 3
+            and not request.user.is_authenticated
+            and not _guest_demo_payment_succeeded(request, demo)
+        ):
+            return redirect('subscriptions:guest_demo_checkout')
 
         if answered_count >= question_count:
             finalize_demo(demo, questions)
@@ -368,6 +382,13 @@ def demo_take_view(request):
         display_index = feedback_index
     else:
         display_index = answered_count
+
+    if (
+        display_index >= 3
+        and not request.user.is_authenticated
+        and not _guest_demo_payment_succeeded(request, demo)
+    ):
+        return redirect('subscriptions:guest_demo_checkout')
 
     if display_index >= question_count:
         finalize_demo(demo, questions)
@@ -427,6 +448,15 @@ def demo_results_view(request):
         return redirect('core:exam_wizard')
 
     questions = load_demo_questions(demo)
+    if not request.user.is_authenticated and not demo.get('completed'):
+        if (
+            len(demo.get('answers', {})) >= 3
+            and not _guest_demo_payment_succeeded(request, demo)
+        ):
+            return redirect('subscriptions:guest_demo_checkout')
+        if len(demo.get('answers', {})) < len(questions):
+            return redirect('core:exam_take')
+
     if not demo.get('completed'):
         finalize_demo(demo, questions)
         save_demo_session(request, demo)
@@ -438,6 +468,21 @@ def demo_results_view(request):
         'question_count': len(questions),
         'incorrect_count': len(questions) - demo.get('correct_count', 0),
     })
+
+
+def _guest_demo_payment_succeeded(request, demo):
+    from subscriptions.models import GuestDemoPayment
+
+    token = request.session.get('guest_demo_payment_token')
+    if not token:
+        return False
+
+    token_hash = hashlib.sha256(token.encode()).hexdigest()
+    return GuestDemoPayment.objects.filter(
+        session_token_hash=token_hash,
+        demo_id=demo.get('demo_id', ''),
+        status=GuestDemoPayment.Status.SUCCESS,
+    ).exists()
 
 
 @require_POST
