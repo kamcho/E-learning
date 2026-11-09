@@ -108,7 +108,7 @@ class Strand(models.Model):
         return f"{self.name} ({self.subject.name})"
 
 class SubStrand(models.Model):
-    name = models.CharField(max_length=50)
+    name = models.CharField(max_length=500)
     slug = models.SlugField(unique=True)
     order = models.IntegerField(default=0)
     strand = models.ForeignKey(Strand, on_delete=models.CASCADE, related_name='sub_strands')
