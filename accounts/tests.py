@@ -1,8 +1,9 @@
 import json
+import sqlite3
 from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
-from django.test import Client, TestCase, override_settings
+from django.test import Client, TestCase, TransactionTestCase, override_settings
 from django.urls import reverse
 
 from accounts.models import Role
@@ -221,6 +222,57 @@ class AdminDashboardStatCardTests(TestCase):
         self.assertContains(response, 'stat-card-icon--emerald')
         self.assertContains(response, 'stat-card-footer-highlight')
         self.assertContains(response, 'stat-card-footer-note')
+
+
+class AdminDatabaseBackupTests(TransactionTestCase):
+    def setUp(self):
+        self.admin = User.objects.create_user(
+            phone='0712345678',
+            password='1234',
+            role=Role.ADMIN,
+            first_name='Admin',
+            last_name='Boss',
+        )
+        self.guardian = User.objects.create_user(
+            phone='0723456789',
+            password='1234',
+            role=Role.GUARDIAN,
+            first_name='Regular',
+            last_name='User',
+        )
+
+    def test_database_backup_page_is_restricted_to_admins(self):
+        response = self.client.get(reverse('accounts:admin_database_backup'))
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(reverse('accounts:signin'), response.url)
+
+        self.client.force_login(self.guardian)
+        response = self.client.get(reverse('accounts:admin_database_backup'))
+        self.assertRedirects(response, reverse('core:landing'))
+
+    def test_admin_can_create_and_download_valid_sqlite_backup(self):
+        self.client.force_login(self.admin)
+        page = self.client.get(reverse('accounts:admin_database_backup'))
+        self.assertEqual(page.status_code, 200)
+        self.assertContains(page, 'Create and download backup')
+
+        response = self.client.post(reverse('accounts:admin_database_backup'))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'application/octet-stream')
+        self.assertIn('.sqlite3', response['Content-Disposition'])
+        self.assertEqual(response['Cache-Control'], 'private, no-store')
+
+        backup_data = b''.join(response.streaming_content)
+        response.close()
+        with sqlite3.connect(':memory:') as database:
+            database.deserialize(backup_data)
+            tables = {
+                row[0]
+                for row in database.execute(
+                    "SELECT name FROM sqlite_master WHERE type='table'",
+                )
+            }
+        self.assertIn('accounts_myuser', tables)
 
 
 class GuardianDashboardAutoSelectTests(TestCase):

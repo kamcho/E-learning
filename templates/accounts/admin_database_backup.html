@@ -1,0 +1,56 @@
+{% extends 'accounts/admin_base.html' %}
+
+{% block title %}Database Backup — Admin — Soma Smart{% endblock %}
+
+{% block extra_head %}
+<style>
+  .backup-page { max-width: 760px; margin: 0 auto; }
+  .backup-header { margin-bottom: 1.5rem; }
+  .backup-header h1 { margin: 0; color: var(--clr-text); font-family: var(--font-heading); font-size: clamp(1.7rem, 3vw, 2.25rem); }
+  .backup-header p { color: var(--clr-text-muted); line-height: 1.6; }
+  .backup-card {
+    padding: clamp(1.25rem, 4vw, 2rem);
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-xl);
+    background: var(--clr-surface);
+    box-shadow: var(--shadow-sm);
+  }
+  .backup-card h2 { margin-top: 0; color: var(--clr-text); font-size: 1.1rem; }
+  .backup-card p, .backup-card li { color: var(--clr-text-muted); line-height: 1.6; }
+  .backup-details { display: grid; grid-template-columns: minmax(120px, 0.4fr) 1fr; gap: 0.65rem 1rem; padding: 1rem 0; border-top: 1px solid var(--clr-border); border-bottom: 1px solid var(--clr-border); }
+  .backup-details span { color: var(--clr-text-muted); }
+  .backup-details strong { color: var(--clr-text); overflow-wrap: anywhere; }
+  .backup-actions { margin-top: 1.25rem; }
+  .backup-warning { padding: 0.85rem 1rem; border-left: 3px solid var(--clr-accent); background: var(--clr-bg); }
+</style>
+{% endblock %}
+
+{% block admin_content %}
+<div class="backup-page">
+  <a href="{% url 'accounts:admin_dashboard' %}" class="admin-back-link">&larr; Back to Dashboard</a>
+  <header class="backup-header">
+    <h1>Database backup</h1>
+    <p>Create a current backup of the application database and download it directly to your device.</p>
+  </header>
+
+  <section class="backup-card" aria-labelledby="backup-card-title">
+    <h2 id="backup-card-title">Backup source</h2>
+    <div class="backup-details">
+      <span>Database engine</span>
+      <strong>{{ database_engine|title }}</strong>
+      <span>Backup format</span>
+      <strong>{% if database_engine == 'sqlite' %}SQLite database file (.sqlite3){% else %}PostgreSQL SQL dump (.sql){% endif %}</strong>
+      <span>Storage</span>
+      <strong>Downloaded to your device; not retained on the server</strong>
+    </div>
+
+    <p class="backup-warning">
+      A backup contains sensitive application data. Store the downloaded file securely and share it only with authorized administrators.
+    </p>
+    <form method="post" class="backup-actions">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-primary">Create and download backup</button>
+    </form>
+  </section>
+</div>
+{% endblock %}

@@ -1,4 +1,7 @@
 import json
+import logging
+import sqlite3
+import subprocess
 
 from urllib.parse import urlencode
 
@@ -7,9 +10,10 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login as auth_login, logout as auth_logout, authenticate
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.http import JsonResponse
-from django.views.decorators.http import require_POST
+from django.http import FileResponse, JsonResponse
+from django.views.decorators.http import require_http_methods, require_POST
 from django.utils.http import url_has_allowed_host_and_scheme
+from django.db import connections
 from django.db.models import Avg, Count, Max, Q
 from django.db.models.functions import TruncDate
 from django.urls import reverse
@@ -21,10 +25,13 @@ ATTEMPTS_PAGE_SIZE = 10
 ADMIN_LIST_PAGE_SIZE = 15
 
 from .auth_utils import user_needs_phone_link
+from .backups import create_database_backup
 from .forms import SignUpForm, SignInForm, StudentForm, CompleteProfileForm
 from .google_auth import GoogleAuthError, get_or_create_user_from_google, verify_google_credential
 from .models import LinkedStudents, Student, MyUser, Role
 from .ratelimit import throttle_google_auth, throttle_login_attempt
+
+logger = logging.getLogger(__name__)
 
 
 def _resolve_post_login_redirect(request, user, next_url=None):
@@ -1195,6 +1202,37 @@ def admin_dashboard_view(request):
         },
     }
     return render(request, 'accounts/admin_dashboard.html', context)
+
+
+@login_required(login_url='accounts:signin')
+@require_http_methods(['GET', 'POST'])
+def admin_database_backup_view(request):
+    denied = _admin_access_or_redirect(request)
+    if denied:
+        return denied
+
+    if request.method == 'POST':
+        try:
+            backup_file, extension = create_database_backup()
+        except (OSError, RuntimeError, sqlite3.Error, subprocess.SubprocessError):
+            logger.exception('Database backup failed for admin %s', request.user.pk)
+            messages.error(
+                request,
+                'The database backup could not be created. Check the server logs and database backup tools.',
+            )
+        else:
+            timestamp = timezone.now().strftime('%Y%m%d-%H%M%S')
+            response = FileResponse(
+                backup_file,
+                as_attachment=True,
+                filename=f'soma-smart-database-{timestamp}.{extension}',
+            )
+            response['Cache-Control'] = 'private, no-store'
+            return response
+
+    return render(request, 'accounts/admin_database_backup.html', {
+        'database_engine': connections['default'].vendor,
+    })
 
 
 @login_required(login_url='accounts:signin')

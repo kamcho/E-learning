@@ -59,6 +59,14 @@
           </a>
         </li>
         <li>
+          <a href="{% url 'accounts:admin_database_backup' %}" class="dashboard-nav-link{% if request.resolver_match.url_name == 'admin_database_backup' %} is-active{% endif %}">
+            <span class="dashboard-nav-icon dashboard-nav-icon--indigo" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.7 4 3 9 3s9-1.3 9-3V5"/><path d="M3 12c0 1.7 4 3 9 3s9-1.3 9-3"/></svg>
+            </span>
+            <span class="dashboard-nav-label">Database backup</span>
+          </a>
+        </li>
+        <li>
           <a href="{% url 'core:quiz_builder_list' %}" class="dashboard-nav-link{% if request.resolver_match.url_name == 'quiz_builder_list' or request.resolver_match.url_name == 'quiz_create' or request.resolver_match.url_name == 'quiz_edit' %} is-active{% endif %}">
             <span class="dashboard-nav-icon dashboard-nav-icon--indigo" aria-hidden="true">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
