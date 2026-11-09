@@ -291,6 +291,19 @@ def subject_detail(request, slug):
             return redirect('subjects:subject_detail', slug=subject.slug)
         messages.error(request, 'Failed to update subject name. Please correct the error below.')
         form = StrandForm(initial={'subject': subject})
+    elif request.method == 'POST' and action == 'delete_strand':
+        strand = get_object_or_404(
+            Strand,
+            pk=request.POST.get('strand_id'),
+            subject=subject,
+        )
+        strand_name = strand.name
+        strand.delete()
+        messages.success(
+            request,
+            f"Strand '{strand_name}' and its sub-strands and objectives were deleted.",
+        )
+        return redirect('subjects:subject_detail', slug=subject.slug)
     elif request.method == 'POST' and action == 'parse_curriculum':
         curriculum_text = request.POST.get('curriculum_text', '')
         form = StrandForm(initial={'subject': subject})

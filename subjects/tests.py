@@ -316,6 +316,71 @@ class CurriculumNameEditingTests(TestCase):
                 self.assertEqual(response.status_code, 200)
                 self.assertContains(response, edit_label)
 
+    def test_subject_page_offers_strand_edit_and_delete_actions(self):
+        self.client.force_login(self.admin)
+        response = self.client.get(
+            reverse('subjects:subject_detail', kwargs={'slug': self.subject.slug}),
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Edit')
+        self.assertContains(response, 'Delete')
+        self.assertContains(response, 'action" value="delete_strand')
+
+    def test_admin_can_delete_strand_and_its_dependent_curriculum(self):
+        from subjects.models import StrandObjective, SubStrandObjective
+
+        objective = StrandObjective.objects.create(
+            name='Identify crops',
+            slug='identify-crops',
+            strand=self.strand,
+        )
+        sub_strand_objective = SubStrandObjective.objects.create(
+            name='Name local crops',
+            slug='name-local-crops',
+            sub_strand=self.sub_strand,
+        )
+        self.client.force_login(self.admin)
+
+        response = self.client.post(
+            reverse('subjects:subject_detail', kwargs={'slug': self.subject.slug}),
+            {'action': 'delete_strand', 'strand_id': self.strand.pk},
+        )
+
+        self.assertRedirects(
+            response,
+            reverse('subjects:subject_detail', kwargs={'slug': self.subject.slug}),
+        )
+        self.assertFalse(type(self.strand).objects.filter(pk=self.strand.pk).exists())
+        self.assertFalse(type(self.sub_strand).objects.filter(pk=self.sub_strand.pk).exists())
+        self.assertFalse(StrandObjective.objects.filter(pk=objective.pk).exists())
+        self.assertFalse(SubStrandObjective.objects.filter(pk=sub_strand_objective.pk).exists())
+
+    def test_delete_strand_cannot_target_another_subject(self):
+        from subjects.models import Strand
+
+        other_subject = Subject.objects.create(
+            name='Other Subject',
+            slug='other-subject-grade-6',
+            grade_level=self.subject.grade_level,
+            discipline=self.subject.discipline,
+        )
+        other_strand = Strand.objects.create(
+            name='Other Strand',
+            order=1,
+            slug='other-strand',
+            subject=other_subject,
+        )
+        self.client.force_login(self.admin)
+
+        response = self.client.post(
+            reverse('subjects:subject_detail', kwargs={'slug': self.subject.slug}),
+            {'action': 'delete_strand', 'strand_id': other_strand.pk},
+        )
+
+        self.assertEqual(response.status_code, 404)
+        self.assertTrue(Strand.objects.filter(pk=other_strand.pk).exists())
+
     def test_admin_can_rename_subject_strand_and_sub_strand_without_changing_slugs(self):
         self.client.force_login(self.admin)
         name_changes = (

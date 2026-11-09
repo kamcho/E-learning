@@ -113,8 +113,8 @@
       {% if strands %}
         <div class="item-list">
           {% for strand in strands %}
-            <a href="{% url 'subjects:strand_detail' strand.slug %}" class="list-item" style="text-decoration: none; color: inherit;">
-              <div style="display: flex; align-items: flex-start; gap: var(--space-sm); flex: 1;">
+            <div class="list-item">
+              <a href="{% url 'subjects:strand_detail' strand.slug %}" style="display: flex; align-items: flex-start; gap: var(--space-sm); flex: 1; text-decoration: none; color: inherit;">
                 <span class="strand-order">{{ strand.order }}</span>
                 <div>
                   <div class="list-item-title">{{ strand.name }}</div>
@@ -123,16 +123,26 @@
                     &middot; Slug: <code style="background:#e2e8f0; padding:2px 4px; border-radius:4px;">{{ strand.slug }}</code>
                   </div>
                 </div>
-              </div>
-              <div style="display: flex; gap: var(--space-sm); align-items: center;">
+              </a>
+              <div style="display: flex; gap: var(--space-sm); align-items: center; flex-wrap: wrap; justify-content: flex-end;">
                 {% if strand.is_active %}
                   <span class="badge badge-primary">Active</span>
                 {% else %}
                   <span class="badge badge-danger">Inactive</span>
                 {% endif %}
-                <span style="font-size: 0.8rem; font-weight: 600; color: var(--clr-primary);">View &rarr;</span>
+                <a href="{% url 'subjects:strand_detail' strand.slug %}" class="btn btn-secondary" style="padding: 0.4rem 0.65rem;">
+                  Edit
+                </a>
+                <form method="post" onsubmit="return confirm('Delete this strand and all of its sub-strands and objectives? This cannot be undone.');">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="delete_strand">
+                  <input type="hidden" name="strand_id" value="{{ strand.pk }}">
+                  <button type="submit" class="btn btn-secondary" style="padding: 0.4rem 0.65rem; color: var(--clr-danger);">
+                    Delete
+                  </button>
+                </form>
               </div>
-            </a>
+            </div>
           {% endfor %}
         </div>
       {% else %}
