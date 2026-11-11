@@ -90,18 +90,19 @@ class CurriculumImportTests(TestCase):
             },
         ])
 
-        result = parse_curriculum_text(
+        curriculum, warnings = parse_curriculum_text(
             '| Strand | Sub-strand |\n| Creation | Self Awareness |',
             self.subject,
             client=client,
         )
 
-        self.assertEqual(result[0]['name'], 'Creation')
-        self.assertEqual(result[0]['order'], 1)
-        self.assertEqual(result[0]['sub_strands'][0], {
+        self.assertEqual(curriculum[0]['name'], 'Creation')
+        self.assertEqual(curriculum[0]['order'], 1)
+        self.assertEqual(curriculum[0]['sub_strands'][0], {
             'name': 'Self Awareness',
             'order': 1,
         })
+        self.assertEqual(warnings, [])
         self.assertIn('Religious Education Grade 1', client.chat.call_args.kwargs['user_prompt'])
         self.assertTrue(client.chat.call_args.kwargs['json_mode'])
 
@@ -121,21 +122,43 @@ class CurriculumImportTests(TestCase):
             }],
         })
 
-        result = parse_curriculum_text('a curriculum table', self.subject, client=client)
+        curriculum, _warnings = parse_curriculum_text(
+            'a curriculum table',
+            self.subject,
+            client=client,
+        )
 
-        self.assertEqual(result[0]['name'], 'Creation')
-        self.assertEqual(result[0]['sub_strands'][0]['name'], 'Self Awareness')
+        self.assertEqual(curriculum[0]['name'], 'Creation')
+        self.assertEqual(curriculum[0]['sub_strands'][0]['name'], 'Self Awareness')
 
     def test_validate_curriculum_allows_long_sub_strand_names(self):
         long_name = (
             'Miracles of Jesus Christ (The feeding of the five thousand and other signs)'
         )
         self.assertGreater(len(long_name), 50)
-        curriculum = validate_curriculum([{
+        curriculum, warnings = validate_curriculum([{
             'name': 'The Life of Jesus Christ',
             'sub_strands': [long_name],
         }])
         self.assertEqual(curriculum[0]['sub_strands'][0]['name'], long_name)
+        self.assertEqual(warnings, [])
+
+    def test_validate_curriculum_skips_duplicate_sub_strands(self):
+        curriculum, warnings = validate_curriculum([{
+            'name': 'Numbers',
+            'sub_strands': [
+                'Whole Numbers',
+                'Whole Numbers',
+                'Place Value',
+            ],
+        }])
+        self.assertEqual(len(curriculum[0]['sub_strands']), 2)
+        self.assertEqual(
+            [s['name'] for s in curriculum[0]['sub_strands']],
+            ['Whole Numbers', 'Place Value'],
+        )
+        self.assertEqual(len(warnings), 1)
+        self.assertIn('duplicate', warnings[0].casefold())
 
     def test_create_curriculum_creates_strands_and_sub_strands(self):
         curriculum = [{
@@ -144,9 +167,13 @@ class CurriculumImportTests(TestCase):
             'sub_strands': [{'name': 'Self Awareness', 'order': 1}],
         }]
 
-        created = create_curriculum(self.subject, curriculum)
+        created_strands, created_sub_strands, warnings = create_curriculum(
+            self.subject,
+            curriculum,
+        )
 
-        self.assertEqual(created, (1, 1))
+        self.assertEqual((created_strands, created_sub_strands), (1, 1))
+        self.assertEqual(warnings, [])
         self.assertEqual(self.subject.strands.get().slug, 'creation-religious-education-grade-1')
         self.assertEqual(
             self.subject.strands.get().sub_strands.get().name,
@@ -177,9 +204,14 @@ class CurriculumImportTests(TestCase):
             ],
         }]
 
-        created = create_curriculum(self.subject, curriculum)
+        created_strands, created_sub_strands, warnings = create_curriculum(
+            self.subject,
+            curriculum,
+        )
 
-        self.assertEqual(created, (0, 1))
+        self.assertEqual((created_strands, created_sub_strands), (0, 1))
+        self.assertEqual(len(warnings), 1)
+        self.assertIn('already exists', warnings[0])
         self.assertEqual(self.subject.strands.count(), 1)
         self.assertEqual(strand.sub_strands.count(), 2)
 

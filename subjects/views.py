@@ -360,6 +360,7 @@ def subject_detail(request, slug):
     curriculum_text = ''
     curriculum_preview = None
     curriculum_preview_token = ''
+    curriculum_import_warnings = []
 
     subject_edit_form = SubjectForm(instance=subject)
 
@@ -414,15 +415,23 @@ def subject_detail(request, slug):
         curriculum_text = request.POST.get('curriculum_text', '')
         form = StrandForm(initial={'subject': subject})
         try:
-            curriculum_preview = parse_curriculum_text(curriculum_text, subject)
+            curriculum_preview, curriculum_import_warnings = parse_curriculum_text(
+                curriculum_text,
+                subject,
+            )
             curriculum_preview_token = sign_curriculum_preview(curriculum_preview)
+            for warning in curriculum_import_warnings:
+                messages.warning(request, warning)
         except (AIServiceError, CurriculumImportError) as exc:
             messages.error(request, str(exc))
     elif request.method == 'POST' and action == 'import_curriculum':
         form = StrandForm(initial={'subject': subject})
         try:
             curriculum = load_curriculum_preview(request.POST.get('preview_token', ''))
-            created_strands, created_sub_strands = create_curriculum(subject, curriculum)
+            created_strands, created_sub_strands, import_warnings = create_curriculum(
+                subject,
+                curriculum,
+            )
         except (AIServiceError, CurriculumImportError, IntegrityError) as exc:
             messages.error(request, f'Curriculum import failed: {exc}')
         else:
@@ -431,6 +440,8 @@ def subject_detail(request, slug):
                 f'Curriculum imported: {created_strands} strand(s) and '
                 f'{created_sub_strands} sub-strand(s) created. Existing entries were kept.',
             )
+            for warning in import_warnings:
+                messages.warning(request, warning)
             return redirect('subjects:subject_detail', slug=subject.slug)
     elif request.method == 'POST':
         form = StrandForm(request.POST)
@@ -459,6 +470,7 @@ def subject_detail(request, slug):
         'curriculum_text': curriculum_text,
         'curriculum_preview': curriculum_preview,
         'curriculum_preview_token': curriculum_preview_token,
+        'curriculum_import_warnings': curriculum_import_warnings,
         'subject_detail_post_url': detail_post_url,
         **_subject_manage_modal_context(),
     })

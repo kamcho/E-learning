@@ -218,6 +218,13 @@
       {% if curriculum_preview %}
         <div style="margin-top: var(--space-md);">
           <h3>Review parsed curriculum</h3>
+          {% if curriculum_import_warnings %}
+          <ul style="margin:0 0 var(--space-md);padding-left:1.2rem;font-size:0.88rem;color:#92400e;">
+            {% for warning in curriculum_import_warnings %}
+            <li>{{ warning }}</li>
+            {% endfor %}
+          </ul>
+          {% endif %}
           <ol class="curriculum-preview-list">
             {% for strand in curriculum_preview %}
               <li>

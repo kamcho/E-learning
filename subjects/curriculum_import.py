@@ -50,12 +50,18 @@ def _clean_name(value, label, *, max_length):
 
 
 def validate_curriculum(data):
+    """
+    Normalize parsed curriculum. Returns (curriculum, warnings).
+
+    Duplicate or invalid sub-strands are skipped with a warning; strands still import.
+    """
     if not isinstance(data, list) or not data:
         raise CurriculumImportError('The AI did not return a curriculum list. Please try again.')
     if len(data) > MAX_STRANDS:
         raise CurriculumImportError(f'A maximum of {MAX_STRANDS} strands can be imported at once.')
 
     curriculum = []
+    warnings = []
     seen_strands = set()
     sub_strand_count = 0
     for strand_index, item in enumerate(data, start=1):
@@ -80,18 +86,24 @@ def validate_curriculum(data):
         for sub_index, raw_sub_strand in enumerate(raw_sub_strands, start=1):
             if isinstance(raw_sub_strand, dict):
                 raw_sub_strand = raw_sub_strand.get('name')
-            sub_name = _clean_name(
-                raw_sub_strand,
-                f'Sub-strand {sub_index} under "{name}"',
-                max_length=SUBSTRAND_NAME_MAX_LENGTH,
-            )
+            try:
+                sub_name = _clean_name(
+                    raw_sub_strand,
+                    f'Sub-strand {sub_index} under "{name}"',
+                    max_length=SUBSTRAND_NAME_MAX_LENGTH,
+                )
+            except CurriculumImportError as exc:
+                warnings.append(str(exc))
+                continue
+
             normalized_sub_name = sub_name.casefold()
             if normalized_sub_name in seen_sub_strands:
-                raise CurriculumImportError(
-                    f'The strand "{name}" repeats the sub-strand "{sub_name}".'
+                warnings.append(
+                    f'Skipped duplicate sub-strand "{sub_name}" under strand "{name}".'
                 )
+                continue
             seen_sub_strands.add(normalized_sub_name)
-            sub_strands.append({'name': sub_name, 'order': sub_index})
+            sub_strands.append({'name': sub_name, 'order': len(sub_strands) + 1})
             sub_strand_count += 1
 
         curriculum.append({
@@ -104,7 +116,7 @@ def validate_curriculum(data):
         raise CurriculumImportError(
             f'A maximum of {MAX_SUBSTRANDS} sub-strands can be imported at once.'
         )
-    return curriculum
+    return curriculum, warnings
 
 
 def parse_curriculum_text(text, subject, client=None):
@@ -131,7 +143,7 @@ def parse_curriculum_text(text, subject, client=None):
         ) from exc
     if isinstance(parsed, dict):
         parsed = parsed.get('strands')
-    return validate_curriculum(parsed)
+    return validate_curriculum(parsed)  # (curriculum, warnings)
 
 
 def sign_curriculum_preview(curriculum):
@@ -145,12 +157,13 @@ def load_curriculum_preview(token):
         raise CurriculumImportError(
             'This preview has expired or is invalid. Parse the text again.'
         ) from exc
-    return validate_curriculum(curriculum)
+    curriculum, _warnings = validate_curriculum(curriculum)
+    return curriculum
 
 
 @transaction.atomic
 def create_curriculum(subject, curriculum):
-    curriculum = validate_curriculum(curriculum)
+    curriculum, warnings = validate_curriculum(curriculum)
     created_strands = 0
     created_sub_strands = 0
 
@@ -179,22 +192,26 @@ def create_curriculum(subject, curriculum):
             strand.sub_strands.values_list('name', flat=True)
         )
         for sub_strand_data in strand_data['sub_strands']:
-            if sub_strand_data['name'] in existing_names:
+            sub_name = sub_strand_data['name']
+            if sub_name in existing_names:
+                warnings.append(
+                    f'Sub-strand "{sub_name}" already exists under "{strand.name}"; skipped.'
+                )
                 continue
             form = SubStrandForm(data={
-                'name': sub_strand_data['name'],
+                'name': sub_name,
                 'slug': '',
                 'order': sub_strand_data['order'],
                 'strand': strand.pk,
                 'is_active': True,
             })
             if not form.is_valid():
-                raise CurriculumImportError(
-                    f'Could not create sub-strand "{sub_strand_data["name"]}": '
-                    f'{form.errors.as_text()}'
+                warnings.append(
+                    f'Could not create sub-strand "{sub_name}": {form.errors.as_text()}'
                 )
+                continue
             form.save()
             created_sub_strands += 1
-            existing_names.add(sub_strand_data['name'])
+            existing_names.add(sub_name)
 
-    return created_strands, created_sub_strands
+    return created_strands, created_sub_strands, warnings
