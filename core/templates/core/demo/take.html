@@ -190,11 +190,16 @@
           if (retryBtn) retryBtn.hidden = false;
           return;
         }
-        textEl.textContent = 'The correct answer is {{ feedback.correct_text|escapejs }}. '
-          + (result.data.explanation || 'No explanation returned.');
+        textEl.textContent = result.data.explanation || 'No explanation returned.';
         textEl.hidden = false;
         if (window.refreshExplanationMath) {
           window.refreshExplanationMath(textEl);
+        } else if (window.whenQuestionMathReady) {
+          window.whenQuestionMathReady(function () {
+            if (window.refreshExplanationMath) {
+              window.refreshExplanationMath(textEl);
+            }
+          });
         }
       })
       .catch(function () {

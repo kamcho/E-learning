@@ -59,8 +59,8 @@
     <div class="demo-feedback is-wrong" style="margin-top:0.85rem;">
       <div class="demo-feedback-title">Review this question</div>
       <p style="margin:0;color:var(--demo-muted);font-size:0.88rem;">
-        You chose: <strong style="color:var(--demo-text);">{{ row.selected_text }}</strong>
-        · Correct: <strong style="color:var(--demo-accent);">{{ row.correct_text }}</strong>
+        You chose: <strong style="color:var(--demo-text);" data-math-content>{{ row.selected_text }}</strong>
+        · Correct: <strong style="color:var(--demo-accent);" data-math-content>{{ row.correct_text }}</strong>
       </p>
       <div class="demo-ai-box demo-ai-trigger" data-question-uuid="{{ row.question_uuid }}" data-speech-region>
         <button type="button" class="demo-btn demo-btn-outline demo-ai-btn" style="margin-top:0.75rem;">Explain with AI tutor</button>
@@ -125,11 +125,16 @@
             btn.textContent = 'Try again';
             return;
           }
-          textEl.textContent = 'The correct answer is {{ row.correct_text|escapejs }}. '
-            + (result.data.explanation || '');
+          textEl.textContent = result.data.explanation || '';
           textEl.hidden = false;
           if (window.refreshExplanationMath) {
             window.refreshExplanationMath(textEl);
+          } else if (window.whenQuestionMathReady) {
+            window.whenQuestionMathReady(function () {
+              if (window.refreshExplanationMath) {
+                window.refreshExplanationMath(textEl);
+              }
+            });
           }
         })
         .catch(function () {

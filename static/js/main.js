@@ -120,6 +120,6 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   window.addEventListener('resize', () => {
-    if (window.innerWidth > 768) closeNav();
+    if (window.innerWidth > 992) closeNav();
   });
 });

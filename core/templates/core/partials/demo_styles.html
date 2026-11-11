@@ -528,6 +528,18 @@
     font-size: 0.88rem;
     line-height: 1.55;
     color: var(--demo-text);
+    white-space: pre-wrap;
+  }
+
+  .demo-feedback strong[data-math-content],
+  .demo-option-text[data-math-content] {
+    white-space: normal;
+  }
+
+  .demo-feedback .katex,
+  .demo-option-text .katex,
+  .demo-ai-text .katex {
+    white-space: nowrap;
   }
 
   .demo-sidebar-card {
@@ -614,6 +626,17 @@
     font-size: 0.82rem;
     color: var(--demo-muted);
     margin: 0.35rem 0 0.85rem;
+  }
+
+  /* Focused practice: simplify app chrome on small screens */
+  @media (max-width: 992px) {
+    body.demo-page .app-search-wrap {
+      display: none;
+    }
+
+    body.demo-page .app-header-brand span:last-child {
+      display: none;
+    }
   }
 
   /* Practice exam — mobile: use full width, question first */
