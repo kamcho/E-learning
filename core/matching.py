@@ -157,6 +157,40 @@ def compose_matching_answer(post_data):
     return '|'.join(parts)
 
 
+def build_matching_review_rows(question, text_answer=''):
+    """Per-row review data for attempt detail (learner vs correct match)."""
+    from core.scoring import _normalize_answer_text
+
+    pairs = parse_matching_pairs(question)
+    if not pairs:
+        return []
+    learner_map = parse_matching_submission(text_answer)
+    if not learner_map:
+        return []
+    rows = []
+    for pair in pairs:
+        left = pair['left']
+        expected = pair['right']
+        given = (learner_map.get(left) or '').strip()
+        rows.append({
+            'left': left,
+            'expected': expected,
+            'given': given if given else '—',
+            'is_correct': bool(given)
+            and _normalize_answer_text(given) == _normalize_answer_text(expected),
+            'answered': bool(given),
+        })
+    return rows
+
+
+def format_matching_submission_summary(text_answer):
+    """Human-readable summary of a stored matching answer."""
+    learner_map = parse_matching_submission(text_answer)
+    if not learner_map:
+        return ''
+    return '; '.join(f'{left} → {right}' for left, right in sorted(learner_map.items()))
+
+
 def parse_matching_submission(answer_str):
     """Parse stored answer into {left: right}."""
     result = {}

@@ -753,6 +753,36 @@ class MatchingGradingTests(TestCase):
         cls.strand = Strand.objects.create(name='Life', slug='life-g6', subject=cls.subject)
         cls.sub_strand = SubStrand.objects.create(name='Animals', slug='animals-g6', strand=cls.strand)
 
+    def test_build_matching_review_rows(self):
+        from core.matching import build_matching_review_rows, compose_matching_answer
+
+        question = Question.objects.create(
+            quiz='Match vertebrates.',
+            difficulty='Easy',
+            quiz_type='Matching',
+            sub_strand=self.sub_strand,
+            score=5,
+        )
+        Option.objects.create(question=question, option='Mammals → milk')
+        Option.objects.create(question=question, option='Birds → feathers')
+        Option.objects.create(question=question, option='Fish → gills')
+        post = {
+            'matching_left_0': 'Mammals',
+            'matching_0': 'milk',
+            'matching_left_1': 'Birds',
+            'matching_1': 'wrong',
+            'matching_left_2': 'Fish',
+            'matching_2': 'gills',
+        }
+        answer = compose_matching_answer(post)
+        rows = build_matching_review_rows(question, answer)
+        self.assertEqual(len(rows), 3)
+        by_left = {r['left']: r for r in rows}
+        self.assertTrue(by_left['Mammals']['is_correct'])
+        self.assertFalse(by_left['Birds']['is_correct'])
+        self.assertEqual(by_left['Birds']['expected'], 'feathers')
+        self.assertTrue(by_left['Fish']['is_correct'])
+
     def test_parse_options_with_arrow_pairs(self):
         from core.matching import matching_choice_pool, matching_rows_for_display, parse_matching_pairs
 

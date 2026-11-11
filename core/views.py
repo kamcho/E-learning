@@ -1,5 +1,8 @@
 import json
+import logging
 from urllib.parse import quote
+
+logger = logging.getLogger(__name__)
 
 from django.db.models import Avg, Count
 from django.shortcuts import render, get_object_or_404, redirect
@@ -421,6 +424,16 @@ def _build_attempt_breakdown(attempt):
                 'is_selected': str(opt.uuid) in selected_ids,
             })
 
+        use_matching_review = False
+        matching_review = []
+        if question.quiz_type == 'Matching' and response and response.text_answer:
+            from core.matching import build_matching_review_rows, format_matching_submission_summary
+
+            matching_review = build_matching_review_rows(question, response.text_answer)
+            if matching_review:
+                use_matching_review = True
+                options_list = []
+
         row = {
             'number': index,
             'question': question,
@@ -433,6 +446,8 @@ def _build_attempt_breakdown(attempt):
             'max_marks': response.max_marks if response else question_max_marks(question),
             'options': options_list,
             'quiz_type': question.quiz_type,
+            'matching_review': matching_review,
+            'use_matching_review': use_matching_review,
         }
         if question.quiz_type in ('Multiple Choice', 'True or False'):
             if selected_ids:
@@ -443,6 +458,10 @@ def _build_attempt_breakdown(attempt):
                 row['answer_text'] = ', '.join(selected_labels) if selected_labels else '—'
             else:
                 row['answer_text'] = '—'
+        elif question.quiz_type == 'Matching' and use_matching_review:
+            from core.matching import format_matching_submission_summary
+
+            row['answer_text'] = format_matching_submission_summary(response.text_answer) or '—'
         elif response and response.text_answer:
             row['answer_text'] = response.text_answer
         rows.append(row)
@@ -798,20 +817,59 @@ def ai_explain_answer_view(request):
     )
 
     response = attempt.responses.filter(question=question).select_related('selected_option').first()
-    if response and response.selected_option_id:
-        selected_opt = response.selected_option
-    else:
-        answers = attempt.answers or {}
-        selected_uuid = str(answers.get(str(question.uuid), '')).strip()
-        selected_opt = question.options.filter(uuid=selected_uuid).first() if selected_uuid else None
-    selected_choice = selected_opt.option if selected_opt else ''
+    selected_choice = ''
 
-    choices = [
-        {'text': opt.option, 'is_correct': opt.is_correct}
-        for opt in question.options.filter(is_active=True).order_by('created_at')
-    ]
+    if question.quiz_type == 'Matching':
+        from core.matching import (
+            build_matching_review_rows,
+            format_matching_submission_summary,
+            parse_matching_pairs,
+        )
+
+        if response and response.text_answer:
+            selected_choice = format_matching_submission_summary(response.text_answer)
+            pairs = parse_matching_pairs(question)
+            choices = [
+                {'text': f"{p['left']} → {p['right']}", 'is_correct': True}
+                for p in pairs
+            ]
+        elif response and response.selected_option_id:
+            selected_opt = response.selected_option
+            selected_choice = selected_opt.option if selected_opt else ''
+            choices = [
+                {'text': opt.option, 'is_correct': opt.is_correct}
+                for opt in question.options.filter(is_active=True).order_by('created_at')
+            ]
+        else:
+            choices = []
+        if not choices:
+            choices = [
+                {'text': opt.option, 'is_correct': opt.is_correct}
+                for opt in question.options.filter(is_active=True).order_by('created_at')
+            ]
+    else:
+        if response and response.selected_option_id:
+            selected_opt = response.selected_option
+        else:
+            answers = attempt.answers or {}
+            selected_uuid = str(answers.get(str(question.uuid), '')).strip()
+            selected_opt = (
+                question.options.filter(uuid=selected_uuid).first() if selected_uuid else None
+            )
+        selected_choice = selected_opt.option if selected_opt else ''
+        if response and response.text_answer and not selected_choice:
+            selected_choice = response.text_answer
+
+        choices = [
+            {'text': opt.option, 'is_correct': opt.is_correct}
+            for opt in question.options.filter(is_active=True).order_by('created_at')
+        ]
+
     if not choices:
-        return JsonResponse({'error': 'This question has no choices to explain.'}, status=400)
+        if question.quiz_type == 'Matching' and selected_choice:
+            choices = [{'text': selected_choice, 'is_correct': False}]
+        else:
+            return JsonResponse({'error': 'This question has no choices to explain.'}, status=400)
 
     grade_level = ''
     subject = ''
@@ -833,6 +891,12 @@ def ai_explain_answer_view(request):
         return JsonResponse({'error': str(exc)}, status=503)
     except ValueError as exc:
         return JsonResponse({'error': str(exc)}, status=400)
+    except Exception:
+        logger.exception('AI explain failed for question %s attempt %s', question_uuid, attempt_uuid)
+        return JsonResponse(
+            {'error': 'Could not generate an explanation right now. Please try again.'},
+            status=500,
+        )
 
     return JsonResponse(result)
 

@@ -390,6 +390,63 @@
     overflow-wrap: anywhere;
   }
 
+  .matching-review-rows {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+  }
+
+  .matching-review-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    padding: var(--space-md);
+    border-radius: var(--radius-md);
+    border: 1.5px solid var(--clr-border);
+    background: var(--clr-bg);
+  }
+
+  .matching-review-item.is-correct {
+    border-color: var(--clr-primary);
+    background: rgba(13, 138, 78, 0.06);
+  }
+
+  .matching-review-item.is-wrong {
+    border-color: var(--clr-danger);
+    background: rgba(193, 39, 45, 0.04);
+  }
+
+  .matching-review-term {
+    font-weight: 700;
+    font-size: 0.92rem;
+    color: var(--clr-text);
+  }
+
+  .matching-review-line {
+    font-size: 0.88rem;
+    line-height: 1.45;
+    color: var(--clr-text-muted);
+  }
+
+  .matching-review-line strong {
+    color: var(--clr-text);
+  }
+
+  .matching-review-badge {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .matching-review-item.is-correct .matching-review-badge {
+    color: var(--clr-primary);
+  }
+
+  .matching-review-item.is-wrong .matching-review-badge {
+    color: var(--clr-danger);
+  }
+
   /* Choices Grid */
   .options-grid {
     display: flex;
@@ -765,7 +822,25 @@
         {% endif %}
 
         <div class="options-grid">
-          {% if row.options %}
+          {% if row.use_matching_review %}
+            <div class="matching-review-rows">
+              {% for m in row.matching_review %}
+              <div class="matching-review-item {% if m.answered and m.is_correct %}is-correct{% elif m.answered %}is-wrong{% endif %}">
+                <span class="matching-review-term">{{ m.left }}</span>
+                <span class="matching-review-line">Your match: <strong>{{ m.given }}</strong></span>
+                {% if m.answered and m.is_correct %}
+                  <span class="matching-review-badge">&#10003; Correct</span>
+                {% elif m.answered %}
+                  <span class="matching-review-line">Correct match: <strong>{{ m.expected }}</strong></span>
+                  <span class="matching-review-badge">&#10007; Incorrect</span>
+                {% else %}
+                  <span class="matching-review-line">Correct match: <strong>{{ m.expected }}</strong></span>
+                  <span class="matching-review-badge">Not answered</span>
+                {% endif %}
+              </div>
+              {% endfor %}
+            </div>
+          {% elif row.options %}
             {% for opt in row.options %}
               {% if opt.is_selected and opt.is_correct %}
                 <div class="option-review-item correct-selected">
@@ -843,7 +918,7 @@
           {% endif %}
         </div>
 
-        {% if row.answered and row.options %}
+        {% if row.answered and row.options or row.use_matching_review %}
           <div class="ai-explain-wrap" data-question-uuid="{{ row.question_uuid }}">
             <button type="button" class="btn-ai-explain" data-attempt-uuid="{{ attempt.uuid }}" data-question-uuid="{{ row.question_uuid }}">
               ✨ Explain answer
@@ -896,8 +971,10 @@
       try {
         var res = await fetch('{% url "core:ai_explain_answer" %}', {
           method: 'POST',
+          credentials: 'same-origin',
           headers: {
             'Content-Type': 'application/json',
+            'Accept': 'application/json',
             'X-CSRFToken': getCookie('csrftoken'),
           },
           body: JSON.stringify({
@@ -905,7 +982,17 @@
             question_uuid: questionUuid,
           }),
         });
-        var data = await res.json();
+        var contentType = res.headers.get('content-type') || '';
+        var data;
+        if (contentType.indexOf('application/json') !== -1) {
+          data = await res.json();
+        } else {
+          var bodyText = await res.text();
+          if (res.status === 403) {
+            throw new Error('Session expired or blocked — refresh the page and sign in again.');
+          }
+          throw new Error('Unexpected server response. Refresh and try again.');
+        }
         if (!res.ok) {
           throw new Error(data.error || 'Could not get explanation.');
         }
