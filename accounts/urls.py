@@ -61,6 +61,28 @@ urlpatterns = [
         views.teacher_question_detail_view,
         name='teacher_question_detail',
     ),
+    path(
+        'teacher-dashboard/curriculum/grades/<slug:grade_slug>/',
+        views.teacher_curriculum_grade_view,
+        name='teacher_curriculum_grade',
+    ),
+    path(
+        'teacher-dashboard/curriculum/grades/<slug:grade_slug>/subjects/<slug:subject_slug>/',
+        views.teacher_curriculum_subject_view,
+        name='teacher_curriculum_subject',
+    ),
+    path(
+        'teacher-dashboard/curriculum/grades/<slug:grade_slug>/subjects/<slug:subject_slug>/'
+        'strands/<slug:strand_slug>/',
+        views.teacher_curriculum_strand_view,
+        name='teacher_curriculum_strand',
+    ),
+    path(
+        'teacher-dashboard/curriculum/grades/<slug:grade_slug>/subjects/<slug:subject_slug>/'
+        'strands/<slug:strand_slug>/sub-strands/<slug:sub_strand_slug>/',
+        views.teacher_curriculum_sub_strand_view,
+        name='teacher_curriculum_sub_strand',
+    ),
     path('referral-dashboard/', views.referral_dashboard_view, name='referral_dashboard'),
     path('admin/', RedirectView.as_view(pattern_name='accounts:admin_dashboard', permanent=False)),
     path('admin-dashboard/', views.admin_dashboard_view, name='admin_dashboard'),

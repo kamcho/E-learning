@@ -1,0 +1,47 @@
+{% extends 'accounts/admin_base.html' %}
+
+{% block title %}{{ subject.name }} — Add Questions{% endblock %}
+
+{% block extra_head %}
+{% include 'accounts/partials/admin_list_styles.html' %}
+{% include 'accounts/partials/teacher_curriculum_styles.html' %}
+{% endblock %}
+
+{% block admin_content %}
+<nav class="tc-breadcrumb">
+  <a href="{{ dashboard_url }}">Teacher dashboard</a>
+  <span>/</span>
+  <a href="{{ grade_url }}">{{ grade.name }}</a>
+  <span>/</span>
+  <span>{{ subject.name }}</span>
+</nav>
+
+<div class="tc-page-header">
+  <h1>{{ subject.name }}</h1>
+  <p>{{ grade.name }} · {{ subject.discipline.name }}. Open a strand, then pick a sub-strand to add or import questions.</p>
+  <div class="tc-actions" style="margin-top: var(--space-md);">
+    <a href="{{ create_question_url }}" class="btn btn-secondary">+ Single question form</a>
+  </div>
+</div>
+
+{% if strand_rows %}
+<div class="tc-nav-list">
+  {% for row in strand_rows %}
+  <a href="{{ row.detail_url }}" class="tc-nav-item">
+    <div>
+      <div class="tc-nav-item-title">{{ row.strand.name }}</div>
+      <div class="tc-nav-item-meta">
+        {{ row.sub_strand_count }} sub-strand{{ row.sub_strand_count|pluralize }}
+        {% if row.my_question_count %} · {{ row.my_question_count }} by you{% endif %}
+      </div>
+    </div>
+    <span class="tc-nav-item-arrow">&rarr;</span>
+  </a>
+  {% endfor %}
+</div>
+{% else %}
+<div class="tc-empty">
+  <strong>No strands yet for this subject.</strong>
+</div>
+{% endif %}
+{% endblock %}

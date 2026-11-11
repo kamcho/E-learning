@@ -4,6 +4,7 @@
 
 {% block extra_head %}
 {% include 'accounts/partials/admin_list_styles.html' %}
+{% include 'accounts/partials/teacher_curriculum_styles.html' %}
 <style>
   .teacher-page-header {
     display: flex;
@@ -257,6 +258,45 @@
     <div class="admin-stat-meta">{{ summary.completed_attempts }} completed · {{ summary.avg_score }}% avg score</div>
   </div>
 </div>
+
+<section class="teacher-section">
+  <div class="teacher-section-head">
+    <h2>Add questions by grade</h2>
+    <span style="font-size:0.82rem;color:var(--clr-text-muted);">Browse curriculum → sub-strand → AI prompt &amp; paste import</span>
+  </div>
+  <div class="teacher-section-body" style="padding: var(--space-xl);">
+    {% if grade_cards %}
+    <div class="tc-grade-cards-grid">
+      {% for card in grade_cards %}
+      <a href="{{ card.detail_url }}" class="tc-grade-card">
+        <div class="tc-grade-card-top">
+          <div>
+            <h3 class="tc-grade-card-title">{{ card.grade.name }}</h3>
+            <span class="tc-grade-card-band">{{ card.grade.get_level_display }}</span>
+          </div>
+          <span class="tc-grade-card-icon" aria-hidden="true">&#127979;</span>
+        </div>
+        <div class="tc-grade-card-stats">
+          <div>
+            <span class="tc-grade-card-stat-label">Subjects</span>
+            <span class="tc-grade-card-stat-value">{{ card.subject_count }}</span>
+          </div>
+          <div>
+            <span class="tc-grade-card-stat-label">Your questions</span>
+            <span class="tc-grade-card-stat-value">{{ card.my_question_count }}</span>
+          </div>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="teacher-empty">
+      <strong>No grade levels configured</strong>
+      <p>Ask an admin to seed curriculum grade levels first.</p>
+    </div>
+    {% endif %}
+  </div>
+</section>
 
 <section class="teacher-section">
   <div class="teacher-section-head">

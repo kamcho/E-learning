@@ -1468,12 +1468,15 @@ def teacher_dashboard_view(request):
         build_teacher_summary,
     )
 
+    from .teacher_curriculum import build_teacher_grade_cards
+
     teacher = request.user
     context = {
         'teacher': teacher,
         'summary': build_teacher_summary(teacher),
         'subject_rows': build_teacher_subject_rows(teacher),
         'question_rows': build_teacher_question_rows(teacher),
+        'grade_cards': build_teacher_grade_cards(teacher),
     }
     return render(request, 'accounts/teacher_dashboard.html', context)
 
@@ -1538,3 +1541,142 @@ def teacher_question_detail_view(request, question_uuid):
         **detail,
     }
     return render(request, 'accounts/teacher_question_detail.html', context)
+
+
+@login_required(login_url='accounts:signin')
+def teacher_curriculum_grade_view(request, grade_slug):
+    denied = _teacher_access_or_redirect(request)
+    if denied:
+        return denied
+
+    from subjects.models import GradeLevel
+
+    from .teacher_curriculum import build_teacher_subjects_for_grade
+
+    grade = get_object_or_404(GradeLevel, slug=grade_slug)
+    teacher = request.user
+    context = {
+        'teacher': teacher,
+        'grade': grade,
+        'subject_rows': build_teacher_subjects_for_grade(grade, teacher),
+        'dashboard_url': reverse('accounts:teacher_dashboard'),
+    }
+    return render(request, 'accounts/teacher_curriculum_grade.html', context)
+
+
+@login_required(login_url='accounts:signin')
+def teacher_curriculum_subject_view(request, grade_slug, subject_slug):
+    denied = _teacher_access_or_redirect(request)
+    if denied:
+        return denied
+
+    from subjects.models import GradeLevel, Subject
+
+    from .teacher_curriculum import build_teacher_strands_for_subject
+
+    grade = get_object_or_404(GradeLevel, slug=grade_slug)
+    subject = get_object_or_404(
+        Subject.objects.select_related('grade_level', 'discipline'),
+        slug=subject_slug,
+        grade_level=grade,
+        is_active=True,
+    )
+    teacher = request.user
+    context = {
+        'teacher': teacher,
+        'grade': grade,
+        'subject': subject,
+        'strand_rows': build_teacher_strands_for_subject(subject, teacher),
+        'grade_url': reverse('accounts:teacher_curriculum_grade', kwargs={'grade_slug': grade.slug}),
+        'dashboard_url': reverse('accounts:teacher_dashboard'),
+        'create_question_url': reverse('subjects:create_question', kwargs={'subject_id': subject.pk}),
+    }
+    return render(request, 'accounts/teacher_curriculum_subject.html', context)
+
+
+@login_required(login_url='accounts:signin')
+def teacher_curriculum_strand_view(request, grade_slug, subject_slug, strand_slug):
+    denied = _teacher_access_or_redirect(request)
+    if denied:
+        return denied
+
+    from subjects.models import GradeLevel, Strand, Subject
+
+    from .teacher_curriculum import build_teacher_sub_strands_for_strand
+
+    grade = get_object_or_404(GradeLevel, slug=grade_slug)
+    subject = get_object_or_404(Subject, slug=subject_slug, grade_level=grade, is_active=True)
+    strand = get_object_or_404(
+        Strand.objects.select_related('subject', 'subject__grade_level'),
+        slug=strand_slug,
+        subject=subject,
+        is_active=True,
+    )
+    teacher = request.user
+    context = {
+        'teacher': teacher,
+        'grade': grade,
+        'subject': subject,
+        'strand': strand,
+        'sub_strand_rows': build_teacher_sub_strands_for_strand(strand, teacher),
+        'grade_url': reverse('accounts:teacher_curriculum_grade', kwargs={'grade_slug': grade.slug}),
+        'subject_url': reverse(
+            'accounts:teacher_curriculum_subject',
+            kwargs={'grade_slug': grade.slug, 'subject_slug': subject.slug},
+        ),
+        'dashboard_url': reverse('accounts:teacher_dashboard'),
+    }
+    return render(request, 'accounts/teacher_curriculum_strand.html', context)
+
+
+@login_required(login_url='accounts:signin')
+def teacher_curriculum_sub_strand_view(request, grade_slug, subject_slug, strand_slug, sub_strand_slug):
+    denied = _teacher_access_or_redirect(request)
+    if denied:
+        return denied
+
+    from subjects.models import GradeLevel, Strand, Subject, SubStrand
+
+    from .teacher_curriculum import (
+        build_ai_question_prompt,
+        build_example_import_payload,
+    )
+
+    grade = get_object_or_404(GradeLevel, slug=grade_slug)
+    subject = get_object_or_404(Subject, slug=subject_slug, grade_level=grade, is_active=True)
+    strand = get_object_or_404(Strand, slug=strand_slug, subject=subject, is_active=True)
+    sub_strand = get_object_or_404(
+        SubStrand.objects.select_related('strand', 'strand__subject', 'strand__subject__grade_level'),
+        slug=sub_strand_slug,
+        strand=strand,
+        is_active=True,
+    )
+    objectives = sub_strand.sub_strand_objectives.filter(is_active=True).order_by('order', 'name')
+    example_payload = build_example_import_payload(sub_strand)
+    teacher = request.user
+    context = {
+        'teacher': teacher,
+        'grade': grade,
+        'subject': subject,
+        'strand': strand,
+        'sub_strand': sub_strand,
+        'objectives': objectives,
+        'ai_prompt_text': build_ai_question_prompt(sub_strand),
+        'example_json': json.dumps(example_payload, indent=2),
+        'example_payload': example_payload,
+        'import_api_url': reverse('core:bulk_create_questions_api'),
+        'create_question_url': (
+            reverse('subjects:create_question', kwargs={'subject_id': subject.pk})
+            + f'?sub_strand={sub_strand.pk}'
+        ),
+        'strand_url': reverse(
+            'accounts:teacher_curriculum_strand',
+            kwargs={
+                'grade_slug': grade.slug,
+                'subject_slug': subject.slug,
+                'strand_slug': strand.slug,
+            },
+        ),
+        'dashboard_url': reverse('accounts:teacher_dashboard'),
+    }
+    return render(request, 'accounts/teacher_curriculum_sub_strand.html', context)

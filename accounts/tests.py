@@ -447,3 +447,68 @@ class AddLearnerTests(TestCase):
         self.assertIn(f'?student={created.uuid}', response.url)
         # Check linked to guardian
         self.assertTrue(self.guardian.linked_students.filter(students=created).exists())
+
+
+class TeacherCurriculumViewTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        from subjects.models import Discipline, GradeLevel, Strand, Subject, SubStrand
+
+        cls.teacher = User.objects.create_user(
+            phone='0799999999',
+            password='1234',
+            role=Role.TEACHER,
+        )
+        cls.guardian = User.objects.create_user(
+            phone='0788888888',
+            password='1234',
+            role=Role.GUARDIAN,
+        )
+        cls.grade = GradeLevel.objects.create(name='Grade 4', slug='grade-4', level='Upper Primary')
+        cls.discipline = Discipline.objects.create(name='Math', slug='math')
+        cls.subject = Subject.objects.create(
+            name='Mathematics',
+            slug='mathematics-g4',
+            grade_level=cls.grade,
+            discipline=cls.discipline,
+        )
+        cls.strand = Strand.objects.create(name='Numbers', slug='numbers-g4', subject=cls.subject)
+        cls.sub_strand = SubStrand.objects.create(
+            name='Addition',
+            slug='addition-g4',
+            strand=cls.strand,
+        )
+
+    def setUp(self):
+        self.client = Client()
+
+    def test_teacher_dashboard_shows_grade_cards(self):
+        self.client.force_login(self.teacher)
+        response = self.client.get(reverse('accounts:teacher_dashboard'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Add questions by grade')
+        self.assertContains(response, reverse('accounts:teacher_curriculum_grade', kwargs={'grade_slug': 'grade-4'}))
+
+    def test_curriculum_flow_renders_sub_strand_prompt(self):
+        self.client.force_login(self.teacher)
+        url = reverse(
+            'accounts:teacher_curriculum_sub_strand',
+            kwargs={
+                'grade_slug': 'grade-4',
+                'subject_slug': 'mathematics-g4',
+                'strand_slug': 'numbers-g4',
+                'sub_strand_slug': 'addition-g4',
+            },
+        )
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Copy AI prompt')
+        self.assertContains(response, 'sub_strand_id: {}'.format(self.sub_strand.pk))
+        self.assertContains(response, 'Multiple Choice')
+
+    def test_guardian_cannot_access_teacher_curriculum(self):
+        self.client.force_login(self.guardian)
+        response = self.client.get(
+            reverse('accounts:teacher_curriculum_grade', kwargs={'grade_slug': 'grade-4'}),
+        )
+        self.assertEqual(response.status_code, 302)
