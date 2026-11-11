@@ -160,6 +160,20 @@ class CurriculumImportTests(TestCase):
         self.assertEqual(len(warnings), 1)
         self.assertIn('duplicate', warnings[0].casefold())
 
+    def test_create_curriculum_accepts_long_sub_strand_name(self):
+        long_name = (
+            'Miracles of Jesus Christ (The feeding of the five thousand and other signs)'
+        )
+        curriculum = [{
+            'name': 'The Life of Jesus Christ',
+            'order': 1,
+            'sub_strands': [{'name': long_name, 'order': 1}],
+        }]
+        _, created_sub_strands, warnings = create_curriculum(self.subject, curriculum)
+        self.assertEqual(created_sub_strands, 1)
+        self.assertEqual(warnings, [])
+        self.assertTrue(self.subject.strands.filter(sub_strands__name=long_name).exists())
+
     def test_create_curriculum_creates_strands_and_sub_strands(self):
         curriculum = [{
             'name': 'Creation',

@@ -92,7 +92,7 @@ class Subject(models.Model):
 class Strand(models.Model):
     name = models.CharField(max_length=150)
     order = models.IntegerField(default=0)
-    slug = models.SlugField(unique=True)
+    slug = models.SlugField(max_length=80, unique=True)
     subject = models.ForeignKey(Subject, on_delete=models.CASCADE, related_name='strands')
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -109,7 +109,7 @@ class Strand(models.Model):
 
 class SubStrand(models.Model):
     name = models.CharField(max_length=500)
-    slug = models.SlugField(unique=True)
+    slug = models.SlugField(max_length=80, unique=True)
     order = models.IntegerField(default=0)
     strand = models.ForeignKey(Strand, on_delete=models.CASCADE, related_name='sub_strands')
     is_active = models.BooleanField(default=True)

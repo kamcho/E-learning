@@ -2,7 +2,7 @@ import json
 import re
 
 from django.core import signing
-from django.db import transaction
+from django.db import DataError, IntegrityError, transaction
 from django.utils.text import slugify
 
 from core.ai.client import OpenAIClient
@@ -185,7 +185,13 @@ def create_curriculum(subject, curriculum):
                     f'Could not create strand "{strand_data["name"]}": '
                     f'{form.errors.as_text()}'
                 )
-            strand = form.save()
+            try:
+                strand = form.save()
+            except (DataError, IntegrityError) as exc:
+                warnings.append(
+                    f'Could not create strand "{strand_data["name"]}": {exc}'
+                )
+                continue
             created_strands += 1
 
         existing_names = set(
@@ -210,7 +216,11 @@ def create_curriculum(subject, curriculum):
                     f'Could not create sub-strand "{sub_name}": {form.errors.as_text()}'
                 )
                 continue
-            form.save()
+            try:
+                form.save()
+            except (DataError, IntegrityError) as exc:
+                warnings.append(f'Could not create sub-strand "{sub_name}": {exc}')
+                continue
             created_sub_strands += 1
             existing_names.add(sub_name)
 

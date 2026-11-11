@@ -203,8 +203,10 @@ class StrandForm(forms.ModelForm):
             
             counter = 1
             while Strand.objects.filter(slug=cleaned_data['slug']).exists():
-                cleaned_data['slug'] = f"{base_slug}-{counter}"
+                suffix = f"-{counter}"
+                cleaned_data['slug'] = f"{base_slug[: 80 - len(suffix)]}{suffix}"
                 counter += 1
+            cleaned_data['slug'] = cleaned_data['slug'][:80]
         return cleaned_data
 
 
@@ -270,8 +272,10 @@ class SubStrandForm(forms.ModelForm):
             
             counter = 1
             while SubStrand.objects.filter(slug=cleaned_data['slug']).exists():
-                cleaned_data['slug'] = f"{base_slug}-{counter}"
+                suffix = f"-{counter}"
+                cleaned_data['slug'] = f"{base_slug[: 80 - len(suffix)]}{suffix}"
                 counter += 1
+            cleaned_data['slug'] = cleaned_data['slug'][:80]
         return cleaned_data
 
 

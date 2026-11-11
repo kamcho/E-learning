@@ -6,7 +6,7 @@ from django.urls import reverse
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django import forms
-from django.db import IntegrityError
+from django.db import DataError, IntegrityError
 from django.db.models import Count
 from django.http import JsonResponse
 
@@ -432,7 +432,7 @@ def subject_detail(request, slug):
                 subject,
                 curriculum,
             )
-        except (AIServiceError, CurriculumImportError, IntegrityError) as exc:
+        except (AIServiceError, CurriculumImportError, IntegrityError, DataError) as exc:
             messages.error(request, f'Curriculum import failed: {exc}')
         else:
             messages.success(
