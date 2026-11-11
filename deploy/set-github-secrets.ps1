@@ -2,10 +2,10 @@
 # Requires: gh CLI logged in (gh auth login)
 #
 #   .\deploy\set-github-secrets.ps1
-#   .\deploy\set-github-secrets.ps1 -Host 185.170.196.219
+#   .\deploy\set-github-secrets.ps1 -DropletHost 185.170.196.219
 
 param(
-  [string]$Host = '185.170.196.219',
+  [string]$DropletHost = '185.170.196.219',
   [string]$User = 'root',
   [string]$Repo = 'kamcho/E-learning'
 )
@@ -16,8 +16,8 @@ if (-not (Get-Command gh -ErrorAction SilentlyContinue)) {
   throw 'Install GitHub CLI: https://cli.github.com/ then run gh auth login'
 }
 
-Write-Host "Setting DROPLET_HOST=$Host and DROPLET_USER=$User on $Repo"
-gh secret set DROPLET_HOST --body $Host -R $Repo
+Write-Host "Setting DROPLET_HOST=$DropletHost and DROPLET_USER=$User on $Repo"
+gh secret set DROPLET_HOST --body $DropletHost -R $Repo
 gh secret set DROPLET_USER --body $User -R $Repo
 
 $secure = Read-Host 'DROPLET_SSH_PASSWORD (root SSH password)' -AsSecureString
