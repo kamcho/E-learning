@@ -64,6 +64,20 @@ class QuestionImportTests(TestCase):
             strand=cls.strand,
         )
 
+    def test_missing_sub_strand_id_falls_back_to_slug(self):
+        cleaned = validate_question_item({
+            'quiz': 'What is 1 + 1?',
+            'sub_strand_id': 999999,
+            'sub_strand_slug': self.sub_strand.slug,
+            'difficulty': 'Easy',
+            'quiz_type': 'True or False',
+            'choices': [
+                {'option': 'True', 'is_correct': False},
+                {'option': '2', 'is_correct': True},
+            ],
+        })
+        self.assertEqual(cleaned['sub_strand'].pk, self.sub_strand.pk)
+
     def test_validate_multiple_choice_question(self):
         cleaned = validate_question_item({
             'quiz': 'What is 2 + 2?',

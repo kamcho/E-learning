@@ -58,7 +58,7 @@
 <div class="tc-import-panel">
   <h2>2. Paste AI JSON and import</h2>
   <p style="font-size:0.85rem;color:var(--clr-text-muted);margin:0 0 var(--space-md);">
-    Questions missing <code>sub_strand_id</code> are auto-assigned to this sub-strand (id {{ sub_strand.pk }}).
+    Questions are saved on this sub-strand (id {{ sub_strand.pk }}), even if the JSON has a different id.
     We try to fix common paste issues (smart quotes, <code>\</code>, <code>\[</code>), but correct JSON from the AI works best.
   </p>
   <textarea id="tc-import-json" class="tc-textarea tall" spellcheck="false" placeholder='{"questions": [ ... ]}'></textarea>
@@ -100,11 +100,20 @@
   function applySubStrandDefaults(payload) {
     if (!payload || !Array.isArray(payload.questions)) return payload;
     payload.questions.forEach(function (q) {
-      if (!q.sub_strand_id && !q.sub_strand_slug) {
-        q.sub_strand_id = subStrandId;
-      }
+      q.sub_strand_id = subStrandId;
+      q.sub_strand_slug = subStrandSlug;
     });
     return payload;
+  }
+
+  function failedDetails(results) {
+    return (results || [])
+      .filter(function (row) { return row.status === 'failed'; })
+      .slice(0, 5)
+      .map(function (row) {
+        return 'Question ' + (row.index + 1) + ': ' + (row.error || 'failed');
+      })
+      .join('\n');
   }
 
   copyBtn.addEventListener('click', async function () {
@@ -169,7 +178,9 @@
       var kind = body.failed > 0 ? 'warning' : 'success';
       var msg = 'Created ' + body.created + ' question(s)';
       if (body.failed > 0) {
-        msg += ', ' + body.failed + ' failed. Check for duplicates or invalid choices.';
+        msg += ', ' + body.failed + ' failed.';
+        var details = failedDetails(body.results);
+        if (details) msg += '\n' + details;
       } else {
         msg += '. They are inactive until an admin activates them.';
       }

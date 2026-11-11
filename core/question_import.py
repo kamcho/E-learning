@@ -20,9 +20,10 @@ def _resolve_sub_strand(data):
         except (TypeError, ValueError):
             raise ValueError('sub_strand_id must be an integer.')
         sub_strand = SubStrand.objects.filter(pk=pk).first()
-        if not sub_strand:
+        if sub_strand:
+            return sub_strand
+        if not sub_strand_slug:
             raise ValueError(f'Sub-strand with id {pk} was not found.')
-        return sub_strand
 
     if sub_strand_slug:
         sub_strand = SubStrand.objects.filter(slug=sub_strand_slug).first()
