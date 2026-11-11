@@ -16,7 +16,7 @@ from .models import StrandObjective, SubStrand, SubStrandObjective
 STRAND_OBJECTIVE_NAME_MAX = StrandObjective._meta.get_field('name').max_length
 SUBSTRAND_OBJECTIVE_NAME_MAX = SubStrandObjective._meta.get_field('name').max_length
 
-MAX_OBJECTIVES_TEXT_LENGTH = 12000
+MAX_OBJECTIVES_TEXT_LENGTH = 40000
 MAX_OBJECTIVES = 200
 PREVIEW_SALT = 'subjects.objectives-import-preview'
 SUBJECT_OBJECTIVES_PREVIEW_SALT = 'subjects.subject-objectives-import-preview'
@@ -57,114 +57,73 @@ Return only JSON with this shape:
 Keep strand_name and sub_strand_name wording from the document (without leading numbers like 1.0 / 1.1).
 Preserve outcome wording; outcomes belong on sub-strands only."""
 
-def _objectives_copy_prompt_example(subject):
-    sample = (
-        SubStrand.objects.filter(strand__subject=subject, is_active=True)
-        .select_related('strand')
-        .order_by('strand__order', 'order', 'name')
-        .first()
-    )
-    if sample:
-        strand_name = sample.strand.name
-        sub_strand_name = sample.name
-        sample_objectives = [
-            'Describe ways to control soil erosion on sloping land.',
-            'Apply appropriate methods to conserve water at home.',
-        ]
-        if 'nutrition' in subject.name.casefold() or 'agriculture' in subject.name.casefold():
-            sample_objectives = [
-                'Explain causes of soil erosion in the local environment.',
-                'Demonstrate ways of controlling soil erosion.',
-            ]
-    else:
-        strand_name = 'Example Strand'
-        sub_strand_name = 'Example Sub-strand'
-        sample_objectives = ['Sample learning outcome one.', 'Sample learning outcome two.']
-    return json.dumps({
-        'sub_strands': [
-            {
-                'strand_name': strand_name,
-                'sub_strand_name': sub_strand_name,
-                'objectives': sample_objectives,
-            },
-        ],
-    }, indent=2)
-
-
 def build_kicd_objectives_copy_prompt(subject):
-    """Copy-paste prompt for external AI to extract sub-strand learning outcomes from KICD text."""
-    from core.ai_copy_prompt import external_ai_behavior_rules, paste_safe_json_delivery_rules
+    """
+    Prompt for Claude/ChatGPT: look up this subject's KICD design online and
+    return learning outcomes for the strands and sub-strands already in Soma Smart.
+    """
+    from core.ai_copy_prompt import paste_safe_json_delivery_rules
 
     grade = subject.grade_level
     catalog = _subject_sub_strand_catalog(subject)
-    example = _objectives_copy_prompt_example(subject)
+    if catalog.startswith('(none'):
+        catalog = (
+            '(No sub-strands in Soma Smart yet. Import strands and sub-strands first, '
+            'then copy this prompt again.)'
+        )
 
     lines = [
-        'You are extracting Kenya KICD specific learning outcomes for import into Soma Smart.',
+        'Look up the official Kenya Institute of Curriculum Development (KICD) curriculum design '
+        'on the web and return specific learning outcomes for the sub-strands listed below.',
         '',
-        '## Subject context',
-        f'- Grade: {grade.name} ({grade.get_level_display()})',
+        '## Subject to find on KICD',
+        f'- Grade: {grade.name}',
+        f'- Level: {grade.get_level_display()}',
         f'- Subject: {subject.name}',
+        f'- Discipline: {subject.discipline.name}',
         '',
-        '## Sub-strands in Soma Smart — use these exact strand_name and sub_strand_name values',
+        '## Strands and sub-strands already in our system (use these exact names)',
         catalog,
         '',
-        '## Task',
-        'From the KICD "Specific Learning Outcomes" text in this message (see ## KICD text below), '
-        'extract every numbered learning outcome for each sub-strand (sections like 1.1 … with '
-        '"By the end of the sub-strand, the learner should be able to:" and numbered lines).',
+        '## What to do',
+        '1. Search the KICD website (kicd.ac.ke) or the official CBC curriculum design PDF for '
+        f'{grade.name} {subject.name}.',
+        '2. Open the Specific Learning Outcomes for that grade and subject.',
+        '3. For every sub-strand listed above, copy the numbered outcomes under '
+        '"By the end of the sub-strand, the learner should be able to:".',
+        '4. Match each block to the strand and sub-strand names above. Do not rename them.',
+        '5. Do not invent outcomes. If you cannot find a sub-strand on KICD, omit it.',
+        '6. Reply now with the JSON. Do not ask me to paste the curriculum. You look it up.',
         '',
-        'Rules:',
-        '- Keep each outcome sentence as written in KICD; remove list numbers only.',
-        '- Ignore document titles, PDF links, and intro paragraphs.',
-        '- Ignore short notes that are not numbered outcomes.',
-        '- Group outcomes under the correct strand_name and sub_strand_name from the list above.',
-        '- Include every sub-strand that has outcomes in the source; use an empty objectives array '
-        'only if the document has none for that sub-strand.',
-        '- Do not invent outcomes.',
+        '## Output',
+        'Return ONLY this JSON (one object, every sub-strand you found):',
+        '{"sub_strands":[{"strand_name":"exact strand name from the list","sub_strand_name":"exact sub-strand name from the list","objectives":["outcome sentence","outcome sentence"]}]}',
         '',
-        '## Output format',
-        'Return ONLY JSON:',
-        '{"sub_strands":[{"strand_name":"…","sub_strand_name":"…","objectives":["…","…"]}]}',
+        'Keep each objective sentence as written by KICD. Remove list numbers only.',
         '',
     ]
     lines.extend(paste_safe_json_delivery_rules())
-    lines.extend(external_ai_behavior_rules())
-    lines.extend([
-        '',
-        '## Example structure (shape only)',
-        example,
-        '',
-        '## Soma Smart shortcut',
-        'You can paste the same raw KICD text into Import objectives with AI on the subject page '
-        '— in-app parse, no JSON required.',
-        '',
-        '## KICD text',
-        '(Paste the full Grade outcomes document below this line in the same message before sending,',
-        'or copy prompt + your KICD text together into the chat.)',
-        '',
-    ])
     return '\n'.join(lines)
 
 
 OBJECTIVES_IMPORT_UI_GUIDE = [
     {
-        'title': 'What you can paste',
+        'title': '1. Copy the prompt',
         'detail': (
-            'The full grade KICD “Specific Learning Outcomes” document '
-            '(strands 1.0, sub-strands 1.1, numbered outcome lines).'
+            'It already lists this subject’s strands and sub-strands. Paste it into Claude or ChatGPT '
+            'with web search. That model looks up the KICD curriculum and returns the objectives.'
         ),
     },
     {
-        'title': 'Matching',
+        'title': '2. Paste the result here',
         'detail': (
-            'Outcomes are saved on sub-strands that already exist for this subject '
-            '(names must match strands/sub-strands in your curriculum).'
+            'Copy the model’s JSON (or the outcomes text) into the box below. '
+            'Parse with AI matches them to your sub-strands and creates the objectives.'
         ),
     },
     {
-        'title': 'Wording',
-        'detail': 'Outcome sentences are saved as written; list numbers are removed.',
+        'title': 'Names',
+        'detail': 'Objectives are saved only on sub-strands that already exist for this subject.',
     },
 ]
 

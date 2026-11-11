@@ -422,12 +422,12 @@ class ObjectivesImportTests(TestCase):
         self.assertIn('sub_strands', curriculum_prompt)
         self.assertIn('objectives', curriculum_prompt)
         self.assertNotIn('Do NOT include learning outcomes', curriculum_prompt)
-        self.assertIn('next message', objectives_prompt)
-        self.assertNotIn('NO_KICD_TEXT_YET', objectives_prompt)
-        self.assertNotIn('What I will do next', objectives_prompt)
         self.assertIn(self.subject.name, objectives_prompt)
-        self.assertIn('"sub_strands"', objectives_prompt)
-        self.assertIn('objectives', objectives_prompt)
+        self.assertIn('kicd.ac.ke', objectives_prompt)
+        self.assertIn(self.strand.name, objectives_prompt)
+        self.assertIn(self.sub_strand.name, objectives_prompt)
+        self.assertIn('Do not ask me to paste', objectives_prompt)
+        self.assertNotIn('NO_KICD_TEXT_YET', objectives_prompt)
 
     def test_match_sub_strand_by_name_only_when_unique(self):
         from subjects.objectives_import import _match_sub_strand

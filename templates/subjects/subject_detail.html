@@ -205,7 +205,7 @@
       <p class="page-subtitle" style="margin-bottom: var(--space-sm);">
         Paste a table or curriculum text. AI will organize it into strands and sub-strands for you to review before anything is saved.
       </p>
-      {% include 'subjects/partials/copy_external_ai_prompt.html' with copy_prompt_id='kicd-curriculum-copy-prompt' copy_prompt_text=curriculum_copy_prompt_text copy_prompt_summary='Copy prompt: full KICD (strands, sub-strands & learning outcomes)' copy_prompt_lead='Paste KICD in the box inside this section, then use Copy prompt + KICD text (one message to Claude). To import in Soma Smart without JSON: Parse with AI in the boxes below.' %}
+      {% include 'subjects/partials/copy_external_ai_prompt.html' with copy_prompt_id='kicd-curriculum-copy-prompt' copy_prompt_text=curriculum_copy_prompt_text copy_prompt_summary='Copy prompt: full KICD (strands, sub-strands & learning outcomes)' copy_prompt_lead='Optional. Use this only if you still need strands and sub-strands created. For objectives, use the prompt under Import objectives — it already lists the strands and sub-strands in this subject.' %}
       <form method="post" novalidate>
         {% csrf_token %}
         <input type="hidden" name="action" value="parse_curriculum">

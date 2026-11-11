@@ -1,22 +1,13 @@
 {% if copy_prompt_text %}
 <details class="copy-ai-prompt" style="margin-bottom: var(--space-sm); font-size: 0.88rem;" open>
-  <summary style="cursor: pointer; font-weight: 600;">{{ copy_prompt_summary|default:"Copy prompt for ChatGPT / Claude" }}</summary>
+  <summary style="cursor: pointer; font-weight: 600;">{{ copy_prompt_summary|default:"Copy prompt" }}</summary>
   <p style="margin: var(--space-sm) 0; color: var(--clr-text-muted); line-height: 1.45;">
-    {{ copy_prompt_lead|default:"Paste your KICD document in the box below, then Copy — Claude gets the prompt and the text in one message. Or copy the prompt alone and paste KICD as your next message." }}
+    {{ copy_prompt_lead }}
   </p>
-  <label class="form-label" for="{{ copy_prompt_id }}-kicd">KICD text (paste here first)</label>
-  <textarea
-    id="{{ copy_prompt_id }}-kicd"
-    class="curriculum-paste"
-    style="min-height: 8rem; font-size: 0.82rem; margin-bottom: var(--space-sm);"
-    spellcheck="false"
-    placeholder="Paste the full Specific Learning Outcomes or curriculum design here…"
-  ></textarea>
-  <label class="form-label" for="{{ copy_prompt_id }}">Prompt preview (read-only)</label>
   <textarea
     id="{{ copy_prompt_id }}"
     class="curriculum-paste"
-    style="min-height: 8rem; font-size: 0.78rem;"
+    style="min-height: 10rem; font-size: 0.78rem;"
     readonly
     spellcheck="false"
   >{{ copy_prompt_text }}</textarea>
@@ -25,56 +16,23 @@
     class="btn btn-primary"
     id="{{ copy_prompt_id }}-btn"
     style="width: 100%; justify-content: center; margin-top: var(--space-sm);"
-  >Copy prompt + KICD text</button>
-  <button
-    type="button"
-    class="btn btn-secondary"
-    id="{{ copy_prompt_id }}-btn-prompt-only"
-    style="width: 100%; justify-content: center; margin-top: var(--space-sm);"
-  >Copy prompt only</button>
+  >Copy prompt</button>
 </details>
 <script>
 (function () {
   var area = document.getElementById('{{ copy_prompt_id|escapejs }}');
-  var kicd = document.getElementById('{{ copy_prompt_id|escapejs }}-kicd');
   var btn = document.getElementById('{{ copy_prompt_id|escapejs }}-btn');
-  var btnPrompt = document.getElementById('{{ copy_prompt_id|escapejs }}-btn-prompt-only');
   if (!area || !btn) return;
-
-  function buildFullMessage() {
-    var kicdText = (kicd && kicd.value) ? kicd.value.trim() : '';
-    if (!kicdText) return '';
-    return area.value + '\n\n' + kicdText;
-  }
-
-  async function copyText(text, button, okLabel) {
-    if (!text) {
-      button.textContent = 'Add KICD text above first';
-      setTimeout(function () { button.textContent = okLabel; }, 2500);
-      return;
-    }
+  btn.addEventListener('click', async function () {
     try {
-      await navigator.clipboard.writeText(text);
+      await navigator.clipboard.writeText(area.value);
     } catch (err) {
-      var tmp = document.createElement('textarea');
-      tmp.value = text;
-      document.body.appendChild(tmp);
-      tmp.select();
+      area.select();
       document.execCommand('copy');
-      document.body.removeChild(tmp);
     }
-    button.textContent = 'Copied!';
-    setTimeout(function () { button.textContent = okLabel; }, 2000);
-  }
-
-  btn.addEventListener('click', function () {
-    copyText(buildFullMessage(), btn, 'Copy prompt + KICD text');
+    btn.textContent = 'Copied!';
+    setTimeout(function () { btn.textContent = 'Copy prompt'; }, 2000);
   });
-  if (btnPrompt) {
-    btnPrompt.addEventListener('click', function () {
-      copyText(area.value, btnPrompt, 'Copy prompt only');
-    });
-  }
 })();
 </script>
 {% endif %}

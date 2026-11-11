@@ -1,10 +1,12 @@
 <div class="card" style="margin-bottom: var(--space-md);">
   <h2 class="card-title">✨ Import objectives with AI</h2>
   <p class="page-subtitle" style="margin-bottom: var(--space-sm); font-size: 0.88rem;">
-    Paste the full grade KICD specific learning outcomes. Objectives are created on matching sub-strands.
+    Strands and sub-strands are already in Soma Smart. Copy the prompt into Claude or ChatGPT
+    (with web search). It looks up KICD for this subject and returns the objectives.
+    Paste that result below and Parse with AI creates them.
   </p>
   {% include 'subjects/partials/objectives_import_format_guide.html' %}
-  {% include 'subjects/partials/copy_external_ai_prompt.html' with copy_prompt_id='kicd-objectives-copy-prompt' copy_prompt_text=objectives_copy_prompt_text copy_prompt_summary='Copy prompt: learning outcomes only (strands already exist)' copy_prompt_lead='Paste outcomes here, then Copy prompt + KICD text. Or use Parse with AI below — no Claude needed. For strands + outcomes JSON together, use the combined prompt under Import curriculum above.' %}
+  {% include 'subjects/partials/copy_external_ai_prompt.html' with copy_prompt_id='kicd-objectives-copy-prompt' copy_prompt_text=objectives_copy_prompt_text copy_prompt_summary='Copy prompt (lists your strands and sub-strands)' copy_prompt_lead='Paste this into Claude or ChatGPT. The model fetches KICD objectives for the strands and sub-strands listed in the prompt. Copy its JSON reply into Objectives text below.' %}
   <form method="post" novalidate>
     {% csrf_token %}
     <input type="hidden" name="action" value="parse_objectives">
@@ -13,7 +15,7 @@
       class="curriculum-paste"
       id="objectives-text"
       name="objectives_text"
-      maxlength="12000"
+      maxlength="40000"
       required
     >{{ objectives_text }}</textarea>
     <button type="submit" class="btn btn-secondary" style="width: 100%; justify-content: center; margin-top: var(--space-sm);">
