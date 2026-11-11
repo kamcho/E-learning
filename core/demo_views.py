@@ -134,7 +134,7 @@ def _build_demo_wizard_trail(*, phase, grade, subject, scope, strand, sub_strand
 
     labels = {
         'grade': ('Choose a grade', "Select the learner's grade to see matching subjects."),
-        'subject': ('Choose a subject', 'Pick a subject for your free practice exam (7–10 questions).'),
+        'subject': ('Choose a subject', 'Pick a subject for your free practice exam (at least 7 questions).'),
         'scope': ('Test focus', 'Whole subject, one strand, or a specific sub-strand.'),
         'strand': ('Choose a strand', 'Select the strand you want to practise.'),
         'sub_strand': ('Choose a sub-strand', 'Pick a focused sub-strand topic.'),

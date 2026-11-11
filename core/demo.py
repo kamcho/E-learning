@@ -72,7 +72,8 @@ def select_demo_questions(
     if len(pool) < min_count:
         return []
 
-    sample_size = min(max_count, len(pool))
+    upper = min(max_count, len(pool))
+    sample_size = random.randint(min_count, upper)
     return random.sample(pool, sample_size)
 
 

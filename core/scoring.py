@@ -1,6 +1,13 @@
 """Per-question scoring and AttemptResponse helpers."""
 
+import logging
+import re
+
 from core.models import AttemptResponse
+
+logger = logging.getLogger(__name__)
+
+TEXT_QUIZ_TYPES = frozenset({'OpenEnded', 'Fill in the Blank', 'Matching'})
 
 
 def parse_selected_option_ids(answer_str):
@@ -31,6 +38,117 @@ def _grade_choice(question, selected_option):
     return 0, False
 
 
+def _normalize_answer_text(text):
+    """Lowercase, collapse whitespace, strip punctuation for loose matching."""
+    raw = (text or '').strip().lower()
+    raw = re.sub(r'[^\w\s./-]', '', raw)
+    return ' '.join(raw.split())
+
+
+def _question_context(question):
+    grade_level = ''
+    subject = ''
+    try:
+        subject_obj = question.sub_strand.strand.subject
+        subject = subject_obj.name or ''
+        if subject_obj.grade_level_id:
+            grade_level = subject_obj.grade_level.name or ''
+    except Exception:
+        pass
+    return grade_level, subject
+
+
+def _reference_answers(question):
+    return [
+        str(text).strip()
+        for text in question.options.filter(is_active=True, is_correct=True).values_list('option', flat=True)
+        if text and str(text).strip()
+    ]
+
+
+def _grade_fill_in_blank_exact(question, answer_str, max_marks):
+    normalized = _normalize_answer_text(answer_str)
+    if not normalized:
+        return 0, False
+    for ref in _reference_answers(question):
+        ref_norm = _normalize_answer_text(ref)
+        if ref_norm and ref_norm == normalized:
+            return max_marks, True
+    return None
+
+
+def _grade_with_ai(question, answer_str, max_marks):
+    from core.ai import ai_service
+    from core.ai.exceptions import AIConfigurationError, AIServiceError
+    from core.ai.tasks.grade_open_answer import GRADE_OPEN_ANSWER_TASK
+
+    if not ai_service.client.is_configured():
+        raise AIConfigurationError('OpenAI is not configured.')
+
+    grade_level, subject = _question_context(question)
+    result = ai_service.run(
+        GRADE_OPEN_ANSWER_TASK,
+        question=question.quiz or '',
+        learner_answer=answer_str,
+        reference_answers=_reference_answers(question),
+        max_marks=max_marks,
+        grade_level=grade_level,
+        subject=subject,
+    )
+    is_correct = bool(result.get('is_correct'))
+    marks_awarded = max_marks if is_correct else 0
+    return marks_awarded, is_correct, 'ai'
+
+
+def grade_text_question(question, answer_str):
+    """
+    Grade free-text answers (OpenEnded, Fill in the Blank, Matching).
+    Returns (marks_awarded, is_correct, graded_by).
+    """
+    max_marks = question_max_marks(question)
+    answer_str = (answer_str or '').strip()
+    if not answer_str:
+        return 0, False, 'auto'
+
+    if question.quiz_type == 'Fill in the Blank':
+        exact = _grade_fill_in_blank_exact(question, answer_str, max_marks)
+        if exact is not None:
+            return exact[0], exact[1], 'auto'
+
+    try:
+        return _grade_with_ai(question, answer_str, max_marks)
+    except (AIConfigurationError, AIServiceError) as exc:
+        logger.warning('AI text grading unavailable: %s', exc)
+    except Exception:
+        logger.exception('AI text grading failed for question %s', question.pk)
+
+    fallback = _grade_fill_in_blank_exact(question, answer_str, max_marks)
+    if fallback is not None:
+        return fallback[0], fallback[1], 'auto'
+
+    return 0, None, 'auto'
+
+
+def ensure_text_responses_graded(attempt):
+    """Re-grade any text responses that are still unmarked before finalizing."""
+    updated = False
+    for resp in attempt.responses.select_related('question').filter(text_answer__gt=''):
+        question = resp.question
+        if question.quiz_type not in TEXT_QUIZ_TYPES:
+            continue
+        if resp.is_correct is not None:
+            continue
+        marks_awarded, is_correct, graded_by = grade_text_question(question, resp.text_answer)
+        if is_correct is None:
+            continue
+        resp.marks_awarded = marks_awarded
+        resp.is_correct = is_correct
+        resp.graded_by = graded_by
+        resp.save(update_fields=['marks_awarded', 'is_correct', 'graded_by', 'updated_at'])
+        updated = True
+    return updated
+
+
 def _grade_multiple_choice(question, selected_ids):
     """Grade select-all-that-apply questions with exact-set matching."""
     max_marks = question_max_marks(question)
@@ -56,6 +174,7 @@ def upsert_response(attempt, question, answer_str):
     text_answer = ''
     marks_awarded = 0
     is_correct = None
+    graded_by = 'auto'
 
     if question.quiz_type == 'Multiple Choice' and question_has_multiple_correct_answers(question):
         selected_ids = parse_selected_option_ids(answer_str)
@@ -66,8 +185,11 @@ def upsert_response(attempt, question, answer_str):
         marks_awarded, is_correct = _grade_choice(question, selected_option)
     else:
         text_answer = answer_str
-        marks_awarded = 0
-        is_correct = None
+        if question.quiz_type in TEXT_QUIZ_TYPES:
+            marks_awarded, is_correct, graded_by = grade_text_question(question, answer_str)
+        else:
+            marks_awarded = 0
+            is_correct = None
 
     response, _created = AttemptResponse.objects.update_or_create(
         attempt=attempt,
@@ -78,7 +200,7 @@ def upsert_response(attempt, question, answer_str):
             'max_marks': max_marks,
             'marks_awarded': marks_awarded,
             'is_correct': is_correct,
-            'graded_by': 'auto',
+            'graded_by': graded_by,
         },
     )
     return response

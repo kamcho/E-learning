@@ -356,6 +356,9 @@ def _load_attempt_answers(request, attempt):
 
 
 def _complete_attempt(request, attempt, student, quiz, saved_answers, take_url_kwargs, *, timed_out=False):
+    from core.scoring import ensure_text_responses_graded
+
+    ensure_text_responses_graded(attempt)
     score, marks_earned, marks_possible, correct, total = finalize_attempt(attempt)
     attempt.answers = saved_answers or responses_to_answers_dict(attempt)
     attempt.score = score

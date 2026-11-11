@@ -6,7 +6,13 @@
 <section style="max-width:560px;margin:2rem auto;padding:2rem;background:var(--clr-surface);border:1px solid var(--clr-border);border-radius:16px;box-shadow:var(--shadow-sm);">
   <h1 style="margin-top:0;font-family:var(--font-heading);">Continue your practice exam</h1>
   <p style="color:var(--clr-text-muted);line-height:1.55;">
-    You’ve completed the first 3 questions. Pay once to unlock the remaining questions.
+    You’ve completed the first 3 questions free. Pay once to finish this exam
+    {% if remaining_questions %}
+      — <strong>at least {{ remaining_questions }} more</strong>
+      {% if total_questions %}({{ total_questions }} questions in total){% endif %}.
+    {% else %}
+      and unlock the remaining questions.
+    {% endif %}
     Your progress is saved in this browser session; no account is needed.
   </p>
 

@@ -513,10 +513,17 @@ def guest_demo_checkout_view(request):
                 payment_uuid=payment.uuid,
             )
 
+    question_ids = demo.get('question_ids') or []
+    total_questions = len(question_ids)
+    answered = len(demo.get('answers') or {})
+    remaining_questions = max(0, total_questions - answered)
+
     return render(request, 'subscriptions/guest_demo_checkout.html', {
         'demo': demo,
         'plan': plan,
         'form': form,
+        'total_questions': total_questions,
+        'remaining_questions': remaining_questions,
     })
 
 

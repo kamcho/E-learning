@@ -1,4 +1,5 @@
 import hashlib
+from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AnonymousUser
@@ -8,7 +9,8 @@ from django.utils.functional import SimpleLazyObject
 
 from accounts.models import LinkedStudents, Role, Student
 from core.error_views import server_error
-from core.models import Option, Question, Quiz
+from core.models import Option, Question, Quiz, UserAttempts
+from core.scoring import finalize_attempt, grade_text_question, upsert_response
 from core.json_paste import normalize_json_paste, parse_json_paste
 from core.question_import import bulk_create_questions, validate_question_item
 from subjects.models import Discipline, GradeLevel, Strand, Subject, SubStrand
@@ -230,7 +232,7 @@ class DemoPracticeTests(TestCase):
         response = self.client.get(reverse('core:exam_wizard'))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Start a free practice exam')
-        self.assertContains(response, '7–10')
+        self.assertContains(response, 'at least 7')
         self.assertContains(response, 'No account needed')
         self.assertContains(response, 'Create free account')
         self.assertContains(response, 'Choose a grade')
@@ -276,7 +278,6 @@ class DemoPracticeTests(TestCase):
         session = self.client.session['practice_demo']
         self.assertGreaterEqual(len(session['question_ids']), 7)
         self.assertLessEqual(len(session['question_ids']), 10)
-        self.assertEqual(len(session['question_ids']), 8)
 
         for index in range(8, 15):
             question = Question.objects.create(
@@ -294,7 +295,9 @@ class DemoPracticeTests(TestCase):
             'subject': self.subject.slug,
             'scope': 'general',
         })
-        self.assertEqual(len(self.client.session['practice_demo']['question_ids']), 10)
+        large_pool_count = len(self.client.session['practice_demo']['question_ids'])
+        self.assertGreaterEqual(large_pool_count, 7)
+        self.assertLessEqual(large_pool_count, 10)
 
     def test_exam_take_grades_answer_and_shows_feedback(self):
         self.client.post(reverse('core:exam_start'), {
@@ -611,3 +614,107 @@ class ServerErrorDiagnosticsTests(TestCase):
         self.assertEqual(response.status_code, 500)
         self.assertNotIn('Copy traceback', content)
         self.assertNotIn('private failure marker', content)
+
+
+class OpenEndedGradingTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.guardian = User.objects.create_user(
+            phone='0755555501',
+            password='1234',
+            role=Role.GUARDIAN,
+        )
+        cls.grade = GradeLevel.objects.create(name='Grade 5', slug='grade-5', level='Upper Primary')
+        cls.discipline = Discipline.objects.create(name='Mathematics', slug='mathematics')
+        cls.subject = Subject.objects.create(
+            name='Math G5',
+            slug='math-g5',
+            grade_level=cls.grade,
+            discipline=cls.discipline,
+        )
+        cls.strand = Strand.objects.create(name='Numbers', slug='numbers-g5', subject=cls.subject)
+        cls.sub_strand = SubStrand.objects.create(name='Fractions', slug='fractions-g5', strand=cls.strand)
+        cls.quiz = Quiz.objects.create(
+            title='G5 Math test',
+            difficulty='Easy',
+            subject=cls.subject,
+            sub_strand=cls.sub_strand,
+            created_by=cls.guardian,
+        )
+        cls.student = Student.objects.create(
+            first_name='Learner',
+            middle_name='',
+            last_name='One',
+            grade_level=cls.grade,
+        )
+        link = LinkedStudents.objects.create(user=cls.guardian)
+        link.students.add(cls.student)
+
+    def test_fill_in_blank_exact_match_without_ai(self):
+        question = Question.objects.create(
+            quiz='What is 1/2 as a decimal?',
+            difficulty='Easy',
+            quiz_type='Fill in the Blank',
+            sub_strand=self.sub_strand,
+            score=2,
+        )
+        Option.objects.create(question=question, option='0.5', is_correct=True)
+        marks, is_correct, graded_by = grade_text_question(question, '0.5')
+        self.assertEqual(marks, 2)
+        self.assertTrue(is_correct)
+        self.assertEqual(graded_by, 'auto')
+
+    @patch('core.ai.ai_service.run')
+    @patch('core.ai.ai_service.client.is_configured', return_value=True)
+    def test_open_ended_uses_ai_and_updates_attempt_response(self, _mock_configured, mock_run):
+        mock_run.return_value = {'is_correct': True, 'reason': 'Correct reasoning.'}
+        question = Question.objects.create(
+            quiz='Explain why 2/4 equals 1/2.',
+            difficulty='Easy',
+            quiz_type='OpenEnded',
+            sub_strand=self.sub_strand,
+            score=1,
+        )
+        self.quiz.questions.add(question)
+        attempt = UserAttempts.objects.create(
+            user=self.guardian,
+            student=self.student,
+            quiz=self.quiz,
+        )
+        upsert_response(attempt, question, 'They are the same amount because 2 is half of 4.')
+
+        response = attempt.responses.get(question=question)
+        self.assertEqual(response.marks_awarded, 1)
+        self.assertTrue(response.is_correct)
+        self.assertEqual(response.graded_by, 'ai')
+
+        mock_run.assert_called_once()
+        score, marks_earned, marks_possible, correct, total = finalize_attempt(attempt)
+        self.assertEqual(marks_earned, 1)
+        self.assertEqual(marks_possible, 1)
+        self.assertEqual(correct, 1)
+        self.assertEqual(score, 100)
+
+    @patch('core.ai.ai_service.run', return_value={'is_correct': False, 'reason': 'Not equivalent.'})
+    @patch('core.ai.ai_service.client.is_configured', return_value=True)
+    def test_open_ended_ai_marks_wrong_answer(self, _mock_configured, _mock_run):
+
+        question = Question.objects.create(
+            quiz='What is 3/4 + 1/4?',
+            difficulty='Easy',
+            quiz_type='OpenEnded',
+            sub_strand=self.sub_strand,
+        )
+        Option.objects.create(question=question, option='1', is_correct=True)
+        self.quiz.questions.add(question)
+        attempt = UserAttempts.objects.create(
+            user=self.guardian,
+            student=self.student,
+            quiz=self.quiz,
+        )
+        upsert_response(attempt, question, '2')
+
+        response = attempt.responses.get(question=question)
+        self.assertEqual(response.marks_awarded, 0)
+        self.assertFalse(response.is_correct)
+        self.assertEqual(response.graded_by, 'ai')

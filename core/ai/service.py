@@ -1,6 +1,11 @@
 from .client import OpenAIClient
 from .exceptions import AITaskNotFoundError
-from .tasks import EXPLAIN_ANSWER_TASK, ExplainAnswerTask
+from .tasks import (
+    EXPLAIN_ANSWER_TASK,
+    GRADE_OPEN_ANSWER_TASK,
+    ExplainAnswerTask,
+    GradeOpenAnswerTask,
+)
 
 
 class AIService:
@@ -10,6 +15,7 @@ class AIService:
         self.client = client or OpenAIClient()
         self._tasks = {
             EXPLAIN_ANSWER_TASK: ExplainAnswerTask(client=self.client),
+            GRADE_OPEN_ANSWER_TASK: GradeOpenAnswerTask(client=self.client),
         }
 
     def run(self, task_name: str, **kwargs) -> dict:
