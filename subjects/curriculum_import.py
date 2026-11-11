@@ -38,7 +38,7 @@ def build_kicd_curriculum_copy_prompt(subject):
     Plain-text prompt to copy into ChatGPT etc. to extract strands, sub-strands,
     and sub-strand learning outcomes from a KICD document.
     """
-    from core.ai_copy_prompt import paste_safe_json_delivery_rules
+    from core.ai_copy_prompt import external_ai_behavior_rules, paste_safe_json_delivery_rules
 
     grade = subject.grade_level
     example = json.dumps({
@@ -105,17 +105,16 @@ def build_kicd_curriculum_copy_prompt(subject):
         '',
     ]
     lines.extend(paste_safe_json_delivery_rules())
+    lines.extend(external_ai_behavior_rules())
     lines.extend([
         '',
         '## Example structure (replace with this subject\'s real curriculum)',
         example,
         '',
-        '## What I will do next',
-        'After you confirm you understand, I will paste the KICD curriculum text. '
-        'You will reply with only the JSON object.',
+        '## KICD text',
+        '(Paste curriculum design / outcomes below this line in the same message,',
+        'or copy this entire prompt plus your KICD text together.)',
         '',
-        '--- Paste your KICD curriculum design text below when using this prompt,',
-        'or send it as your next message after copying this prompt into the chat. ---',
     ])
     return '\n'.join(lines)
 
