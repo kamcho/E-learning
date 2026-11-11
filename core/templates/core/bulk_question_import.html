@@ -173,6 +173,7 @@
 {% block extra_js %}
 {{ example_payload|json_script:"bqi-example-payload" }}
 <script>
+{% include 'core/partials/question_import_paste.js' %}
 (function () {
   var apiUrl = '{{ api_url|escapejs }}';
   var exampleJson = JSON.parse(document.getElementById('bqi-example-payload').textContent);
@@ -209,7 +210,7 @@
 
     var payload;
     try {
-      payload = JSON.parse(raw);
+      payload = parseJsonPaste(raw);
     } catch (err) {
       showResult('error', 'Invalid JSON: ' + err.message, '');
       return;

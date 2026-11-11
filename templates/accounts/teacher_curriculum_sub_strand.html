@@ -57,6 +57,7 @@
   <h2>2. Paste AI JSON and import</h2>
   <p style="font-size:0.85rem;color:var(--clr-text-muted);margin:0 0 var(--space-md);">
     Questions missing <code>sub_strand_id</code> are auto-assigned to this sub-strand (id {{ sub_strand.pk }}).
+    Line-ending <code>\</code> characters from chat tools are removed automatically.
   </p>
   <textarea id="tc-import-json" class="tc-textarea tall" spellcheck="false" placeholder='{"questions": [ ... ]}'></textarea>
   <div class="tc-actions">
@@ -70,6 +71,7 @@
 {% block extra_js %}
 {{ example_payload|json_script:"tc-example-payload" }}
 <script>
+{% include 'core/partials/question_import_paste.js' %}
 (function () {
   var subStrandId = {{ sub_strand.pk }};
   var subStrandSlug = '{{ sub_strand.slug|escapejs }}';
@@ -91,14 +93,6 @@
   function showResult(kind, message) {
     resultBox.className = 'tc-result is-visible ' + kind;
     resultBox.textContent = message;
-  }
-
-  function stripMarkdownFences(text) {
-    var trimmed = text.trim();
-    if (trimmed.indexOf('```') === 0) {
-      trimmed = trimmed.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
-    }
-    return trimmed;
   }
 
   function applySubStrandDefaults(payload) {
@@ -130,15 +124,14 @@
   });
 
   importBtn.addEventListener('click', async function () {
-    var raw = stripMarkdownFences(jsonArea.value);
-    if (!raw) {
+    if (!jsonArea.value.trim()) {
       showResult('error', 'Paste JSON from your AI assistant first.');
       return;
     }
 
     var payload;
     try {
-      payload = JSON.parse(raw);
+      payload = parseJsonPaste(jsonArea.value);
     } catch (err) {
       showResult('error', 'Invalid JSON: ' + err.message);
       return;

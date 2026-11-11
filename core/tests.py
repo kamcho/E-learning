@@ -9,11 +9,23 @@ from django.utils.functional import SimpleLazyObject
 from accounts.models import LinkedStudents, Role, Student
 from core.error_views import server_error
 from core.models import Option, Question, Quiz
+from core.json_paste import normalize_json_paste, parse_json_paste
 from core.question_import import bulk_create_questions, validate_question_item
 from subjects.models import Discipline, GradeLevel, Strand, Subject, SubStrand
 from subscriptions.models import GuestDemoPayment, SubscriptionPlan
 
 User = get_user_model()
+
+
+class JsonPasteTests(TestCase):
+    def test_normalize_removes_line_continuation_backslashes(self):
+        # Chat UIs often insert "\" before line breaks — invalid JSON until stripped.
+        raw = '{\\\n "questions": []\n}'
+        self.assertNotIn('\\\n', normalize_json_paste(raw))
+        self.assertEqual(parse_json_paste(raw)['questions'], [])
+
+    def test_normalize_html_entities(self):
+        self.assertEqual(parse_json_paste('{"questions":&#x20;[]}')['questions'], [])
 
 
 class QuestionImportTests(TestCase):
