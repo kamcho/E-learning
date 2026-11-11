@@ -104,6 +104,8 @@ class Strand(models.Model):
         unique_together = ('name','subject')
         ordering = ('name',)
 
+
+
     def __str__(self):
         return f"{self.name} ({self.subject.name})"
 
