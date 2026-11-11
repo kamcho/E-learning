@@ -490,6 +490,14 @@ class TeacherCurriculumViewTests(TestCase):
         self.assertContains(response, reverse('accounts:teacher_curriculum_grade', kwargs={'grade_slug': 'grade-4'}))
 
     def test_curriculum_flow_renders_sub_strand_prompt(self):
+        from subjects.models import SubStrandObjective
+
+        SubStrandObjective.objects.create(
+            name='Add two-digit numbers with regrouping.',
+            slug='add-two-digit-regroup',
+            sub_strand=self.sub_strand,
+            order=1,
+        )
         self.client.force_login(self.teacher)
         url = reverse(
             'accounts:teacher_curriculum_sub_strand',
@@ -505,6 +513,9 @@ class TeacherCurriculumViewTests(TestCase):
         self.assertContains(response, 'Copy AI prompt')
         self.assertContains(response, 'sub_strand_id: {}'.format(self.sub_strand.pk))
         self.assertContains(response, 'Multiple Choice')
+        self.assertContains(response, '## Learning objectives (assess these)')
+        self.assertContains(response, 'Add two-digit numbers with regrouping.')
+        self.assertContains(response, 'cover each objective at least once')
 
     def test_guardian_cannot_access_teacher_curriculum(self):
         self.client.force_login(self.guardian)

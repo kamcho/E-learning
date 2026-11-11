@@ -16,6 +16,7 @@ from core.models import Option, Question
 
 from .curriculum_import import (
     CurriculumImportError,
+    build_kicd_curriculum_copy_prompt,
     create_curriculum,
     load_curriculum_preview,
     parse_curriculum_text,
@@ -25,6 +26,7 @@ from .objectives_import import (
     OBJECTIVES_IMPORT_UI_GUIDE,
     SUBSTRAND_OBJECTIVE_NAME_MAX,
     ObjectivesImportError,
+    build_kicd_objectives_copy_prompt,
     create_subject_objectives,
     load_subject_objectives_preview,
     parse_subject_objectives_text,
@@ -537,6 +539,8 @@ def subject_detail(request, slug):
         'objectives_import_warnings': objectives_import_warnings,
         'objectives_import_format_guide': OBJECTIVES_IMPORT_UI_GUIDE,
         'objectives_import_scope': 'subject',
+        'curriculum_copy_prompt_text': build_kicd_curriculum_copy_prompt(subject),
+        'objectives_copy_prompt_text': build_kicd_objectives_copy_prompt(subject),
         'subject_detail_post_url': detail_post_url,
         **_subject_manage_modal_context(),
     })
@@ -667,6 +671,14 @@ def sub_strand_detail(request, slug):
     for question in questions:
         question.user_can_toggle = _user_can_toggle_question(user, question)
 
+    ai_prompt_text = ''
+    if user.is_authenticated and (
+        user.is_admin_role or user.is_staff or user.is_teacher
+    ):
+        from accounts.teacher_curriculum import build_ai_question_prompt
+
+        ai_prompt_text = build_ai_question_prompt(sub_strand)
+
     return render(request, 'subjects/sub_strand_detail.html', {
         'sub_strand': sub_strand,
         'objectives': objectives,
@@ -675,6 +687,7 @@ def sub_strand_detail(request, slug):
         'form': form,
         'sub_strand_name_form': sub_strand_name_form,
         'can_edit_curriculum': _is_curriculum_admin(request.user),
+        'ai_prompt_text': ai_prompt_text,
     })
 
 

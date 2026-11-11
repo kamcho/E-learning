@@ -411,6 +411,19 @@ class ObjectivesImportTests(TestCase):
             1,
         )
 
+    def test_kicd_copy_prompts_include_subject_context(self):
+        from subjects.curriculum_import import build_kicd_curriculum_copy_prompt
+        from subjects.objectives_import import build_kicd_objectives_copy_prompt
+
+        curriculum_prompt = build_kicd_curriculum_copy_prompt(self.subject)
+        objectives_prompt = build_kicd_objectives_copy_prompt(self.subject)
+        self.assertIn(self.subject.name, curriculum_prompt)
+        self.assertIn('"strands"', curriculum_prompt)
+        self.assertIn('sub_strands', curriculum_prompt)
+        self.assertIn(self.subject.name, objectives_prompt)
+        self.assertIn('"sub_strands"', objectives_prompt)
+        self.assertIn('objectives', objectives_prompt)
+
     def test_match_sub_strand_by_name_only_when_unique(self):
         from subjects.objectives_import import _match_sub_strand
 

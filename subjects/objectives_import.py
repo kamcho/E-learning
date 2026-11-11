@@ -57,6 +57,69 @@ Return only JSON with this shape:
 Keep strand_name and sub_strand_name wording from the document (without leading numbers like 1.0 / 1.1).
 Preserve outcome wording; outcomes belong on sub-strands only."""
 
+def build_kicd_objectives_copy_prompt(subject):
+    """Copy-paste prompt for external AI to extract sub-strand learning outcomes from KICD text."""
+    from core.ai_copy_prompt import paste_safe_json_delivery_rules
+
+    grade = subject.grade_level
+    catalog = _subject_sub_strand_catalog(subject)
+    example = json.dumps({
+        'sub_strands': [
+            {
+                'strand_name': 'Living Things and Their Environment',
+                'sub_strand_name': 'Classification of Plants',
+                'objectives': [
+                    'Classify plants into flowering and non-flowering plants.',
+                    'Describe functions of parts of a flower.',
+                ],
+            },
+        ],
+    }, indent=2)
+
+    lines = [
+        'You are extracting Kenya KICD specific learning outcomes for import into Soma Smart.',
+        '',
+        '## Subject context',
+        f'- Grade: {grade.name} ({grade.get_level_display()})',
+        f'- Subject: {subject.name}',
+        '',
+        '## Sub-strands already in Soma Smart (match these names when grouping outcomes)',
+        catalog,
+        '',
+        '## Task',
+        'From the KICD "Specific Learning Outcomes" text I will paste, extract numbered learning '
+        'outcomes for each sub-strand (sections like 1.1 … followed by '
+        '"By the end of the sub-strand, the learner should be able to:" and numbered lines).',
+        '',
+        'Rules:',
+        '- Keep each outcome sentence as written in KICD; remove list numbers only.',
+        '- Ignore document titles, PDF links, and intro paragraphs.',
+        '- Ignore short notes that are not numbered outcomes.',
+        '- Group outcomes under the correct strand_name and sub_strand_name.',
+        '- Do not invent outcomes.',
+        '',
+        '## Output format',
+        'Return ONLY JSON:',
+        '{"sub_strands":[{"strand_name":"…","sub_strand_name":"…","objectives":["…","…"]}]}',
+        '',
+    ]
+    lines.extend(paste_safe_json_delivery_rules())
+    lines.extend([
+        '',
+        '## Example structure',
+        example,
+        '',
+        '## What I will do next',
+        'I will paste the full grade KICD outcomes text. Reply with only the JSON object.',
+        '',
+        'Tip: On Soma Smart you can also paste the same raw KICD text into '
+        '"Import objectives with AI" and parse in-app — no JSON required.',
+        '',
+        '--- Paste KICD specific learning outcomes below, or as your next chat message. ---',
+    ])
+    return '\n'.join(lines)
+
+
 OBJECTIVES_IMPORT_UI_GUIDE = [
     {
         'title': 'What you can paste',

@@ -4,6 +4,7 @@
     Paste the full grade KICD specific learning outcomes. Objectives are created on matching sub-strands.
   </p>
   {% include 'subjects/partials/objectives_import_format_guide.html' %}
+  {% include 'subjects/partials/copy_external_ai_prompt.html' with copy_prompt_id='kicd-objectives-copy-prompt' copy_prompt_text=objectives_copy_prompt_text copy_prompt_summary='Copy prompt: extract learning outcomes from KICD' copy_prompt_lead='Optional: use external AI to preview outcomes JSON. To import here, paste the same raw KICD outcomes text below and use Parse with AI.' %}
   <form method="post" novalidate>
     {% csrf_token %}
     <input type="hidden" name="action" value="parse_objectives">

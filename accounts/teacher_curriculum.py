@@ -197,12 +197,10 @@ def build_ai_question_prompt(sub_strand):
     strand = sub_strand.strand
     subject = strand.subject
     grade = subject.grade_level
-    objectives = list(
-        sub_strand.sub_strand_objectives
-        .filter(is_active=True)
-        .order_by('order', 'name')
-        .values_list('name', flat=True)
-    )
+    objectives = [
+        obj.name
+        for obj in sub_strand.sub_strand_objectives.filter(is_active=True).order_by('order', 'name')
+    ]
 
     quiz_types = (
         'Multiple Choice',
@@ -223,22 +221,32 @@ def build_ai_question_prompt(sub_strand):
         f'- Sub-strand: {sub_strand.name}',
         f'- sub_strand_id: {sub_strand.pk}',
         f'- sub_strand_slug: {sub_strand.slug}',
+        '',
+        '## Learning objectives (assess these)',
     ]
     if objectives:
-        lines.append('- Learning objectives for this sub-strand:')
-        for obj in objectives:
-            lines.append(f'  - {obj}')
+        for index, objective in enumerate(objectives, start=1):
+            lines.append(f'{index}. {objective}')
     else:
         lines.append(
-            '- Learning objectives: (none listed — align items to the sub-strand title and strand context.)'
+            '(None listed in Soma Smart yet — align items to the sub-strand title and strand context.)'
         )
 
-    lines.extend([
+    task_lines = [
         '',
         '## Task',
         'Create 5–10 assessment questions for this sub-strand only. Mix difficulties (Easy, Medium, Hard) '
         'and quiz types where appropriate. Use clear, age-appropriate language. '
         'LaTeX in $...$ is allowed for maths.',
+    ]
+    if objectives:
+        task_lines.append(
+            'Every question must assess at least one learning objective listed above. '
+            'Across the set, cover each objective at least once where practical. '
+            'Do not write questions unrelated to those outcomes.'
+        )
+    lines.extend(task_lines)
+    lines.extend([
         '',
         '## Output format',
         'Return ONLY valid JSON with this shape:',

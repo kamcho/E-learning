@@ -33,6 +33,74 @@ class CurriculumImportError(ValueError):
     """Raised when curriculum text or the parsed structure is invalid."""
 
 
+def build_kicd_curriculum_copy_prompt(subject):
+    """
+    Plain-text prompt to copy into ChatGPT etc. to extract strands and sub-strands
+    from a KICD curriculum design document.
+    """
+    from core.ai_copy_prompt import paste_safe_json_delivery_rules
+
+    grade = subject.grade_level
+    example = json.dumps({
+        'strands': [
+            {
+                'name': 'Living Things and Their Environment',
+                'sub_strands': [
+                    'Classification of Plants',
+                    'Vertebrates',
+                    'The Human Breathing System',
+                ],
+            },
+            {
+                'name': 'Matter',
+                'sub_strands': ['Mixtures', 'Water Pollution'],
+            },
+        ],
+    }, indent=2)
+
+    lines = [
+        'You are extracting Kenya KICD CBC curriculum structure for import into Soma Smart.',
+        '',
+        '## Subject context',
+        f'- Grade: {grade.name} ({grade.get_level_display()})',
+        f'- Subject: {subject.name}',
+        f'- Discipline: {subject.discipline.name}',
+        '',
+        '## Task',
+        'From the KICD curriculum design text I will paste in my next message (or below), '
+        'identify every STRAND (headings like "1.0 Living Things and Their Environment") '
+        'and each SUB-STRAND under it (headings like "1.1 Classification of Plants").',
+        '',
+        'Do NOT include learning outcomes, objectives, or numbered outcome sentences — '
+        'only strand and sub-strand titles.',
+        '',
+        'Rules:',
+        '- Strip leading numbering such as 1.0, 1.1, 2.0 from names; keep the full KICD wording.',
+        '- Keep sub-strands under the correct parent strand.',
+        '- Preserve document order.',
+        '- Do not invent strands or sub-strands that are not in the text.',
+        '',
+        '## Output format',
+        'Return ONLY JSON with this shape:',
+        '{"strands":[{"name":"Strand title","sub_strands":["Sub-strand one","Sub-strand two"]}]}',
+        '',
+    ]
+    lines.extend(paste_safe_json_delivery_rules())
+    lines.extend([
+        '',
+        '## Example structure (replace with this subject\'s real curriculum)',
+        example,
+        '',
+        '## What I will do next',
+        'After you confirm you understand, I will paste the KICD curriculum text. '
+        'You will reply with only the JSON object.',
+        '',
+        '--- Paste your KICD curriculum design text below when using this prompt,',
+        'or send it as your next message after copying this prompt into the chat. ---',
+    ])
+    return '\n'.join(lines)
+
+
 def _clean_name(value, label, *, max_length):
     if not isinstance(value, str):
         raise CurriculumImportError(f'{label} must be text.')

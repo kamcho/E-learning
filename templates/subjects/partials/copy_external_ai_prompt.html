@@ -1,0 +1,39 @@
+{% if copy_prompt_text %}
+<details class="copy-ai-prompt" style="margin-bottom: var(--space-sm); font-size: 0.88rem;">
+  <summary style="cursor: pointer; font-weight: 600;">{{ copy_prompt_summary|default:"Copy prompt for ChatGPT / external AI" }}</summary>
+  <p style="margin: var(--space-sm) 0; color: var(--clr-text-muted); line-height: 1.45;">
+    {{ copy_prompt_lead|default:"Copy this prompt, paste it into your AI assistant, then add your KICD document text. Use the result as a checklist or paste the same raw KICD text into Soma Smart below." }}
+  </p>
+  <textarea
+    id="{{ copy_prompt_id }}"
+    class="curriculum-paste"
+    style="min-height: 10rem; font-size: 0.8rem;"
+    readonly
+    spellcheck="false"
+  >{{ copy_prompt_text }}</textarea>
+  <button
+    type="button"
+    class="btn btn-secondary"
+    id="{{ copy_prompt_id }}-btn"
+    style="width: 100%; justify-content: center; margin-top: var(--space-sm);"
+  >Copy prompt</button>
+</details>
+<script>
+(function () {
+  var area = document.getElementById('{{ copy_prompt_id|escapejs }}');
+  var btn = document.getElementById('{{ copy_prompt_id|escapejs }}-btn');
+  if (!area || !btn) return;
+  btn.addEventListener('click', async function () {
+    try {
+      await navigator.clipboard.writeText(area.value);
+    } catch (err) {
+      area.select();
+      document.execCommand('copy');
+    }
+    var label = btn.textContent;
+    btn.textContent = 'Copied!';
+    setTimeout(function () { btn.textContent = label; }, 2000);
+  });
+})();
+</script>
+{% endif %}
