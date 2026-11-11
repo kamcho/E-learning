@@ -186,6 +186,18 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
             return reverse('accounts:referral_dashboard')
         return reverse('accounts:guardian_dashboard')
 
+    def linked_learners(self):
+        """Learners linked to this account (prefetch linked_students__students when listing)."""
+        seen = set()
+        learners = []
+        for link in self.linked_students.all():
+            for student in link.students.all():
+                if student.pk in seen:
+                    continue
+                seen.add(student.pk)
+                learners.append(student)
+        return learners
+
 
 class Student(models.Model):
     first_name = models.CharField(max_length=50)

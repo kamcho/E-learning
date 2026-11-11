@@ -14,7 +14,7 @@ from django.http import FileResponse, JsonResponse
 from django.views.decorators.http import require_http_methods, require_POST
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.db import connections
-from django.db.models import Avg, Count, Max, Q
+from django.db.models import Avg, Count, Max, Prefetch, Q
 from django.db.models.functions import TruncDate
 from django.urls import reverse
 from django.core.paginator import Paginator
@@ -23,6 +23,8 @@ from datetime import timedelta
 
 ATTEMPTS_PAGE_SIZE = 10
 ADMIN_LIST_PAGE_SIZE = 15
+ADMIN_DASHBOARD_TABLE_PAGE_SIZE = 8
+ADMIN_STUDENTS_LIST_PAGE_SIZE = 100
 
 from .auth_utils import user_needs_phone_link
 from .backups import create_database_backup
@@ -617,6 +619,7 @@ def guardian_dashboard_view(request):
         'attempt_courses': attempt_courses,
         'achievements': dashboard.get('achievements'),
         'pathway_suggestions': analytics_ctx.get('pathway_suggestions'),
+        'discipline_cluster_cards': analytics_ctx.get('discipline_cluster_cards', []),
         'require_learner_selection': require_learner_selection,
         'require_county_selection': require_county_selection,
         'needs_county': require_county_selection,
@@ -724,20 +727,81 @@ def _get_admin_users_queryset(search=''):
             | Q(phone__icontains=search)
             | Q(email__icontains=search)
             | Q(role__icontains=search)
-        )
+            | Q(linked_students__students__first_name__icontains=search)
+            | Q(linked_students__students__last_name__icontains=search)
+        ).distinct()
     return qs
 
 
-def _get_admin_students_queryset(search=''):
+def _prefetch_admin_users_for_list(qs):
+    return qs.prefetch_related(
+        Prefetch(
+            'linked_students',
+            queryset=LinkedStudents.objects.prefetch_related(
+                Prefetch(
+                    'students',
+                    queryset=Student.objects.select_related('grade_level').order_by(
+                        'first_name',
+                        'last_name',
+                    ),
+                ),
+            ),
+        ),
+    )
+
+
+def _parse_admin_student_list_filters(request):
+    """Read learner-directory filters from the query string."""
+    grade = request.GET.get('grade', '').strip()
+    gender = request.GET.get('gender', '').strip()
+    linked = request.GET.get('linked', '').strip()
+    if gender not in ('Male', 'Female'):
+        gender = ''
+    if linked not in ('linked', 'unlinked'):
+        linked = ''
+    if grade and grade != 'none':
+        try:
+            int(grade)
+        except (TypeError, ValueError):
+            grade = ''
+    return {
+        'search': request.GET.get('q', '').strip(),
+        'grade': grade,
+        'gender': gender,
+        'linked': linked,
+    }
+
+
+def _get_admin_students_queryset(*, search='', grade='', gender='', linked=''):
     qs = Student.objects.select_related('grade_level').order_by('first_name', 'last_name')
     if search:
         qs = qs.filter(
             Q(first_name__icontains=search)
             | Q(last_name__icontains=search)
+            | Q(middle_name__icontains=search)
             | Q(gender__icontains=search)
             | Q(grade_level__name__icontains=search)
         )
+    if grade == 'none':
+        qs = qs.filter(grade_level__isnull=True)
+    elif grade:
+        qs = qs.filter(grade_level_id=int(grade))
+    if gender:
+        qs = qs.filter(gender=gender)
+    if linked == 'linked':
+        qs = qs.filter(linked_students__isnull=False).distinct()
+    elif linked == 'unlinked':
+        qs = qs.annotate(_guardian_link_count=Count('linked_students')).filter(
+            _guardian_link_count=0,
+        )
     return qs
+
+
+def _admin_student_grade_choices():
+    from subjects.models import GradeLevel
+
+    grades = sorted(GradeLevel.objects.all(), key=_grade_sort_key)
+    return grades
 
 
 def _build_admin_user_stats():
@@ -1022,6 +1086,10 @@ def _build_student_analytics_context(student, grade_slug=None, filters=None):
 
     pathway_suggestions = build_pathway_suggestions(student, grade_level=selected_grade)
 
+    from .discipline_clusters import build_discipline_cluster_cards
+
+    discipline_cluster_cards = build_discipline_cluster_cards(attempts_qs, selected_grade)
+
     chart_days = chart_days_for_filters(filters)
     chart_range = None
     if filters.get('month'):
@@ -1045,6 +1113,7 @@ def _build_student_analytics_context(student, grade_slug=None, filters=None):
         ),
         'achievements': achievements,
         'pathway_suggestions': pathway_suggestions,
+        'discipline_cluster_cards': discipline_cluster_cards,
     }
 
 
@@ -1150,8 +1219,14 @@ def admin_dashboard_view(request):
         'completed_attempts': UserAttempts.objects.filter(is_active=True, is_complete=True).count(),
     }
 
-    users_paginator = Paginator(_get_admin_users_queryset(), ADMIN_LIST_PAGE_SIZE)
-    students_paginator = Paginator(_get_admin_students_queryset(), ADMIN_LIST_PAGE_SIZE)
+    users_paginator = Paginator(
+        _get_admin_users_queryset(),
+        ADMIN_DASHBOARD_TABLE_PAGE_SIZE,
+    )
+    students_paginator = Paginator(
+        _get_admin_students_queryset(),
+        ADMIN_DASHBOARD_TABLE_PAGE_SIZE,
+    )
     users_page = users_paginator.get_page(request.GET.get('users_page'))
     students_page = students_paginator.get_page(request.GET.get('students_page'))
     attempt_chart = _build_attempt_score_chart()
@@ -1243,8 +1318,9 @@ def admin_users_list_view(request):
         return denied
 
     search = request.GET.get('q', '').strip()
+    users_qs = _prefetch_admin_users_for_list(_get_admin_users_queryset(search))
     page_obj = Paginator(
-        _get_admin_users_queryset(search),
+        users_qs,
         ADMIN_LIST_PAGE_SIZE,
     ).get_page(request.GET.get('page'))
 
@@ -1264,18 +1340,26 @@ def admin_students_list_view(request):
     if denied:
         return denied
 
-    search = request.GET.get('q', '').strip()
+    filters = _parse_admin_student_list_filters(request)
     page_obj = Paginator(
-        _get_admin_students_queryset(search),
-        ADMIN_LIST_PAGE_SIZE,
+        _get_admin_students_queryset(**filters),
+        ADMIN_STUDENTS_LIST_PAGE_SIZE,
     ).get_page(request.GET.get('page'))
+
+    has_filters = any(filters.values())
 
     return render(request, 'accounts/admin_students_list.html', {
         'page_obj': page_obj,
-        'search': search,
+        'search': filters['search'],
+        'filter_grade': filters['grade'],
+        'filter_gender': filters['gender'],
+        'filter_linked': filters['linked'],
+        'has_filters': has_filters,
+        'grade_choices': _admin_student_grade_choices(),
         'stats': _build_admin_student_stats(),
         'pagination_extra': _pagination_extra_params(request, ['page']),
         'django_admin_url': reverse('admin:accounts_student_changelist'),
+        'page_size': ADMIN_STUDENTS_LIST_PAGE_SIZE,
     })
 
 

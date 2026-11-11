@@ -6,43 +6,13 @@
 {% include 'accounts/partials/gd_metric_cards_styles.html' %}
 {% include 'accounts/partials/admin_list_styles.html' %}
 <style>
-  .sub-status-pill {
-    display: inline-block;
-    font-size: 0.68rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    padding: 0.2rem 0.55rem;
-    border-radius: var(--radius-full);
-  }
-  .sub-status-pill.active { background: rgba(13, 138, 78, 0.12); color: var(--clr-primary); }
-  .sub-status-pill.pending { background: rgba(212, 160, 23, 0.12); color: #b8860b; }
-  .sub-status-pill.expired { background: rgba(100, 116, 139, 0.12); color: #64748b; }
-  .sub-status-pill.cancelled { background: rgba(193, 39, 45, 0.1); color: var(--clr-danger); }
-  .sub-live-badge {
-    display: inline-block;
-    font-size: 0.62rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    padding: 0.12rem 0.4rem;
-    border-radius: var(--radius-full);
-    background: rgba(13, 138, 78, 0.15);
-    color: var(--clr-primary);
-    margin-left: 0.35rem;
-    vertical-align: middle;
-  }
   .sub-credits {
     font-family: var(--font-heading);
     font-weight: 800;
     color: var(--clr-text);
   }
-  .admin-filter-select {
-    padding: 0.55rem 0.85rem;
-    border: 1px solid var(--clr-border);
-    border-radius: var(--radius-md);
-    font-size: 0.88rem;
-    background: var(--clr-surface);
-    color: var(--clr-text);
+  .admin-list-search-form .admin-list-filter-select--plan {
+    min-width: 168px;
   }
 </style>
 {% endblock %}
@@ -114,23 +84,51 @@
       {% if page_obj.paginator.num_pages > 1 %}
         Page {{ page_obj.number }}/{{ page_obj.paginator.num_pages }} &middot;
       {% endif %}
-      {% if search or status_filter %}{{ page_obj.paginator.count }} match{{ page_obj.paginator.count|pluralize:"es" }}{% else %}{{ stats.total }} total{% endif %}
+      {% if has_filters %}{{ page_obj.paginator.count }} match{{ page_obj.paginator.count|pluralize:"es" }}{% else %}{{ stats.total }} total{% endif %}
     </span>
   </div>
 
   <form method="get" class="admin-list-search-form">
     <label class="table-search">
       <span class="table-search-icon" aria-hidden="true">&#128269;</span>
-      <input type="search" name="q" value="{{ search }}" placeholder="Search guardian, phone, plan…" autocomplete="off">
+      <input type="search" name="q" value="{{ search }}" placeholder="Search guardian, learner, phone, plan…" autocomplete="off">
     </label>
-    <select name="status" class="admin-filter-select" aria-label="Filter by status">
-      <option value="">All statuses</option>
-      {% for val, label in status_choices %}
-        <option value="{{ val }}" {% if status_filter == val %}selected{% endif %}>{{ label }}</option>
+    <select name="plan" class="admin-list-filter-select admin-list-filter-select--plan" aria-label="Filter by plan">
+      <option value="">All plans</option>
+      {% for plan in plan_choices %}
+        <option value="{{ plan.pk }}"{% if filter_plan == plan.pk|stringformat:"s" %} selected{% endif %}>{{ plan.name }}</option>
       {% endfor %}
     </select>
-    <button type="submit">Filter</button>
-    {% if search or status_filter %}
+    <select name="status" class="admin-list-filter-select" aria-label="Filter by status">
+      <option value="">All statuses</option>
+      {% for val, label in status_choices %}
+        <option value="{{ val }}"{% if status_filter == val %} selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    <select name="live" class="admin-list-filter-select" aria-label="Filter by live access">
+      <option value="">Live + history</option>
+      <option value="live"{% if filter_live == 'live' %} selected{% endif %}>Live access only</option>
+      <option value="not_live"{% if filter_live == 'not_live' %} selected{% endif %}>Not live</option>
+    </select>
+    <select name="plan_type" class="admin-list-filter-select" aria-label="Filter by plan type">
+      <option value="">All plan types</option>
+      {% for val, label in plan_type_choices %}
+        <option value="{{ val }}"{% if filter_plan_type == val %} selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    <select name="credits" class="admin-list-filter-select" aria-label="Filter by test credits">
+      <option value="">Any credits</option>
+      <option value="unlimited"{% if filter_credits == 'unlimited' %} selected{% endif %}>Unlimited tests</option>
+      <option value="has_remaining"{% if filter_credits == 'has_remaining' %} selected{% endif %}>Tests remaining</option>
+      <option value="depleted"{% if filter_credits == 'depleted' %} selected{% endif %}>No tests left</option>
+    </select>
+    <select name="scope" class="admin-list-filter-select" aria-label="Filter by scope">
+      <option value="">Guardian + learner</option>
+      <option value="guardian"{% if filter_scope == 'guardian' %} selected{% endif %}>Guardian plan</option>
+      <option value="learner"{% if filter_scope == 'learner' %} selected{% endif %}>Learner-specific</option>
+    </select>
+    <button type="submit">Apply</button>
+    {% if has_filters %}
       <a href="{% url 'subscriptions:admin_subscriptions_list' %}" class="admin-page-btn">Clear</a>
     {% endif %}
   </form>
@@ -200,7 +198,7 @@
   {% else %}
   <div class="admin-list-empty">
     <div class="admin-list-empty-icon" aria-hidden="true">&#128203;</div>
-    <p>{% if search or status_filter %}No subscriptions match your filters.{% else %}No subscriptions recorded yet.{% endif %}</p>
+    <p>{% if has_filters %}No subscriptions match your filters.{% else %}No subscriptions recorded yet.{% endif %}</p>
   </div>
   {% endif %}
 </div>

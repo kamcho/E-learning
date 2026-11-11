@@ -1,0 +1,62 @@
+{% if discipline_cluster_cards %}
+<section class="gd-discipline-clusters" aria-label="Performance by learning area">
+  <div class="gd-discipline-cluster-grid">
+    {% for card in discipline_cluster_cards %}
+    <article class="gd-discipline-cluster gd-discipline-cluster--{{ card.theme }}{% if not card.has_data %} is-empty{% endif %}">
+      <div class="gd-discipline-cluster-cover">
+        <span class="gd-discipline-cluster-badge">{{ card.badge_label }}</span>
+        <div class="gd-discipline-cluster-scene" aria-hidden="true">
+          {% if card.theme == 'teal' %}
+          <svg class="gd-discipline-cluster-svg" viewBox="0 0 320 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <ellipse cx="160" cy="178" rx="120" ry="14" fill="#061012" opacity="0.55"/>
+            <rect x="72" y="108" width="88" height="52" rx="8" fill="#134e4a"/>
+            <rect x="78" y="114" width="76" height="38" rx="4" fill="#0f766e"/>
+            <rect x="168" y="88" width="84" height="72" rx="6" fill="#115e59"/>
+            <circle cx="210" cy="72" r="22" fill="#2dd4bf" opacity="0.35"/>
+            <path d="M48 70 Q88 40 128 62 T200 48" stroke="#5eead4" stroke-width="3" stroke-linecap="round" opacity="0.7"/>
+            <circle cx="56" cy="68" r="6" fill="#99f6e4"/>
+            <circle cx="120" cy="58" r="5" fill="#5eead4"/>
+            <text x="188" y="128" fill="#ccfbf1" font-size="28" font-weight="800" font-family="system-ui">π</text>
+            <text x="96" y="98" fill="#99f6e4" font-size="22" font-weight="700" font-family="system-ui">x²</text>
+          </svg>
+          {% elif card.theme == 'purple' %}
+          <svg class="gd-discipline-cluster-svg" viewBox="0 0 320 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="252" cy="52" r="18" fill="#fcd34d" opacity="0.85"/>
+            <ellipse cx="252" cy="52" rx="28" ry="8" fill="#1e1b4b" opacity="0.3"/>
+            <path d="M140 150 L168 78 L196 150 Z" fill="#6d28d9"/>
+            <path d="M152 132 L168 96 L184 132 Z" fill="#a78bfa"/>
+            <rect x="160" y="72" width="16" height="84" rx="4" fill="#4c1d95"/>
+            <path d="M168 150 C200 148 228 120 248 88" stroke="#c4b5fd" stroke-width="2" stroke-dasharray="4 6" opacity="0.8"/>
+            <circle cx="108" cy="146" r="10" fill="#7c3aed" opacity="0.5"/>
+            <rect x="88" y="128" width="36" height="22" rx="4" fill="#581c87"/>
+          </svg>
+          {% else %}
+          <svg class="gd-discipline-cluster-svg" viewBox="0 0 320 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="88" y="62" width="144" height="96" rx="10" fill="#78350f" opacity="0.55"/>
+            <rect x="96" y="70" width="128" height="80" rx="6" fill="#92400e"/>
+            <path d="M108 136 Q160 96 212 136" stroke="#fbbf24" stroke-width="4" stroke-linecap="round"/>
+            <circle cx="132" cy="102" r="10" fill="#f59e0b"/>
+            <circle cx="188" cy="94" r="8" fill="#fcd34d"/>
+            <rect x="142" y="148" width="36" height="8" rx="2" fill="#451a03"/>
+            <path d="M220 118 L248 90 L270 118 L248 146 Z" stroke="#fb923c" stroke-width="2" fill="none"/>
+          </svg>
+          {% endif %}
+        </div>
+      </div>
+      <div class="gd-discipline-cluster-content">
+        <p class="gd-discipline-cluster-tag">{{ card.title }}</p>
+        <h3 class="gd-discipline-cluster-headline">{{ card.headline }}</h3>
+        <div class="gd-discipline-cluster-progress">
+          <div class="gd-discipline-cluster-progress-track">
+            <div class="gd-discipline-cluster-progress-fill" style="width: {% if card.has_data %}{{ card.progress_pct }}{% else %}0{% endif %}%;"></div>
+          </div>
+          <p class="gd-discipline-cluster-progress-text">
+            {{ card.subjects_touched }} / {{ card.subject_total }} subject{{ card.subject_total|pluralize }}
+          </p>
+        </div>
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}

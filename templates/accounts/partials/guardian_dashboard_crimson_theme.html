@@ -298,36 +298,44 @@
     border-color: var(--cs-border);
   }
 
-  html[data-theme="dark"] body.guardian-dash-dark .guardian-dash-main .achievement-chip {
+  html[data-theme="dark"] body.guardian-dash-dark .guardian-dash-main .achievements-list {
+    border-color: var(--cs-border);
+  }
+
+  html[data-theme="dark"] body.guardian-dash-dark .guardian-dash-main .achievements-row {
+    background: var(--cs-surface);
+    border-bottom-color: var(--cs-border);
+  }
+
+  html[data-theme="dark"] body.guardian-dash-dark .guardian-dash-main .achievements-row:nth-child(even) {
+    background: var(--cs-bg-elevated);
+  }
+
+  html[data-theme="dark"] body.guardian-dash-dark .guardian-dash-main .achievements-icon {
+    background: rgba(196, 30, 58, 0.15);
+    border-color: rgba(196, 30, 58, 0.25);
+  }
+
+  html[data-theme="dark"] body.guardian-dash-dark .guardian-dash-main .achievements-icon--locked {
     background: var(--cs-bg-elevated);
     border-color: var(--cs-border);
   }
 
-  html[data-theme="dark"] body.guardian-dash-dark .guardian-dash-main .achievement-chip.is-unlocked {
+  html[data-theme="dark"] body.guardian-dash-dark .guardian-dash-main .achievements-row-progress-track,
+  html[data-theme="dark"] body.guardian-dash-dark .guardian-dash-main .achievements-overall-track {
+    background: var(--cs-bg-elevated);
+    border-color: var(--cs-border);
+  }
+
+  html[data-theme="dark"] body.guardian-dash-dark .guardian-dash-main .achievements-row-status--earned {
     border-color: rgba(61, 214, 198, 0.35);
     background: rgba(61, 214, 198, 0.08);
-  }
-
-  html[data-theme="dark"] body.guardian-dash-dark .guardian-dash-main .achievement-card {
-    background: var(--cs-bg-elevated);
-    border-color: var(--cs-border);
-  }
-
-  html[data-theme="dark"] body.guardian-dash-dark .guardian-dash-main .achievement-card--earned {
-    background: linear-gradient(135deg, rgba(92, 10, 18, 0.25), rgba(61, 214, 198, 0.08));
-    border-color: rgba(61, 214, 198, 0.25);
-  }
-
-  html[data-theme="dark"] body.guardian-dash-dark .guardian-dash-main .achievement-icon {
-    background: rgba(196, 30, 58, 0.15);
-  }
-
-  html[data-theme="dark"] body.guardian-dash-dark .guardian-dash-main .achievement-progress-track {
-    background: var(--cs-bg-elevated);
-  }
-
-  html[data-theme="dark"] body.guardian-dash-dark .guardian-dash-main .achievement-meta {
     color: var(--cs-accent);
+  }
+
+  html[data-theme="dark"] body.guardian-dash-dark .guardian-dash-main .achievements-overall-fill,
+  html[data-theme="dark"] body.guardian-dash-dark .guardian-dash-main .achievements-row-progress-fill {
+    background: var(--cs-accent);
   }
 
   html[data-theme="dark"] body.guardian-dash-dark .guardian-dash-main .attempt-chart-panel {

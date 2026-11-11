@@ -81,7 +81,7 @@
   <form method="get" class="admin-list-search-form">
     <label class="table-search">
       <span class="table-search-icon" aria-hidden="true">&#128269;</span>
-      <input type="search" name="q" value="{{ search }}" placeholder="Search by name, phone, email or role..." autocomplete="off">
+      <input type="search" name="q" value="{{ search }}" placeholder="Search by user or linked learner name..." autocomplete="off">
     </label>
     <button type="submit">Search</button>
     {% if search %}
@@ -95,6 +95,7 @@
       <tr>
         <th>User</th>
         <th>Role</th>
+        <th>Linked learners</th>
         <th>Status</th>
         <th>Email</th>
         <th>Joined</th>
@@ -114,6 +115,23 @@
           </div>
         </td>
         <td><span class="role-pill role-pill--{{ u.role }}">{{ u.get_role_display }}</span></td>
+        <td class="table-learners-cell">
+          {% with learners=u.linked_learners %}
+          {% if learners %}
+          <div class="table-learner-links">
+            {% for student in learners %}
+            <a
+              href="{% url 'accounts:student_analytics' student.uuid %}"
+              class="table-learner-link"
+              title="{{ student.first_name }} {{ student.last_name }}{% if student.grade_level %} · {{ student.grade_level.name }}{% endif %}"
+            >{{ student.first_name }} {{ student.last_name|truncatechars:14 }}{% if student.grade_level %} <span class="table-learner-grade">{{ student.grade_level.name }}</span>{% endif %}</a>
+            {% endfor %}
+          </div>
+          {% else %}
+          <span class="table-cell-muted">None</span>
+          {% endif %}
+          {% endwith %}
+        </td>
         <td>
           {% if u.is_active %}
             <span class="badge badge-primary">Active</span>
@@ -141,6 +159,12 @@
 {% block extra_js %}
 <script>
 (function () {
+  document.querySelectorAll('.table-learner-link').forEach(function (link) {
+    link.addEventListener('click', function (e) {
+      e.stopPropagation();
+    });
+  });
+
   document.querySelectorAll('.data-table tbody tr.clickable-row[data-href]').forEach(function (row) {
     row.addEventListener('click', function () {
       window.location.href = row.dataset.href;

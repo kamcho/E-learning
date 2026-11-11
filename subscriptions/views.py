@@ -144,10 +144,70 @@ def _build_admin_payment_stats():
     }
 
 
-def _get_admin_subscriptions_queryset(*, search='', status=''):
+def _parse_admin_subscription_list_filters(request):
+    """Read subscription-directory filters from the query string."""
+    status = request.GET.get('status', '').strip()
+    plan = request.GET.get('plan', '').strip()
+    live = request.GET.get('live', '').strip()
+    plan_type = request.GET.get('plan_type', '').strip()
+    credits = request.GET.get('credits', '').strip()
+    scope = request.GET.get('scope', '').strip()
+
+    valid_statuses = {choice[0] for choice in Subscription.Status.choices}
+    if status and status not in valid_statuses:
+        status = ''
+
+    valid_plan_types = {choice[0] for choice in SubscriptionPlan.PlanType.choices}
+    if plan_type and plan_type not in valid_plan_types:
+        plan_type = ''
+
+    if live not in ('live', 'not_live'):
+        live = ''
+
+    if credits not in ('unlimited', 'has_remaining', 'depleted'):
+        credits = ''
+
+    if scope not in ('guardian', 'learner'):
+        scope = ''
+
+    if plan:
+        try:
+            UUID(plan)
+        except (TypeError, ValueError):
+            plan = ''
+
+    return {
+        'search': request.GET.get('q', '').strip(),
+        'status': status,
+        'plan': plan,
+        'live': live,
+        'plan_type': plan_type,
+        'credits': credits,
+        'scope': scope,
+    }
+
+
+def _admin_subscription_list_has_filters(filters):
+    return bool(filters.get('search') or any(
+        filters.get(key) for key in ('status', 'plan', 'live', 'plan_type', 'credits', 'scope')
+    ))
+
+
+def _get_admin_subscriptions_queryset(
+    *,
+    search='',
+    status='',
+    plan='',
+    live='',
+    plan_type='',
+    credits='',
+    scope='',
+):
+    from django.utils import timezone
+
     qs = (
         Subscription.objects
-        .select_related('user', 'plan')
+        .select_related('user', 'plan', 'student')
         .order_by('-created_at')
     )
     if search:
@@ -156,12 +216,49 @@ def _get_admin_subscriptions_queryset(*, search='', status=''):
             | Q(user__last_name__icontains=search)
             | Q(user__phone__icontains=search)
             | Q(user__email__icontains=search)
+            | Q(student__first_name__icontains=search)
+            | Q(student__last_name__icontains=search)
             | Q(plan__name__icontains=search)
             | Q(plan__slug__icontains=search)
         )
     if status:
         qs = qs.filter(status=status)
-    return qs
+    if plan:
+        qs = qs.filter(plan_id=plan)
+    if plan_type:
+        qs = qs.filter(plan__plan_type=plan_type)
+    if scope == 'guardian':
+        qs = qs.filter(student__isnull=True)
+    elif scope == 'learner':
+        qs = qs.filter(student__isnull=False)
+    if live == 'live':
+        now = timezone.now()
+        qs = qs.filter(
+            status=Subscription.Status.ACTIVE,
+            ends_at__gt=now,
+        )
+    elif live == 'not_live':
+        now = timezone.now()
+        qs = qs.exclude(
+            status=Subscription.Status.ACTIVE,
+            ends_at__gt=now,
+        )
+    if credits == 'unlimited':
+        qs = qs.filter(tests_remaining__isnull=True)
+    elif credits == 'has_remaining':
+        qs = qs.filter(tests_remaining__gt=0)
+    elif credits == 'depleted':
+        qs = qs.filter(tests_remaining=0)
+    return qs.distinct()
+
+
+def _admin_subscription_plan_choices():
+    return list(
+        SubscriptionPlan.objects
+        .filter(subscriptions__isnull=False)
+        .distinct()
+        .order_by('sort_order', 'name')
+    )
 
 
 def _build_admin_subscription_stats():
@@ -656,22 +753,25 @@ def admin_subscriptions_list_view(request):
     if denied:
         return denied
 
-    search = request.GET.get('q', '').strip()
-    status = request.GET.get('status', '').strip()
-    valid_statuses = {choice[0] for choice in Subscription.Status.choices}
-    if status and status not in valid_statuses:
-        status = ''
-
+    filters = _parse_admin_subscription_list_filters(request)
     page_obj = Paginator(
-        _get_admin_subscriptions_queryset(search=search, status=status),
+        _get_admin_subscriptions_queryset(**filters),
         ADMIN_SUBSCRIPTIONS_PAGE_SIZE,
     ).get_page(request.GET.get('page'))
 
     return render(request, 'accounts/admin_subscriptions_list.html', {
         'page_obj': page_obj,
-        'search': search,
-        'status_filter': status,
+        'search': filters['search'],
+        'status_filter': filters['status'],
+        'filter_plan': filters['plan'],
+        'filter_live': filters['live'],
+        'filter_plan_type': filters['plan_type'],
+        'filter_credits': filters['credits'],
+        'filter_scope': filters['scope'],
+        'has_filters': _admin_subscription_list_has_filters(filters),
         'status_choices': Subscription.Status.choices,
+        'plan_choices': _admin_subscription_plan_choices(),
+        'plan_type_choices': SubscriptionPlan.PlanType.choices,
         'stats': _build_admin_subscription_stats(),
         'pagination_extra': _pagination_extra_params(request, ['page']),
         'django_admin_url': reverse('admin:subscriptions_subscription_changelist'),

@@ -1,0 +1,181 @@
+<style>
+  .card--performance {
+    margin-bottom: var(--space-2xl);
+  }
+
+  .subject-difficulty-strip {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.65rem;
+    margin-bottom: 1.25rem;
+  }
+
+  @media (max-width: 640px) {
+    .subject-difficulty-strip { grid-template-columns: 1fr; }
+  }
+
+  .subject-difficulty-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.65rem 0.85rem;
+    border-radius: 6px;
+    border: 1px solid var(--clr-border);
+    background: var(--clr-surface-alt);
+    font-size: 0.8rem;
+  }
+
+  .subject-difficulty-item strong {
+    font-family: var(--font-heading);
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: var(--clr-text);
+  }
+
+  .subject-difficulty-item span {
+    color: var(--clr-text-muted);
+    font-size: 0.75rem;
+  }
+
+  .subject-difficulty-item--easy strong { color: #15803d; }
+  .subject-difficulty-item--medium strong { color: #a16207; }
+  .subject-difficulty-item--hard strong { color: #be123c; }
+
+  .subject-perf-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border: 1px solid var(--clr-border);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+
+  .subject-perf-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1.4fr) minmax(100px, 1fr) 4.5rem 3.5rem 3.5rem 1.25rem;
+    gap: 0.75rem;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--clr-border);
+    text-decoration: none;
+    color: inherit;
+    background: var(--clr-surface);
+    transition: background 0.12s ease;
+  }
+
+  .subject-perf-row:last-child {
+    border-bottom: none;
+  }
+
+  .subject-perf-row:hover {
+    background: color-mix(in srgb, var(--clr-primary) 6%, var(--clr-surface));
+  }
+
+  .subject-perf-row:nth-child(even) {
+    background: color-mix(in srgb, var(--clr-surface-alt) 65%, var(--clr-surface));
+  }
+
+  .subject-perf-row:nth-child(even):hover {
+    background: color-mix(in srgb, var(--clr-primary) 6%, var(--clr-surface));
+  }
+
+  .subject-perf-name {
+    margin: 0;
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: var(--clr-text);
+    line-height: 1.35;
+  }
+
+  .subject-perf-bar {
+    height: 6px;
+    border-radius: 3px;
+    background: var(--clr-surface-alt);
+    overflow: hidden;
+    min-width: 0;
+  }
+
+  .subject-perf-bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    background: var(--bar-color, var(--clr-primary));
+    width: calc(var(--bar-pct, 0) * 1%);
+    min-width: 0;
+  }
+
+  .subject-perf-row--high { --bar-color: #16a34a; }
+  .subject-perf-row--mid { --bar-color: #ca8a04; }
+  .subject-perf-row--low { --bar-color: #e11d48; }
+  .subject-perf-row--empty { --bar-color: #cbd5e1; }
+
+  .subject-perf-metric {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--clr-text);
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .subject-perf-metric.is-muted {
+    color: var(--clr-text-light);
+    font-weight: 600;
+  }
+
+  .subject-perf-meta {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--clr-text-muted);
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .subject-perf-arrow {
+    color: var(--clr-text-light);
+    font-size: 0.85rem;
+    text-align: right;
+  }
+
+  .subject-perf-row:hover .subject-perf-arrow {
+    color: var(--clr-primary);
+  }
+
+  .subject-perf-head {
+    display: none;
+  }
+
+  @media (min-width: 769px) {
+    .subject-perf-head {
+      display: grid;
+      grid-template-columns: minmax(0, 1.4fr) minmax(100px, 1fr) 4.5rem 3.5rem 3.5rem 1.25rem;
+      gap: 0.75rem;
+      padding: 0.5rem 1rem;
+      margin-bottom: 0.35rem;
+      font-size: 0.65rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--clr-text-muted);
+    }
+
+    .subject-perf-head span:not(:first-child) {
+      text-align: right;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .subject-perf-row {
+      grid-template-columns: 1fr auto;
+      grid-template-areas:
+        "name avg"
+        "bar bar"
+        "meta meta";
+    }
+    .subject-perf-name { grid-area: name; }
+    .subject-perf-bar { grid-area: bar; }
+    .subject-perf-metric:first-of-type { grid-area: avg; }
+    .subject-perf-meta { grid-area: meta; text-align: left; }
+    .subject-perf-metric:not(:first-of-type),
+    .subject-perf-arrow { display: none; }
+  }
+</style>

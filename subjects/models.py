@@ -90,7 +90,7 @@ class Subject(models.Model):
         return f"{self.name} ({self.grade_level.name})"
     
 class Strand(models.Model):
-    name = models.CharField(max_length=50)
+    name = models.CharField(max_length=150)
     order = models.IntegerField(default=0)
     slug = models.SlugField(unique=True)
     subject = models.ForeignKey(Subject, on_delete=models.CASCADE, related_name='strands')

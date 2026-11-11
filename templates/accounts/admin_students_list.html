@@ -74,7 +74,8 @@
       {% if page_obj.paginator.num_pages > 1 %}
         Page {{ page_obj.number }}/{{ page_obj.paginator.num_pages }} &middot;
       {% endif %}
-      {% if search %}{{ page_obj.paginator.count }} match{{ page_obj.paginator.count|pluralize:"es" }}{% else %}{{ stats.total }} total{% endif %}
+      {% if has_filters %}{{ page_obj.paginator.count }} match{{ page_obj.paginator.count|pluralize:"es" }}{% else %}{{ stats.total }} total{% endif %}
+      &middot; {{ page_size }} per page
     </span>
   </div>
 
@@ -83,8 +84,25 @@
       <span class="table-search-icon" aria-hidden="true">&#128269;</span>
       <input type="search" name="q" value="{{ search }}" placeholder="Search by name, grade or gender..." autocomplete="off">
     </label>
-    <button type="submit">Search</button>
-    {% if search %}
+    <select name="grade" class="admin-list-filter-select" aria-label="Filter by grade">
+      <option value="">All grades</option>
+      <option value="none"{% if filter_grade == 'none' %} selected{% endif %}>No grade assigned</option>
+      {% for grade in grade_choices %}
+      <option value="{{ grade.pk }}"{% if filter_grade == grade.pk|stringformat:"s" %} selected{% endif %}>{{ grade.name }}</option>
+      {% endfor %}
+    </select>
+    <select name="gender" class="admin-list-filter-select" aria-label="Filter by gender">
+      <option value="">All genders</option>
+      <option value="Male"{% if filter_gender == 'Male' %} selected{% endif %}>Male</option>
+      <option value="Female"{% if filter_gender == 'Female' %} selected{% endif %}>Female</option>
+    </select>
+    <select name="linked" class="admin-list-filter-select" aria-label="Filter by guardian link">
+      <option value="">All learners</option>
+      <option value="linked"{% if filter_linked == 'linked' %} selected{% endif %}>Linked to guardian</option>
+      <option value="unlinked"{% if filter_linked == 'unlinked' %} selected{% endif %}>Not linked</option>
+    </select>
+    <button type="submit">Apply</button>
+    {% if has_filters %}
       <a href="{% url 'accounts:admin_students_list' %}" class="admin-page-btn">Clear</a>
     {% endif %}
   </form>
@@ -122,7 +140,7 @@
         <td>
           <span class="gender-pill gender-pill--{{ student.gender|lower }}">{{ student.gender }}</span>
         </td>
-        <td>{{ student.dob|date:"d M Y"|default:"—" }}</td>
+        <td class="table-cell-date">{{ student.dob|date:"d M Y"|default:"—" }}</td>
         <td><span class="list-row-action">Analytics &rarr;</span></td>
       </tr>
       {% endfor %}
@@ -132,7 +150,7 @@
   {% else %}
   <div class="admin-list-empty">
     <div class="admin-list-empty-icon" aria-hidden="true">&#127891;</div>
-    <p>{% if search %}No students match &ldquo;{{ search }}&rdquo;.{% else %}No students added yet.{% endif %}</p>
+    <p>{% if has_filters %}No students match the current filters.{% else %}No students added yet.{% endif %}</p>
   </div>
   {% endif %}
 </div>

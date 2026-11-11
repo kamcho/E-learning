@@ -12,6 +12,7 @@
 {% include 'accounts/partials/gd_metric_cards_styles.html' %}
 {% include 'components/stat_card_styles.html' %}
 {% include 'accounts/partials/guardian_dashboard_crimson_theme.html' %}
+{% include 'accounts/partials/discipline_cluster_cards_styles.html' %}
 <style>
   .guardian-dash-main {
     padding: var(--space-lg) var(--space-xl) var(--space-2xl);
@@ -147,111 +148,156 @@
     margin: 0 auto;
   }
 
-  .gd-hero {
+  .gd-learner-header {
+    margin-bottom: var(--space-xl);
+    border-radius: 12px;
+    border: 1px solid var(--dash-border);
+    background: var(--dash-card);
+    overflow: hidden;
+    box-shadow: 0 6px 24px rgba(15, 23, 42, 0.06);
+  }
+
+  html[data-theme="dark"] .gd-learner-header {
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.38);
+  }
+
+  .gd-learner-header-top {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 1.25rem;
-    padding: 1.1rem 1.25rem;
-    margin-bottom: var(--space-xl);
-    background: #fff;
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
-    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+    gap: 0.75rem 1rem;
+    flex-wrap: wrap;
+    padding: 0.6rem 1.1rem;
+    border-bottom: 1px solid var(--dash-border);
+    background: color-mix(in srgb, var(--dash-input-bg) 88%, var(--dash-card));
   }
 
-  .gd-hero-identity {
+  .gd-learner-header-body {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1.25rem;
+    flex-wrap: wrap;
+    padding: 1.15rem 1.25rem 1.2rem;
+  }
+
+  .gd-learner-identity {
     display: flex;
     align-items: center;
-    gap: 0.9rem;
+    gap: 1rem;
     min-width: 0;
   }
 
-  .gd-hero-avatar {
-    width: 48px;
-    height: 48px;
-    border-radius: 6px;
-    background: #4f46e5;
+  .gd-learner-avatar {
+    width: 52px;
+    height: 52px;
+    border-radius: 10px;
+    flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: center;
     font-family: var(--font-heading);
-    font-size: 0.95rem;
+    font-size: 1rem;
     font-weight: 800;
     color: #fff;
-    flex-shrink: 0;
+    background: linear-gradient(145deg, var(--dash-purple) 0%, var(--dash-purple-dark) 100%);
+    box-shadow: 0 6px 16px color-mix(in srgb, var(--dash-purple) 35%, transparent);
   }
 
-  .gd-hero-copy { min-width: 0; }
-
-  .gd-hero-name {
-    font-family: var(--font-heading);
-    font-size: 1.15rem;
-    font-weight: 800;
-    color: #1e293b;
-    letter-spacing: -0.02em;
-    line-height: 1.2;
+  .gd-learner-name {
     margin: 0;
+    font-family: var(--font-heading);
+    font-size: clamp(1.2rem, 2.5vw, 1.45rem);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1.2;
+    color: var(--dash-text);
   }
 
-  .gd-hero-meta {
+  .gd-learner-chips {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 0.35rem 0.45rem;
-    margin: 0.25rem 0 0;
-    font-size: 0.8125rem;
-    font-weight: 500;
-    color: #64748b;
+    gap: 0.4rem;
+    margin: 0.5rem 0 0;
+    padding: 0;
+    list-style: none;
   }
 
-  .gd-hero-dot {
-    width: 3px;
-    height: 3px;
-    border-radius: 50%;
-    background: #cbd5e1;
+  .gd-learner-chip {
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 0.22rem 0.55rem;
+    border-radius: 6px;
+    border: 1px solid var(--dash-border);
+    background: var(--dash-input-bg);
+    color: var(--dash-muted);
+    line-height: 1.2;
   }
 
-  .gd-hero-status {
+  .gd-learner-chip--live {
+    color: var(--dash-purple);
+    border-color: color-mix(in srgb, var(--dash-purple) 40%, var(--dash-border));
+    background: var(--dash-hover-bg);
+  }
+
+  .gd-learner-chip--live {
     display: inline-flex;
     align-items: center;
     gap: 0.35rem;
-    color: #059669;
-    font-weight: 600;
   }
 
-  .gd-hero-status::before {
+  .gd-learner-chip--live::before {
     content: '';
-    width: 7px;
-    height: 7px;
+    width: 6px;
+    height: 6px;
     border-radius: 50%;
-    background: #10b981;
+    background: var(--dash-purple);
+    flex-shrink: 0;
   }
 
-  .gd-hero-actions {
+  .gd-learner-toolbar {
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    gap: 0.5rem;
+    gap: 0.45rem;
     flex-wrap: wrap;
+    min-width: min(100%, 420px);
+    flex: 1;
   }
 
-  .gd-hero-actions .gd-month-filter {
-    min-width: 9.5rem;
+  .gd-learner-toolbar-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--dash-muted);
+    margin-right: 0.15rem;
+  }
+
+  .gd-learner-toolbar .gd-month-filter {
+    min-width: 9.25rem;
     height: 36px;
   }
 
-  .gd-hero-actions .gd-btn {
+  .gd-learner-toolbar .gd-btn {
     height: 36px;
+    white-space: nowrap;
+  }
+
+  .gd-learner-header-top .gd-select {
+    min-width: 12rem;
+    max-width: 100%;
   }
 
   @media (max-width: 900px) {
-    .gd-hero {
+    .gd-learner-header-body {
       flex-direction: column;
-      align-items: stretch;
     }
-    .gd-hero-actions {
+    .gd-learner-toolbar {
+      width: 100%;
       justify-content: flex-start;
+      min-width: 0;
     }
   }
 
@@ -580,7 +626,7 @@
   }
 
   /* Student code chip — top left */
-  .gd-hero-code {
+  .gd-profile-code {
     position: absolute;
     top: 10px;
     left: 12px;
@@ -596,7 +642,7 @@
   }
 
   /* Active status chip — top right */
-  .gd-hero-status {
+  .gd-profile-status {
     position: absolute;
     top: 10px;
     right: 12px;
@@ -2142,19 +2188,6 @@
     color: var(--dash-muted, var(--cs-text-muted));
   }
 
-  .gd-learner-report-topbar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 1rem;
-    margin-bottom: 1.5rem;
-    padding: 0.75rem 1.25rem;
-    background: var(--dash-card, var(--cs-surface));
-    border: 1px solid var(--dash-border, var(--cs-border));
-    border-radius: 12px;
-    flex-wrap: wrap;
-  }
-
   .gd-back-link {
     display: inline-flex;
     align-items: center;
@@ -2171,10 +2204,18 @@
     text-decoration: underline;
   }
 
-  .gd-learner-quick-switch {
+  .gd-learner-switch {
     display: flex;
     align-items: center;
-    gap: 0.65rem;
+    gap: 0.5rem;
+    margin-left: auto;
+  }
+
+  .gd-learner-switch-label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--dash-muted);
+    white-space: nowrap;
   }
 </style>
 {% endblock %}
@@ -2185,67 +2226,66 @@
 {% if students %}
   {% if viewing_learner and active_student %}
   <!-- Specific Learner Report View -->
-  <div class="gd-learner-report-topbar">
-    <a href="{% url 'accounts:guardian_dashboard' %}" class="gd-back-link">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-      Back to Guardian Dashboard
-    </a>
-    <div class="gd-learner-quick-switch">
+  <header class="gd-learner-header" aria-label="Learner report">
+    <div class="gd-learner-header-top">
+      <a href="{% url 'accounts:guardian_dashboard' %}" class="gd-back-link">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        Guardian dashboard
+      </a>
       {% if students|length > 1 %}
-      <span style="font-size:0.82rem; color:var(--dash-muted); font-weight:600;">Switch learner:</span>
-      <select class="gd-select" id="learner-report-switcher" onchange="window.location.href='?student=' + this.value" aria-label="Switch learner">
-        {% for st in students %}
-          <option value="{{ st.uuid }}" {% if st.uuid == active_student.uuid %}selected{% endif %}>
-            {{ st.first_name }} {{ st.last_name }} ({{ st.grade_level.name|default:"No grade" }})
-          </option>
-        {% endfor %}
-      </select>
-      {% endif %}
-    </div>
-  </div>
-
-  <section class="gd-hero" aria-label="Active learner">
-    <div class="gd-hero-identity">
-      <div class="gd-hero-avatar" aria-hidden="true">
-        {{ active_student.first_name|first|upper }}{{ active_student.last_name|first|upper }}
+      <div class="gd-learner-switch">
+        <span class="gd-learner-switch-label">Learner</span>
+        <select class="gd-select" id="learner-report-switcher" onchange="window.location.href='?student=' + this.value" aria-label="Switch learner">
+          {% for st in students %}
+            <option value="{{ st.uuid }}" {% if st.uuid == active_student.uuid %}selected{% endif %}>
+              {{ st.first_name }} {{ st.last_name }} · {{ st.grade_level.name|default:"No grade" }}
+            </option>
+          {% endfor %}
+        </select>
       </div>
-      <div class="gd-hero-copy">
-        <div style="font-size:0.74rem; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:var(--dash-purple, var(--cs-accent, #0d8a4e)); margin-bottom:0.25rem;">Viewing Learner Report</div>
-        <h2 class="gd-hero-name" style="font-size:1.6rem; margin:0 0 0.35rem;">{{ active_student.first_name }} {{ active_student.last_name }}</h2>
-        <p class="gd-hero-meta">
-          <span>{{ active_student.grade_level.name|default:"No grade" }}</span>
-          <span class="gd-hero-dot" aria-hidden="true"></span>
-          <span>{{ student_code }}</span>
-          <span class="gd-hero-dot" aria-hidden="true"></span>
-          <span class="gd-hero-status">Active</span>
-          {% if dashboard.enrolled_on %}
-          <span class="gd-hero-dot" aria-hidden="true"></span>
-          <span>Enrolled {{ dashboard.enrolled_on|date:"M d, Y" }}</span>
-          {% endif %}
-        </p>
+      {% endif %}
+    </div>
+    <div class="gd-learner-header-body">
+      <div class="gd-learner-identity">
+        <div class="gd-learner-avatar" aria-hidden="true">
+          {{ active_student.first_name|first|upper }}{{ active_student.last_name|first|upper }}
+        </div>
+        <div>
+          <h1 class="gd-learner-name">{{ active_student.first_name }} {{ active_student.last_name }}</h1>
+          <ul class="gd-learner-chips">
+            <li class="gd-learner-chip">{{ active_student.grade_level.name|default:"No grade assigned" }}</li>
+            <li class="gd-learner-chip">{{ student_code }}</li>
+            <li class="gd-learner-chip gd-learner-chip--live">Active</li>
+            {% if dashboard.enrolled_on %}
+            <li class="gd-learner-chip">Enrolled {{ dashboard.enrolled_on|date:"M d, Y" }}</li>
+            {% endif %}
+          </ul>
+        </div>
+      </div>
+      <div class="gd-learner-toolbar">
+        {% if students|length > 1 %}
+        <button type="button" class="gd-btn gd-btn-outline" id="gd-change-learner-btn" hidden aria-hidden="true" tabindex="-1">Switch</button>
+        <select class="gd-select" id="student-switcher" aria-label="Select learner" hidden>
+          {% for student in students %}
+            <option value="{{ student.uuid }}" {% if active_student.uuid == student.uuid %}selected{% endif %}>
+              {{ student.first_name }} {{ student.last_name }}
+            </option>
+          {% endfor %}
+        </select>
+        {% endif %}
+        <span class="gd-learner-toolbar-label">Period</span>
+        <input type="month" class="gd-month-filter" id="dashboard-month-filter" value="{{ dashboard_filters.month|default:'' }}" aria-label="Filter by month" title="Filter by month">
+        {% if dashboard_filters.month %}
+        <button type="button" class="gd-month-clear" id="dashboard-month-clear">Clear</button>
+        {% endif %}
+        <a href="{% url 'accounts:student_analytics' active_student.uuid %}" class="gd-btn gd-btn-outline">Analytics</a>
+        <a href="#exam-attempts" class="gd-btn gd-btn-outline">History</a>
+        <a href="{% url 'core:exams_list' %}?student={{ active_student.uuid }}" class="gd-btn gd-btn-primary">Start exam</a>
       </div>
     </div>
+  </header>
 
-    <div class="gd-hero-actions">
-      {% if students|length > 1 %}
-      <button type="button" class="gd-btn gd-btn-outline" id="gd-change-learner-btn">Switch Modal</button>
-      <select class="gd-select" id="student-switcher" aria-label="Select learner" hidden>
-        {% for student in students %}
-          <option value="{{ student.uuid }}" {% if active_student.uuid == student.uuid %}selected{% endif %}>
-            {{ student.first_name }} {{ student.last_name }}
-          </option>
-        {% endfor %}
-      </select>
-      {% endif %}
-      <input type="month" class="gd-month-filter" id="dashboard-month-filter" value="{{ dashboard_filters.month|default:'' }}" aria-label="Filter by month" title="Filter by month">
-      {% if dashboard_filters.month %}
-      <button type="button" class="gd-month-clear" id="dashboard-month-clear">Clear</button>
-      {% endif %}
-      <a href="{% url 'accounts:student_analytics' active_student.uuid %}" class="gd-btn gd-btn-outline">Full analytics</a>
-      <a href="#exam-attempts" class="gd-btn gd-btn-outline">Exam history</a>
-      <a href="{% url 'core:exams_list' %}?student={{ active_student.uuid }}" class="gd-btn gd-btn-primary">Start exam</a>
-    </div>
-  </section>
+  {% include 'accounts/partials/discipline_cluster_cards.html' with discipline_cluster_cards=discipline_cluster_cards %}
 
   <section class="gd-section-block gd-section--kpis" aria-label="Summary metrics">
     {% if analytics_period_label %}
@@ -2258,7 +2298,7 @@
     {% endif %}
     {% include 'accounts/partials/student_analytics_metric_cards.html' %}
   </section>
-  <br><br>
+
   <section class="gd-overview-row" aria-label="Score trends and activity">
     <div class="gd-section-block">
       {% include 'accounts/partials/attempt_score_chart.html' with attempt_chart=dashboard.attempt_chart chart_canvas_id='guardianAttemptScoreChart' chart_data_id='guardian-attempt-chart-data' show_chart_period_filter=True chart_period_choices=chart_period_choices dashboard_filters=dashboard_filters %}

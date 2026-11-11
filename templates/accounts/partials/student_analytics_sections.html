@@ -40,63 +40,51 @@
       <p class="grade-filter-hint">Subjects in {{ selected_grade.name }}{% if student.grade_level and selected_grade.pk != student.grade_level.pk %} (previous grade){% endif %}</p>
     {% endif %}
 
-    <div class="perf-metrics-grid" aria-label="Performance by difficulty">
+    <div class="subject-difficulty-strip" aria-label="Performance by difficulty">
       {% for row in difficulty_breakdown %}
-        <div class="perf-metric-card perf-metric-card--{{ row.quiz__difficulty|lower }}">
-          <div class="perf-metric-top">
-            <div class="perf-metric-icon" aria-hidden="true">
-              {% if row.quiz__difficulty == 'Easy' %}🟢{% elif row.quiz__difficulty == 'Medium' %}🟡{% else %}🔴{% endif %}
-            </div>
-            <div class="perf-metric-value">{{ row.avg_score|floatformat:1 }}</div>
-          </div>
-          <div class="perf-metric-label">{{ row.quiz__difficulty }} avg score</div>
-          <div class="perf-metric-footer">
-            <span aria-hidden="true">{% if row.quiz__difficulty == 'Easy' %}🟢{% elif row.quiz__difficulty == 'Medium' %}🟡{% else %}🔴{% endif %}</span>
-            <span>{{ row.attempts }} attempt{{ row.attempts|pluralize }}</span>
-          </div>
+      <div class="subject-difficulty-item subject-difficulty-item--{{ row.quiz__difficulty|lower }}">
+        <div>
+          <div>{{ row.quiz__difficulty }}</div>
+          <span>{{ row.attempts }} attempt{{ row.attempts|pluralize }}</span>
         </div>
+        <strong>{% if row.attempts %}{{ row.avg_score|floatformat:1 }}%{% else %}—{% endif %}</strong>
+      </div>
       {% endfor %}
     </div>
 
     {% if subject_breakdown %}
-      <div class="subject-cards-grid" role="list">
-        {% for row in subject_breakdown %}
-          <a
-            href="{% url 'accounts:student_subject_progress' student.uuid row.subject_id %}"
-            class="subject-perf-card subject-perf-card--{% cycle '0' '1' '2' '3' %}{% if row.attempts %}{% if row.avg_score >= 70 %} subject-perf-card--high{% elif row.avg_score >= 40 %} subject-perf-card--mid{% else %} subject-perf-card--low{% endif %}{% else %} subject-perf-card--empty{% endif %}"
-            role="listitem"
-          >
-            <div class="subject-perf-top">
-              <div class="subject-perf-icon" aria-hidden="true">&#128218;</div>
-              <div class="subject-perf-score-wrap">
-                {% if row.attempts %}
-                  <div class="subject-perf-score">{{ row.avg_score|floatformat:1 }}%</div>
-                  <div class="subject-perf-score-label">Avg score</div>
-                {% else %}
-                  <div class="subject-perf-score subject-perf-score--muted">—</div>
-                  <div class="subject-perf-score-label">Not started</div>
-                {% endif %}
-              </div>
-            </div>
-
-            <h3 class="subject-perf-name">{{ row.quiz__subject__name }}</h3>
-
-            <div class="subject-perf-progress" aria-hidden="true">
-              <div
-                class="subject-perf-progress-fill"
-                style="width: {% if row.attempts %}{% widthratio row.avg_score 100 100 %}{% else %}0{% endif %}%;"
-              ></div>
-            </div>
-
-            <div class="subject-perf-meta">
-              <span><strong>{{ row.attempts }}</strong> quiz{{ row.attempts|pluralize:"zes" }}</span>
-              <span>Best <strong>{% if row.attempts and row.best_score %}{{ row.best_score }}%{% else %}—{% endif %}</strong></span>
-            </div>
-
-            <span class="subject-perf-cta">View progress</span>
-          </a>
-        {% endfor %}
-      </div>
+    <div class="subject-perf-head" aria-hidden="true">
+      <span>Subject</span>
+      <span>Progress</span>
+      <span>Avg</span>
+      <span>Quizzes</span>
+      <span>Best</span>
+      <span></span>
+    </div>
+    <ul class="subject-perf-list" role="list">
+      {% for row in subject_breakdown %}
+      <li role="listitem">
+        <a
+          href="{% url 'accounts:student_subject_progress' student.uuid row.subject_id %}"
+          class="subject-perf-row{% if row.attempts %}{% if row.avg_score >= 70 %} subject-perf-row--high{% elif row.avg_score >= 40 %} subject-perf-row--mid{% else %} subject-perf-row--low{% endif %}{% else %} subject-perf-row--empty{% endif %}"
+          style="--bar-pct: {% if row.attempts %}{{ row.avg_score|floatformat:0 }}{% else %}0{% endif %};"
+        >
+          <p class="subject-perf-name">{{ row.quiz__subject__name }}</p>
+          <div class="subject-perf-bar" aria-hidden="true">
+            <div class="subject-perf-bar-fill"></div>
+          </div>
+          <span class="subject-perf-metric{% if not row.attempts %} is-muted{% endif %}">
+            {% if row.attempts %}{{ row.avg_score|floatformat:1 }}%{% else %}—{% endif %}
+          </span>
+          <span class="subject-perf-meta">{{ row.attempts }}</span>
+          <span class="subject-perf-meta">
+            {% if row.attempts and row.best_score %}{{ row.best_score|floatformat:0 }}%{% else %}—{% endif %}
+          </span>
+          <span class="subject-perf-arrow" aria-hidden="true">&rarr;</span>
+        </a>
+      </li>
+      {% endfor %}
+    </ul>
     {% else %}
       <div class="empty-state">
         <div class="empty-state-icon">&#128202;</div>

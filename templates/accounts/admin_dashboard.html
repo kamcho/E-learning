@@ -67,7 +67,7 @@
 
   .admin-panel {
     background: var(--clr-surface);
-    border-radius: var(--radius-xl);
+    border-radius: 6px;
     border: 1px solid var(--clr-border);
     box-shadow: var(--shadow-sm);
     margin-bottom: var(--space-xl);
@@ -355,7 +355,7 @@
           {% if users_page.paginator.num_pages > 1 %}
             Page {{ users_page.number }}/{{ users_page.paginator.num_pages }} &middot;
           {% endif %}
-          {{ user_stats.total }} total
+          {{ user_stats.total }} total &middot; 8 per page
         </span>
         <a href="{% url 'accounts:admin_users_list' %}" class="admin-view-all-link">View all &rarr;</a>
       </div>
@@ -402,7 +402,7 @@
           {% if students_page.paginator.num_pages > 1 %}
             Page {{ students_page.number }}/{{ students_page.paginator.num_pages }} &middot;
           {% endif %}
-          {{ student_stats.total }} total
+          {{ student_stats.total }} total &middot; 8 per page
         </span>
         <a href="{% url 'accounts:admin_students_list' %}" class="admin-view-all-link">View all &rarr;</a>
       </div>
