@@ -20,6 +20,8 @@ def normalize_json_paste(text):
         text = re.sub(r'^```(?:json)?\s*', '', text, flags=re.IGNORECASE)
         text = re.sub(r'\s*```\s*$', '', text)
     text = re.sub(r'\\\s*\r?\n', '\n', text)
+    # Chat tools often escape [ ] { } for markdown (e.g. "\["), which is invalid JSON.
+    text = re.sub(r'\\([\[\]{}])', r'\1', text)
     return text.strip()
 
 

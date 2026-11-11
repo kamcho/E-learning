@@ -9,6 +9,7 @@ function normalizeJsonPaste(text) {
     trimmed = trimmed.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '');
   }
   trimmed = trimmed.replace(/\\\s*\r?\n/g, '\n');
+  trimmed = trimmed.replace(/\\([\[\]{}])/g, '$1');
   return trimmed.trim();
 }
 

@@ -27,6 +27,12 @@ class JsonPasteTests(TestCase):
     def test_normalize_html_entities(self):
         self.assertEqual(parse_json_paste('{"questions":&#x20;[]}')['questions'], [])
 
+    def test_unescape_markdown_brackets(self):
+        raw = r'{"questions": \[{"quiz": "Test?", "difficulty": "Easy", "quiz_type": "OpenEnded", "choices": \[\]}\]}'
+        parsed = parse_json_paste(raw)
+        self.assertEqual(len(parsed['questions']), 1)
+        self.assertEqual(parsed['questions'][0]['quiz'], 'Test?')
+
 
 class QuestionImportTests(TestCase):
     @classmethod
