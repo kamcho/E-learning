@@ -25,10 +25,10 @@ from .objectives_import import (
     OBJECTIVES_IMPORT_UI_GUIDE,
     SUBSTRAND_OBJECTIVE_NAME_MAX,
     ObjectivesImportError,
-    create_sub_strand_objectives,
-    load_objectives_preview,
-    parse_objectives_text,
-    sign_objectives_preview,
+    create_subject_objectives,
+    load_subject_objectives_preview,
+    parse_subject_objectives_text,
+    sign_subject_objectives_preview,
 )
 from .subject_import import (
     SubjectImportError,
@@ -381,6 +381,10 @@ def subject_detail(request, slug):
     curriculum_preview = None
     curriculum_preview_token = ''
     curriculum_import_warnings = []
+    objectives_text = ''
+    objectives_preview = None
+    objectives_preview_token = ''
+    objectives_import_warnings = []
 
     subject_edit_form = SubjectForm(instance=subject)
 
@@ -463,6 +467,42 @@ def subject_detail(request, slug):
             for warning in import_warnings:
                 messages.warning(request, warning)
             return redirect('subjects:subject_detail', slug=subject.slug)
+    elif request.method == 'POST' and action == 'parse_objectives':
+        objectives_text = request.POST.get('objectives_text', '')
+        form = StrandForm(initial={'subject': subject})
+        try:
+            objectives_preview, objectives_import_warnings = parse_subject_objectives_text(
+                objectives_text,
+                subject,
+            )
+            objectives_preview_token = sign_subject_objectives_preview(objectives_preview)
+            for warning in objectives_import_warnings:
+                messages.warning(request, warning)
+        except (AIServiceError, ObjectivesImportError) as exc:
+            messages.error(request, str(exc))
+    elif request.method == 'POST' and action == 'import_objectives':
+        form = StrandForm(initial={'subject': subject})
+        try:
+            preview, import_warnings = load_subject_objectives_preview(
+                request.POST.get('preview_token', ''),
+                subject=subject,
+                max_name_length=SUBSTRAND_OBJECTIVE_NAME_MAX,
+            )
+            created_total, section_count, create_warnings = create_subject_objectives(
+                subject,
+                preview,
+            )
+        except ObjectivesImportError as exc:
+            messages.error(request, f'Objective import failed: {exc}')
+        else:
+            messages.success(
+                request,
+                f'Imported {created_total} objective(s) across {section_count} sub-strand(s). '
+                'Existing objectives were kept.',
+            )
+            for warning in import_warnings + create_warnings:
+                messages.warning(request, warning)
+            return redirect('subjects:subject_detail', slug=subject.slug)
     elif request.method == 'POST':
         form = StrandForm(request.POST)
         if form.is_valid():
@@ -491,6 +531,12 @@ def subject_detail(request, slug):
         'curriculum_preview': curriculum_preview,
         'curriculum_preview_token': curriculum_preview_token,
         'curriculum_import_warnings': curriculum_import_warnings,
+        'objectives_text': objectives_text,
+        'objectives_preview': objectives_preview,
+        'objectives_preview_token': objectives_preview_token,
+        'objectives_import_warnings': objectives_import_warnings,
+        'objectives_import_format_guide': OBJECTIVES_IMPORT_UI_GUIDE,
+        'objectives_import_scope': 'subject',
         'subject_detail_post_url': detail_post_url,
         **_subject_manage_modal_context(),
     })
@@ -575,11 +621,6 @@ def sub_strand_detail(request, slug):
 
     action = request.POST.get('action') if request.method == 'POST' else None
     sub_strand_name_form = SubStrandNameForm(instance=sub_strand)
-    objectives_text = ''
-    objectives_preview = None
-    objectives_preview_token = ''
-    objectives_import_warnings = []
-
     if request.method == 'POST' and action == 'toggle_question_active':
         from django.contrib.auth.views import redirect_to_login
 
@@ -618,54 +659,6 @@ def sub_strand_detail(request, slug):
             messages.success(request, f"Sub-strand Objective '{obj.name}' added!")
             return redirect('subjects:sub_strand_detail', slug=sub_strand.slug)
         messages.error(request, "Failed to add Objective.")
-    elif request.method == 'POST' and action == 'parse_objectives':
-        form = SubStrandObjectiveForm(initial={'sub_strand': sub_strand})
-        if not _is_curriculum_admin(request.user):
-            messages.error(request, "You don't have permission to import objectives.")
-            return redirect('subjects:sub_strand_detail', slug=sub_strand.slug)
-        objectives_text = request.POST.get('objectives_text', '')
-        scope = (
-            f"Sub-strand: {sub_strand.name} "
-            f"(Strand: {sub_strand.strand.name}, {sub_strand.strand.subject.name})"
-        )
-        sibling_names = list(
-            sub_strand.strand.sub_strands.order_by('order', 'name').values_list('name', flat=True)
-        )
-        try:
-            objectives_preview, objectives_import_warnings = parse_objectives_text(
-                objectives_text,
-                scope_label=scope,
-                strand_name=sub_strand.strand.name,
-                sub_strand_name=sub_strand.name,
-                sub_strand_names=sibling_names,
-                max_name_length=SUBSTRAND_OBJECTIVE_NAME_MAX,
-            )
-            objectives_preview_token = sign_objectives_preview(objectives_preview)
-            for warning in objectives_import_warnings:
-                messages.warning(request, warning)
-        except (AIServiceError, ObjectivesImportError) as exc:
-            messages.error(request, str(exc))
-    elif request.method == 'POST' and action == 'import_objectives':
-        form = SubStrandObjectiveForm(initial={'sub_strand': sub_strand})
-        if not _is_curriculum_admin(request.user):
-            messages.error(request, "You don't have permission to import objectives.")
-            return redirect('subjects:sub_strand_detail', slug=sub_strand.slug)
-        try:
-            objectives, import_warnings = load_objectives_preview(
-                request.POST.get('preview_token', ''),
-                max_name_length=SUBSTRAND_OBJECTIVE_NAME_MAX,
-            )
-            created_count, create_warnings = create_sub_strand_objectives(sub_strand, objectives)
-        except ObjectivesImportError as exc:
-            messages.error(request, f'Objective import failed: {exc}')
-        else:
-            messages.success(
-                request,
-                f'Imported {created_count} sub-strand objective(s). Existing objectives were kept.',
-            )
-            for warning in import_warnings + create_warnings:
-                messages.warning(request, warning)
-            return redirect('subjects:sub_strand_detail', slug=sub_strand.slug)
     else:
         form = SubStrandObjectiveForm(initial={'sub_strand': sub_strand})
     form.fields['sub_strand'].widget = forms.HiddenInput()
@@ -682,11 +675,6 @@ def sub_strand_detail(request, slug):
         'form': form,
         'sub_strand_name_form': sub_strand_name_form,
         'can_edit_curriculum': _is_curriculum_admin(request.user),
-        'objectives_text': objectives_text,
-        'objectives_preview': objectives_preview,
-        'objectives_preview_token': objectives_preview_token,
-        'objectives_import_warnings': objectives_import_warnings,
-        'objectives_import_format_guide': OBJECTIVES_IMPORT_UI_GUIDE,
     })
 
 

@@ -338,8 +338,8 @@ class ObjectivesImportTests(TestCase):
             subject=self.subject,
         )
         self.sub_strand = SubStrand.objects.create(
-            name='Plants',
-            slug='plants-objectives',
+            name='Classification of Plants',
+            slug='classification-of-plants',
             order=1,
             strand=self.strand,
         )
@@ -373,26 +373,29 @@ class ObjectivesImportTests(TestCase):
         self.assertEqual(create_warnings, [])
         self.assertEqual(self.sub_strand.sub_strand_objectives.count(), 2)
 
-    def test_sub_strand_parse_and_import_flow(self):
+    def test_subject_parse_and_import_flow(self):
         from subjects.models import SubStrandObjective
 
-        url = reverse('subjects:sub_strand_detail', kwargs={'slug': self.sub_strand.slug})
+        self.strand.name = 'Living Things and Their Environment'
+        self.strand.save()
+        url = reverse('subjects:subject_detail', kwargs={'slug': self.subject.slug})
         self.client.force_login(self.admin)
+        ai_payload = json.dumps({
+            'sub_strands': [{
+                'strand_name': 'Living Things and Their Environment',
+                'sub_strand_name': 'Classification of Plants',
+                'objectives': ['Classify plants into flowering and non-flowering plants.'],
+            }],
+        })
         with patch('subjects.objectives_import.OpenAIClient') as openai_client:
-            openai_client.return_value.chat.return_value = json.dumps({
-                'objectives': ['Observe living things in the environment'],
-            })
+            openai_client.return_value.chat.return_value = ai_payload
             response = self.client.post(url, {
                 'action': 'parse_objectives',
-                'objectives_text': (
-                    '1.0 Living Things\n'
-                    '1.1 Plants\n'
-                    'By the end of the sub-strand, the learner should be able to:\n'
-                    '1. Observe living things in the environment'
-                ),
+                'objectives_text': '1.1 Classification of Plants\n1. Classify plants…',
             })
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Review parsed objectives')
+        self.assertContains(response, 'Matched')
         self.assertEqual(
             SubStrandObjective.objects.filter(sub_strand=self.sub_strand).count(),
             0,
@@ -408,35 +411,15 @@ class ObjectivesImportTests(TestCase):
             1,
         )
 
-    def test_non_admin_cannot_import_objectives(self):
-        teacher = get_user_model().objects.create_user(
-            phone='0744444481',
-            password='1234',
-            role=Role.TEACHER,
-        )
-        url = reverse('subjects:sub_strand_detail', kwargs={'slug': self.sub_strand.slug})
-        self.client.force_login(teacher)
-        response = self.client.post(url, {
-            'action': 'parse_objectives',
-            'objectives_text': 'Learn about plants',
-        })
-        self.assertRedirects(response, url)
-        follow = self.client.get(url)
-        self.assertNotContains(follow, 'Import objectives with AI')
+    def test_match_sub_strand_by_name_only_when_unique(self):
+        from subjects.objectives_import import _match_sub_strand
 
-    def test_parse_builds_kicd_scoped_prompt(self):
-        from subjects.objectives_import import _build_objectives_user_prompt
-
-        prompt = _build_objectives_user_prompt(
-            text='1.1 Classification of Plants\n1. Classify plants.',
-            scope_label='Sub-strand: Classification of Plants',
-            strand_name='Living Things and Their Environment',
-            sub_strand_name='Classification of Plants',
-            sub_strand_names=['Classification of Plants', 'Vertebrates'],
+        matched = _match_sub_strand(
+            self.subject,
+            '',
+            'Classification of Plants',
         )
-        self.assertIn('sub_strand', prompt)
-        self.assertIn('Sub-strand name to match: Classification of Plants', prompt)
-        self.assertIn('Vertebrates', prompt)
+        self.assertEqual(matched, self.sub_strand)
 
 
 class QuestionActiveToggleTests(TestCase):

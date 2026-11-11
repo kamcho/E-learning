@@ -1,9 +1,7 @@
-{% if can_edit_curriculum %}
 <div class="card" style="margin-bottom: var(--space-md);">
   <h2 class="card-title">✨ Import objectives with AI</h2>
   <p class="page-subtitle" style="margin-bottom: var(--space-sm); font-size: 0.88rem;">
-    Paste KICD specific learning outcomes for this sub-strand (e.g. under 1.1 …).
-    You can paste the whole grade document — only this sub-strand’s numbered outcomes are imported.
+    Paste the full grade KICD specific learning outcomes. Objectives are created on matching sub-strands.
   </p>
   {% include 'subjects/partials/objectives_import_format_guide.html' %}
   <form method="post" novalidate>
@@ -33,8 +31,25 @@
     </ul>
     {% endif %}
     <ol class="curriculum-preview-list">
-      {% for obj in objectives_preview %}
-      <li>{{ obj.name }}</li>
+      {% for block in objectives_preview %}
+      <li style="margin-bottom: var(--space-sm);">
+        <strong>{{ block.sub_strand_name }}</strong>
+        {% if block.strand_name %}
+          <span style="color: var(--clr-text-muted); font-size: 0.82rem;">({{ block.strand_name }})</span>
+        {% endif %}
+        {% if block.sub_strand_id %}
+          <span class="badge badge-primary" style="margin-left: 0.35rem;">Matched</span>
+        {% else %}
+          <span class="badge badge-danger" style="margin-left: 0.35rem;">No match — skipped on import</span>
+        {% endif %}
+        {% if block.objectives %}
+        <ul>
+          {% for obj in block.objectives %}
+          <li>{{ obj.name }}</li>
+          {% endfor %}
+        </ul>
+        {% endif %}
+      </li>
       {% endfor %}
     </ol>
     <form method="post">
@@ -48,4 +63,3 @@
   </div>
   {% endif %}
 </div>
-{% endif %}
