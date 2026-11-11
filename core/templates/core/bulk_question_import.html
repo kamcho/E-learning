@@ -148,8 +148,8 @@
 <div class="bqi-header">
   <h1>Bulk Question Import</h1>
   <p>
-    Paste a JSON payload to create multiple questions at once. Imported questions are saved as
-    <strong>inactive</strong> until an admin reviews and activates them.
+    Paste a JSON payload to create multiple questions at once. Imported questions are
+    <strong>active</strong> by default. Use <code>"is_active": false</code> on a question to import as inactive.
     Use <code>sub_strand_id</code> or <code>sub_strand_slug</code> to place each question in the curriculum.
   </p>
 </div>
@@ -253,7 +253,7 @@
       } else {
         message += ' successfully';
       }
-      message += '. Questions are inactive until reviewed.';
+      message += '. Questions are active unless you set is_active to false.';
       showResult(kind, message, JSON.stringify(body, null, 2));
     } catch (err) {
       showResult('error', 'Network error: ' + err.message, '');

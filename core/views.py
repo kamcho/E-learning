@@ -1160,7 +1160,7 @@ def bulk_question_import_view(request):
 @login_required(login_url='accounts:signin')
 @require_POST
 def bulk_create_questions_api_view(request):
-    """Bulk-create questions (+ choices) from JSON. New questions are inactive pending review."""
+    """Bulk-create questions (+ choices) from JSON. New questions are active unless is_active is false."""
     if not _is_quiz_builder_allowed(request.user):
         return JsonResponse({'error': 'Permission denied.'}, status=403)
 

@@ -92,7 +92,7 @@ class QuestionImportTests(TestCase):
         self.assertEqual(cleaned['quiz'], 'What is 2 + 2?')
         self.assertEqual(len(cleaned['choices']), 2)
 
-    def test_bulk_create_sets_inactive_and_created_by(self):
+    def test_bulk_create_sets_active_and_created_by(self):
         result = bulk_create_questions({
             'questions': [
                 {
@@ -111,9 +111,28 @@ class QuestionImportTests(TestCase):
         self.assertEqual(result['created'], 1)
         self.assertEqual(result['failed'], 0)
         question = Question.objects.get(uuid=result['results'][0]['question_uuid'])
-        self.assertFalse(question.is_active)
+        self.assertTrue(question.is_active)
         self.assertEqual(question.created_by_id, self.teacher.pk)
         self.assertEqual(question.options.count(), 2)
+
+    def test_bulk_create_respects_is_active_false(self):
+        result = bulk_create_questions({
+            'questions': [
+                {
+                    'quiz': 'Draft question?',
+                    'sub_strand_id': self.sub_strand.pk,
+                    'difficulty': 'Easy',
+                    'quiz_type': 'True or False',
+                    'is_active': False,
+                    'choices': [
+                        {'option': 'True', 'is_correct': True},
+                        {'option': 'False', 'is_correct': False},
+                    ],
+                },
+            ],
+        }, created_by=self.teacher)
+        question = Question.objects.get(uuid=result['results'][0]['question_uuid'])
+        self.assertFalse(question.is_active)
 
     def test_api_endpoint_requires_teacher(self):
         guardian = User.objects.create_user(
@@ -154,7 +173,7 @@ class QuestionImportTests(TestCase):
         body = response.json()
         self.assertEqual(body['created'], 1)
         question = Question.objects.get(uuid=body['results'][0]['question_uuid'])
-        self.assertFalse(question.is_active)
+        self.assertTrue(question.is_active)
         self.assertEqual(Option.objects.filter(question=question).count(), 2)
 
     def test_bulk_import_page_requires_teacher(self):

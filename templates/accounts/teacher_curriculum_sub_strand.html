@@ -24,7 +24,7 @@
   <h1>{{ sub_strand.name }}</h1>
   <p>
     {{ grade.name }} · {{ subject.name }} · Strand: {{ strand.name }}.
-    Copy the prompt into your AI tool, then paste the JSON response below. Imported questions start as <strong>inactive</strong> until review.
+    Copy the prompt into your AI tool, then paste the JSON response below. Imported questions are <strong>active</strong> by default and ready for quizzes and practice.
   </p>
   <div class="tc-actions">
     <a href="{{ create_question_url }}" class="btn btn-secondary">+ Add one question manually</a>
@@ -182,7 +182,7 @@
         var details = failedDetails(body.results);
         if (details) msg += '\n' + details;
       } else {
-        msg += '. They are inactive until an admin activates them.';
+        msg += '. They are active and ready to use.';
       }
       showResult(kind, msg);
     } catch (err) {

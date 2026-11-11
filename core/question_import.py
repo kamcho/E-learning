@@ -117,6 +117,10 @@ def validate_question_item(data, index=0):
     except (TypeError, ValueError):
         raise ValueError(f'questions[{index}].score must be an integer.')
 
+    is_active = data.get('is_active', True)
+    if not isinstance(is_active, bool):
+        raise ValueError(f'questions[{index}].is_active must be true or false.')
+
     return {
         'quiz': quiz,
         'difficulty': difficulty,
@@ -126,11 +130,12 @@ def validate_question_item(data, index=0):
         'metadata': metadata,
         'score': score,
         'image_alt_text': (data.get('image_alt_text') or '').strip(),
+        'is_active': is_active,
     }
 
 
 def create_question_from_item(cleaned, created_by):
-    """Create one inactive question and its options; return uuids."""
+    """Create one question and its options; return uuids."""
     with transaction.atomic():
         question = Question.objects.create(
             quiz=cleaned['quiz'],
@@ -140,7 +145,7 @@ def create_question_from_item(cleaned, created_by):
             score=cleaned['score'],
             metadata=cleaned['metadata'],
             image_alt_text=cleaned['image_alt_text'],
-            is_active=False,
+            is_active=cleaned['is_active'],
             created_by=created_by,
         )
 
@@ -248,8 +253,8 @@ QUESTION_IMPORT_UI_GUIDE = [
         'detail': 'Do not wrap in ```json fences. No \\ at the end of lines. No \\[ or \\] around arrays.',
     },
     {
-        'title': 'Review',
-        'detail': 'Imported questions are inactive until an admin activates them on the sub-strand page.',
+        'title': 'Activation',
+        'detail': 'Imported questions are active by default. Set "is_active": false on a question to import it as inactive.',
     },
 ]
 
