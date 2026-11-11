@@ -211,6 +211,7 @@ class DemoPracticeTests(TestCase):
         response = self.client.get(reverse('core:exam_wizard'))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Start a free practice exam')
+        self.assertContains(response, '7–10')
         self.assertContains(response, 'No account needed')
         self.assertContains(response, 'Create free account')
         self.assertContains(response, 'Choose a grade')
@@ -245,7 +246,7 @@ class DemoPracticeTests(TestCase):
         self.assertEqual(response.context['phase'], 'subject')
         self.assertEqual(response.context['active_grade'], grade_three)
 
-    def test_exam_start_builds_seven_question_session(self):
+    def test_exam_start_uses_seven_to_ten_questions(self):
         response = self.client.post(reverse('core:exam_start'), {
             'grade': self.grade.slug,
             'subject': self.subject.slug,
@@ -254,7 +255,27 @@ class DemoPracticeTests(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.url, reverse('core:exam_take'))
         session = self.client.session['practice_demo']
-        self.assertEqual(len(session['question_ids']), 7)
+        self.assertGreaterEqual(len(session['question_ids']), 7)
+        self.assertLessEqual(len(session['question_ids']), 10)
+        self.assertEqual(len(session['question_ids']), 8)
+
+        for index in range(8, 15):
+            question = Question.objects.create(
+                quiz=f'Extra question {index}?',
+                quiz_type='Multiple Choice',
+                difficulty='Easy',
+                sub_strand=self.sub_strand,
+                score=1,
+            )
+            Option.objects.create(question=question, option='No', is_correct=False)
+            Option.objects.create(question=question, option='Yes', is_correct=True)
+
+        self.client.post(reverse('core:exam_start'), {
+            'grade': self.grade.slug,
+            'subject': self.subject.slug,
+            'scope': 'general',
+        })
+        self.assertEqual(len(self.client.session['practice_demo']['question_ids']), 10)
 
     def test_exam_take_grades_answer_and_shows_feedback(self):
         self.client.post(reverse('core:exam_start'), {

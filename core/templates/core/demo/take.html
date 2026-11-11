@@ -75,7 +75,7 @@
                 <span class="demo-ai-loading-sub">Preparing a short explanation for this answer</span>
               </span>
             </div>
-            <div class="demo-ai-text" id="demo-ai-text" data-speech-text hidden></div>
+            <div class="demo-ai-text" id="demo-ai-text" data-speech-text data-math-content hidden></div>
             <div class="demo-ai-text demo-ai-error" id="demo-ai-error" hidden style="color:#f87171;"></div>
             <div class="explanation-speech-controls">
               <button type="button" class="demo-btn demo-btn-outline" data-speech-speak hidden>Listen to explanation</button>
@@ -114,7 +114,7 @@
           {% endfor %}
         </div>
         <div class="demo-q-actions">
-          <a href="{% url 'core:exam_wizard' %}?restart=1" class="demo-btn demo-btn-outline">Quit exam</a>
+          <a href="{% url 'core:exam_wizard' %}?restart=1" class="demo-btn demo-btn-outline demo-q-quit">Quit</a>
           <button type="submit" class="demo-btn demo-btn-primary">Submit answer ✓</button>
         </div>
       </form>
@@ -193,6 +193,9 @@
         textEl.textContent = 'The correct answer is {{ feedback.correct_text|escapejs }}. '
           + (result.data.explanation || 'No explanation returned.');
         textEl.hidden = false;
+        if (window.refreshExplanationMath) {
+          window.refreshExplanationMath(textEl);
+        }
       })
       .catch(function () {
         loading.hidden = true;

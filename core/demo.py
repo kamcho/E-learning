@@ -1,4 +1,4 @@
-"""Session-based practice demo for unregistered users (7 MC questions)."""
+"""Session-based practice demo for unregistered users (7–10 MC questions)."""
 
 import random
 import uuid as uuid_lib
@@ -9,7 +9,10 @@ from core.models import Question
 from core.scoring import _grade_choice, question_max_marks
 
 DEMO_SESSION_KEY = 'practice_demo'
-DEMO_QUESTION_COUNT = 7
+DEMO_QUESTION_COUNT_MIN = 7
+DEMO_QUESTION_COUNT_MAX = 10
+# Backward-compatible label for templates that expect a single number (upper bound).
+DEMO_QUESTION_COUNT = DEMO_QUESTION_COUNT_MAX
 
 
 def get_demo_session(request):
@@ -34,8 +37,16 @@ def _valid_mc_question(question):
     return any(opt.is_correct for opt in options)
 
 
-def select_demo_questions(*, subject, scope, strand=None, sub_strand=None, count=DEMO_QUESTION_COUNT):
-    """Pick random multiple-choice questions for the demo test."""
+def select_demo_questions(
+    *,
+    subject,
+    scope,
+    strand=None,
+    sub_strand=None,
+    min_count=DEMO_QUESTION_COUNT_MIN,
+    max_count=DEMO_QUESTION_COUNT_MAX,
+):
+    """Pick random multiple-choice questions for the demo test (7–10 when available)."""
     qs = (
         Question.objects.filter(
             is_active=True,
@@ -58,10 +69,10 @@ def select_demo_questions(*, subject, scope, strand=None, sub_strand=None, count
         qs = qs.filter(sub_strand=sub_strand)
 
     pool = [question for question in qs if _valid_mc_question(question)]
-    if not pool:
+    if len(pool) < min_count:
         return []
 
-    sample_size = min(count, len(pool))
+    sample_size = min(max_count, len(pool))
     return random.sample(pool, sample_size)
 
 

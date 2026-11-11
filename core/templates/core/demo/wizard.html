@@ -20,7 +20,7 @@
       <p class="demo-hero-kicker">Welcome back{% if request.user.first_name %}, {{ request.user.first_name }}{% endif %}</p>
       {% endif %}
       <h1 class="demo-hero-title">Start a free practice exam</h1>
-      <p class="demo-hero-sub">Pick your grade and topic — we'll build a {{ demo_question_count }}-question exam with instant marking and AI help when you miss an answer.</p>
+      <p class="demo-hero-sub">Pick your grade and topic — we'll build a {{ demo_question_count_min }}–{{ demo_question_count_max }}-question exam with instant marking and AI help when you miss an answer.</p>
     </div>
     {% if not request.user.is_authenticated %}
     <a href="{% url 'accounts:signup' %}" class="demo-hero-cta">Create free account</a>
@@ -159,7 +159,7 @@
               <div><span>Focus</span><strong>{% if active_scope == 'general' %}Whole subject{% elif active_scope == 'strand' %}Strand{% else %}Sub-strand{% endif %}</strong></div>
               {% if active_strand %}<div><span>Strand</span><strong>{{ active_strand.name }}</strong></div>{% endif %}
               {% if active_sub_strand %}<div><span>Sub-strand</span><strong>{{ active_sub_strand.name }}</strong></div>{% endif %}
-              <div><span>Questions</span><strong>{{ demo_question_count }} multiple choice</strong></div>
+              <div><span>Questions</span><strong>{{ demo_question_count_min }}–{{ demo_question_count_max }} multiple choice</strong></div>
             </div>
             <form method="post" action="{% url 'core:exam_start' %}">
               {% csrf_token %}
@@ -168,7 +168,7 @@
               <input type="hidden" name="scope" value="{{ active_scope|default:'general' }}">
               {% if active_strand %}<input type="hidden" name="strand" value="{{ active_strand.slug }}">{% endif %}
               {% if active_sub_strand %}<input type="hidden" name="sub_strand" value="{{ active_sub_strand.slug }}">{% endif %}
-              <button type="submit" class="demo-btn demo-btn-primary demo-btn-lg">Start {{ demo_question_count }}-question practice exam</button>
+              <button type="submit" class="demo-btn demo-btn-primary demo-btn-lg">Start practice exam</button>
             </form>
           </div>
           {% endif %}

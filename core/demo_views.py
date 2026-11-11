@@ -10,6 +10,8 @@ from django.views.decorators.http import require_GET, require_http_methods, requ
 from accounts.ratelimit import rate_limit
 from core.demo import (
     DEMO_QUESTION_COUNT,
+    DEMO_QUESTION_COUNT_MAX,
+    DEMO_QUESTION_COUNT_MIN,
     build_demo_breakdown,
     clear_demo_session,
     finalize_demo,
@@ -132,11 +134,15 @@ def _build_demo_wizard_trail(*, phase, grade, subject, scope, strand, sub_strand
 
     labels = {
         'grade': ('Choose a grade', "Select the learner's grade to see matching subjects."),
-        'subject': ('Choose a subject', 'Pick a subject for your free 7-question practice exam.'),
+        'subject': ('Choose a subject', 'Pick a subject for your free practice exam (7–10 questions).'),
         'scope': ('Test focus', 'Whole subject, one strand, or a specific sub-strand.'),
         'strand': ('Choose a strand', 'Select the strand you want to practise.'),
         'sub_strand': ('Choose a sub-strand', 'Pick a focused sub-strand topic.'),
-        'ready': ('Ready to start', f'We will build a {DEMO_QUESTION_COUNT}-question practice exam for you.'),
+        'ready': (
+            'Ready to start',
+            f'We will build a practice exam with {DEMO_QUESTION_COUNT_MIN}–{DEMO_QUESTION_COUNT_MAX} '
+            'questions (as many as available in the bank).',
+        ),
     }
     current_label, current_hint = labels.get(phase, ('Continue', ''))
 
@@ -247,6 +253,8 @@ def demo_wizard_view(request):
         'browse_sub_strands': browse_sub_strands,
         'nav_grade': nav_grade,
         'demo_question_count': DEMO_QUESTION_COUNT,
+        'demo_question_count_min': DEMO_QUESTION_COUNT_MIN,
+        'demo_question_count_max': DEMO_QUESTION_COUNT_MAX,
     })
 
 

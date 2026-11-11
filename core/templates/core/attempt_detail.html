@@ -761,7 +761,7 @@
             </button>
             <div class="ai-explanation-box" id="ai-explanation-{{ row.question_uuid }}" data-speech-region>
               <div class="ai-explanation-label">AI Tutor</div>
-              <div class="ai-explanation-text" data-speech-text></div>
+              <div class="ai-explanation-text" data-speech-text data-math-content></div>
               <div class="explanation-speech-controls">
                 <button type="button" class="btn btn-secondary" data-speech-speak hidden>Listen to explanation</button>
                 <button type="button" class="btn btn-secondary" data-speech-stop hidden>Stop speaking</button>
@@ -821,6 +821,9 @@
           throw new Error(data.error || 'Could not get explanation.');
         }
         textEl.textContent = data.explanation;
+        if (window.refreshExplanationMath) {
+          window.refreshExplanationMath(textEl);
+        }
         btn.textContent = '✨ Explain again';
       } catch (err) {
         var p = document.createElement('p');
