@@ -4,7 +4,7 @@
     Paste the full grade KICD specific learning outcomes. Objectives are created on matching sub-strands.
   </p>
   {% include 'subjects/partials/objectives_import_format_guide.html' %}
-  {% include 'subjects/partials/copy_external_ai_prompt.html' with copy_prompt_id='kicd-objectives-copy-prompt' copy_prompt_text=objectives_copy_prompt_text copy_prompt_summary='Copy prompt: learning outcomes only (strands already exist)' copy_prompt_lead='Use this if you only need outcomes JSON and sub-strands are already in Soma Smart. For a full extract (strands + sub-strands + outcomes), use the combined prompt under Import curriculum with AI above.' %}
+  {% include 'subjects/partials/copy_external_ai_prompt.html' with copy_prompt_id='kicd-objectives-copy-prompt' copy_prompt_text=objectives_copy_prompt_text copy_prompt_summary='Copy prompt: learning outcomes only (strands already exist)' copy_prompt_lead='Paste outcomes here, then Copy prompt + KICD text. Or use Parse with AI below — no Claude needed. For strands + outcomes JSON together, use the combined prompt under Import curriculum above.' %}
   <form method="post" novalidate>
     {% csrf_token %}
     <input type="hidden" name="action" value="parse_objectives">

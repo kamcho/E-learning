@@ -20,14 +20,15 @@ def paste_safe_json_delivery_rules():
 
 
 def external_ai_behavior_rules():
-    """Stop chat models from wasting a turn on “Ready, paste your text”."""
+    """Two-turn or one-shot: JSON only once KICD source text is present."""
     return [
         '## How to respond',
         '',
-        '- If this message already includes KICD curriculum or outcomes text (below the divider '
-        'or in the same user message), reply with ONLY the JSON object — no introduction.',
-        '- Do NOT say “Ready”, “Please paste”, ask questions, or wait for confirmation.',
-        '- If there is NO KICD source text in the message yet, reply with exactly one line: '
-        'NO_KICD_TEXT_YET (and nothing else).',
+        '- When the user message includes KICD curriculum or outcomes text (under ## KICD text '
+        'or in a later message in this chat), reply with ONLY the JSON object — no introduction.',
+        '- If the first message is only these instructions with no KICD body text yet, reply in '
+        'one short sentence: ask them to paste the KICD document in their next message; '
+        'then you will return only JSON.',
+        '- Do not ask unrelated questions. Remember the subject and sub-strand list from the prompt.',
         '- Match strand_name and sub_strand_name exactly to the Soma Smart list when one is provided.',
     ]
