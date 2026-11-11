@@ -2,29 +2,57 @@
 
 {% block title %}{{ quiz.title }} — Attempt Summary{% endblock %}
 
+{% block body_class %} exam-result-page{% endblock %}
 {% block main_extra_class %}attempt-detail-main{% endblock %}
 
 {% block extra_head %}
 {% include 'core/partials/question_rich_styles.html' %}
 {% include 'core/partials/question_math_assets.html' %}
 <style>
+  body.exam-result-page .app-main-area {
+    padding-left: var(--space-md);
+    padding-right: var(--space-md);
+    padding-bottom: calc(var(--space-xl) + env(safe-area-inset-bottom, 0px));
+  }
+
+  @media (min-width: 993px) {
+    body.exam-result-page .app-main-area {
+      padding-left: var(--space-2xl);
+      padding-right: var(--space-2xl);
+    }
+  }
+
   .attempt-detail-main {
-    padding: var(--space-xl) var(--space-2xl);
+    padding: 0;
     display: flex;
     justify-content: center;
     background: var(--clr-bg);
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
   }
 
   .attempt-detail-wrap {
     width: 100%;
     max-width: 1100px;
+    min-width: 0;
+    box-sizing: border-box;
     animation: fadeIn 0.4s var(--ease-out);
   }
 
-  @media (max-width: 768px) {
-    .attempt-detail-main {
-      padding: var(--space-lg) var(--space-md);
-    }
+  .attempt-detail-wrap .katex-display {
+    overflow-x: auto;
+    overflow-y: hidden;
+    max-width: 100%;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 0.15rem;
+  }
+
+  .attempt-detail-wrap .question-rich-image,
+  .attempt-detail-wrap .option-rich-image {
+    max-width: 100%;
+    height: auto;
   }
 
   .attempt-back {
@@ -73,11 +101,12 @@
 
   .attempt-title {
     font-family: var(--font-heading);
-    font-size: 1.75rem;
+    font-size: clamp(1.25rem, 4.5vw, 1.75rem);
     font-weight: 800;
     line-height: 1.25;
     color: var(--clr-text);
     margin-bottom: var(--space-sm);
+    word-break: break-word;
   }
 
   .attempt-meta-tags {
@@ -283,8 +312,10 @@
     padding-bottom: var(--space-sm);
     margin-bottom: var(--space-lg);
     display: flex;
+    flex-wrap: wrap;
     justify-content: space-between;
     align-items: center;
+    gap: var(--space-sm);
   }
 
   .review-title {
@@ -303,6 +334,14 @@
     box-shadow: var(--shadow-sm);
     position: relative;
     transition: all var(--transition-base);
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  @media (max-width: 520px) {
+    .question-card {
+      padding: var(--space-md);
+    }
   }
 
   .question-card:hover {
@@ -312,8 +351,10 @@
 
   .question-header {
     display: flex;
-    justify-content: space-between;
+    flex-wrap: wrap;
+    justify-content: flex-start;
     align-items: center;
+    gap: var(--space-xs) var(--space-sm);
     margin-bottom: var(--space-md);
   }
 
@@ -345,6 +386,8 @@
     line-height: 1.45;
     color: var(--clr-text);
     margin-bottom: var(--space-md);
+    word-break: break-word;
+    overflow-wrap: anywhere;
   }
 
   /* Choices Grid */
@@ -356,13 +399,14 @@
 
   .option-review-item {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: var(--space-md);
     padding: 0.75rem var(--space-md);
     border-radius: var(--radius-md);
     border: 1.5px solid var(--clr-border);
     transition: all var(--transition-fast);
     background: var(--clr-bg);
+    min-width: 0;
   }
 
   .option-letter-badge {
@@ -382,15 +426,40 @@
   }
 
   .option-text-content {
+    flex: 1;
+    min-width: 0;
     font-size: 0.9rem;
     font-weight: 500;
     color: var(--clr-text);
+    line-height: 1.45;
+    word-break: break-word;
+    overflow-wrap: anywhere;
   }
 
   .option-status-marker {
     margin-left: auto;
     font-weight: 700;
     font-size: 0.85rem;
+    flex-shrink: 0;
+    max-width: 11rem;
+    text-align: right;
+    line-height: 1.35;
+  }
+
+  @media (max-width: 520px) {
+    .option-review-item {
+      flex-wrap: wrap;
+      gap: var(--space-sm);
+    }
+
+    .option-status-marker {
+      margin-left: 0;
+      width: 100%;
+      max-width: none;
+      text-align: left;
+      padding-left: calc(28px + var(--space-md));
+      font-size: 0.78rem;
+    }
   }
 
   /* Option Review States */
@@ -479,6 +548,26 @@
   }
 
   .ai-explanation-box.visible { display: block; }
+
+  .explanation-speech-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-sm);
+    margin-top: var(--space-sm);
+  }
+
+  .speech-voice-choice {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.82rem;
+  }
+
+  .speech-voice-choice select {
+    max-width: min(100%, 12rem);
+  }
 
   .ai-explanation-label {
     font-size: 0.68rem;
