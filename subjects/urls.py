@@ -14,6 +14,7 @@ urlpatterns = [
 
     # Subjects
     path('subjects/', views.subject_list, name='subject_list'),
+    path('subjects/<slug:slug>/manage-meta/', views.subject_manage_meta, name='subject_manage_meta'),
     path('subjects/<slug:slug>/', views.subject_detail, name='subject_detail'),
 
     # Strands

@@ -1,0 +1,320 @@
+<style>
+  .subject-modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1200;
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(4px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 1.25rem;
+  }
+
+  .subject-modal-overlay.is-open {
+    display: flex;
+  }
+
+  .subject-modal {
+    width: min(520px, 100%);
+    max-height: min(90vh, 720px);
+    overflow: auto;
+    background: var(--clr-surface);
+    border: 1px solid var(--clr-border);
+    border-radius: 12px;
+    box-shadow: var(--shadow-lg);
+    padding: 1.25rem 1.35rem 1.35rem;
+  }
+
+  .subject-modal-title {
+    margin: 0;
+    font-family: var(--font-heading);
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: var(--clr-text);
+  }
+
+  .subject-modal-sub {
+    margin: 0.35rem 0 0;
+    font-size: 0.85rem;
+    color: var(--clr-text-muted);
+    line-height: 1.45;
+  }
+
+  .subject-impact-box {
+    margin-top: 1rem;
+    padding: 0.85rem 1rem;
+    border-radius: 8px;
+    border: 1px solid var(--clr-border);
+    background: var(--clr-surface-alt);
+  }
+
+  .subject-impact-box h3 {
+    margin: 0 0 0.5rem;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--clr-text-muted);
+  }
+
+  .subject-impact-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .subject-impact-list li {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.35rem 0;
+    font-size: 0.84rem;
+    border-bottom: 1px solid var(--clr-border);
+  }
+
+  .subject-impact-list li:last-child {
+    border-bottom: none;
+  }
+
+  .subject-impact-list strong {
+    font-variant-numeric: tabular-nums;
+    color: var(--clr-text);
+  }
+
+  .subject-impact-empty {
+    font-size: 0.84rem;
+    color: var(--clr-text-muted);
+    margin: 0;
+  }
+
+  .subject-impact-warning {
+    margin: 0.75rem 0 0;
+    font-size: 0.82rem;
+    color: var(--clr-danger);
+    font-weight: 600;
+  }
+
+  .subject-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    margin-top: 1.15rem;
+    flex-wrap: wrap;
+  }
+
+  .subject-modal .form-group {
+    margin-top: 0.85rem;
+  }
+</style>
+
+<div class="subject-modal-overlay" id="subject-edit-modal" role="dialog" aria-modal="true" aria-labelledby="subject-edit-modal-title" hidden>
+  <div class="subject-modal">
+    <h2 class="subject-modal-title" id="subject-edit-modal-title">Edit subject</h2>
+    <p class="subject-modal-sub" id="subject-edit-modal-sub"></p>
+    <div class="subject-impact-box" id="subject-edit-impact" hidden>
+      <h3>Linked curriculum &amp; exams</h3>
+      <ul class="subject-impact-list" id="subject-edit-impact-list"></ul>
+      <p class="subject-impact-empty" id="subject-edit-impact-empty" hidden>No linked strands or exams yet.</p>
+    </div>
+    <form method="post" id="subject-edit-form" action="">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="update_subject">
+      <input type="hidden" name="subject_id" id="subject-edit-id" value="">
+      <div class="form-group">
+        <label class="form-label" for="subject-edit-name">Name</label>
+        <input type="text" name="name" id="subject-edit-name" class="form-input" required maxlength="50">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="subject-edit-slug">Slug</label>
+        <input type="text" name="slug" id="subject-edit-slug" class="form-input" maxlength="50" placeholder="Leave blank to auto-generate">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="subject-edit-grade">Grade level</label>
+        <select name="grade_level" id="subject-edit-grade" class="form-select" required></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="subject-edit-discipline">Discipline</label>
+        <select name="discipline" id="subject-edit-discipline" class="form-select" required></select>
+      </div>
+      <div class="form-group">
+        <label class="form-checkbox-label" for="subject-edit-active">
+          <input type="checkbox" name="is_active" id="subject-edit-active" class="form-checkbox" value="1">
+          Active
+        </label>
+      </div>
+      <div class="subject-modal-actions">
+        <button type="button" class="btn btn-secondary subject-modal-cancel">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save changes</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="subject-modal-overlay" id="subject-delete-modal" role="dialog" aria-modal="true" aria-labelledby="subject-delete-modal-title" hidden>
+  <div class="subject-modal">
+    <h2 class="subject-modal-title" id="subject-delete-modal-title">Delete subject?</h2>
+    <p class="subject-modal-sub" id="subject-delete-modal-sub"></p>
+    <div class="subject-impact-box">
+      <h3>Also affected (permanently removed)</h3>
+      <ul class="subject-impact-list" id="subject-delete-impact-list"></ul>
+      <p class="subject-impact-empty" id="subject-delete-impact-empty" hidden>No dependent records — only this subject row will be removed.</p>
+      <p class="subject-impact-warning" id="subject-delete-warning">This cannot be undone.</p>
+    </div>
+    <form method="post" id="subject-delete-form" action="">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="delete_subject">
+      <input type="hidden" name="subject_id" id="subject-delete-id" value="">
+      <div class="subject-modal-actions">
+        <button type="button" class="btn btn-secondary subject-modal-cancel">Cancel</button>
+        <button type="submit" class="btn btn-secondary" style="color: var(--clr-danger); border-color: var(--clr-danger);">Delete subject</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+(function () {
+  var metaUrlTemplate = '{% url "subjects:subject_manage_meta" slug="__SLUG__" %}';
+  var gradeLevels = {{ grade_levels_json|default:"[]"|safe }};
+  var disciplines = {{ disciplines_json|default:"[]"|safe }};
+
+  function fillSelect(select, options, selectedId) {
+    select.innerHTML = '';
+    options.forEach(function (opt) {
+      var el = document.createElement('option');
+      el.value = String(opt.id);
+      el.textContent = opt.name;
+      if (String(opt.id) === String(selectedId)) {
+        el.selected = true;
+      }
+      select.appendChild(el);
+    });
+  }
+
+  function renderImpactList(listEl, emptyEl, rows) {
+    listEl.innerHTML = '';
+    if (!rows || !rows.length) {
+      emptyEl.hidden = false;
+      listEl.hidden = true;
+      return;
+    }
+    emptyEl.hidden = true;
+    listEl.hidden = false;
+    rows.forEach(function (row) {
+      var li = document.createElement('li');
+      li.innerHTML = '<span>' + row.label + '</span><strong>' + row.count + '</strong>';
+      listEl.appendChild(li);
+    });
+  }
+
+  function openOverlay(overlay) {
+    overlay.hidden = false;
+    overlay.classList.add('is-open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeOverlay(overlay) {
+    overlay.classList.remove('is-open');
+    overlay.hidden = true;
+    document.body.style.overflow = '';
+  }
+
+  document.querySelectorAll('.subject-modal-cancel').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var overlay = btn.closest('.subject-modal-overlay');
+      if (overlay) closeOverlay(overlay);
+    });
+  });
+
+  document.querySelectorAll('.subject-modal-overlay').forEach(function (overlay) {
+    overlay.addEventListener('click', function (e) {
+      if (e.target === overlay) closeOverlay(overlay);
+    });
+  });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+      document.querySelectorAll('.subject-modal-overlay.is-open').forEach(closeOverlay);
+    }
+  });
+
+  function fetchMeta(slug) {
+    var url = metaUrlTemplate.replace('__SLUG__', encodeURIComponent(slug));
+    return fetch(url, { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
+      .then(function (r) {
+        if (!r.ok) throw new Error('Failed to load subject details');
+        return r.json();
+      });
+  }
+
+  var editOverlay = document.getElementById('subject-edit-modal');
+  var deleteOverlay = document.getElementById('subject-delete-modal');
+  if (!editOverlay || !deleteOverlay) return;
+
+  var editForm = document.getElementById('subject-edit-form');
+  var deleteForm = document.getElementById('subject-delete-form');
+  var editGrade = document.getElementById('subject-edit-grade');
+  var editDiscipline = document.getElementById('subject-edit-discipline');
+
+  fillSelect(editGrade, gradeLevels, '');
+  fillSelect(editDiscipline, disciplines, '');
+
+  document.body.addEventListener('click', function (e) {
+    var editBtn = e.target.closest('[data-subject-edit]');
+    if (editBtn) {
+      e.preventDefault();
+      var slug = editBtn.getAttribute('data-subject-slug');
+      var postAction = editBtn.getAttribute('data-post-action') || editForm.getAttribute('action') || window.location.pathname;
+      editForm.setAttribute('action', postAction);
+      fetchMeta(slug).then(function (data) {
+        document.getElementById('subject-edit-modal-sub').textContent =
+          data.grade_level + ' · ' + data.discipline;
+        document.getElementById('subject-edit-id').value = data.id;
+        document.getElementById('subject-edit-name').value = data.name || '';
+        document.getElementById('subject-edit-slug').value = data.slug || '';
+        document.getElementById('subject-edit-active').checked = !!data.is_active;
+        fillSelect(editGrade, gradeLevels, data.grade_level_id);
+        fillSelect(editDiscipline, disciplines, data.discipline_id);
+        renderImpactList(
+          document.getElementById('subject-edit-impact-list'),
+          document.getElementById('subject-edit-impact-empty'),
+          data.impact.rows,
+        );
+        document.getElementById('subject-edit-impact').hidden = false;
+        openOverlay(editOverlay);
+      }).catch(function () {
+        alert('Could not load subject details.');
+      });
+    }
+
+    var deleteBtn = e.target.closest('[data-subject-delete]');
+    if (deleteBtn) {
+      e.preventDefault();
+      var dSlug = deleteBtn.getAttribute('data-subject-slug');
+      var dPostAction = deleteBtn.getAttribute('data-post-action') || deleteForm.getAttribute('action') || window.location.pathname;
+      deleteForm.setAttribute('action', dPostAction);
+      fetchMeta(dSlug).then(function (data) {
+        document.getElementById('subject-delete-modal-sub').textContent =
+          'Delete “' + data.name + '” (' + data.grade_level + ')?';
+        document.getElementById('subject-delete-id').value = data.id;
+        renderImpactList(
+          document.getElementById('subject-delete-impact-list'),
+          document.getElementById('subject-delete-impact-empty'),
+          data.impact.rows,
+        );
+        var warn = document.getElementById('subject-delete-warning');
+        if (data.impact.has_dependents) {
+          warn.textContent = 'Deleting removes ' + data.impact.total_dependent_records +
+            ' linked record(s). This cannot be undone.';
+        } else {
+          warn.textContent = 'This cannot be undone.';
+        }
+        openOverlay(deleteOverlay);
+      }).catch(function () {
+        alert('Could not load deletion impact.');
+      });
+    }
+  });
+})();
+</script>

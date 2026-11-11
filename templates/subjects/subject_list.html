@@ -121,13 +121,29 @@
                   &middot; Discipline: <strong>{{ subject.discipline.name }}</strong>
                 </div>
               </div>
-              <div style="display: flex; gap: var(--space-sm); align-items: center;">
+              <div style="display: flex; gap: var(--space-sm); align-items: center; flex-wrap: wrap; justify-content: flex-end;">
                 {% if subject.is_active %}
                   <span class="badge badge-primary">Active</span>
                 {% else %}
                   <span class="badge badge-danger">Inactive</span>
                 {% endif %}
-                <a href="{% url 'subjects:subject_detail' subject.slug %}" class="btn btn-secondary" style="padding: 0.4rem 1rem; font-size: 0.8rem;">View Curriculum</a>
+                <a href="{% url 'subjects:subject_detail' subject.slug %}" class="btn btn-secondary" style="padding: 0.4rem 1rem; font-size: 0.8rem;">Curriculum</a>
+                <button
+                  type="button"
+                  class="btn btn-secondary"
+                  style="padding: 0.4rem 0.85rem; font-size: 0.8rem;"
+                  data-subject-edit
+                  data-subject-slug="{{ subject.slug }}"
+                  data-post-action="{{ subject_list_post_url }}"
+                >Edit</button>
+                <button
+                  type="button"
+                  class="btn btn-secondary"
+                  style="padding: 0.4rem 0.85rem; font-size: 0.8rem; color: var(--clr-danger);"
+                  data-subject-delete
+                  data-subject-slug="{{ subject.slug }}"
+                  data-post-action="{{ subject_list_post_url }}"
+                >Delete</button>
               </div>
             </div>
           {% endfor %}
@@ -228,4 +244,6 @@
     </div>
   </div>
 </div>
+
+{% include 'subjects/partials/subject_manage_modal.html' %}
 {% endblock %}

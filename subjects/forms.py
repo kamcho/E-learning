@@ -110,15 +110,32 @@ class SubjectForm(forms.ModelForm):
         name = cleaned_data.get('name')
         slug = cleaned_data.get('slug')
         grade_level = cleaned_data.get('grade_level')
+        if name and grade_level:
+            duplicate_qs = Subject.objects.filter(name=name, grade_level=grade_level)
+            if self.instance.pk:
+                duplicate_qs = duplicate_qs.exclude(pk=self.instance.pk)
+            if duplicate_qs.exists():
+                raise ValidationError({
+                    'name': 'A subject with this name already exists for this grade.',
+                })
         if name and not slug:
             base_slug = slugify(name)
             if grade_level:
                 base_slug = f"{base_slug}-{slugify(grade_level.name)}"[:45]
             cleaned_data['slug'] = base_slug
             counter = 1
-            while Subject.objects.filter(slug=cleaned_data['slug']).exists():
+            slug_qs = Subject.objects.filter(slug=cleaned_data['slug'])
+            if self.instance.pk:
+                slug_qs = slug_qs.exclude(pk=self.instance.pk)
+            while slug_qs.exists():
                 cleaned_data['slug'] = f"{base_slug}-{counter}"
+                slug_qs = Subject.objects.filter(slug=cleaned_data['slug'])
+                if self.instance.pk:
+                    slug_qs = slug_qs.exclude(pk=self.instance.pk)
                 counter += 1
+        elif slug and self.instance.pk:
+            if Subject.objects.filter(slug=slug).exclude(pk=self.instance.pk).exists():
+                raise ValidationError({'slug': 'This slug is already in use.'})
         return cleaned_data
 
 

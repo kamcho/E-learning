@@ -298,7 +298,7 @@ class CurriculumNameEditingTests(TestCase):
         pages = (
             (
                 reverse('subjects:subject_detail', kwargs={'slug': self.subject.slug}),
-                'Edit Subject Name',
+                'Edit subject',
             ),
             (
                 reverse('subjects:strand_detail', kwargs={'slug': self.strand.slug}),
@@ -386,7 +386,15 @@ class CurriculumNameEditingTests(TestCase):
         name_changes = (
             (
                 reverse('subjects:subject_detail', kwargs={'slug': self.subject.slug}),
-                {'action': 'rename_subject', 'name': 'Agriculture and Nutrition Grade 6'},
+                {
+                    'action': 'update_subject',
+                    'subject_id': self.subject.pk,
+                    'name': 'Agriculture and Nutrition Grade 6',
+                    'slug': self.subject.slug,
+                    'grade_level': self.subject.grade_level_id,
+                    'discipline': self.subject.discipline_id,
+                    'is_active': 'on',
+                },
                 self.subject,
             ),
             (
@@ -409,6 +417,41 @@ class CurriculumNameEditingTests(TestCase):
                 obj.refresh_from_db()
                 self.assertEqual(obj.name, data['name'])
                 self.assertEqual(obj.slug, old_slug)
+
+    def test_subject_manage_meta_returns_impact_json(self):
+        self.client.force_login(self.admin)
+        url = reverse('subjects:subject_manage_meta', kwargs={'slug': self.subject.slug})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(payload['slug'], self.subject.slug)
+        self.assertIn('impact', payload)
+        strand_row = next(
+            (row for row in payload['impact']['rows'] if row['label'] == 'Strands'),
+            None,
+        )
+        self.assertIsNotNone(strand_row)
+        self.assertGreaterEqual(strand_row['count'], 1)
+
+    def test_admin_can_delete_subject_with_curriculum(self):
+        from subjects.models import Subject
+
+        subject_pk = self.subject.pk
+        grade_slug = self.subject.grade_level.slug
+        self.client.force_login(self.admin)
+        response = self.client.post(
+            reverse('subjects:subject_detail', kwargs={'slug': self.subject.slug}),
+            {
+                'action': 'delete_subject',
+                'subject_id': self.subject.pk,
+            },
+        )
+        self.assertRedirects(
+            response,
+            reverse('subjects:subject_list') + f'?grade={grade_slug}',
+        )
+        self.assertFalse(Subject.objects.filter(pk=subject_pk).exists())
+        self.assertEqual(self.strand.__class__.objects.filter(pk=self.strand.pk).count(), 0)
 
     def test_duplicate_names_are_rejected_for_each_curriculum_level(self):
         from subjects.models import Strand, SubStrand
@@ -436,8 +479,15 @@ class CurriculumNameEditingTests(TestCase):
         cases = (
             (
                 reverse('subjects:subject_detail', kwargs={'slug': self.subject.slug}),
-                {'action': 'rename_subject', 'name': other_subject.name},
-                'subject_name_form',
+                {
+                    'action': 'update_subject',
+                    'subject_id': self.subject.pk,
+                    'name': other_subject.name,
+                    'slug': self.subject.slug,
+                    'grade_level': self.subject.grade_level_id,
+                    'discipline': self.subject.discipline_id,
+                },
+                'subject_edit_form',
                 'A subject with this name already exists',
             ),
             (

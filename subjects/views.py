@@ -1,3 +1,4 @@
+import json
 from functools import wraps
 
 from django.shortcuts import render, get_object_or_404, redirect
@@ -7,6 +8,7 @@ from django.contrib.auth.decorators import login_required
 from django import forms
 from django.db import IntegrityError
 from django.db.models import Count
+from django.http import JsonResponse
 
 from core.ai.exceptions import AIServiceError
 from core.forms import QuestionCreateForm
@@ -31,11 +33,12 @@ from .models import (
     SubStrand, StrandObjective, SubStrandObjective
 )
 from .forms import (
-    GradeLevelForm, DisciplineForm, SubjectForm, 
-    StrandForm, SubStrandForm, StrandObjectiveForm, 
+    GradeLevelForm, DisciplineForm, SubjectForm,
+    StrandForm, SubStrandForm, StrandObjectiveForm,
     SubStrandObjectiveForm, SubjectNameForm, StrandNameForm,
     SubStrandNameForm,
 )
+from .subject_impact import build_subject_deletion_impact
 
 
 def _is_curriculum_admin(user):
@@ -175,6 +178,68 @@ def _subject_list_redirect(request):
     return redirect('subjects:subject_list')
 
 
+def _subject_manage_modal_context():
+    return {
+        'grade_levels_json': json.dumps(
+            list(GradeLevel.objects.order_by('name').values('id', 'name')),
+        ),
+        'disciplines_json': json.dumps(
+            list(Discipline.objects.order_by('name').values('id', 'name')),
+        ),
+    }
+
+
+def _subject_list_post_action(request):
+    action = request.POST.get('action')
+    if action == 'update_subject':
+        subject = get_object_or_404(Subject, pk=request.POST.get('subject_id'))
+        form = SubjectForm(request.POST, instance=subject)
+        if form.is_valid():
+            subject = form.save()
+            messages.success(request, f"Subject '{subject.name}' updated successfully.")
+            return redirect('subjects:subject_detail', slug=subject.slug)
+        messages.error(request, 'Failed to update subject. Please correct the errors below.')
+        return _subject_list_redirect(request), form, subject
+    if action == 'delete_subject':
+        subject = get_object_or_404(Subject, pk=request.POST.get('subject_id'))
+        grade_slug = subject.grade_level.slug
+        subject_name = subject.name
+        impact = build_subject_deletion_impact(subject)
+        subject.delete()
+        messages.success(
+            request,
+            f"Subject '{subject_name}' deleted"
+            + (
+                f" along with {impact['total_dependent_records']} linked record(s)."
+                if impact['total_dependent_records']
+                else '.'
+            ),
+        )
+        return redirect(f"{reverse('subjects:subject_list')}?grade={grade_slug}")
+    return None, None, None
+
+
+@admin_curriculum_required
+def subject_manage_meta(request, slug):
+    """JSON metadata and deletion impact for edit/delete modals."""
+    subject = get_object_or_404(
+        Subject.objects.select_related('grade_level', 'discipline'),
+        slug=slug,
+    )
+    impact = build_subject_deletion_impact(subject)
+    return JsonResponse({
+        'id': subject.pk,
+        'name': subject.name,
+        'slug': subject.slug,
+        'grade_level': subject.grade_level.name,
+        'grade_level_id': subject.grade_level_id,
+        'discipline': subject.discipline.name,
+        'discipline_id': subject.discipline_id,
+        'is_active': subject.is_active,
+        'impact': impact,
+    })
+
+
 @admin_curriculum_required
 def subject_list(request):
     """List subjects with grade-level filtering (defaults to Grade 6)."""
@@ -207,8 +272,12 @@ def subject_list(request):
     subject_preview = None
     subject_preview_token = ''
 
+    subject_edit_form = None
     if request.method == 'POST':
         action = request.POST.get('action', 'create_subject')
+        redirect_response, subject_edit_form, _ = _subject_list_post_action(request)
+        if redirect_response:
+            return redirect_response
         if action == 'parse_subjects':
             subject_import_text = request.POST.get('subject_text', '')
             form = SubjectForm(initial={'grade_level': active_grade} if active_grade else None)
@@ -253,15 +322,24 @@ def subject_list(request):
             initial['grade_level'] = active_grade
         form = SubjectForm(initial=initial)
 
+    list_post_url = reverse('subjects:subject_list')
+    if show_all_grades:
+        list_post_url = f'{list_post_url}?grade=all'
+    elif active_grade:
+        list_post_url = f'{list_post_url}?grade={active_grade.slug}'
+
     return render(request, 'subjects/subject_list.html', {
         'subjects': subjects,
         'form': form,
+        'subject_edit_form': subject_edit_form,
         'all_grade_levels': all_grade_levels,
         'active_grade': active_grade,
         'show_all_grades': show_all_grades,
         'subject_import_text': subject_import_text,
         'subject_preview': subject_preview,
         'subject_preview_token': subject_preview_token,
+        'subject_list_post_url': list_post_url,
+        **_subject_manage_modal_context(),
     })
 
 @admin_curriculum_required
@@ -283,6 +361,8 @@ def subject_detail(request, slug):
     curriculum_preview = None
     curriculum_preview_token = ''
 
+    subject_edit_form = SubjectForm(instance=subject)
+
     if request.method == 'POST' and action == 'rename_subject':
         subject_name_form = SubjectNameForm(request.POST, instance=subject)
         if subject_name_form.is_valid():
@@ -291,6 +371,32 @@ def subject_detail(request, slug):
             return redirect('subjects:subject_detail', slug=subject.slug)
         messages.error(request, 'Failed to update subject name. Please correct the error below.')
         form = StrandForm(initial={'subject': subject})
+    elif request.method == 'POST' and action == 'update_subject':
+        subject_edit_form = SubjectForm(request.POST, instance=subject)
+        if subject_edit_form.is_valid():
+            subject = subject_edit_form.save()
+            messages.success(request, f"Subject '{subject.name}' updated successfully.")
+            return redirect('subjects:subject_detail', slug=subject.slug)
+        messages.error(request, 'Failed to update subject. Please correct the errors below.')
+        form = StrandForm(initial={'subject': subject})
+    elif request.method == 'POST' and action == 'delete_subject':
+        if request.POST.get('subject_id') and str(request.POST.get('subject_id')) != str(subject.pk):
+            messages.error(request, 'Subject mismatch. Delete cancelled.')
+            return redirect('subjects:subject_detail', slug=subject.slug)
+        grade_slug = subject.grade_level.slug
+        subject_name = subject.name
+        impact = build_subject_deletion_impact(subject)
+        subject.delete()
+        messages.success(
+            request,
+            f"Subject '{subject_name}' deleted"
+            + (
+                f" along with {impact['total_dependent_records']} linked record(s)."
+                if impact['total_dependent_records']
+                else '.'
+            ),
+        )
+        return redirect(f"{reverse('subjects:subject_list')}?grade={grade_slug}")
     elif request.method == 'POST' and action == 'delete_strand':
         strand = get_object_or_404(
             Strand,
@@ -340,15 +446,21 @@ def subject_detail(request, slug):
 
     form.fields['subject'].widget = forms.HiddenInput()
 
+    detail_post_url = reverse('subjects:subject_detail', kwargs={'slug': subject.slug})
+
     return render(request, 'subjects/subject_detail.html', {
         'subject': subject,
         'strands': strands,
         'strand_count': strands.count(),
         'form': form,
         'subject_name_form': subject_name_form,
+        'subject_edit_form': subject_edit_form,
+        'subject_deletion_impact': build_subject_deletion_impact(subject),
         'curriculum_text': curriculum_text,
         'curriculum_preview': curriculum_preview,
         'curriculum_preview_token': curriculum_preview_token,
+        'subject_detail_post_url': detail_post_url,
+        **_subject_manage_modal_context(),
     })
 
 
