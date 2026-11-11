@@ -370,8 +370,14 @@
   }
 
   .demo-option:has(input:checked) {
-    border-color: rgba(124, 58, 237, 0.55);
-    background: rgba(124, 58, 237, 0.1);
+    border-color: var(--demo-warm);
+    background: color-mix(in srgb, var(--demo-warm) 16%, var(--demo-surface-alt));
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--demo-warm) 35%, transparent);
+  }
+
+  .demo-option:has(input:checked) .demo-option-letter {
+    background: var(--demo-warm);
+    color: #fff;
   }
 
   .demo-option.is-correct {
