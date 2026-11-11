@@ -124,8 +124,42 @@ def _get_admin_payments_queryset(*, search='', status=''):
     return qs
 
 
-def _build_admin_payment_stats():
-    agg = Payment.objects.aggregate(
+def _get_admin_guest_payments_queryset(*, search='', status=''):
+    qs = GuestDemoPayment.objects.select_related('plan').order_by('-created_at')
+    if search:
+        qs = qs.filter(
+            Q(mpesa_receipt_number__icontains=search)
+            | Q(phone_number__icontains=search)
+            | Q(plan__name__icontains=search)
+            | Q(checkout_request_id__icontains=search)
+            | Q(demo_id__icontains=search)
+        )
+    if status:
+        qs = qs.filter(status=status)
+    return qs
+
+
+def _build_admin_payment_ledger(*, search='', status=''):
+    """Merge guardian subscriptions and logged-out guest exam payments for admin UI."""
+    ledger = []
+    for payment in _get_admin_payments_queryset(search=search, status=status):
+        ledger.append({
+            'kind': 'subscription',
+            'created_at': payment.created_at,
+            'payment': payment,
+        })
+    for payment in _get_admin_guest_payments_queryset(search=search, status=status):
+        ledger.append({
+            'kind': 'guest_exam',
+            'created_at': payment.created_at,
+            'payment': payment,
+        })
+    ledger.sort(key=lambda row: row['created_at'], reverse=True)
+    return ledger
+
+
+def _aggregate_payment_stats(queryset):
+    agg = queryset.aggregate(
         total=Count('pk'),
         success_count=Count('pk', filter=Q(status=Payment.Status.SUCCESS)),
         pending_count=Count('pk', filter=Q(status=Payment.Status.PENDING)),
@@ -141,6 +175,19 @@ def _build_admin_payment_stats():
         'pending_count': agg['pending_count'] or 0,
         'failed_count': agg['failed_count'] or 0,
         'revenue': agg['revenue'] or 0,
+    }
+
+
+def _build_admin_payment_stats():
+    sub = _aggregate_payment_stats(Payment.objects.all())
+    guest = _aggregate_payment_stats(GuestDemoPayment.objects.all())
+    revenue = (sub['revenue'] or 0) + (guest['revenue'] or 0)
+    return {
+        'total': sub['total'] + guest['total'],
+        'success_count': sub['success_count'] + guest['success_count'],
+        'pending_count': sub['pending_count'] + guest['pending_count'],
+        'failed_count': sub['failed_count'] + guest['failed_count'],
+        'revenue': revenue,
     }
 
 
@@ -719,7 +766,7 @@ def my_subscription_view(request):
 
 @login_required(login_url='accounts:signin')
 def admin_payments_list_view(request):
-    """Admin: paginated list of all M-Pesa subscription payments."""
+    """Admin: paginated ledger of guardian subscription + guest exam M-Pesa payments."""
     denied = _admin_access_or_redirect(request)
     if denied:
         return denied
@@ -731,7 +778,7 @@ def admin_payments_list_view(request):
         status = ''
 
     page_obj = Paginator(
-        _get_admin_payments_queryset(search=search, status=status),
+        _build_admin_payment_ledger(search=search, status=status),
         ADMIN_PAYMENTS_PAGE_SIZE,
     ).get_page(request.GET.get('page'))
 

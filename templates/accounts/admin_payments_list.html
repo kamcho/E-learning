@@ -23,7 +23,7 @@
   <div>
     <a href="{% url 'accounts:admin_dashboard' %}" class="admin-list-back admin-list-back--light">&larr; Back to dashboard</a>
     <h1>Payments</h1>
-    <p>All M-Pesa subscription payments across the platform</p>
+    <p>Guardian subscriptions and logged-out guest exam payments (M-Pesa)</p>
   </div>
   <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
     <a href="{% url 'subscriptions:admin_subscriptions_list' %}" class="btn-list-banner">View subscriptions</a>
@@ -82,7 +82,7 @@
   <div class="admin-panel-head-flex">
     <div>
       <h2>Payment ledger</h2>
-      <p class="admin-panel-sub">Search by guardian, phone, receipt, or plan</p>
+      <p class="admin-panel-sub">Search by guardian, guest demo, phone, receipt, or plan</p>
     </div>
     <span class="table-count">
       {% if page_obj.paginator.num_pages > 1 %}
@@ -114,7 +114,8 @@
     <thead>
       <tr>
         <th>Date</th>
-        <th>Guardian</th>
+        <th>Payer</th>
+        <th>Type</th>
         <th>Plan</th>
         <th>Amount</th>
         <th>M-Pesa phone</th>
@@ -124,13 +125,18 @@
       </tr>
     </thead>
     <tbody>
-      {% for payment in page_obj %}
-      <tr class="clickable-row" data-href="{% url 'accounts:admin_user_detail' payment.user.pk %}" tabindex="0" role="link">
+      {% for row in page_obj %}
+      {% with payment=row.payment %}
+      <tr
+        class="{% if row.kind == 'subscription' %}clickable-row{% endif %}"
+        {% if row.kind == 'subscription' %}data-href="{% url 'accounts:admin_user_detail' payment.user.pk %}" tabindex="0" role="link"{% endif %}
+      >
         <td>
           <div class="list-row-name">{{ payment.created_at|date:"d M Y" }}</div>
           <div class="list-row-meta">{{ payment.created_at|date:"H:i" }}</div>
         </td>
         <td>
+          {% if row.kind == 'subscription' %}
           <div class="list-row-identity">
             <div class="list-row-avatar list-row-avatar--purple">{{ payment.user.first_name|first|upper }}{{ payment.user.last_name|first|upper }}</div>
             <div>
@@ -138,6 +144,18 @@
               <div class="list-row-meta">{{ payment.user.phone }}</div>
             </div>
           </div>
+          {% else %}
+          <div class="list-row-name">Guest</div>
+          <div class="list-row-meta">{{ payment.phone_number }}</div>
+          {% endif %}
+        </td>
+        <td>
+          {% if row.kind == 'guest_exam' %}
+          <span class="badge badge-gold" style="font-size:0.72rem;">Guest exam</span>
+          <div class="list-row-meta" title="Demo session">Demo {{ payment.demo_id|truncatechars:8 }}</div>
+          {% else %}
+          <span class="badge badge-primary" style="font-size:0.72rem;">Subscription</span>
+          {% endif %}
         </td>
         <td>
           <div class="list-row-name">{{ payment.plan.name }}</div>
@@ -160,8 +178,15 @@
             </div>
           {% endif %}
         </td>
-        <td><span class="list-row-action">User &rarr;</span></td>
+        <td>
+          {% if row.kind == 'subscription' %}
+          <span class="list-row-action">User &rarr;</span>
+          {% else %}
+          <span class="list-row-meta">—</span>
+          {% endif %}
+        </td>
       </tr>
+      {% endwith %}
       {% endfor %}
     </tbody>
   </table>

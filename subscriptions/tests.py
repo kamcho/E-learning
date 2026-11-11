@@ -290,3 +290,39 @@ class GuestDemoCheckoutTests(TestCase):
             )
         self.assertEqual(status_response.json()['status'], GuestDemoPayment.Status.SUCCESS)
         self.assertEqual(GuestDemoPayment.objects.get().status, GuestDemoPayment.Status.SUCCESS)
+
+
+class AdminPaymentsLedgerTests(TestCase):
+    def setUp(self):
+        self.admin = User.objects.create_user(
+            phone='0755555555',
+            password='1234',
+            role=Role.ADMIN,
+            first_name='Pay',
+            last_name='Admin',
+        )
+        self.plan = SubscriptionPlan.objects.create(
+            name='Guest exam',
+            slug='admin-ledger-guest',
+            plan_type=SubscriptionPlan.PlanType.SINGLE_TEST,
+            grade_band=SubscriptionPlan.GradeBand.GRADE_4_TO_6,
+            price_kes=15,
+            max_tests=1,
+        )
+        GuestDemoPayment.objects.create(
+            demo_id='demo-ledger-1',
+            session_token_hash='abc123',
+            plan=self.plan,
+            amount_kes=15,
+            phone_number='254712345678',
+            status=GuestDemoPayment.Status.SUCCESS,
+            mpesa_receipt_number='QATEST001',
+        )
+
+    def test_admin_payments_list_includes_guest_exam_payments(self):
+        self.client.force_login(self.admin)
+        response = self.client.get(reverse('subscriptions:admin_payments_list'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Guest exam')
+        self.assertContains(response, 'QATEST001')
+        self.assertContains(response, '254712345678')
