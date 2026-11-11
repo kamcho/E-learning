@@ -10,6 +10,7 @@ from subjects.curriculum_import import (
     CurriculumImportError,
     create_curriculum,
     parse_curriculum_text,
+    validate_curriculum,
 )
 
 from subjects.forms import StrandForm, SubStrandForm
@@ -124,6 +125,17 @@ class CurriculumImportTests(TestCase):
 
         self.assertEqual(result[0]['name'], 'Creation')
         self.assertEqual(result[0]['sub_strands'][0]['name'], 'Self Awareness')
+
+    def test_validate_curriculum_allows_long_sub_strand_names(self):
+        long_name = (
+            'Miracles of Jesus Christ (The feeding of the five thousand and other signs)'
+        )
+        self.assertGreater(len(long_name), 50)
+        curriculum = validate_curriculum([{
+            'name': 'The Life of Jesus Christ',
+            'sub_strands': [long_name],
+        }])
+        self.assertEqual(curriculum[0]['sub_strands'][0]['name'], long_name)
 
     def test_create_curriculum_creates_strands_and_sub_strands(self):
         curriculum = [{

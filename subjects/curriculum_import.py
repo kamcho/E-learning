@@ -11,6 +11,9 @@ from core.ai.exceptions import AIServiceError
 from .forms import StrandForm, SubStrandForm
 from .models import Strand, SubStrand
 
+STRAND_NAME_MAX_LENGTH = Strand._meta.get_field('name').max_length
+SUBSTRAND_NAME_MAX_LENGTH = SubStrand._meta.get_field('name').max_length
+
 
 MAX_CURRICULUM_TEXT_LENGTH = 12000
 MAX_STRANDS = 100
@@ -30,15 +33,16 @@ class CurriculumImportError(ValueError):
     """Raised when curriculum text or the parsed structure is invalid."""
 
 
-def _clean_name(value, label):
+def _clean_name(value, label, *, max_length):
     if not isinstance(value, str):
         raise CurriculumImportError(f'{label} must be text.')
     name = re.sub(r'^\s*\d+(?:\.\d+)*\.?\s+', '', value).strip()
     if not name:
         raise CurriculumImportError(f'{label} cannot be blank.')
-    if len(name) > 50:
+    if len(name) > max_length:
+        preview = name if len(name) <= 48 else f'{name[:45]}...'
         raise CurriculumImportError(
-            f'{label} "{name[:30]}..." exceeds the 50-character limit.'
+            f'{label} "{preview}" exceeds the {max_length}-character limit.'
         )
     if not slugify(name):
         raise CurriculumImportError(f'{label} "{name}" cannot be converted to a URL slug.')
@@ -57,7 +61,11 @@ def validate_curriculum(data):
     for strand_index, item in enumerate(data, start=1):
         if not isinstance(item, dict):
             raise CurriculumImportError(f'Strand {strand_index} has an invalid format.')
-        name = _clean_name(item.get('name'), f'Strand {strand_index}')
+        name = _clean_name(
+            item.get('name'),
+            f'Strand {strand_index}',
+            max_length=STRAND_NAME_MAX_LENGTH,
+        )
         normalized_name = name.casefold()
         if normalized_name in seen_strands:
             raise CurriculumImportError(f'The parsed curriculum repeats the strand "{name}".')
@@ -75,6 +83,7 @@ def validate_curriculum(data):
             sub_name = _clean_name(
                 raw_sub_strand,
                 f'Sub-strand {sub_index} under "{name}"',
+                max_length=SUBSTRAND_NAME_MAX_LENGTH,
             )
             normalized_sub_name = sub_name.casefold()
             if normalized_sub_name in seen_sub_strands:
