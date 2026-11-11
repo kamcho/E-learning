@@ -42,10 +42,12 @@
 </div>
 {% endif %}
 
+{% include 'core/partials/question_import_format_guide.html' with title="What format we expect" %}
+
 <div class="tc-prompt-panel">
   <h2>1. Copy AI prompt</h2>
   <p style="font-size:0.85rem;color:var(--clr-text-muted);margin:0 0 var(--space-md);">
-    Paste this into ChatGPT, Claude, or another assistant. Ask it to return <em>only</em> JSON (no markdown fences).
+    Paste this into ChatGPT, Claude, or another assistant. The prompt already asks for paste-safe JSON (straight quotes, no markdown).
   </p>
   <textarea id="tc-ai-prompt" class="tc-textarea tall" readonly spellcheck="false">{{ ai_prompt_text }}</textarea>
   <div class="tc-actions">
@@ -57,7 +59,7 @@
   <h2>2. Paste AI JSON and import</h2>
   <p style="font-size:0.85rem;color:var(--clr-text-muted);margin:0 0 var(--space-md);">
     Questions missing <code>sub_strand_id</code> are auto-assigned to this sub-strand (id {{ sub_strand.pk }}).
-    Line-ending <code>\</code> and escaped brackets like <code>\[</code> from chat tools are fixed automatically.
+    We try to fix common paste issues (smart quotes, <code>\</code>, <code>\[</code>), but correct JSON from the AI works best.
   </p>
   <textarea id="tc-import-json" class="tc-textarea tall" spellcheck="false" placeholder='{"questions": [ ... ]}'></textarea>
   <div class="tc-actions">

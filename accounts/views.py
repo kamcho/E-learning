@@ -1637,6 +1637,8 @@ def teacher_curriculum_sub_strand_view(request, grade_slug, subject_slug, strand
 
     from subjects.models import GradeLevel, Strand, Subject, SubStrand
 
+    from core.question_import import QUESTION_IMPORT_UI_GUIDE
+
     from .teacher_curriculum import (
         build_ai_question_prompt,
         build_example_import_payload,
@@ -1665,6 +1667,7 @@ def teacher_curriculum_sub_strand_view(request, grade_slug, subject_slug, strand
         'example_json': json.dumps(example_payload, indent=2),
         'example_payload': example_payload,
         'import_api_url': reverse('core:bulk_create_questions_api'),
+        'question_import_format_guide': QUESTION_IMPORT_UI_GUIDE,
         'create_question_url': (
             reverse('subjects:create_question', kwargs={'subject_id': subject.pk})
             + f'?sub_strand={sub_strand.pk}'

@@ -210,3 +210,75 @@ def bulk_create_questions(payload, created_by):
         'failed': failed_count,
         'results': results,
     }
+
+
+# --- Copy/paste guidance (UI + AI prompts) ---------------------------------
+
+QUESTION_IMPORT_UI_GUIDE = [
+    {
+        'title': 'Root shape',
+        'detail': 'A single JSON object: {"questions": [ ... ]} (not a bare array).',
+    },
+    {
+        'title': 'Each question',
+        'detail': (
+            'quiz, difficulty (Easy | Medium | Hard), quiz_type, sub_strand_id or sub_strand_slug, '
+            'score (integer), and choices where required.'
+        ),
+    },
+    {
+        'title': 'quiz_type values',
+        'detail': 'Multiple Choice, True or False, Fill in the Blank, OpenEnded, or Matching (exact spelling).',
+    },
+    {
+        'title': 'choices',
+        'detail': 'Array of {"option": "text", "is_correct": true|false}. Required for MC, T/F, and fill-in.',
+    },
+    {
+        'title': 'Quotes (important)',
+        'detail': 'Use straight ASCII quotes " only — not curly “ ”. WhatsApp/messages often break JSON.',
+    },
+    {
+        'title': 'Paste path',
+        'detail': 'Copy from the AI chat in your browser and paste here. Avoid forwarding JSON via WhatsApp/SMS.',
+    },
+    {
+        'title': 'No markdown',
+        'detail': 'Do not wrap in ```json fences. No \\ at the end of lines. No \\[ or \\] around arrays.',
+    },
+    {
+        'title': 'Review',
+        'detail': 'Imported questions are inactive until an admin activates them on the sub-strand page.',
+    },
+]
+
+
+def question_import_ai_delivery_rules():
+    """
+    Instructions appended to teacher AI prompts so the model returns paste-safe JSON.
+    """
+    types = ', '.join(sorted(VALID_QUIZ_TYPES))
+    difficulties = ', '.join(sorted(VALID_DIFFICULTIES))
+    return [
+        '## Critical — JSON must paste into Soma Smart without editing',
+        '',
+        'Return ONE raw JSON object. Do not include explanations before or after.',
+        '',
+        'Character rules:',
+        '- Use ONLY the straight ASCII double-quote character (") for all keys and string values.',
+        '- NEVER use curly/smart quotes (“ ” ‘ ’) or typographic quotes — they break the importer.',
+        '- Use lowercase JSON literals true and false (not "true" strings).',
+        '',
+        'Formatting rules:',
+        '- Do NOT wrap the JSON in markdown code fences (no ```json).',
+        '- Do NOT add backslashes before line breaks, brackets, or braces (no \\, no \\[, no \\{).',
+        '- Pretty-printed JSON with normal newlines is fine; compact single-line JSON is also fine.',
+        '',
+        'Schema reminder:',
+        f'- difficulty: one of {difficulties}',
+        f'- quiz_type: one of {types}',
+        '- choices: array of objects with option (string) and is_correct (boolean).',
+        '- OpenEnded / Matching: use "choices": [] or omit choices.',
+        '- Do not repeat the same quiz text twice for this sub-strand.',
+        '- Do not duplicate the same option text twice on one question.',
+    ]

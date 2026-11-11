@@ -6,6 +6,7 @@ from django.db.models import Count, Q
 from django.urls import reverse
 
 from core.models import Question
+from core.question_import import question_import_ai_delivery_rules
 from subjects.grade_utils import GRADE_SLUG_ORDER
 from subjects.models import GradeLevel, Strand, Subject, SubStrand
 
@@ -240,7 +241,7 @@ def build_ai_question_prompt(sub_strand):
         'LaTeX in $...$ is allowed for maths.',
         '',
         '## Output format',
-        'Return ONLY valid JSON (no markdown fences) with this shape:',
+        'Return ONLY valid JSON with this shape:',
         '{"questions": [ ... ]}',
         '',
         'Each question object MUST include:',
@@ -261,6 +262,10 @@ def build_ai_question_prompt(sub_strand):
         '- Fill in the Blank: at least one choice with the accepted answer(s), is_correct true',
         '- OpenEnded and Matching: choices may be [] or omitted',
         '- Do not duplicate the same quiz text twice for this sub-strand',
+        '',
+    ])
+    lines.extend(question_import_ai_delivery_rules())
+    lines.extend([
         '',
         '## Example (structure only — replace with real items)',
         json.dumps(build_example_import_payload(sub_strand), indent=2),

@@ -129,6 +129,18 @@
       grid-template-columns: 1fr;
     }
   }
+
+  .bqi-help .qi-format-guide {
+    background: transparent;
+    border: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .bqi-help .qi-format-guide-title {
+    font-size: 1rem;
+    margin-bottom: var(--space-md);
+  }
 </style>
 {% endblock %}
 
@@ -157,15 +169,7 @@
   </div>
 
   <aside class="bqi-panel bqi-help">
-    <h2>Format guide</h2>
-    <ul>
-      <li>Top-level key: <code>questions</code> (array).</li>
-      <li>Each question needs <code>quiz</code>, <code>difficulty</code>, <code>quiz_type</code>, and a sub-strand reference.</li>
-      <li><code>difficulty</code>: Easy, Medium, or Hard.</li>
-      <li><code>quiz_type</code>: Multiple Choice, True or False, Fill in the Blank, OpenEnded, or Matching.</li>
-      <li><code>choices</code> is required for Multiple Choice and True or False.</li>
-      <li>Duplicate question text in the same sub-strand will be rejected.</li>
-    </ul>
+    {% include 'core/partials/question_import_format_guide.html' %}
   </aside>
 </div>
 {% endblock %}

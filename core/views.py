@@ -1147,10 +1147,13 @@ def bulk_question_import_view(request):
         ],
     }
 
+    from core.question_import import QUESTION_IMPORT_UI_GUIDE
+
     return render(request, 'core/bulk_question_import.html', {
         'example_payload': example_payload,
         'example_json': json.dumps(example_payload, indent=2),
         'api_url': reverse('core:bulk_create_questions_api'),
+        'question_import_format_guide': QUESTION_IMPORT_UI_GUIDE,
     })
 
 

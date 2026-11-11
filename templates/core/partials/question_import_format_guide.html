@@ -1,0 +1,18 @@
+<div class="qi-format-guide">
+  <h2 class="qi-format-guide-title">{{ title|default:"Expected JSON format" }}</h2>
+  <p class="qi-format-guide-lead">
+    Give your AI the copied prompt <strong>or</strong> tell it: output only raw JSON matching the rules below.
+    Paste the response <strong>directly from the AI page</strong> — not via WhatsApp or SMS.
+  </p>
+  <ul class="qi-format-guide-list">
+    {% for item in question_import_format_guide %}
+    <li>
+      <strong>{{ item.title }}:</strong> {{ item.detail }}
+    </li>
+    {% endfor %}
+  </ul>
+  <p class="qi-format-guide-sample">
+    Minimal valid example:
+    <code>{"questions":[{"quiz":"…","sub_strand_id":123,"difficulty":"Easy","quiz_type":"True or False","score":1,"choices":[{"option":"True","is_correct":true},{"option":"False","is_correct":false}]}]}</code>
+  </p>
+</div>
