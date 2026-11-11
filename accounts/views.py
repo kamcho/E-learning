@@ -1239,7 +1239,7 @@ def admin_dashboard_view(request):
     attempt_chart = _build_attempt_score_chart()
 
     context = {
-        'admin_user': user,
+        'admin_user': request.user,
         'user_stats': {
             'total': total_users,
             'active': active_users,
