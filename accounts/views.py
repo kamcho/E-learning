@@ -698,14 +698,22 @@ def _is_admin(user):
 
 
 def _admin_access_or_redirect(request):
-    if not _is_admin(request.user):
+    user = request.user
+    if user.is_guardian and not user.is_superuser:
+        messages.error(request, "Admin pages aren't available for guardian accounts.")
+        return redirect('accounts:guardian_dashboard')
+    if not _is_admin(user):
         messages.error(request, "You don't have permission to view this page.")
         return redirect('core:landing')
     return None
 
 
 def _teacher_access_or_redirect(request):
-    if not request.user.is_teacher:
+    user = request.user
+    if user.is_guardian and not user.is_superuser:
+        messages.error(request, "The teacher dashboard isn't available for guardian accounts.")
+        return redirect('accounts:guardian_dashboard')
+    if not user.is_teacher:
         messages.error(request, "The teacher dashboard is only available to teacher accounts.")
         return redirect('core:landing')
     return None
@@ -1122,6 +1130,7 @@ def student_subject_progress_view(request, student_uuid, subject_id):
     """Strand and sub-strand test progress for a learner in one subject."""
     from subjects.models import Subject
 
+    from .learner_access import user_can_view_learner
     from .progress import build_subject_strand_progress
 
     student = get_object_or_404(Student.objects.select_related('grade_level'), uuid=student_uuid)
@@ -1131,14 +1140,12 @@ def student_subject_progress_view(request, student_uuid, subject_id):
         is_active=True,
     )
 
-    if not _is_admin(request.user):
-        is_linked = request.user.linked_students.filter(students=student).exists()
-        if not is_linked:
-            messages.error(request, "You don't have permission to view this learner's progress.")
-            return redirect('accounts:guardian_dashboard')
+    if not user_can_view_learner(request.user, student):
+        messages.error(request, "You don't have permission to view this learner's progress.")
+        return redirect('accounts:guardian_dashboard')
 
     progress = build_subject_strand_progress(student, subject)
-    if _is_admin(request.user):
+    if request.user.is_superuser:
         back_url = reverse('accounts:student_analytics', kwargs={'student_uuid': student.uuid})
     else:
         back_url = f"{reverse('accounts:guardian_dashboard')}?{urlencode({'student': str(student.uuid)})}"
@@ -1157,18 +1164,19 @@ def student_analytics_view(request, student_uuid):
     Detailed analytics for a student.
     Guardians may only view linked students; admins may view any student.
     """
+    from .learner_access import user_can_view_learner
+
     student = get_object_or_404(Student.objects.select_related('grade_level'), uuid=student_uuid)
 
     grade_slug = request.GET.get('grade', '').strip() or None
 
-    if _is_admin(request.user):
-        context = _build_student_analytics_context(student, grade_slug=grade_slug)
-        return render(request, 'accounts/admin_student_analytics.html', context)
-
-    is_linked = request.user.linked_students.filter(students=student).exists()
-    if not is_linked:
+    if not user_can_view_learner(request.user, student):
         messages.error(request, "You don't have permission to view this student's analytics.")
         return redirect('accounts:guardian_dashboard')
+
+    if request.user.is_superuser:
+        context = _build_student_analytics_context(student, grade_slug=grade_slug)
+        return render(request, 'accounts/admin_student_analytics.html', context)
 
     params = {'student': str(student.uuid)}
     if grade_slug:
@@ -1188,10 +1196,9 @@ def admin_dashboard_view(request):
         StrandObjective, SubStrandObjective,
     )
 
-    user = request.user
-    if not _is_admin(user):
-        messages.error(request, "The admin dashboard is only available to admin accounts.")
-        return redirect('core:landing')
+    denied = _admin_access_or_redirect(request)
+    if denied:
+        return denied
 
     users_by_role = {
         role.value: MyUser.objects.filter(role=role.value).count()
@@ -1368,9 +1375,9 @@ def admin_user_detail_view(request, user_id):
     """Admin view of a single platform user."""
     from core.models import UserAttempts
 
-    if not _is_admin(request.user):
-        messages.error(request, "You don't have permission to view this page.")
-        return redirect('core:landing')
+    denied = _admin_access_or_redirect(request)
+    if denied:
+        return denied
 
     profile_user = get_object_or_404(MyUser, pk=user_id)
 
@@ -1412,10 +1419,10 @@ def admin_profile_view(request):
     from core.models import Quiz, UserAttempts
     from django.utils import timezone
 
+    denied = _admin_access_or_redirect(request)
+    if denied:
+        return denied
     user = request.user
-    if not _is_admin(user):
-        messages.error(request, "The admin profile is only available to admin accounts.")
-        return redirect('core:landing')
 
     days_member = (timezone.now() - user.date_joined).days
     quizzes_created = Quiz.objects.filter(created_by=user).count()
@@ -1681,6 +1688,8 @@ def teacher_curriculum_sub_strand_view(request, grade_slug, subject_slug, strand
 @require_POST
 def teacher_ai_question_prompt_generate(request):
     user = request.user
+    if user.is_guardian and not user.is_superuser:
+        return JsonResponse({'ok': False, 'error': 'Not allowed.'}, status=403)
     if not (user.is_teacher or getattr(user, 'is_admin_role', False) or user.is_staff):
         return JsonResponse({'ok': False, 'error': 'Not allowed.'}, status=403)
 

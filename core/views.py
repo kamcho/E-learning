@@ -81,12 +81,9 @@ def _exams_browse_flow_active(selected_student, learner_grade_missing, staff_exa
 
 
 def _can_access_learner(user, student):
-    """Guardians may only access linked learners; admins may access any."""
-    if user.is_admin_role or user.is_staff:
-        return True
-    if user.is_guardian:
-        return user.linked_students.filter(students=student).exists()
-    return False
+    from accounts.learner_access import user_can_view_learner
+
+    return user_can_view_learner(user, student)
 
 
 def _get_learner_or_redirect(request, student_uuid):
@@ -387,8 +384,6 @@ def _complete_attempt(request, attempt, student, quiz, saved_answers, take_url_k
 
 
 def _can_view_attempt(user, attempt):
-    if user.is_admin_role or user.is_staff:
-        return True
     if attempt.student_id:
         return _can_access_learner(user, attempt.student)
     return False
@@ -533,6 +528,15 @@ def test_take_view(request, quiz_uuid, student_uuid):
                 messages.error(request, "Please select at least one answer.")
                 return redirect('core:test_take', **take_url_kwargs)
             answer = ','.join(sorted(set(selected_answers)))
+        elif question.quiz_type == 'Matching':
+            from core.matching import compose_matching_answer
+
+            answer = compose_matching_answer(request.POST)
+            if not answer:
+                answer = request.POST.get('answer', '').strip()
+            if not answer:
+                messages.error(request, "Please complete all matches before continuing.")
+                return redirect('core:test_take', **take_url_kwargs)
         else:
             answer = request.POST.get('answer', '').strip()
             if not answer:
@@ -578,6 +582,33 @@ def test_take_view(request, quiz_uuid, student_uuid):
     )
     progress_pct = int(((current_index + 1) / question_count) * 100)
 
+    matching_rows = []
+    matching_choices = []
+    saved_matching = {}
+    matching_ui_mode = ''
+    matching_options = []
+    if current_question.quiz_type == 'Matching':
+        from core.matching import (
+            matching_choice_pool,
+            matching_rows_for_display,
+            parse_matching_submission,
+        )
+
+        matching_rows = matching_rows_for_display(current_question)
+        matching_choices = matching_choice_pool(current_question)
+        saved_matching = parse_matching_submission(saved_answer)
+        for row in matching_rows:
+            row['saved_right'] = saved_matching.get(row['left'], '')
+        if matching_rows and matching_choices:
+            matching_ui_mode = 'rows'
+        elif current_question.options.filter(is_active=True).exists():
+            matching_ui_mode = 'pick_option'
+            matching_options = list(
+                current_question.options.filter(is_active=True).order_by('created_at')
+            )
+        else:
+            matching_ui_mode = 'text'
+
     return render(
         request,
         'core/test_take.html',
@@ -596,6 +627,11 @@ def test_take_view(request, quiz_uuid, student_uuid):
             'has_time_limit': has_time_limit,
             'time_remaining_seconds': time_remaining_seconds,
             'time_limit_minutes': quiz.time_limit_minutes,
+            'matching_ui_mode': matching_ui_mode,
+            'matching_rows': matching_rows,
+            'matching_choices': matching_choices,
+            'saved_matching': saved_matching,
+            'matching_options': matching_options,
         },
     )
 

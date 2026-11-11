@@ -633,6 +633,12 @@
       border: 1px solid rgba(193, 39, 45, 0.2);
     }
 
+    .alert-info {
+      background: rgba(59, 130, 246, 0.1);
+      color: var(--clr-text);
+      border: 1px solid rgba(59, 130, 246, 0.2);
+    }
+
     .page-header {
       background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
       padding: var(--space-2xl);
@@ -1002,7 +1008,7 @@
       {% if messages %}
         <div class="messages-container">
           {% for message in messages %}
-            <div class="alert {% if message.tags == 'success' %}alert-success{% else %}alert-danger{% endif %}">
+            <div class="alert{% if message.tags == 'success' %} alert-success{% elif message.tags == 'error' or message.tags == 'danger' %} alert-danger{% elif message.tags == 'info' or message.tags == 'warning' %} alert-info{% else %} alert-danger{% endif %}">
               {{ message }}
             </div>
           {% endfor %}

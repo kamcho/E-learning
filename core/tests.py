@@ -732,3 +732,100 @@ class OpenEndedGradingTests(TestCase):
         self.assertEqual(response.marks_awarded, 0)
         self.assertFalse(response.is_correct)
         self.assertEqual(response.graded_by, 'ai')
+
+
+class MatchingGradingTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.guardian = User.objects.create_user(
+            phone='0755555502',
+            password='1234',
+            role=Role.GUARDIAN,
+        )
+        cls.grade = GradeLevel.objects.create(name='Grade 6', slug='grade-6', level='Upper Primary')
+        cls.discipline = Discipline.objects.create(name='Science', slug='science')
+        cls.subject = Subject.objects.create(
+            name='Science G6',
+            slug='science-g6',
+            grade_level=cls.grade,
+            discipline=cls.discipline,
+        )
+        cls.strand = Strand.objects.create(name='Life', slug='life-g6', subject=cls.subject)
+        cls.sub_strand = SubStrand.objects.create(name='Animals', slug='animals-g6', strand=cls.strand)
+
+    def test_parse_options_with_arrow_pairs(self):
+        from core.matching import matching_choice_pool, matching_rows_for_display, parse_matching_pairs
+
+        question = Question.objects.create(
+            quiz='Match animals to sounds.',
+            difficulty='Easy',
+            quiz_type='Matching',
+            sub_strand=self.sub_strand,
+            score=2,
+        )
+        Option.objects.create(question=question, option='Dog → Bark')
+        Option.objects.create(question=question, option='Cat → Meow')
+        pairs = parse_matching_pairs(question)
+        self.assertEqual(len(pairs), 2)
+        rows = matching_rows_for_display(question)
+        choices = matching_choice_pool(question)
+        self.assertEqual({r['left'] for r in rows}, {'Dog', 'Cat'})
+        self.assertEqual(set(choices), {'Bark', 'Meow'})
+
+    def test_compose_and_grade_structured_matching(self):
+        from core.matching import compose_matching_answer
+
+        question = Question.objects.create(
+            quiz='Match items.',
+            difficulty='Easy',
+            quiz_type='Matching',
+            sub_strand=self.sub_strand,
+            score=4,
+        )
+        Option.objects.create(question=question, option='One → A')
+        Option.objects.create(question=question, option='Two → B')
+        post = {
+            'matching_left_0': 'One',
+            'matching_0': 'A',
+            'matching_left_1': 'Two',
+            'matching_1': 'B',
+        }
+        answer = compose_matching_answer(post)
+        self.assertEqual(answer, 'One=A|Two=B')
+        marks, is_correct, graded_by = grade_text_question(question, answer)
+        self.assertEqual(marks, 4)
+        self.assertTrue(is_correct)
+        self.assertEqual(graded_by, 'auto')
+
+    def test_matching_pick_option_grades_like_multiple_choice(self):
+        question = Question.objects.create(
+            quiz='Which pair is correct?',
+            difficulty='Easy',
+            quiz_type='Matching',
+            sub_strand=self.sub_strand,
+            score=1,
+        )
+        correct = Option.objects.create(question=question, option='Dog → Bark', is_correct=True)
+        Option.objects.create(question=question, option='Dog → Meow', is_correct=False)
+        quiz = Quiz.objects.create(
+            title='Matching quiz',
+            difficulty='Easy',
+            subject=self.subject,
+            sub_strand=self.sub_strand,
+            created_by=self.guardian,
+        )
+        quiz.questions.add(question)
+        attempt = UserAttempts.objects.create(
+            user=self.guardian,
+            student=Student.objects.create(
+                first_name='M',
+                middle_name='',
+                last_name='L',
+                grade_level=self.grade,
+            ),
+            quiz=quiz,
+        )
+        upsert_response(attempt, question, str(correct.uuid))
+        response = attempt.responses.get(question=question)
+        self.assertTrue(response.is_correct)
+        self.assertEqual(response.marks_awarded, 1)

@@ -154,6 +154,25 @@ def _grade_with_ai(question, answer_str, max_marks):
     return marks_awarded, is_correct, 'ai'
 
 
+def _grade_matching_submission(question, answer_str, max_marks):
+    from core.matching import parse_matching_pairs, parse_matching_submission
+
+    correct_pairs = parse_matching_pairs(question)
+    if len(correct_pairs) < 1:
+        return None
+    correct_map = {p['left']: p['right'] for p in correct_pairs}
+    learner_map = parse_matching_submission(answer_str)
+    if not learner_map:
+        return None
+    if set(learner_map.keys()) != set(correct_map.keys()):
+        return 0, False, 'auto'
+    for left, expected_right in correct_map.items():
+        given = learner_map.get(left, '')
+        if _normalize_answer_text(given) != _normalize_answer_text(expected_right):
+            return 0, False, 'auto'
+    return max_marks, True, 'auto'
+
+
 def grade_text_question(question, answer_str):
     """
     Grade free-text answers (OpenEnded, Fill in the Blank, Matching).
@@ -163,6 +182,11 @@ def grade_text_question(question, answer_str):
     answer_str = (answer_str or '').strip()
     if not answer_str:
         return 0, False, 'auto'
+
+    if question.quiz_type == 'Matching':
+        structured = _grade_matching_submission(question, answer_str, max_marks)
+        if structured is not None:
+            return structured
 
     ref_match = _grade_against_reference_answers(question, answer_str, max_marks)
     if ref_match is not None:
@@ -241,6 +265,13 @@ def upsert_response(attempt, question, answer_str):
     elif question.quiz_type in ('Multiple Choice', 'True or False'):
         selected_option = question.options.filter(uuid=answer_str, is_active=True).first()
         marks_awarded, is_correct = _grade_choice(question, selected_option)
+    elif question.quiz_type == 'Matching':
+        selected_option = question.options.filter(uuid=answer_str, is_active=True).first()
+        if selected_option:
+            marks_awarded, is_correct = _grade_choice(question, selected_option)
+        else:
+            text_answer = answer_str
+            marks_awarded, is_correct, graded_by = grade_text_question(question, answer_str)
     else:
         text_answer = answer_str
         if question.quiz_type in TEXT_QUIZ_TYPES:

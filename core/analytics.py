@@ -20,7 +20,7 @@ def get_quiz_attempts_queryset(user, quiz):
         .select_related('student', 'user')
     )
 
-    if user.is_admin_role or user.is_staff:
+    if user.is_superuser:
         return qs
     if user.is_teacher and quiz.created_by_id == user.id:
         return qs
@@ -33,7 +33,7 @@ def get_quiz_attempts_queryset(user, quiz):
 
 
 def can_view_exam_analytics(user, quiz):
-    if user.is_admin_role or user.is_staff:
+    if user.is_superuser:
         return True
     if user.is_teacher and quiz.created_by_id == user.id:
         return True

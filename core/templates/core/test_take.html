@@ -21,11 +21,25 @@
   .test-take-main {
     padding: var(--space-lg) var(--space-md);
     display: flex;
-    justify-content: center;
-    align-items: flex-start;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
     min-width: 0;
     box-sizing: border-box;
     padding-bottom: calc(var(--space-xl) + env(safe-area-inset-bottom, 0px));
+  }
+
+  body.exam-take-page .test-take-main .messages-container {
+    width: 100%;
+    max-width: 480px;
+    margin-bottom: var(--space-md);
+    box-sizing: border-box;
+  }
+
+  body.exam-take-page .test-take-main .alert {
+    font-size: 0.88rem;
+    line-height: 1.45;
+    word-break: break-word;
   }
 
   .test-take-wrap {
@@ -149,6 +163,55 @@
     padding: 0.95rem;
     font-size: 1rem;
     font-weight: 700;
+  }
+
+  .matching-hint {
+    font-size: 0.88rem;
+    color: var(--clr-text-muted);
+    margin: 0 0 var(--space-md);
+    line-height: 1.45;
+  }
+
+  .matching-rows {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-xl);
+  }
+
+  .matching-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+    gap: var(--space-sm);
+    align-items: center;
+    padding: var(--space-sm) var(--space-md);
+    background: var(--clr-surface-alt);
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-md);
+  }
+
+  .matching-row-label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    line-height: 1.4;
+    word-break: break-word;
+  }
+
+  .matching-row select {
+    width: 100%;
+    padding: 0.5rem 0.6rem;
+    border: 1.5px solid var(--clr-border);
+    border-radius: var(--radius-md);
+    font-size: 0.9rem;
+    font-family: var(--font-body);
+    background: var(--clr-surface);
+    color: var(--clr-text);
+  }
+
+  @media (max-width: 520px) {
+    .matching-row {
+      grid-template-columns: 1fr;
+    }
   }
 
   .result-card {
@@ -349,7 +412,38 @@
       <form method="post">
         {% csrf_token %}
 
-        {% if question.quiz_type == 'Multiple Choice' or question.quiz_type == 'True or False' %}
+        {% if question.quiz_type == 'Matching' and matching_ui_mode == 'rows' %}
+          <p class="matching-hint">Match each item on the left to the correct option on the right.</p>
+          <div class="matching-rows">
+            {% for row in matching_rows %}
+            <div class="matching-row">
+              <span class="matching-row-label">{{ row.left }}</span>
+              <select name="matching_{{ forloop.counter0 }}" aria-label="Match for {{ row.left }}" required>
+                <option value="">Choose…</option>
+                {% for choice in matching_choices %}
+                <option value="{{ choice }}"
+                  {% if row.saved_right == choice %}selected{% endif %}>{{ choice }}</option>
+                {% endfor %}
+              </select>
+              <input type="hidden" name="matching_left_{{ forloop.counter0 }}" value="{{ row.left }}">
+            </div>
+            {% endfor %}
+          </div>
+        {% elif question.quiz_type == 'Matching' and matching_ui_mode == 'pick_option' %}
+          <p class="matching-hint">Choose the correct matching pair.</p>
+          <div class="option-list">
+            {% for option in matching_options %}
+            <label class="option-label">
+              <input type="radio" name="answer" value="{{ option.uuid }}"
+                {% if saved_answer == option.uuid|stringformat:"s" %}checked{% endif %} required>
+              {% include 'core/partials/option_content.html' with text=option.option image_url=option.option_image.url|default:'' %}
+            </label>
+            {% endfor %}
+          </div>
+        {% elif question.quiz_type == 'Matching' and matching_ui_mode == 'text' %}
+          <p class="matching-hint">Type your matches (e.g. <code>1=A, 2=C</code>) or one answer per line.</p>
+          <textarea name="answer" class="text-answer" rows="4" placeholder="Your matches" required>{{ saved_answer }}</textarea>
+        {% elif question.quiz_type == 'Multiple Choice' or question.quiz_type == 'True or False' %}
           {% if allows_multiple_answers %}
           <p style="font-size: 0.88rem; color: var(--clr-text-muted); margin-bottom: var(--space-md);">
             Select all answers that apply.

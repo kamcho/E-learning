@@ -559,3 +559,123 @@ class TeacherCurriculumViewTests(TestCase):
             type_counts=payload['type_counts'],
         )
         self.assertEqual(body['prompt'], expected)
+
+
+class UserCanViewLearnerTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        from accounts.models import LinkedStudents, Student
+        from subjects.models import GradeLevel
+
+        cls.guardian = User.objects.create_user(
+            phone='0722222001',
+            password='1234',
+            role=Role.GUARDIAN,
+        )
+        cls.superuser = User.objects.create_superuser(
+            phone='0722222002',
+            password='1234',
+            role=Role.ADMIN,
+        )
+        cls.grade = GradeLevel.objects.create(
+            name='Grade 3', slug='grade-3-la', level='Lower Primary',
+        )
+        cls.student = Student.objects.create(
+            first_name='Test',
+            last_name='Learner',
+            grade_level=cls.grade,
+        )
+        link = LinkedStudents.objects.create(user=cls.guardian)
+        link.students.add(cls.student)
+
+    def test_superuser_can_view_any_learner(self):
+        from accounts.learner_access import user_can_view_learner
+
+        self.assertTrue(user_can_view_learner(self.superuser, self.student))
+
+    def test_unlinked_user_cannot_view_learner(self):
+        from accounts.learner_access import user_can_view_learner
+
+        stranger = User.objects.create_user(
+            phone='0722222999',
+            password='1234',
+            role=Role.TEACHER,
+        )
+        self.assertFalse(user_can_view_learner(stranger, self.student))
+
+    def test_linked_guardian_can_view_learner(self):
+        from accounts.learner_access import user_can_view_learner
+
+        self.assertTrue(user_can_view_learner(self.guardian, self.student))
+
+
+class LearnerAccessAndGuardianWallTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        from accounts.models import LinkedStudents, Student
+        from subjects.models import GradeLevel
+
+        cls.guardian = User.objects.create_user(
+            phone='0711111001',
+            password='1234',
+            role=Role.GUARDIAN,
+        )
+        cls.other_guardian = User.objects.create_user(
+            phone='0711111002',
+            password='1234',
+            role=Role.GUARDIAN,
+        )
+        cls.staff_admin = User.objects.create_user(
+            phone='0711111003',
+            password='1234',
+            role=Role.ADMIN,
+            is_staff=True,
+        )
+        cls.grade = GradeLevel.objects.create(
+            name='Grade 4', slug='grade-4-access', level='Upper Primary',
+        )
+        cls.linked_student = Student.objects.create(
+            first_name='Linked',
+            last_name='Learner',
+            grade_level=cls.grade,
+        )
+        cls.other_student = Student.objects.create(
+            first_name='Other',
+            last_name='Learner',
+            grade_level=cls.grade,
+        )
+        link = LinkedStudents.objects.create(user=cls.guardian)
+        link.students.add(cls.linked_student)
+        other_link = LinkedStudents.objects.create(user=cls.other_guardian)
+        other_link.students.add(cls.other_student)
+
+    def setUp(self):
+        self.client = Client()
+
+    def test_guardian_cannot_access_admin_dashboard(self):
+        self.client.force_login(self.guardian)
+        response = self.client.get(reverse('accounts:admin_dashboard'))
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse('accounts:guardian_dashboard'))
+
+    def test_guardian_cannot_access_teacher_dashboard(self):
+        self.client.force_login(self.guardian)
+        response = self.client.get(reverse('accounts:teacher_dashboard'))
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse('accounts:guardian_dashboard'))
+
+    def test_staff_admin_cannot_view_unlinked_learner_analytics(self):
+        self.client.force_login(self.staff_admin)
+        response = self.client.get(
+            reverse('accounts:student_analytics', kwargs={'student_uuid': self.linked_student.uuid}),
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse('accounts:guardian_dashboard'))
+
+    def test_guardian_cannot_view_other_guardians_learner_analytics(self):
+        self.client.force_login(self.guardian)
+        response = self.client.get(
+            reverse('accounts:student_analytics', kwargs={'student_uuid': self.other_student.uuid}),
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse('accounts:guardian_dashboard'))
