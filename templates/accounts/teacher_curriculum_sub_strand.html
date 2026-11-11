@@ -26,23 +26,7 @@
     {{ grade.name }} · {{ subject.name }} · Strand: {{ strand.name }}.
     Use the prompt wizard, paste the AI output below as JSON. Imported questions are <strong>active</strong> by default and ready for quizzes and practice.
   </p>
-  <div class="tc-actions">
-    <a href="{{ create_question_url }}" class="btn btn-secondary">+ Add one question manually</a>
-  </div>
 </div>
-
-{% if objectives %}
-<div class="tc-prompt-panel" style="margin-bottom: var(--space-lg);">
-  <h2>Sub-strand objectives</h2>
-  <ul style="margin:0;padding-left:1.2rem;color:var(--clr-text-muted);font-size:0.88rem;line-height:1.6;">
-    {% for obj in objectives %}
-    <li>{{ obj.name }}</li>
-    {% endfor %}
-  </ul>
-</div>
-{% endif %}
-
-{% include 'core/partials/question_import_format_guide.html' with title="What format we expect" %}
 
 {% include 'core/partials/ai_question_prompt_wizard.html' %}
 

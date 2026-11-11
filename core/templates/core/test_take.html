@@ -2,21 +2,69 @@
 
 {% block title %}{{ quiz.title }}{% endblock %}
 
+{% block body_class %} exam-take-page{% endblock %}
+{% block app_layout_class %} app-layout--standalone{% endblock %}
+{% block app_sidebar_overlay %}{% endblock %}
+{% block app_sidebar %}{% endblock %}
+{% block app_nav_toggle %}{% endblock %}
+
 {% block main_extra_class %}test-take-main{% endblock %}
 
 {% block extra_head %}
 {% include 'core/partials/question_rich_styles.html' %}
 {% include 'core/partials/question_math_assets.html' %}
 <style>
+  body.exam-take-page.app-body {
+    background: var(--clr-bg);
+  }
+
   .test-take-main {
-    padding: var(--space-lg);
+    padding: var(--space-lg) var(--space-md);
     display: flex;
     justify-content: center;
+    align-items: flex-start;
+    min-width: 0;
+    box-sizing: border-box;
+    padding-bottom: calc(var(--space-xl) + env(safe-area-inset-bottom, 0px));
   }
 
   .test-take-wrap {
     width: 100%;
     max-width: 480px;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  .test-progress-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.35rem 0.5rem;
+    line-height: 1.35;
+  }
+
+  .test-progress-meta__saved {
+    font-size: 0.68rem;
+    color: var(--clr-primary);
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    white-space: nowrap;
+  }
+
+  .test-take-wrap .katex-display {
+    overflow-x: auto;
+    overflow-y: hidden;
+    max-width: 100%;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 0.15rem;
+  }
+
+  .test-take-wrap .question-rich-image,
+  .test-take-wrap .option-rich-image {
+    max-width: 100%;
   }
 
   .test-progress {
@@ -195,6 +243,72 @@
     0%, 100% { opacity: 1; }
     50% { opacity: 0.75; }
   }
+
+  @media (max-width: 992px) {
+    body.exam-take-page .app-search-wrap {
+      display: none;
+    }
+
+    body.exam-take-page .app-header-brand {
+      display: flex;
+    }
+
+    .test-take-main {
+      padding: var(--space-md) var(--space-sm);
+    }
+  }
+
+  @media (max-width: 640px) {
+    .test-take-main {
+      padding: var(--space-sm) 0.65rem;
+      padding-bottom: calc(var(--space-lg) + env(safe-area-inset-bottom, 0px));
+    }
+
+    .question-card {
+      padding: var(--space-md) var(--space-sm);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .test-progress-label {
+      font-size: 0.7rem;
+    }
+
+    .test-progress-meta > span:first-child {
+      font-size: 0.78rem;
+      font-weight: 600;
+      flex: 1 1 100%;
+    }
+
+    .option-label {
+      padding: 0.65rem 0.75rem;
+      gap: var(--space-sm);
+      font-size: 0.9rem;
+      min-height: 48px;
+    }
+
+    .question-rich-text {
+      font-size: 1rem;
+    }
+
+    .text-answer {
+      font-size: 16px;
+      padding: 0.65rem 0.75rem;
+    }
+
+    .btn-next {
+      padding: 0.85rem;
+      font-size: 0.95rem;
+    }
+
+    .test-timer {
+      padding: 0.55rem 0.75rem;
+    }
+
+    .test-timer-value {
+      font-size: 1rem;
+    }
+  }
 </style>
 {% endblock %}
 
@@ -218,9 +332,9 @@
     </form>
     {% endif %}
 
-    <div class="test-progress-label" style="display:flex; align-items:center; justify-content:space-between;">
+    <div class="test-progress-label test-progress-meta">
       <span>Question {{ question_number }} of {{ question_count }} · {{ student.first_name }}</span>
-      <span style="font-size:0.68rem; color:var(--clr-primary); font-weight:600; display:flex; align-items:center; gap:3px;">
+      <span class="test-progress-meta__saved">
         <span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:var(--clr-primary);"></span>
         Saved
       </span>
