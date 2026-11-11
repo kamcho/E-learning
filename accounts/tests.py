@@ -516,6 +516,7 @@ class TeacherCurriculumViewTests(TestCase):
         self.assertContains(response, 'Sub-strand objectives')
         self.assertContains(response, 'Add two-digit numbers with regrouping.')
         self.assertContains(response, 'Generate prompt')
+        self.assertContains(response, 'data-generate-url="/accounts/teacher-dashboard/ai-question-prompt/"')
 
     def test_guardian_cannot_access_teacher_curriculum(self):
         self.client.force_login(self.guardian)

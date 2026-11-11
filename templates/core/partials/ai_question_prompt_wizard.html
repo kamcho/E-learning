@@ -97,9 +97,10 @@
   .ai-prompt-output.is-visible { display: block; }
 </style>
 
+<form class="ai-prompt-csrf-bridge" aria-hidden="true" style="display:none;margin:0;padding:0;border:0;">{% csrf_token %}</form>
 <div class="{% if wizard_panel_class %}{{ wizard_panel_class }}{% else %}tc-prompt-panel ai-prompt-wizard{% endif %}" id="ai-prompt-wizard-root"
      data-sub-strand-id="{{ sub_strand.pk }}"
-     data-generate-url="{{ ai_prompt_generate_url|escapejs }}">
+     data-generate-url="{{ ai_prompt_generate_url }}">
   <h2>{% if wizard_title %}{{ wizard_title }}{% else %}1. Build AI prompt{% endif %}</h2>
   <p class="ai-prompt-wizard-lead">
     Choose how many questions you want, spread them across question types, then generate a prompt for ChatGPT, Claude, or another assistant.
@@ -270,9 +271,11 @@
     try {
       var response = await fetch(generateUrl, {
         method: 'POST',
+        credentials: 'same-origin',
         headers: {
           'Content-Type': 'application/json',
           'X-CSRFToken': getCookie('csrftoken'),
+          'Accept': 'application/json',
         },
         body: JSON.stringify({
           sub_strand_id: subStrandId,
@@ -280,7 +283,24 @@
           type_counts: readTypeCounts(),
         }),
       });
-      var body = await response.json();
+      var contentType = (response.headers.get('Content-Type') || '').toLowerCase();
+      var raw = await response.text();
+      var body;
+      if (contentType.indexOf('application/json') !== -1) {
+        try {
+          body = JSON.parse(raw);
+        } catch (parseErr) {
+          throw new Error('Server returned invalid JSON.');
+        }
+      } else {
+        if (response.status === 403) {
+          throw new Error('Session expired or blocked — refresh the page and sign in again.');
+        }
+        if (response.status === 404) {
+          throw new Error('Prompt API not found. Deploy the latest app or contact support.');
+        }
+        throw new Error('Unexpected server response (HTTP ' + response.status + '). Refresh and try again.');
+      }
       if (!response.ok || !body.ok) {
         throw new Error(body.error || 'Could not generate prompt.');
       }
