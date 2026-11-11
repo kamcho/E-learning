@@ -4,7 +4,7 @@
       return;
     }
     var scope = root || document;
-    scope.querySelectorAll('[data-math-content]').forEach(function (el) {
+    scope.querySelectorAll('[data-math-content], .demo-q-text, .demo-option-text').forEach(function (el) {
       if (el.dataset.mathRendered === 'true') {
         return;
       }

@@ -40,14 +40,14 @@
       <span class="demo-q-badge demo-q-badge--mark">1 mark</span>
     </div>
 
-    <div class="demo-q-text question-rich-body">{{ question.quiz|linebreaksbr }}</div>
+    <div class="demo-q-text question-rich-body" data-math-content>{{ question.quiz|linebreaksbr }}</div>
 
     {% if showing_feedback %}
       <div class="demo-options">
         {% for opt in options %}
         <label class="demo-option{% if feedback.selected_option_uuid == opt.uuid|stringformat:'s' %} {% if feedback.is_correct %}is-correct{% else %}is-wrong{% endif %}{% elif not feedback.is_correct and opt.is_correct %} is-correct{% endif %}">
           <span class="demo-option-letter">{{ forloop.counter0|add:65|stringformat:"c" }}</span>
-          <span class="demo-option-text">{{ opt.option }}</span>
+          <span class="demo-option-text" data-math-content>{{ opt.option }}</span>
         </label>
         {% endfor %}
       </div>
@@ -59,10 +59,10 @@
         {% else %}
           <div class="demo-feedback-title">Not quite — let's learn from this</div>
           <p style="margin:0 0 0.35rem;color:var(--demo-muted);font-size:0.88rem;">
-            Your answer: <strong style="color:var(--demo-text);">{{ feedback.selected_text|default:"—" }}</strong>
+            Your answer: <strong style="color:var(--demo-text);" data-math-content>{{ feedback.selected_text|default:"—" }}</strong>
           </p>
           <p style="margin:0;color:var(--demo-muted);font-size:0.88rem;">
-            Correct answer: <strong style="color:var(--demo-accent);">{{ feedback.correct_text }}</strong>
+            Correct answer: <strong style="color:var(--demo-accent);" data-math-content>{{ feedback.correct_text }}</strong>
           </p>
           <div class="demo-ai-box" id="demo-ai-box" data-question-uuid="{{ question_uuid }}" data-speech-region>
             <div class="demo-ai-loading" id="demo-ai-loading" role="status" aria-live="polite">
@@ -109,7 +109,7 @@
           <label class="demo-option">
             <input type="radio" name="answer" value="{{ opt.uuid }}" required>
             <span class="demo-option-letter">{{ forloop.counter0|add:65|stringformat:"c" }}</span>
-            <span class="demo-option-text">{{ opt.option }}</span>
+            <span class="demo-option-text" data-math-content>{{ opt.option }}</span>
           </label>
           {% endfor %}
         </div>
