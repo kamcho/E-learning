@@ -118,6 +118,38 @@
     gap: var(--space-sm);
     margin-bottom: var(--space-lg);
   }
+
+  .question-toggle-form {
+    margin: 0;
+    flex-shrink: 0;
+  }
+
+  .question-toggle-btn {
+    padding: 0.35rem 0.65rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--clr-border);
+    background: var(--clr-surface);
+    color: var(--clr-text);
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .question-toggle-btn:hover {
+    border-color: var(--clr-primary);
+    color: var(--clr-primary);
+  }
+
+  .question-toggle-btn.is-activate {
+    border-color: rgba(13, 138, 78, 0.35);
+    color: var(--clr-primary);
+  }
+
+  .question-toggle-btn.is-deactivate {
+    border-color: rgba(193, 39, 45, 0.25);
+    color: var(--clr-danger);
+  }
 </style>
 {% endblock %}
 
@@ -277,6 +309,20 @@
               <span class="badge badge-primary">Active</span>
             {% else %}
               <span class="badge badge-danger">Inactive</span>
+            {% endif %}
+            {% if question.user_can_toggle %}
+            <form method="post" class="question-toggle-form" action="">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="toggle_question_active">
+              <input type="hidden" name="question_uuid" value="{{ question.uuid }}">
+              <button
+                type="submit"
+                class="question-toggle-btn{% if question.is_active %} is-deactivate{% else %} is-activate{% endif %}"
+                title="{% if question.is_active %}Hide from quizzes and practice{% else %}Make available in quizzes and practice{% endif %}"
+              >
+                {% if question.is_active %}Deactivate{% else %}Activate{% endif %}
+              </button>
+            </form>
             {% endif %}
           </div>
         </div>

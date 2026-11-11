@@ -45,6 +45,17 @@ def _is_curriculum_admin(user):
     return user.is_authenticated and (user.is_admin_role or user.is_staff)
 
 
+def _user_can_toggle_question(user, question):
+    """Admins may toggle any question; teachers only their own."""
+    if not user.is_authenticated:
+        return False
+    if user.is_admin_role or user.is_staff:
+        return True
+    if user.is_teacher and question.created_by_id == user.pk:
+        return True
+    return False
+
+
 def admin_curriculum_required(view_func):
     """Restrict curriculum configuration views to platform admins."""
     @login_required(login_url='accounts:signin')
@@ -556,7 +567,25 @@ def sub_strand_detail(request, slug):
     action = request.POST.get('action') if request.method == 'POST' else None
     sub_strand_name_form = SubStrandNameForm(instance=sub_strand)
 
-    if request.method == 'POST' and action == 'rename_substrand':
+    if request.method == 'POST' and action == 'toggle_question_active':
+        from django.contrib.auth.views import redirect_to_login
+
+        if not request.user.is_authenticated:
+            return redirect_to_login(request.get_full_path())
+        question = get_object_or_404(
+            Question,
+            uuid=request.POST.get('question_uuid'),
+            sub_strand=sub_strand,
+        )
+        if not _user_can_toggle_question(request.user, question):
+            messages.error(request, "You don't have permission to change this question's status.")
+            return redirect('subjects:sub_strand_detail', slug=sub_strand.slug)
+        question.is_active = not question.is_active
+        question.save(update_fields=['is_active', 'updated_at'])
+        verb = 'activated' if question.is_active else 'deactivated'
+        messages.success(request, f'Question {verb}.')
+        return redirect('subjects:sub_strand_detail', slug=sub_strand.slug)
+    elif request.method == 'POST' and action == 'rename_substrand':
         if not _is_curriculum_admin(request.user):
             messages.error(request, "You don't have permission to edit curriculum names.")
             return redirect('subjects:sub_strand_detail', slug=sub_strand.slug)
@@ -580,6 +609,10 @@ def sub_strand_detail(request, slug):
     else:
         form = SubStrandObjectiveForm(initial={'sub_strand': sub_strand})
     form.fields['sub_strand'].widget = forms.HiddenInput()
+
+    user = request.user
+    for question in questions:
+        question.user_can_toggle = _user_can_toggle_question(user, question)
 
     return render(request, 'subjects/sub_strand_detail.html', {
         'sub_strand': sub_strand,

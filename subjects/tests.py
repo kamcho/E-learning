@@ -2,7 +2,7 @@ import json
 from unittest.mock import Mock, patch
 
 from django.contrib.auth import get_user_model
-from django.test import TestCase
+from django.test import Client, TestCase
 from django.urls import reverse
 
 from accounts.models import Role
@@ -310,6 +310,101 @@ class CurriculumImportTests(TestCase):
         )
         self.assertRedirects(response, reverse('core:landing'), fetch_redirect_response=False)
         self.assertEqual(self.subject.strands.count(), 0)
+
+
+class QuestionActiveToggleTests(TestCase):
+    def setUp(self):
+        from core.models import Question
+        from subjects.models import Discipline, GradeLevel, Strand, SubStrand, Subject
+
+        grade = GradeLevel.objects.create(name='Grade 7', slug='grade-7', level='Junior Secondary')
+        discipline = Discipline.objects.create(name='Mathematics', slug='math-toggle')
+        self.subject = Subject.objects.create(
+            name='Math',
+            slug='math-toggle-g7',
+            grade_level=grade,
+            discipline=discipline,
+        )
+        strand = Strand.objects.create(
+            name='Numbers',
+            slug='numbers-toggle',
+            subject=self.subject,
+        )
+        self.sub_strand = SubStrand.objects.create(
+            name='Whole Numbers',
+            slug='whole-numbers-toggle',
+            strand=strand,
+        )
+        user_model = get_user_model()
+        self.admin = user_model.objects.create_user(
+            phone='0744444471',
+            password='1234',
+            role=Role.ADMIN,
+        )
+        self.teacher = user_model.objects.create_user(
+            phone='0744444472',
+            password='1234',
+            role=Role.TEACHER,
+        )
+        self.other_teacher = user_model.objects.create_user(
+            phone='0744444473',
+            password='1234',
+            role=Role.TEACHER,
+        )
+        self.question = Question.objects.create(
+            quiz='Toggle me?',
+            difficulty='Easy',
+            quiz_type='OpenEnded',
+            sub_strand=self.sub_strand,
+            is_active=False,
+            created_by=self.teacher,
+        )
+        self.client = Client()
+        self.url = reverse('subjects:sub_strand_detail', kwargs={'slug': self.sub_strand.slug})
+
+    def test_admin_can_activate_question(self):
+        self.client.force_login(self.admin)
+        response = self.client.post(
+            self.url,
+            {
+                'action': 'toggle_question_active',
+                'question_uuid': str(self.question.uuid),
+            },
+        )
+        self.assertRedirects(response, self.url)
+        self.question.refresh_from_db()
+        self.assertTrue(self.question.is_active)
+
+    def test_teacher_can_toggle_own_question_only(self):
+        self.client.force_login(self.teacher)
+        response = self.client.post(
+            self.url,
+            {
+                'action': 'toggle_question_active',
+                'question_uuid': str(self.question.uuid),
+            },
+        )
+        self.assertRedirects(response, self.url)
+        self.question.refresh_from_db()
+        self.assertTrue(self.question.is_active)
+
+        self.client.force_login(self.other_teacher)
+        response = self.client.post(
+            self.url,
+            {
+                'action': 'toggle_question_active',
+                'question_uuid': str(self.question.uuid),
+            },
+        )
+        self.assertRedirects(response, self.url)
+        self.question.refresh_from_db()
+        self.assertTrue(self.question.is_active)
+
+    def test_activate_button_shown_to_admin(self):
+        self.client.force_login(self.admin)
+        response = self.client.get(self.url)
+        self.assertContains(response, 'Activate')
+        self.assertContains(response, 'toggle_question_active')
 
 
 class CurriculumNameEditingTests(TestCase):
