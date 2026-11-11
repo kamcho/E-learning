@@ -35,8 +35,8 @@ class CurriculumImportError(ValueError):
 
 def build_kicd_curriculum_copy_prompt(subject):
     """
-    Plain-text prompt to copy into ChatGPT etc. to extract strands and sub-strands
-    from a KICD curriculum design document.
+    Plain-text prompt to copy into ChatGPT etc. to extract strands, sub-strands,
+    and sub-strand learning outcomes from a KICD document.
     """
     from core.ai_copy_prompt import paste_safe_json_delivery_rules
 
@@ -46,20 +46,39 @@ def build_kicd_curriculum_copy_prompt(subject):
             {
                 'name': 'Living Things and Their Environment',
                 'sub_strands': [
-                    'Classification of Plants',
-                    'Vertebrates',
-                    'The Human Breathing System',
+                    {
+                        'name': 'Classification of Plants',
+                        'objectives': [
+                            'Classify plants into flowering and non-flowering plants.',
+                            'Describe functions of parts of a flower.',
+                            'Outline the importance of flowers in nature.',
+                        ],
+                    },
+                    {
+                        'name': 'Vertebrates',
+                        'objectives': [
+                            'Describe general characteristics of vertebrates.',
+                            'Classify vertebrates into their main groups.',
+                        ],
+                    },
                 ],
             },
             {
                 'name': 'Matter',
-                'sub_strands': ['Mixtures', 'Water Pollution'],
+                'sub_strands': [
+                    {
+                        'name': 'Mixtures',
+                        'objectives': [
+                            'Classify mixtures as homogeneous or heterogeneous.',
+                        ],
+                    },
+                ],
             },
         ],
     }, indent=2)
 
     lines = [
-        'You are extracting Kenya KICD CBC curriculum structure for import into Soma Smart.',
+        'You are extracting Kenya KICD CBC curriculum for import into Soma Smart.',
         '',
         '## Subject context',
         f'- Grade: {grade.name} ({grade.get_level_display()})',
@@ -67,22 +86,22 @@ def build_kicd_curriculum_copy_prompt(subject):
         f'- Discipline: {subject.discipline.name}',
         '',
         '## Task',
-        'From the KICD curriculum design text I will paste in my next message (or below), '
-        'identify every STRAND (headings like "1.0 Living Things and Their Environment") '
-        'and each SUB-STRAND under it (headings like "1.1 Classification of Plants").',
-        '',
-        'Do NOT include learning outcomes, objectives, or numbered outcome sentences — '
-        'only strand and sub-strand titles.',
+        'From the KICD text I will paste (curriculum design and/or specific learning outcomes), extract:',
+        '1. Every STRAND (e.g. "1.0 Living Things and Their Environment")',
+        '2. Each SUB-STRAND under it (e.g. "1.1 Classification of Plants")',
+        '3. Every numbered learning outcome / objective under each sub-strand '
+        '(lines after "By the end of the sub-strand, the learner should be able to:").',
         '',
         'Rules:',
-        '- Strip leading numbering such as 1.0, 1.1, 2.0 from names; keep the full KICD wording.',
-        '- Keep sub-strands under the correct parent strand.',
-        '- Preserve document order.',
-        '- Do not invent strands or sub-strands that are not in the text.',
+        '- Strip leading numbering such as 1.0, 1.1 from titles; keep full KICD wording.',
+        '- Keep each objective sentence as written; remove list numbers only.',
+        '- Ignore document titles, PDF links, and intro paragraphs.',
+        '- Ignore short notes between sections unless they are numbered outcomes.',
+        '- Preserve document order. Do not invent content.',
         '',
         '## Output format',
         'Return ONLY JSON with this shape:',
-        '{"strands":[{"name":"Strand title","sub_strands":["Sub-strand one","Sub-strand two"]}]}',
+        '{"strands":[{"name":"Strand title","sub_strands":[{"name":"Sub-strand title","objectives":["Outcome one","Outcome two"]}]}]}',
         '',
     ]
     lines.extend(paste_safe_json_delivery_rules())

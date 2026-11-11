@@ -420,6 +420,8 @@ class ObjectivesImportTests(TestCase):
         self.assertIn(self.subject.name, curriculum_prompt)
         self.assertIn('"strands"', curriculum_prompt)
         self.assertIn('sub_strands', curriculum_prompt)
+        self.assertIn('objectives', curriculum_prompt)
+        self.assertNotIn('Do NOT include learning outcomes', curriculum_prompt)
         self.assertIn(self.subject.name, objectives_prompt)
         self.assertIn('"sub_strands"', objectives_prompt)
         self.assertIn('objectives', objectives_prompt)
