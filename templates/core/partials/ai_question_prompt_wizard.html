@@ -99,8 +99,7 @@
 
 <form class="ai-prompt-csrf-bridge" aria-hidden="true" style="display:none;margin:0;padding:0;border:0;">{% csrf_token %}</form>
 <div class="{% if wizard_panel_class %}{{ wizard_panel_class }}{% else %}tc-prompt-panel ai-prompt-wizard{% endif %}" id="ai-prompt-wizard-root"
-     data-sub-strand-id="{{ sub_strand.pk }}"
-     data-generate-url="{{ ai_prompt_generate_url }}">
+     data-sub-strand-id="{{ sub_strand.pk }}">
   <h2>{% if wizard_title %}{{ wizard_title }}{% else %}1. Build AI prompt{% endif %}</h2>
   <p class="ai-prompt-wizard-lead">
     Choose how many questions you want, spread them across question types, then generate a prompt for ChatGPT, Claude, or another assistant.
@@ -158,14 +157,27 @@
 </div>
 
 {{ question_quiz_types|json_script:"ai-wizard-quiz-types" }}
+{{ ai_prompt_generate_url|json_script:"ai-prompt-generate-url" }}
 <script>
 (function () {
   var root = document.getElementById('ai-prompt-wizard-root');
   if (!root) return;
 
+  function resolveGenerateUrl() {
+    var scriptEl = document.getElementById('ai-prompt-generate-url');
+    if (scriptEl) {
+      return JSON.parse(scriptEl.textContent);
+    }
+    var legacy = root.getAttribute('data-generate-url') || '';
+    return legacy
+      .replace(/\\u002D/gi, '-')
+      .replace(/\/u002D/gi, '-')
+      .replace(/u002D/gi, '-');
+  }
+
   var quizTypes = JSON.parse(document.getElementById('ai-wizard-quiz-types').textContent);
   var subStrandId = parseInt(root.getAttribute('data-sub-strand-id'), 10);
-  var generateUrl = root.getAttribute('data-generate-url');
+  var generateUrl = resolveGenerateUrl();
 
   var totalInput = document.getElementById('ai-wizard-total');
   var totalLabel = document.getElementById('ai-wizard-total-label');
