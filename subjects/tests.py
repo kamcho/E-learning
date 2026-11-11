@@ -312,6 +312,133 @@ class CurriculumImportTests(TestCase):
         self.assertEqual(self.subject.strands.count(), 0)
 
 
+class ObjectivesImportTests(TestCase):
+    def setUp(self):
+        from subjects.models import Strand, SubStrand
+
+        grade = GradeLevel.objects.create(
+            name='Grade 1',
+            slug='grade-1-objectives',
+            level='Lower Primary',
+        )
+        discipline = Discipline.objects.create(
+            name='Science',
+            slug='science-objectives',
+        )
+        self.subject = Subject.objects.create(
+            name='Science Grade 1',
+            slug='science-grade-1-objectives',
+            grade_level=grade,
+            discipline=discipline,
+        )
+        self.strand = Strand.objects.create(
+            name='Living Things',
+            slug='living-things-objectives',
+            order=1,
+            subject=self.subject,
+        )
+        self.sub_strand = SubStrand.objects.create(
+            name='Plants',
+            slug='plants-objectives',
+            order=1,
+            strand=self.strand,
+        )
+        self.admin = get_user_model().objects.create_user(
+            phone='0744444480',
+            password='1234',
+            role=Role.ADMIN,
+            first_name='Obj',
+            last_name='Admin',
+        )
+
+    def test_validate_objectives_strips_list_markers(self):
+        from subjects.objectives_import import (
+            SUBSTRAND_OBJECTIVE_NAME_MAX,
+            create_sub_strand_objectives,
+            validate_objectives,
+        )
+
+        objectives, warnings = validate_objectives(
+            ['1. Identify local plants', '- Name parts of a plant'],
+            max_name_length=SUBSTRAND_OBJECTIVE_NAME_MAX,
+        )
+        self.assertEqual(warnings, [])
+        self.assertEqual(
+            [item['name'] for item in objectives],
+            ['Identify local plants', 'Name parts of a plant'],
+        )
+
+        created, create_warnings = create_sub_strand_objectives(self.sub_strand, objectives)
+        self.assertEqual(created, 2)
+        self.assertEqual(create_warnings, [])
+        self.assertEqual(self.sub_strand.sub_strand_objectives.count(), 2)
+
+    def test_sub_strand_parse_and_import_flow(self):
+        from subjects.models import SubStrandObjective
+
+        url = reverse('subjects:sub_strand_detail', kwargs={'slug': self.sub_strand.slug})
+        self.client.force_login(self.admin)
+        with patch('subjects.objectives_import.OpenAIClient') as openai_client:
+            openai_client.return_value.chat.return_value = json.dumps({
+                'objectives': ['Observe living things in the environment'],
+            })
+            response = self.client.post(url, {
+                'action': 'parse_objectives',
+                'objectives_text': (
+                    '1.0 Living Things\n'
+                    '1.1 Plants\n'
+                    'By the end of the sub-strand, the learner should be able to:\n'
+                    '1. Observe living things in the environment'
+                ),
+            })
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Review parsed objectives')
+        self.assertEqual(
+            SubStrandObjective.objects.filter(sub_strand=self.sub_strand).count(),
+            0,
+        )
+
+        response = self.client.post(url, {
+            'action': 'import_objectives',
+            'preview_token': response.context['objectives_preview_token'],
+        })
+        self.assertRedirects(response, url)
+        self.assertEqual(
+            SubStrandObjective.objects.filter(sub_strand=self.sub_strand).count(),
+            1,
+        )
+
+    def test_non_admin_cannot_import_objectives(self):
+        teacher = get_user_model().objects.create_user(
+            phone='0744444481',
+            password='1234',
+            role=Role.TEACHER,
+        )
+        url = reverse('subjects:sub_strand_detail', kwargs={'slug': self.sub_strand.slug})
+        self.client.force_login(teacher)
+        response = self.client.post(url, {
+            'action': 'parse_objectives',
+            'objectives_text': 'Learn about plants',
+        })
+        self.assertRedirects(response, url)
+        follow = self.client.get(url)
+        self.assertNotContains(follow, 'Import objectives with AI')
+
+    def test_parse_builds_kicd_scoped_prompt(self):
+        from subjects.objectives_import import _build_objectives_user_prompt
+
+        prompt = _build_objectives_user_prompt(
+            text='1.1 Classification of Plants\n1. Classify plants.',
+            scope_label='Sub-strand: Classification of Plants',
+            strand_name='Living Things and Their Environment',
+            sub_strand_name='Classification of Plants',
+            sub_strand_names=['Classification of Plants', 'Vertebrates'],
+        )
+        self.assertIn('sub_strand', prompt)
+        self.assertIn('Sub-strand name to match: Classification of Plants', prompt)
+        self.assertIn('Vertebrates', prompt)
+
+
 class QuestionActiveToggleTests(TestCase):
     def setUp(self):
         from core.models import Question

@@ -110,6 +110,21 @@
     width: 100%;
   }
 
+  .curriculum-paste {
+    width: 100%;
+    min-height: 8rem;
+    resize: vertical;
+    padding: var(--space-sm);
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-md);
+    font: 0.9rem/1.5 ui-monospace, SFMono-Regular, Consolas, monospace;
+  }
+
+  .curriculum-preview-list {
+    padding-left: 1.25rem;
+    margin-bottom: var(--space-md);
+  }
+
   .sub-strand-questions-head {
     display: flex;
     justify-content: space-between;
@@ -247,11 +262,14 @@
     </div>
     {% endif %}
 
+    {% include 'subjects/partials/objectives_ai_import.html' %}
+
     <div class="card">
       <h2 class="card-title">➕ Add Sub-strand Objective</h2>
       <form method="post" novalidate>
         {% csrf_token %}
-        
+        <input type="hidden" name="action" value="create_objective">
+
         {% for field in form %}
           {% if field.is_hidden %}
             {{ field }}

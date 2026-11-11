@@ -1,0 +1,51 @@
+{% if can_edit_curriculum %}
+<div class="card" style="margin-bottom: var(--space-md);">
+  <h2 class="card-title">✨ Import objectives with AI</h2>
+  <p class="page-subtitle" style="margin-bottom: var(--space-sm); font-size: 0.88rem;">
+    Paste KICD specific learning outcomes for this sub-strand (e.g. under 1.1 …).
+    You can paste the whole grade document — only this sub-strand’s numbered outcomes are imported.
+  </p>
+  {% include 'subjects/partials/objectives_import_format_guide.html' %}
+  <form method="post" novalidate>
+    {% csrf_token %}
+    <input type="hidden" name="action" value="parse_objectives">
+    <label class="form-label" for="objectives-text">Objectives text</label>
+    <textarea
+      class="curriculum-paste"
+      id="objectives-text"
+      name="objectives_text"
+      maxlength="12000"
+      required
+    >{{ objectives_text }}</textarea>
+    <button type="submit" class="btn btn-secondary" style="width: 100%; justify-content: center; margin-top: var(--space-sm);">
+      Parse with AI
+    </button>
+  </form>
+
+  {% if objectives_preview %}
+  <div style="margin-top: var(--space-md);">
+    <h3 style="font-size: 0.95rem; font-weight: 700; margin-bottom: var(--space-sm);">Review parsed objectives</h3>
+    {% if objectives_import_warnings %}
+    <ul style="margin:0 0 var(--space-md);padding-left:1.2rem;font-size:0.85rem;color:#92400e;">
+      {% for warning in objectives_import_warnings %}
+      <li>{{ warning }}</li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+    <ol class="curriculum-preview-list">
+      {% for obj in objectives_preview %}
+      <li>{{ obj.name }}</li>
+      {% endfor %}
+    </ol>
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="import_objectives">
+      <input type="hidden" name="preview_token" value="{{ objectives_preview_token }}">
+      <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center;">
+        Confirm and create objectives
+      </button>
+    </form>
+  </div>
+  {% endif %}
+</div>
+{% endif %}

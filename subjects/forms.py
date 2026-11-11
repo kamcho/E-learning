@@ -301,6 +301,10 @@ class SubStrandNameForm(forms.ModelForm):
 
 
 class StrandObjectiveForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['slug'].required = False
+
     class Meta:
         model = StrandObjective
         fields = ['name', 'slug', 'order', 'strand', 'is_active']
@@ -342,6 +346,10 @@ class StrandObjectiveForm(forms.ModelForm):
         return cleaned_data
 
 class SubStrandObjectiveForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['slug'].required = False
+
     class Meta:
         model = SubStrandObjective
         fields = ['name', 'slug', 'order', 'sub_strand', 'is_active']

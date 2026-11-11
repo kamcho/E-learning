@@ -128,7 +128,7 @@ class SubStrand(models.Model):
         return f"{self.name} ({self.strand.name})"
 
 class StrandObjective(models.Model):
-    name = models.CharField(max_length=50)
+    name = models.CharField(max_length=255)
     slug = models.SlugField(unique=True)
     order = models.IntegerField(default=0)
     strand = models.ForeignKey(Strand, on_delete=models.CASCADE, related_name='strand_objectives')
@@ -146,7 +146,7 @@ class StrandObjective(models.Model):
         return f"{self.name} ({self.strand.name})"
 
 class SubStrandObjective(models.Model):
-    name = models.CharField(max_length=50)
+    name = models.CharField(max_length=255)
     slug = models.SlugField(unique=True)
     order = models.IntegerField(default=0)
     sub_strand = models.ForeignKey(SubStrand, on_delete=models.CASCADE, related_name='sub_strand_objectives')

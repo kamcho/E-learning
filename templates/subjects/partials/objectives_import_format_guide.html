@@ -1,0 +1,20 @@
+<details class="objectives-format-guide" style="margin-bottom: var(--space-sm); font-size: 0.85rem;">
+  <summary style="cursor: pointer; font-weight: 600;">KICD paste format (what AI expects)</summary>
+  <ul style="margin: var(--space-sm) 0 0; padding-left: 1.2rem;">
+    {% for item in objectives_import_format_guide %}
+    <li style="margin-bottom: 0.35rem;">
+      <strong>{{ item.title }}:</strong> {{ item.detail }}
+    </li>
+    {% endfor %}
+  </ul>
+  <p style="margin: var(--space-sm) 0 0; color: var(--clr-text-muted); line-height: 1.45;">
+    Example sub-strand block:
+  </p>
+  <pre class="curriculum-paste" style="min-height: 0; margin-top: 0.35rem; font-size: 0.78rem; white-space: pre-wrap;">1.1 Classification of Plants
+By the end of the sub-strand, the learner should be able to:
+1. Classify plants into flowering and non-flowering plants.
+2. Describe functions of parts of a flower.</pre>
+  <p style="margin: var(--space-sm) 0 0; font-size: 0.82rem;">
+    You may paste the whole grade document; only outcomes for <strong>this sub-strand</strong> are created here.
+  </p>
+</details>
