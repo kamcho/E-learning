@@ -797,6 +797,48 @@ class MatchingGradingTests(TestCase):
         self.assertTrue(is_correct)
         self.assertEqual(graded_by, 'auto')
 
+    def test_matching_structured_answer_avoids_uuid_lookup(self):
+        from core.matching import compose_matching_answer
+
+        question = Question.objects.create(
+            quiz='1. Mammals\n2. Birds',
+            difficulty='Easy',
+            quiz_type='Matching',
+            sub_strand=self.sub_strand,
+            score=2,
+        )
+        Option.objects.create(question=question, option='Mammals → Have hair')
+        Option.objects.create(question=question, option='Birds → Have feathers')
+        post = {
+            'matching_left_0': 'Mammals',
+            'matching_0': 'Have hair',
+            'matching_left_1': 'Birds',
+            'matching_1': 'Have feathers',
+        }
+        answer = compose_matching_answer(post)
+        quiz = Quiz.objects.create(
+            title='Match animals',
+            difficulty='Easy',
+            subject=self.subject,
+            sub_strand=self.sub_strand,
+            created_by=self.guardian,
+        )
+        quiz.questions.add(question)
+        attempt = UserAttempts.objects.create(
+            user=self.guardian,
+            student=Student.objects.create(
+                first_name='Row',
+                middle_name='',
+                last_name='Matcher',
+                grade_level=self.grade,
+            ),
+            quiz=quiz,
+        )
+        upsert_response(attempt, question, answer)
+        response = attempt.responses.get(question=question)
+        self.assertEqual(response.text_answer, answer)
+        self.assertIsNone(response.selected_option_id)
+
     def test_matching_pick_option_grades_like_multiple_choice(self):
         question = Question.objects.create(
             quiz='Which pair is correct?',

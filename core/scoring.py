@@ -2,6 +2,7 @@
 
 import logging
 import re
+import uuid
 from fractions import Fraction
 
 from core.models import AttemptResponse
@@ -16,6 +17,16 @@ def parse_selected_option_ids(answer_str):
     if not answer_str:
         return set()
     return {part.strip() for part in str(answer_str).split(',') if part.strip()}
+
+
+def parse_option_uuid(answer_str):
+    """Return a UUID when answer_str is a single option id, else None."""
+    if not answer_str:
+        return None
+    try:
+        return uuid.UUID(str(answer_str).strip())
+    except (ValueError, AttributeError, TypeError):
+        return None
 
 
 def question_has_multiple_correct_answers(question):
@@ -263,12 +274,19 @@ def upsert_response(attempt, question, answer_str):
         marks_awarded, is_correct = _grade_multiple_choice(question, selected_ids)
         text_answer = ','.join(sorted(selected_ids))
     elif question.quiz_type in ('Multiple Choice', 'True or False'):
-        selected_option = question.options.filter(uuid=answer_str, is_active=True).first()
+        option_uuid = parse_option_uuid(answer_str)
+        if option_uuid is not None:
+            selected_option = question.options.filter(uuid=option_uuid, is_active=True).first()
         marks_awarded, is_correct = _grade_choice(question, selected_option)
     elif question.quiz_type == 'Matching':
-        selected_option = question.options.filter(uuid=answer_str, is_active=True).first()
-        if selected_option:
-            marks_awarded, is_correct = _grade_choice(question, selected_option)
+        option_uuid = parse_option_uuid(answer_str)
+        if option_uuid is not None:
+            selected_option = question.options.filter(uuid=option_uuid, is_active=True).first()
+            if selected_option:
+                marks_awarded, is_correct = _grade_choice(question, selected_option)
+            else:
+                text_answer = answer_str
+                marks_awarded, is_correct, graded_by = grade_text_question(question, answer_str)
         else:
             text_answer = answer_str
             marks_awarded, is_correct, graded_by = grade_text_question(question, answer_str)
