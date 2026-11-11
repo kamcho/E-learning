@@ -2,6 +2,7 @@
 
 import logging
 import re
+from fractions import Fraction
 
 from core.models import AttemptResponse
 
@@ -66,6 +67,35 @@ def _reference_answers(question):
     ]
 
 
+_FRACTION_RE = re.compile(r'(?<!\d)(\d+)\s*/\s*(\d+)(?!\d)')
+_DECIMAL_RE = re.compile(r'(?<!\d)(\d+\.\d+)(?!\d)')
+_LATEX_FRAC_RE = re.compile(
+    r'\\frac\s*\{\s*(\d+)\s*\}\s*\{\s*(\d+)\s*\}',
+    re.IGNORECASE,
+)
+
+
+def _numeric_values_in_text(text):
+    """Collect rational values mentioned in free text (fractions, decimals, whole numbers)."""
+    values = set()
+    blob = text or ''
+    for pattern in (_FRACTION_RE, _LATEX_FRAC_RE):
+        for match in pattern.finditer(blob):
+            try:
+                values.add(Fraction(int(match.group(1)), int(match.group(2))))
+            except (ValueError, ZeroDivisionError):
+                continue
+    for match in _DECIMAL_RE.finditer(blob):
+        try:
+            values.add(Fraction(match.group(1)).limit_denominator(10_000))
+        except ValueError:
+            continue
+    stripped = blob.strip()
+    if re.fullmatch(r'\d+', stripped):
+        values.add(Fraction(int(stripped), 1))
+    return values
+
+
 def _grade_fill_in_blank_exact(question, answer_str, max_marks):
     normalized = _normalize_answer_text(answer_str)
     if not normalized:
@@ -74,6 +104,30 @@ def _grade_fill_in_blank_exact(question, answer_str, max_marks):
         ref_norm = _normalize_answer_text(ref)
         if ref_norm and ref_norm == normalized:
             return max_marks, True
+    return None
+
+
+def _grade_against_reference_answers(question, answer_str, max_marks):
+    """
+    Match learner text to model answers: exact text, or same numeric value (e.g. 3/4).
+    """
+    refs = _reference_answers(question)
+    if not refs:
+        return None
+
+    normalized = _normalize_answer_text(answer_str)
+    if not normalized:
+        return 0, False
+
+    learner_values = _numeric_values_in_text(answer_str)
+    for ref in refs:
+        ref_norm = _normalize_answer_text(ref)
+        if ref_norm and ref_norm == normalized:
+            return max_marks, True
+        ref_values = _numeric_values_in_text(ref)
+        if learner_values and ref_values and learner_values.intersection(ref_values):
+            return max_marks, True
+
     return None
 
 
@@ -109,6 +163,10 @@ def grade_text_question(question, answer_str):
     answer_str = (answer_str or '').strip()
     if not answer_str:
         return 0, False, 'auto'
+
+    ref_match = _grade_against_reference_answers(question, answer_str, max_marks)
+    if ref_match is not None:
+        return ref_match[0], ref_match[1], 'auto'
 
     if question.quiz_type == 'Fill in the Blank':
         exact = _grade_fill_in_blank_exact(question, answer_str, max_marks)

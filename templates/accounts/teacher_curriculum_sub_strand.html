@@ -24,7 +24,7 @@
   <h1>{{ sub_strand.name }}</h1>
   <p>
     {{ grade.name }} · {{ subject.name }} · Strand: {{ strand.name }}.
-    Copy the prompt into your AI tool, then paste the JSON response below. Imported questions are <strong>active</strong> by default and ready for quizzes and practice.
+    Use the prompt wizard, paste the AI output below as JSON. Imported questions are <strong>active</strong> by default and ready for quizzes and practice.
   </p>
   <div class="tc-actions">
     <a href="{{ create_question_url }}" class="btn btn-secondary">+ Add one question manually</a>
@@ -44,16 +44,7 @@
 
 {% include 'core/partials/question_import_format_guide.html' with title="What format we expect" %}
 
-<div class="tc-prompt-panel">
-  <h2>1. Copy AI prompt</h2>
-  <p style="font-size:0.85rem;color:var(--clr-text-muted);margin:0 0 var(--space-md);">
-    Paste this into ChatGPT, Claude, or another assistant. The prompt already asks for paste-safe JSON (straight quotes, no markdown).
-  </p>
-  <textarea id="tc-ai-prompt" class="tc-textarea tall" readonly spellcheck="false">{{ ai_prompt_text }}</textarea>
-  <div class="tc-actions">
-    <button type="button" class="btn btn-primary" id="tc-copy-prompt">Copy prompt</button>
-  </div>
-</div>
+{% include 'core/partials/ai_question_prompt_wizard.html' %}
 
 <div class="tc-import-panel">
   <h2>2. Paste AI JSON and import</h2>
@@ -80,8 +71,6 @@
   var apiUrl = '{{ import_api_url|escapejs }}';
   var examplePayload = JSON.parse(document.getElementById('tc-example-payload').textContent);
 
-  var promptArea = document.getElementById('tc-ai-prompt');
-  var copyBtn = document.getElementById('tc-copy-prompt');
   var jsonArea = document.getElementById('tc-import-json');
   var importBtn = document.getElementById('tc-import-submit');
   var exampleBtn = document.getElementById('tc-import-example');
@@ -115,19 +104,6 @@
       })
       .join('\n');
   }
-
-  copyBtn.addEventListener('click', async function () {
-    try {
-      await navigator.clipboard.writeText(promptArea.value);
-      copyBtn.textContent = 'Copied!';
-      setTimeout(function () { copyBtn.textContent = 'Copy prompt'; }, 2000);
-    } catch (err) {
-      promptArea.select();
-      document.execCommand('copy');
-      copyBtn.textContent = 'Copied!';
-      setTimeout(function () { copyBtn.textContent = 'Copy prompt'; }, 2000);
-    }
-  });
 
   exampleBtn.addEventListener('click', function () {
     jsonArea.value = JSON.stringify(examplePayload, null, 2);

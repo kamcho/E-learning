@@ -1640,7 +1640,7 @@ def teacher_curriculum_sub_strand_view(request, grade_slug, subject_slug, strand
     from core.question_import import QUESTION_IMPORT_UI_GUIDE
 
     from .teacher_curriculum import (
-        build_ai_question_prompt,
+        QUESTION_QUIZ_TYPES,
         build_example_import_payload,
     )
 
@@ -1663,7 +1663,8 @@ def teacher_curriculum_sub_strand_view(request, grade_slug, subject_slug, strand
         'strand': strand,
         'sub_strand': sub_strand,
         'objectives': objectives,
-        'ai_prompt_text': build_ai_question_prompt(sub_strand),
+        'ai_prompt_generate_url': reverse('accounts:teacher_ai_question_prompt_generate'),
+        'question_quiz_types': QUESTION_QUIZ_TYPES,
         'example_json': json.dumps(example_payload, indent=2),
         'example_payload': example_payload,
         'import_api_url': reverse('core:bulk_create_questions_api'),
@@ -1683,3 +1684,44 @@ def teacher_curriculum_sub_strand_view(request, grade_slug, subject_slug, strand
         'dashboard_url': reverse('accounts:teacher_dashboard'),
     }
     return render(request, 'accounts/teacher_curriculum_sub_strand.html', context)
+
+
+@login_required(login_url='accounts:signin')
+@require_POST
+def teacher_ai_question_prompt_generate(request):
+    user = request.user
+    if not (user.is_teacher or getattr(user, 'is_admin_role', False) or user.is_staff):
+        return JsonResponse({'ok': False, 'error': 'Not allowed.'}, status=403)
+
+    try:
+        data = json.loads(request.body.decode('utf-8'))
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        return JsonResponse({'ok': False, 'error': 'Invalid request payload.'}, status=400)
+
+    sub_strand_id = data.get('sub_strand_id')
+    if sub_strand_id is None:
+        return JsonResponse({'ok': False, 'error': 'Missing sub_strand_id.'}, status=400)
+
+    from subjects.models import SubStrand
+
+    from .teacher_curriculum import build_ai_question_prompt
+
+    sub_strand = get_object_or_404(
+        SubStrand.objects.select_related('strand', 'strand__subject', 'strand__subject__grade_level'),
+        pk=sub_strand_id,
+        is_active=True,
+    )
+
+    total_count = data.get('total_count', 8)
+    type_counts = data.get('type_counts')
+
+    try:
+        prompt = build_ai_question_prompt(
+            sub_strand,
+            total_count=total_count,
+            type_counts=type_counts,
+        )
+    except ValueError as exc:
+        return JsonResponse({'ok': False, 'error': str(exc)}, status=400)
+
+    return JsonResponse({'ok': True, 'prompt': prompt})

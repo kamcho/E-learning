@@ -10,9 +10,12 @@ Grade short learner answers against the question and any reference answers provi
 
 Rules:
 - Accept answers that are substantially correct, even with minor spelling or wording differences.
-- For numerics, accept equivalent forms (e.g. 1/2 and 0.5) when clearly the same value.
+- For numerics, accept equivalent forms (e.g. 3/4, 0.75, and $\\frac{3}{4}$) when clearly the same value.
+- When the question asks for a final amount, total, or result, mark correct if that final value is right,
+  even if the learner did not show every step of working. Phrases like "show your working" are guidance,
+  not a reason to fail a correct final answer alone (e.g. "3/4" for 1/2 + 1/4 flour).
+- If reference answers are listed, accept any answer that matches their meaning or numeric value.
 - Reject empty, unrelated, or clearly wrong answers.
-- If reference answers are listed, the learner answer should match their meaning.
 - Be encouraging but accurate for primary and junior secondary learners.
 
 Respond with JSON only, no markdown:

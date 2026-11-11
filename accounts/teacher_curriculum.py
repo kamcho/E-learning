@@ -189,11 +189,67 @@ def build_example_import_payload(sub_strand):
     }
 
 
-def build_ai_question_prompt(sub_strand):
+QUESTION_QUIZ_TYPES = (
+    'Multiple Choice',
+    'Fill in the Blank',
+    'True or False',
+    'OpenEnded',
+    'Matching',
+)
+
+
+def default_question_type_mix(total_count):
+    """Split total_count across quiz types as evenly as possible."""
+    total = max(1, min(int(total_count), 30))
+    per_type = total // len(QUESTION_QUIZ_TYPES)
+    remainder = total % len(QUESTION_QUIZ_TYPES)
+    mix = {}
+    for index, quiz_type in enumerate(QUESTION_QUIZ_TYPES):
+        mix[quiz_type] = per_type + (1 if index < remainder else 0)
+    return total, mix
+
+
+def parse_question_mix(total_count, type_counts=None):
+    """
+    Validate total and per-type counts.
+    Returns (total, mix dict keyed by QUESTION_QUIZ_TYPES).
+    """
+    try:
+        total = int(total_count)
+    except (TypeError, ValueError):
+        raise ValueError('Total question count must be a number.')
+    if total < 1 or total > 30:
+        raise ValueError('Choose between 1 and 30 questions.')
+
+    if not type_counts:
+        return default_question_type_mix(total)
+
+    mix = {}
+    for quiz_type in QUESTION_QUIZ_TYPES:
+        try:
+            count = int(type_counts.get(quiz_type, 0) or 0)
+        except (TypeError, ValueError):
+            raise ValueError(f'Invalid count for {quiz_type}.')
+        if count < 0:
+            raise ValueError(f'Count for {quiz_type} cannot be negative.')
+        mix[quiz_type] = count
+
+    mix_total = sum(mix.values())
+    if mix_total != total:
+        raise ValueError(
+            f'Question types must add up to {total} (currently {mix_total}).'
+        )
+    if mix_total == 0:
+        raise ValueError('Assign at least one question to a type.')
+    return total, mix
+
+
+def build_ai_question_prompt(sub_strand, *, total_count=8, type_counts=None):
     """
     Plain-text prompt teachers can copy into an external AI tool.
     Output must be JSON matching bulk_create_questions.
     """
+    total_count, type_mix = parse_question_mix(total_count, type_counts)
     strand = sub_strand.strand
     subject = strand.subject
     grade = subject.grade_level
@@ -201,14 +257,6 @@ def build_ai_question_prompt(sub_strand):
         obj.name
         for obj in sub_strand.sub_strand_objectives.filter(is_active=True).order_by('order', 'name')
     ]
-
-    quiz_types = (
-        'Multiple Choice',
-        'Fill in the Blank',
-        'True or False',
-        'OpenEnded',
-        'Matching',
-    )
 
     lines = [
         'You are an expert CBC (Kenya) assessment item writer for Soma Smart.',
@@ -232,12 +280,23 @@ def build_ai_question_prompt(sub_strand):
             '(None listed in Soma Smart yet — align items to the sub-strand title and strand context.)'
         )
 
+    distribution_lines = [
+        f'- {quiz_type}: {count}'
+        for quiz_type, count in type_mix.items()
+        if count > 0
+    ]
     task_lines = [
         '',
         '## Task',
-        'Create 5–10 assessment questions for this sub-strand only. Mix difficulties (Easy, Medium, Hard) '
-        'and quiz types where appropriate. Use clear, age-appropriate language. '
+        f'Create exactly {total_count} assessment questions for this sub-strand only.',
+        '',
+        '### Question type distribution (follow exactly)',
+        *distribution_lines,
+        '',
+        'Mix difficulties (Easy, Medium, Hard) across the set. Use clear, age-appropriate language. '
         'LaTeX in $...$ is allowed for maths.',
+        'For OpenEnded items, include one or more correct reference answers in choices with is_correct true '
+        '(for auto-marking), even though learners type free text.',
     ]
     if objectives:
         task_lines.append(
@@ -255,7 +314,7 @@ def build_ai_question_prompt(sub_strand):
         'Each question object MUST include:',
         '- quiz (string): the question stem/prompt',
         '- difficulty: one of Easy, Medium, Hard',
-        f'- quiz_type: one of {", ".join(quiz_types)}',
+        f'- quiz_type: one of {", ".join(QUESTION_QUIZ_TYPES)}',
         f'- sub_strand_id: {sub_strand.pk} (or sub_strand_slug: "{sub_strand.slug}")',
         '- score (integer, default 1)',
         '- choices (array): required for Multiple Choice, True or False, and Fill in the Blank',

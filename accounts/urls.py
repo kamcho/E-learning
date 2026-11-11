@@ -83,6 +83,11 @@ urlpatterns = [
         views.teacher_curriculum_sub_strand_view,
         name='teacher_curriculum_sub_strand',
     ),
+    path(
+        'teacher-dashboard/ai-question-prompt/',
+        views.teacher_ai_question_prompt_generate,
+        name='teacher_ai_question_prompt_generate',
+    ),
     path('referral-dashboard/', views.referral_dashboard_view, name='referral_dashboard'),
     path('admin/', RedirectView.as_view(pattern_name='accounts:admin_dashboard', permanent=False)),
     path('admin-dashboard/', views.admin_dashboard_view, name='admin_dashboard'),

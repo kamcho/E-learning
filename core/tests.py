@@ -650,6 +650,20 @@ class OpenEndedGradingTests(TestCase):
         link = LinkedStudents.objects.create(user=cls.guardian)
         link.students.add(cls.student)
 
+    def test_open_ended_accepts_fraction_matching_reference(self):
+        question = Question.objects.create(
+            quiz='1/2 + 1/4 = ?',
+            difficulty='Hard',
+            quiz_type='OpenEnded',
+            sub_strand=self.sub_strand,
+            score=3,
+        )
+        Option.objects.create(question=question, option='3/4', is_correct=True)
+        marks, is_correct, graded_by = grade_text_question(question, '3/4')
+        self.assertEqual(marks, 3)
+        self.assertTrue(is_correct)
+        self.assertEqual(graded_by, 'auto')
+
     def test_fill_in_blank_exact_match_without_ai(self):
         question = Question.objects.create(
             quiz='What is 1/2 as a decimal?',

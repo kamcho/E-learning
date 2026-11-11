@@ -1,36 +1,3 @@
-{% if ai_prompt_text %}
-<div class="card" style="margin-bottom: var(--space-md);">
-  <h2 class="card-title">✨ Create questions with AI</h2>
-  <p class="page-subtitle" style="margin-bottom: var(--space-sm); font-size: 0.88rem;">
-    Copy this prompt into ChatGPT or another assistant. It includes every active learning objective
-    for this sub-strand. Paste the JSON response on the teacher import page or bulk question import.
-  </p>
-  <textarea
-    id="sub-strand-ai-prompt"
-    class="curriculum-paste"
-    style="min-height: 12rem;"
-    readonly
-    spellcheck="false"
-  >{{ ai_prompt_text }}</textarea>
-  <button type="button" class="btn btn-secondary" id="sub-strand-copy-ai-prompt" style="width: 100%; justify-content: center; margin-top: var(--space-sm);">
-    Copy AI prompt
-  </button>
-</div>
-<script>
-(function () {
-  var btn = document.getElementById('sub-strand-copy-ai-prompt');
-  var area = document.getElementById('sub-strand-ai-prompt');
-  if (!btn || !area) return;
-  btn.addEventListener('click', async function () {
-    try {
-      await navigator.clipboard.writeText(area.value);
-    } catch (err) {
-      area.select();
-      document.execCommand('copy');
-    }
-    btn.textContent = 'Copied!';
-    setTimeout(function () { btn.textContent = 'Copy AI prompt'; }, 2000);
-  });
-})();
-</script>
+{% if ai_prompt_generate_url %}
+{% include 'core/partials/ai_question_prompt_wizard.html' with wizard_title='✨ Create questions with AI' wizard_panel_class='card ai-prompt-wizard' prompt_textarea_class='curriculum-paste' %}
 {% endif %}

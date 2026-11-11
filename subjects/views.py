@@ -671,13 +671,15 @@ def sub_strand_detail(request, slug):
     for question in questions:
         question.user_can_toggle = _user_can_toggle_question(user, question)
 
-    ai_prompt_text = ''
+    ai_prompt_generate_url = ''
+    question_quiz_types = []
     if user.is_authenticated and (
         user.is_admin_role or user.is_staff or user.is_teacher
     ):
-        from accounts.teacher_curriculum import build_ai_question_prompt
+        from accounts.teacher_curriculum import QUESTION_QUIZ_TYPES
 
-        ai_prompt_text = build_ai_question_prompt(sub_strand)
+        ai_prompt_generate_url = reverse('accounts:teacher_ai_question_prompt_generate')
+        question_quiz_types = QUESTION_QUIZ_TYPES
 
     return render(request, 'subjects/sub_strand_detail.html', {
         'sub_strand': sub_strand,
@@ -687,7 +689,8 @@ def sub_strand_detail(request, slug):
         'form': form,
         'sub_strand_name_form': sub_strand_name_form,
         'can_edit_curriculum': _is_curriculum_admin(request.user),
-        'ai_prompt_text': ai_prompt_text,
+        'ai_prompt_generate_url': ai_prompt_generate_url,
+        'question_quiz_types': question_quiz_types,
     })
 
 

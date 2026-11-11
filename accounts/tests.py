@@ -510,12 +510,12 @@ class TeacherCurriculumViewTests(TestCase):
         )
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Copy AI prompt')
-        self.assertContains(response, 'sub_strand_id: {}'.format(self.sub_strand.pk))
+        self.assertContains(response, 'Build AI prompt')
+        self.assertContains(response, 'ai-wizard-total')
         self.assertContains(response, 'Multiple Choice')
-        self.assertContains(response, '## Learning objectives (assess these)')
+        self.assertContains(response, 'Sub-strand objectives')
         self.assertContains(response, 'Add two-digit numbers with regrouping.')
-        self.assertContains(response, 'cover each objective at least once')
+        self.assertContains(response, 'Generate prompt')
 
     def test_guardian_cannot_access_teacher_curriculum(self):
         self.client.force_login(self.guardian)
@@ -523,3 +523,36 @@ class TeacherCurriculumViewTests(TestCase):
             reverse('accounts:teacher_curriculum_grade', kwargs={'grade_slug': 'grade-4'}),
         )
         self.assertEqual(response.status_code, 302)
+
+    def test_ai_prompt_generate_uses_type_mix(self):
+        from accounts.teacher_curriculum import build_ai_question_prompt
+
+        self.client.force_login(self.teacher)
+        url = reverse('accounts:teacher_ai_question_prompt_generate')
+        payload = {
+            'sub_strand_id': self.sub_strand.pk,
+            'total_count': 5,
+            'type_counts': {
+                'Multiple Choice': 2,
+                'Fill in the Blank': 1,
+                'True or False': 1,
+                'OpenEnded': 1,
+                'Matching': 0,
+            },
+        }
+        response = self.client.post(
+            url,
+            data=json.dumps(payload),
+            content_type='application/json',
+        )
+        self.assertEqual(response.status_code, 200)
+        body = response.json()
+        self.assertTrue(body['ok'])
+        self.assertIn('Create exactly 5 assessment questions', body['prompt'])
+        self.assertIn('Multiple Choice: 2', body['prompt'])
+        expected = build_ai_question_prompt(
+            self.sub_strand,
+            total_count=5,
+            type_counts=payload['type_counts'],
+        )
+        self.assertEqual(body['prompt'], expected)

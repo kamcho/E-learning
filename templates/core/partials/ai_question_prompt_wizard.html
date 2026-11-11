@@ -1,0 +1,313 @@
+{% if ai_prompt_generate_url %}
+<style>
+  .ai-prompt-wizard { margin-bottom: var(--space-md); }
+  .ai-prompt-wizard-steps {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-lg);
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+  .ai-prompt-wizard-step {
+    padding: 0.35rem 0.75rem;
+    border-radius: 999px;
+    border: 1px solid var(--clr-border);
+    color: var(--clr-text-muted);
+    background: var(--clr-surface-alt);
+  }
+  .ai-prompt-wizard-step.is-active {
+    border-color: rgba(13, 138, 78, 0.45);
+    color: var(--clr-primary);
+    background: rgba(13, 138, 78, 0.08);
+  }
+  .ai-prompt-wizard-step.is-done {
+    color: var(--clr-text);
+  }
+  .ai-prompt-wizard-pane { display: none; }
+  .ai-prompt-wizard-pane.is-visible { display: block; }
+  .ai-prompt-wizard-lead {
+    font-size: 0.85rem;
+    color: var(--clr-text-muted);
+    margin: 0 0 var(--space-md);
+  }
+  .ai-prompt-wizard-field {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-md);
+  }
+  .ai-prompt-wizard-field label {
+    font-weight: 600;
+    font-size: 0.88rem;
+  }
+  .ai-prompt-wizard-field input[type="number"] {
+    width: 5rem;
+    padding: 0.45rem 0.6rem;
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-md);
+    font-size: 1rem;
+    font-weight: 700;
+  }
+  .ai-prompt-type-grid {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-md);
+  }
+  .ai-prompt-type-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-md);
+    padding: var(--space-sm) var(--space-md);
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-md);
+    background: var(--clr-surface-alt);
+    font-size: 0.88rem;
+  }
+  .ai-prompt-type-row input {
+    width: 4rem;
+    text-align: center;
+    padding: 0.35rem;
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-sm);
+  }
+  .ai-prompt-mix-total {
+    font-size: 0.88rem;
+    margin-bottom: var(--space-md);
+  }
+  .ai-prompt-mix-total.is-mismatch { color: var(--clr-danger); font-weight: 700; }
+  .ai-prompt-mix-total.is-match { color: var(--clr-primary); font-weight: 700; }
+  .ai-prompt-wizard-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-sm);
+    margin-top: var(--space-md);
+  }
+  .ai-prompt-wizard-error {
+    display: none;
+    margin-top: var(--space-sm);
+    font-size: 0.85rem;
+    color: var(--clr-danger);
+  }
+  .ai-prompt-wizard-error.is-visible { display: block; }
+  .ai-prompt-output { margin-top: var(--space-md); display: none; }
+  .ai-prompt-output.is-visible { display: block; }
+</style>
+
+<div class="{% if wizard_panel_class %}{{ wizard_panel_class }}{% else %}tc-prompt-panel ai-prompt-wizard{% endif %}" id="ai-prompt-wizard-root"
+     data-sub-strand-id="{{ sub_strand.pk }}"
+     data-generate-url="{{ ai_prompt_generate_url|escapejs }}">
+  <h2>{% if wizard_title %}{{ wizard_title }}{% else %}1. Build AI prompt{% endif %}</h2>
+  <p class="ai-prompt-wizard-lead">
+    Choose how many questions you want, spread them across question types, then generate a prompt for ChatGPT, Claude, or another assistant.
+  </p>
+
+  <div class="ai-prompt-wizard-steps" role="tablist">
+    <span class="ai-prompt-wizard-step is-active" data-step-label="1">1. How many</span>
+    <span class="ai-prompt-wizard-step" data-step-label="2">2. Question types</span>
+    <span class="ai-prompt-wizard-step" data-step-label="3">3. Prompt</span>
+  </div>
+
+  <div class="ai-prompt-wizard-pane is-visible" data-wizard-step="1">
+    <div class="ai-prompt-wizard-field">
+      <label for="ai-wizard-total">Total questions</label>
+      <input type="number" id="ai-wizard-total" min="1" max="30" value="8" inputmode="numeric">
+      <span class="ai-prompt-wizard-lead" style="margin:0;">(1–30)</span>
+    </div>
+    <div class="ai-prompt-wizard-actions">
+      <button type="button" class="btn btn-primary" id="ai-wizard-to-types">Next: question types</button>
+    </div>
+  </div>
+
+  <div class="ai-prompt-wizard-pane" data-wizard-step="2">
+    <p class="ai-prompt-wizard-lead">Assign exactly <strong id="ai-wizard-total-label">8</strong> questions across these types.</p>
+    <div class="ai-prompt-type-grid" id="ai-wizard-type-grid">
+      {% for quiz_type in question_quiz_types %}
+      <label class="ai-prompt-type-row">
+        <span>{{ quiz_type }}</span>
+        <input type="number" min="0" max="30" value="0" data-quiz-type="{{ quiz_type|escape }}">
+      </label>
+      {% endfor %}
+    </div>
+    <p class="ai-prompt-mix-total" id="ai-wizard-mix-status">Assigned: 0 / 8</p>
+    <div class="ai-prompt-wizard-actions">
+      <button type="button" class="btn btn-secondary" id="ai-wizard-back-count">Back</button>
+      <button type="button" class="btn btn-secondary" id="ai-wizard-distribute">Distribute evenly</button>
+      <button type="button" class="btn btn-primary" id="ai-wizard-to-prompt" disabled>Next: generate prompt</button>
+    </div>
+  </div>
+
+  <div class="ai-prompt-wizard-pane" data-wizard-step="3">
+    <p class="ai-prompt-wizard-lead">Your prompt includes the curriculum context, objectives, and the type mix you chose.</p>
+    <div class="ai-prompt-wizard-actions">
+      <button type="button" class="btn btn-secondary" id="ai-wizard-back-types">Back</button>
+      <button type="button" class="btn btn-primary" id="ai-wizard-generate">Generate prompt</button>
+    </div>
+    <p class="ai-prompt-wizard-error" id="ai-wizard-generate-error" role="alert"></p>
+    <div class="ai-prompt-output" id="ai-wizard-prompt-output">
+      <textarea id="tc-ai-prompt" class="{% if prompt_textarea_class %}{{ prompt_textarea_class }}{% else %}tc-textarea tall{% endif %}" readonly spellcheck="false" placeholder="Generated prompt appears here…"></textarea>
+      <div class="ai-prompt-wizard-actions">
+        <button type="button" class="btn btn-primary" id="tc-copy-prompt">Copy prompt</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{{ question_quiz_types|json_script:"ai-wizard-quiz-types" }}
+<script>
+(function () {
+  var root = document.getElementById('ai-prompt-wizard-root');
+  if (!root) return;
+
+  var quizTypes = JSON.parse(document.getElementById('ai-wizard-quiz-types').textContent);
+  var subStrandId = parseInt(root.getAttribute('data-sub-strand-id'), 10);
+  var generateUrl = root.getAttribute('data-generate-url');
+
+  var totalInput = document.getElementById('ai-wizard-total');
+  var totalLabel = document.getElementById('ai-wizard-total-label');
+  var mixStatus = document.getElementById('ai-wizard-mix-status');
+  var typeInputs = root.querySelectorAll('[data-quiz-type]');
+  var stepLabels = root.querySelectorAll('[data-step-label]');
+  var panes = root.querySelectorAll('[data-wizard-step]');
+
+  var btnToTypes = document.getElementById('ai-wizard-to-types');
+  var btnBackCount = document.getElementById('ai-wizard-back-count');
+  var btnDistribute = document.getElementById('ai-wizard-distribute');
+  var btnToPrompt = document.getElementById('ai-wizard-to-prompt');
+  var btnBackTypes = document.getElementById('ai-wizard-back-types');
+  var btnGenerate = document.getElementById('ai-wizard-generate');
+  var genError = document.getElementById('ai-wizard-generate-error');
+  var promptOutput = document.getElementById('ai-wizard-prompt-output');
+  var promptArea = document.getElementById('tc-ai-prompt');
+  var copyBtn = document.getElementById('tc-copy-prompt');
+
+  function getCookie(name) {
+    var match = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)'));
+    return match ? decodeURIComponent(match[1]) : '';
+  }
+
+  function getTotal() {
+    var n = parseInt(totalInput.value, 10);
+    if (isNaN(n)) return 8;
+    return Math.max(1, Math.min(30, n));
+  }
+
+  function showStep(step) {
+    panes.forEach(function (pane) {
+      pane.classList.toggle('is-visible', pane.getAttribute('data-wizard-step') === String(step));
+    });
+    stepLabels.forEach(function (label) {
+      var n = parseInt(label.getAttribute('data-step-label'), 10);
+      label.classList.toggle('is-active', n === step);
+      label.classList.toggle('is-done', n < step);
+    });
+  }
+
+  function readTypeCounts() {
+    var counts = {};
+    typeInputs.forEach(function (input) {
+      var key = input.getAttribute('data-quiz-type');
+      var val = parseInt(input.value, 10);
+      counts[key] = isNaN(val) || val < 0 ? 0 : val;
+    });
+    return counts;
+  }
+
+  function assignedSum() {
+    return Object.values(readTypeCounts()).reduce(function (a, b) { return a + b; }, 0);
+  }
+
+  function refreshMixStatus() {
+    var total = getTotal();
+    var sum = assignedSum();
+    totalLabel.textContent = total;
+    mixStatus.textContent = 'Assigned: ' + sum + ' / ' + total;
+    mixStatus.classList.toggle('is-match', sum === total);
+    mixStatus.classList.toggle('is-mismatch', sum !== total);
+    btnToPrompt.disabled = sum !== total || sum === 0;
+  }
+
+  function distributeEvenly() {
+    var total = getTotal();
+    var base = Math.floor(total / quizTypes.length);
+    var rem = total % quizTypes.length;
+    typeInputs.forEach(function (input, index) {
+      input.value = base + (index < rem ? 1 : 0);
+    });
+    refreshMixStatus();
+  }
+
+  btnToTypes.addEventListener('click', function () {
+    totalInput.value = getTotal();
+    totalLabel.textContent = getTotal();
+    distributeEvenly();
+    showStep(2);
+  });
+
+  btnBackCount.addEventListener('click', function () { showStep(1); });
+  btnBackTypes.addEventListener('click', function () { showStep(2); });
+
+  btnDistribute.addEventListener('click', distributeEvenly);
+
+  typeInputs.forEach(function (input) {
+    input.addEventListener('input', refreshMixStatus);
+  });
+
+  btnToPrompt.addEventListener('click', function () {
+    if (assignedSum() !== getTotal()) return;
+    showStep(3);
+  });
+
+  btnGenerate.addEventListener('click', async function () {
+    genError.classList.remove('is-visible');
+    genError.textContent = '';
+    btnGenerate.disabled = true;
+    btnGenerate.textContent = 'Generating…';
+
+    try {
+      var response = await fetch(generateUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': getCookie('csrftoken'),
+        },
+        body: JSON.stringify({
+          sub_strand_id: subStrandId,
+          total_count: getTotal(),
+          type_counts: readTypeCounts(),
+        }),
+      });
+      var body = await response.json();
+      if (!response.ok || !body.ok) {
+        throw new Error(body.error || 'Could not generate prompt.');
+      }
+      promptArea.value = body.prompt;
+      promptOutput.classList.add('is-visible');
+    } catch (err) {
+      genError.textContent = err.message || String(err);
+      genError.classList.add('is-visible');
+    } finally {
+      btnGenerate.disabled = false;
+      btnGenerate.textContent = 'Generate prompt';
+    }
+  });
+
+  if (copyBtn && promptArea) {
+    copyBtn.addEventListener('click', async function () {
+      if (!promptArea.value) return;
+      try {
+        await navigator.clipboard.writeText(promptArea.value);
+      } catch (err) {
+        promptArea.select();
+        document.execCommand('copy');
+      }
+      copyBtn.textContent = 'Copied!';
+      setTimeout(function () { copyBtn.textContent = 'Copy prompt'; }, 2000);
+    });
+  }
+})();
+</script>
+{% endif %}
