@@ -40,51 +40,8 @@
       <p class="grade-filter-hint">Subjects in {{ selected_grade.name }}{% if student.grade_level and selected_grade.pk != student.grade_level.pk %} (previous grade){% endif %}</p>
     {% endif %}
 
-    <div class="subject-difficulty-strip" aria-label="Performance by difficulty">
-      {% for row in difficulty_breakdown %}
-      <div class="subject-difficulty-item subject-difficulty-item--{{ row.quiz__difficulty|lower }}">
-        <div>
-          <div>{{ row.quiz__difficulty }}</div>
-          <span>{{ row.attempts }} attempt{{ row.attempts|pluralize }}</span>
-        </div>
-        <strong>{% if row.attempts %}{{ row.avg_score|floatformat:1 }}%{% else %}—{% endif %}</strong>
-      </div>
-      {% endfor %}
-    </div>
-
-    {% if subject_breakdown %}
-    <div class="subject-perf-head" aria-hidden="true">
-      <span>Subject</span>
-      <span>Progress</span>
-      <span>Avg</span>
-      <span>Quizzes</span>
-      <span>Best</span>
-      <span></span>
-    </div>
-    <ul class="subject-perf-list" role="list">
-      {% for row in subject_breakdown %}
-      <li role="listitem">
-        <a
-          href="{% url 'accounts:student_subject_progress' student.uuid row.subject_id %}"
-          class="subject-perf-row{% if row.attempts %}{% if row.avg_score >= 70 %} subject-perf-row--high{% elif row.avg_score >= 40 %} subject-perf-row--mid{% else %} subject-perf-row--low{% endif %}{% else %} subject-perf-row--empty{% endif %}"
-          style="--bar-pct: {% if row.attempts %}{{ row.avg_score|floatformat:0 }}{% else %}0{% endif %};"
-        >
-          <p class="subject-perf-name">{{ row.quiz__subject__name }}</p>
-          <div class="subject-perf-bar" aria-hidden="true">
-            <div class="subject-perf-bar-fill"></div>
-          </div>
-          <span class="subject-perf-metric{% if not row.attempts %} is-muted{% endif %}">
-            {% if row.attempts %}{{ row.avg_score|floatformat:1 }}%{% else %}—{% endif %}
-          </span>
-          <span class="subject-perf-meta">{{ row.attempts }}</span>
-          <span class="subject-perf-meta">
-            {% if row.attempts and row.best_score %}{{ row.best_score|floatformat:0 }}%{% else %}—{% endif %}
-          </span>
-          <span class="subject-perf-arrow" aria-hidden="true">&rarr;</span>
-        </a>
-      </li>
-      {% endfor %}
-    </ul>
+    {% if subject_perf_cards %}
+      {% include 'accounts/partials/student_subject_perf_cards.html' %}
     {% else %}
       <div class="empty-state">
         <div class="empty-state-icon">&#128202;</div>

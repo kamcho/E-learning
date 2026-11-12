@@ -1,0 +1,95 @@
+{% if achievements and exam_activity_calendar %}
+<div class="ach-cal-row" id="achievements">
+  <article class="ach-card" aria-labelledby="ach-compact-heading">
+    <header class="ach-card-head">
+      <h2 class="ach-card-title" id="ach-compact-heading">Achievements</h2>
+    </header>
+
+    <div class="ach-card-hero">
+      <div class="ach-card-trophy" aria-hidden="true">🏆</div>
+      {% if achievements.earned_count %}
+      <h3>Keep it up!</h3>
+      <p>You're doing great and reaching your goals.</p>
+      {% else %}
+      <h3>Start strong!</h3>
+      <p>Complete exams to unlock your first badges.</p>
+      {% endif %}
+    </div>
+
+    {% if achievements.total_count %}
+    <div class="ach-card-progress" aria-label="{{ achievements.earned_count }} of {{ achievements.total_count }} achievements">
+      <div class="ach-card-progress-track">
+        <div
+          class="ach-card-progress-fill"
+          style="width: {% widthratio achievements.earned_count achievements.total_count 100 %}%;"
+        ></div>
+      </div>
+      <span class="ach-card-progress-pct">{% widthratio achievements.earned_count achievements.total_count 100 %}%</span>
+    </div>
+    {% endif %}
+
+    <div class="ach-card-badges" aria-label="Earned badges">
+      {% for item in achievements.earned|slice:":4" %}
+      <span
+        class="ach-badge-dot"
+        title="{{ item.title }}"
+        style="background: {% cycle '#f97316' '#22c55e' '#38bdf8' '#a855f7' %};"
+      >{{ item.icon }}</span>
+      {% endfor %}
+      {% if achievements.earned_count > 4 %}
+      <span class="ach-badge-more">+{{ achievements.earned_count|add:"-4" }}</span>
+      {% elif not achievements.earned_count %}
+      <span class="ach-badge-more" title="No badges yet">0</span>
+      {% endif %}
+    </div>
+
+    {% if achievements.earned or achievements.locked %}
+    <details class="ach-card-details">
+      <summary class="ach-card-viewall">View all</summary>
+      <ul class="ach-card-mini-list" role="list">
+        {% for item in achievements.earned %}
+        <li role="listitem"><span>{{ item.icon }}</span> {{ item.title }} · Unlocked</li>
+        {% endfor %}
+        {% for item in achievements.locked %}
+        <li role="listitem"><span>{{ item.icon }}</span> {{ item.title }} · {{ item.progress_label }}</li>
+        {% endfor %}
+      </ul>
+    </details>
+    {% endif %}
+  </article>
+
+  <article class="exam-cal-card" aria-labelledby="exam-cal-heading">
+    <header class="exam-cal-head">
+      <h2 class="exam-cal-title" id="exam-cal-heading">Calendar</h2>
+      <span class="exam-cal-month">{{ exam_activity_calendar.month_label }}</span>
+      <nav class="exam-cal-nav" aria-label="Calendar month">
+        <a href="?{% if calendar_query_base %}{{ calendar_query_base }}&amp;{% endif %}cal_month={{ exam_activity_calendar.prev_month }}" aria-label="Previous month">&lsaquo;</a>
+        <a href="?{% if calendar_query_base %}{{ calendar_query_base }}&amp;{% endif %}cal_month={{ exam_activity_calendar.next_month }}" aria-label="Next month">&rsaquo;</a>
+      </nav>
+    </header>
+
+    <div class="exam-cal-grid">
+      <span class="exam-cal-dow">Mon</span>
+      <span class="exam-cal-dow">Tue</span>
+      <span class="exam-cal-dow">Wed</span>
+      <span class="exam-cal-dow">Thu</span>
+      <span class="exam-cal-dow">Fri</span>
+      <span class="exam-cal-dow">Sat</span>
+      <span class="exam-cal-dow">Sun</span>
+      {% for week in exam_activity_calendar.weeks %}
+        {% for cell in week %}
+        <span
+          class="exam-cal-cell{% if cell.in_month %} exam-cal-cell--in-month{% endif %}{% if cell.has_exam %} exam-cal-cell--exam{% endif %}{% if cell.is_today %} exam-cal-cell--today{% endif %}"
+          {% if cell.has_exam %}title="{{ cell.count }} exam attempt{{ cell.count|pluralize }} on this day"{% endif %}
+        >{% if cell.day %}{{ cell.day }}{% endif %}</span>
+        {% endfor %}
+      {% endfor %}
+    </div>
+
+    <footer class="exam-cal-footer">
+      <span class="exam-cal-legend"><i aria-hidden="true"></i> Exam day</span>
+      <span>{{ exam_activity_calendar.exam_days_count }} active day{{ exam_activity_calendar.exam_days_count|pluralize }} this month</span>
+    </footer>
+  </article>
+</div>
+{% endif %}

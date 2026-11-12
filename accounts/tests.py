@@ -515,6 +515,22 @@ class UserActionLogTests(TestCase):
         response = self.client.get(reverse('accounts:admin_action_logs'))
         self.assertEqual(response.status_code, 302)
 
+    def test_subject_performance_cards_include_strands(self):
+        from accounts.subject_perf_cards import build_subject_performance_cards
+        from core.models import UserAttempts
+
+        breakdown = [{
+            'subject_id': 1,
+            'quiz__subject__name': 'Math',
+            'attempts': 2,
+            'avg_score': 80,
+            'best_score': 90,
+        }]
+        qs = UserAttempts.objects.none()
+        cards = build_subject_performance_cards(qs, breakdown)
+        self.assertEqual(len(cards), 1)
+        self.assertEqual(cards[0]['overall_pct'], 80)
+
     def test_bulk_question_creates_grouped_in_list(self):
         from accounts.audit_grouping import build_activity_display_items
         from accounts.models import UserActionLog

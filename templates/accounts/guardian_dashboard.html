@@ -8,7 +8,7 @@
 {% block extra_head %}
 {% include 'accounts/partials/student_analytics_styles.html' %}
 {% include 'accounts/partials/pathway_suggestion_styles.html' %}
-{% include 'accounts/partials/student_achievements_styles.html' %}
+{% include 'accounts/partials/student_achievements_compact_styles.html' %}
 {% include 'accounts/partials/gd_metric_cards_styles.html' %}
 {% include 'components/stat_card_styles.html' %}
 {% include 'accounts/partials/guardian_dashboard_crimson_theme.html' %}
@@ -2354,16 +2354,14 @@
     {% include 'accounts/partials/student_analytics_sections.html' with hide_recent_attempts=True subject_chart_canvas_id='guardianSubjectScoreChart' subject_chart_data_id='guardian-subject-chart-data' show_analytics_period_filter=True analytics_period_choices=analytics_period_choices dashboard_filters=dashboard_filters dashboard_hidden_params=dashboard_hidden_params analytics_period_label=analytics_period_label %}
   </section>
 
+  {% if active_student and achievements and exam_activity_calendar %}
+  <section class="gd-section-block" aria-label="Achievements and exam calendar">
+    {% include 'accounts/partials/student_achievements_calendar_row.html' with calendar_query_base=calendar_query_base %}
+  </section>
+  {% endif %}
+
   <div class="gd-dashboard-grid">
-    <div class="gd-dash-primary">
-
-      <section class="gd-section-block" aria-label="Achievements">
-        {% include 'accounts/partials/student_achievements.html' with achievements=achievements unified_grid=True %}
-      </section>
-
-    </div>
-
-    <aside class="gd-dash-secondary" aria-label="Activity and insights">
+    <aside class="gd-dash-secondary" style="grid-column: 1 / -1; max-width: 360px; margin-left: auto;" aria-label="Activity and insights">
 
       <div class="gd-card gd-stat-card">
         <div class="gd-card-head">

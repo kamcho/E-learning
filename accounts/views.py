@@ -560,6 +560,7 @@ def guardian_dashboard_view(request):
             active_student,
             grade_slug=dashboard_filters.get('grade') or grade_slug,
             filters=dashboard_filters,
+            calendar_month=request.GET.get('cal_month', '').strip() or None,
         )
         attempts_page, attempt_courses = _paginate_attempt_courses(
             active_student,
@@ -569,6 +570,9 @@ def guardian_dashboard_view(request):
         dashboard_query = urlencode(
             build_dashboard_query_params(dashboard_filters, active_student.uuid)
         )
+        cal_nav = build_dashboard_query_params(dashboard_filters, active_student.uuid)
+        cal_nav.pop('cal_month', None)
+        guardian_calendar_query_base = urlencode(cal_nav)
     else:
         dashboard = {
             'analytics': {
@@ -591,6 +595,7 @@ def guardian_dashboard_view(request):
         attempts_page = None
         attempt_courses = []
         dashboard_query = ''
+        guardian_calendar_query_base = ''
 
     # Pre-build stat card link URLs
     first_learner_report_url = (
@@ -608,16 +613,18 @@ def guardian_dashboard_view(request):
         'dashboard': dashboard,
         'analytics': analytics_ctx.get('analytics', dashboard.get('analytics', {})),
         'subject_breakdown': analytics_ctx.get('subject_breakdown', []),
+        'subject_perf_cards': analytics_ctx.get('subject_perf_cards', []),
+        'exam_activity_calendar': analytics_ctx.get('exam_activity_calendar'),
+        'calendar_query_base': guardian_calendar_query_base or analytics_ctx.get('calendar_query_base', ''),
         'selected_grade': analytics_ctx.get('selected_grade'),
         'grade_filter_options': analytics_ctx.get('grade_filter_options', []),
-        'difficulty_breakdown': analytics_ctx.get('difficulty_breakdown', []),
         'subject_score_chart': analytics_ctx.get('subject_score_chart'),
         'recent_attempts': analytics_ctx.get('recent_attempts', []),
         'preserve_student_in_grade_filter': True,
         'grade_filter_action': reverse('accounts:guardian_dashboard'),
         'attempts_page': attempts_page,
         'attempt_courses': attempt_courses,
-        'achievements': dashboard.get('achievements'),
+        'achievements': analytics_ctx.get('achievements', dashboard.get('achievements')),
         'pathway_suggestions': analytics_ctx.get('pathway_suggestions'),
         'discipline_cluster_cards': analytics_ctx.get('discipline_cluster_cards', []),
         'require_learner_selection': require_learner_selection,
@@ -1021,27 +1028,6 @@ def _build_grade_subject_breakdown(attempts_qs, grade_level):
     return breakdown
 
 
-def _build_difficulty_breakdown(attempts_qs):
-    """Fixed Easy / Medium / Hard tiles regardless of attempt count."""
-    rows = {
-        row['quiz__difficulty']: row
-        for row in (
-            attempts_qs
-            .values('quiz__difficulty')
-            .annotate(attempts=Count('uuid'), avg_score=Avg('score'))
-        )
-    }
-    breakdown = []
-    for level in ('Easy', 'Medium', 'Hard'):
-        row = rows.get(level)
-        breakdown.append({
-            'quiz__difficulty': level,
-            'attempts': row['attempts'] if row else 0,
-            'avg_score': row['avg_score'] if row and row['avg_score'] is not None else 0,
-        })
-    return breakdown
-
-
 def _build_subject_score_chart(subject_breakdown, selected_grade):
     """Chart data: avg & best score per subject in the selected grade."""
     rows = sorted(subject_breakdown, key=lambda row: row['quiz__subject__name'])
@@ -1054,7 +1040,7 @@ def _build_subject_score_chart(subject_breakdown, selected_grade):
     }
 
 
-def _build_student_analytics_context(student, grade_slug=None, filters=None):
+def _build_student_analytics_context(student, grade_slug=None, filters=None, calendar_month=None):
     """Shared analytics context for guardian and admin student views."""
     from core.models import UserAttempts
 
@@ -1079,7 +1065,9 @@ def _build_student_analytics_context(student, grade_slug=None, filters=None):
 
     selected_grade, grade_filter_options = _resolve_subject_grade_filter(student, grade_slug)
     subject_breakdown = _build_grade_subject_breakdown(attempts_qs, selected_grade)
-    difficulty_breakdown = _build_difficulty_breakdown(attempts_qs)
+    from .subject_perf_cards import build_subject_performance_cards
+
+    subject_perf_cards = build_subject_performance_cards(attempts_qs, subject_breakdown)
     subject_score_chart = _build_subject_score_chart(subject_breakdown, selected_grade)
     subject_score_chart['period_label'] = (
         f'{selected_grade.name} · {period_label}' if selected_grade else period_label
@@ -1089,6 +1077,16 @@ def _build_student_analytics_context(student, grade_slug=None, filters=None):
 
     evaluate_student_achievements(student)
     achievements = build_achievements_context(student)
+
+    from .learner_exam_calendar import build_exam_activity_calendar, parse_calendar_month
+
+    cal_year, cal_month = parse_calendar_month(calendar_month)
+    exam_activity_calendar = build_exam_activity_calendar(student, cal_year, cal_month)
+
+    cal_nav_params = {}
+    if grade_slug:
+        cal_nav_params['grade'] = grade_slug
+    calendar_query_base = urlencode(cal_nav_params)
 
     from .pathway_suggestions import build_pathway_suggestions
 
@@ -1109,9 +1107,9 @@ def _build_student_analytics_context(student, grade_slug=None, filters=None):
         'analytics': analytics_summary,
         'analytics_period_label': period_label,
         'subject_breakdown': subject_breakdown,
+        'subject_perf_cards': subject_perf_cards,
         'selected_grade': selected_grade,
         'grade_filter_options': grade_filter_options,
-        'difficulty_breakdown': difficulty_breakdown,
         'subject_score_chart': subject_score_chart,
         'recent_attempts': attempts_qs.order_by('-created_at')[:10],
         'attempt_chart': _build_attempt_score_chart(
@@ -1120,6 +1118,8 @@ def _build_student_analytics_context(student, grade_slug=None, filters=None):
             date_range=chart_range,
         ),
         'achievements': achievements,
+        'exam_activity_calendar': exam_activity_calendar,
+        'calendar_query_base': calendar_query_base,
         'pathway_suggestions': pathway_suggestions,
         'discipline_cluster_cards': discipline_cluster_cards,
     }
@@ -1175,7 +1175,11 @@ def student_analytics_view(request, student_uuid):
         return redirect('accounts:guardian_dashboard')
 
     if request.user.is_superuser:
-        context = _build_student_analytics_context(student, grade_slug=grade_slug)
+        context = _build_student_analytics_context(
+            student,
+            grade_slug=grade_slug,
+            calendar_month=request.GET.get('cal_month', '').strip() or None,
+        )
         return render(request, 'accounts/admin_student_analytics.html', context)
 
     params = {'student': str(student.uuid)}
