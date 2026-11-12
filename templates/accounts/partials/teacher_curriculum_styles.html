@@ -38,81 +38,83 @@
 
   .tc-grade-cards-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: var(--space-lg);
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: var(--space-md);
   }
-
-  @media (max-width: 1200px) { .tc-grade-cards-grid { grid-template-columns: repeat(3, 1fr); } }
-  @media (max-width: 900px) { .tc-grade-cards-grid { grid-template-columns: repeat(2, 1fr); } }
-  @media (max-width: 560px) { .tc-grade-cards-grid { grid-template-columns: 1fr; } }
 
   .tc-grade-card {
     display: flex;
     flex-direction: column;
-    gap: var(--space-md);
+    gap: var(--space-sm);
     background: var(--clr-surface);
     border: 1px solid var(--clr-border);
-    border-radius: var(--radius-xl);
-    padding: var(--space-lg) var(--space-xl);
+    border-radius: var(--radius-md);
+    border-left: 3px solid var(--clr-primary);
+    padding: var(--space-md) var(--space-lg);
     text-decoration: none;
     color: inherit;
-    box-shadow: var(--shadow-sm);
-    transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+    transition: border-color 0.15s, background 0.15s;
   }
 
   .tc-grade-card:hover {
-    border-color: rgba(13, 138, 78, 0.35);
-    box-shadow: 0 8px 24px rgba(13, 138, 78, 0.08);
-    transform: translateY(-2px);
+    border-color: var(--clr-primary);
+    background: rgba(13, 138, 78, 0.04);
   }
 
   .tc-grade-card-top {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
+    gap: var(--space-sm);
   }
 
   .tc-grade-card-title {
     font-family: var(--font-heading);
-    font-size: 1.1rem;
+    font-size: 1rem;
     font-weight: 800;
     color: var(--clr-text);
     margin: 0;
+    line-height: 1.25;
   }
 
   .tc-grade-card-band {
-    display: inline-block;
-    margin-top: 0.25rem;
-    font-size: 0.72rem;
+    display: block;
+    margin-top: 0.2rem;
+    font-size: 0.68rem;
     font-weight: 600;
-    color: var(--clr-text-muted);
+    color: var(--clr-text-light);
     text-transform: uppercase;
     letter-spacing: 0.04em;
   }
 
   .tc-grade-card-icon {
-    font-size: 1.5rem;
-    line-height: 1;
+    display: none;
   }
 
   .tc-grade-card-stats {
     display: flex;
     gap: var(--space-lg);
     flex-wrap: wrap;
+    padding-top: var(--space-xs);
+    border-top: 1px solid var(--clr-border);
+    margin-top: 0.15rem;
   }
 
   .tc-grade-card-stat-label {
     display: block;
-    font-size: 0.72rem;
+    font-size: 0.68rem;
     color: var(--clr-text-muted);
     font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
   }
 
   .tc-grade-card-stat-value {
     font-family: var(--font-heading);
-    font-size: 1.25rem;
+    font-size: 1.1rem;
     font-weight: 800;
     color: var(--clr-text);
+    margin-top: 0.1rem;
   }
 
   .tc-nav-list {
@@ -129,7 +131,7 @@
     padding: var(--space-md) var(--space-lg);
     background: var(--clr-surface);
     border: 1px solid var(--clr-border);
-    border-radius: var(--radius-lg);
+    border-radius: var(--radius-md);
     text-decoration: none;
     color: inherit;
     transition: border-color 0.15s, background 0.15s;
@@ -161,8 +163,8 @@
   .tc-import-panel {
     background: var(--clr-surface);
     border: 1px solid var(--clr-border);
-    border-radius: var(--radius-xl);
-    padding: var(--space-xl);
+    border-radius: var(--radius-md);
+    padding: var(--space-lg);
     margin-bottom: var(--space-xl);
   }
 

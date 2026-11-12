@@ -1,90 +1,138 @@
 {% extends 'accounts/admin_base.html' %}
 
-{% block title %}Action logs — Admin — Soma Smart{% endblock %}
+{% block title %}System Activity Logs — Admin — Soma Smart{% endblock %}
 
 {% block extra_head %}
-{% include 'accounts/partials/admin_list_styles.html' %}
+{% include 'accounts/partials/admin_action_logs_styles.html' %}
 {% endblock %}
 
 {% block admin_content %}
-<div class="admin-list-banner">
-  <div>
-    <a href="{% url 'accounts:admin_dashboard' %}" class="admin-list-back admin-list-back--light">&larr; Back to dashboard</a>
-    <h1>User action logs</h1>
-    <p>Who did what, which object was affected, and when.</p>
+<div class="activity-logs-page">
+  <header class="activity-logs-head">
+    <div>
+      <h1>System Activity Logs</h1>
+      <p>Audit trail of all administrative and user actions across the system.</p>
+    </div>
+  <a href="{% url 'accounts:admin_action_logs' %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}"
+       class="activity-logs-refresh"
+       title="Refresh"
+       aria-label="Refresh logs">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182" />
+      </svg>
+    </a>
+  </header>
+
+  <form method="get" class="activity-logs-filters" aria-label="Filter activity logs">
+    <div class="alf-search alf-search-wrap">
+      <label class="alf-label" for="q">Search logs</label>
+      <svg class="alf-search-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+      </svg>
+      <input id="q" type="search" name="q" value="{{ search }}" class="form-input" placeholder="Action, target, or details…" autocomplete="off">
+    </div>
+    <div>
+      <label class="alf-label" for="category">Category</label>
+      <select id="category" name="category" class="form-select">
+        <option value="">All categories</option>
+        {% for value, label in category_choices %}
+          <option value="{{ value }}" {% if category == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label class="alf-label" for="user">Performed by</label>
+      <select id="user" name="user" class="form-select">
+        <option value="">All users</option>
+        {% for u in performer_choices %}
+          <option value="{{ u.pk }}" {% if user_id == u.pk|stringformat:"s" %}selected{% endif %}>{{ u.full_name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label class="alf-label" for="date_from">Date from</label>
+      <input id="date_from" type="date" name="date_from" value="{{ date_from }}" class="form-input">
+    </div>
+    <div>
+      <label class="alf-label" for="date_to">Date to</label>
+      <input id="date_to" type="date" name="date_to" value="{{ date_to }}" class="form-input">
+    </div>
+    <div class="alf-submit">
+      <button type="submit" class="btn btn-primary btn-activity-filter">Filter</button>
+    </div>
+  </form>
+
+  <div class="activity-logs-table-wrap">
+    <table class="activity-logs-table">
+      <thead>
+        <tr>
+          <th>Timestamp</th>
+          <th>User</th>
+          <th>Category</th>
+          <th>Action</th>
+          <th>Description</th>
+          <th>Affected target</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in log_rows %}
+        {% with log=row.log %}
+        <tr>
+          <td class="al-timestamp">
+            <span class="al-date">{{ log.created_at|date:"M d, Y" }}</span>
+            <span class="al-time">{{ log.created_at|date:"H:i:s" }}</span>
+          </td>
+          <td>
+            <div class="al-user">
+              <span class="al-avatar" aria-hidden="true">{{ row.initials }}</span>
+              <span class="al-user-name">
+                {% if log.user %}{{ log.user.full_name }}{% else %}{{ log.actor_label|default:"Anonymous" }}{% endif %}
+              </span>
+            </div>
+          </td>
+          <td>
+            <span class="al-cat al-cat--{{ row.category_slug }}">{{ row.category_label }}</span>
+          </td>
+          <td class="al-action">{{ row.action_label }}</td>
+          <td class="al-desc">{{ row.description }}</td>
+          <td>
+            {% if row.target_label %}
+            <div class="al-target">
+              <span class="al-target-pill">{{ row.target_label }}</span>
+              <span class="al-target-id">#{{ row.target_id }}</span>
+            </div>
+            {% else %}
+            <span class="al-target-id">—</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endwith %}
+        {% empty %}
+        <tr>
+          <td colspan="6" style="text-align:center;padding:var(--space-xl);color:var(--clr-text-muted);">
+            No activity recorded yet. Actions will appear here as users and admins use the platform.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
   </div>
-  <a href="{{ django_admin_url }}" class="btn-list-banner" target="_blank" rel="noopener">Open in Django Admin</a>
+
+  <div class="activity-logs-footer">
+    {% if page_obj.paginator.num_pages > 1 %}
+    <nav class="admin-pagination" aria-label="Activity log pages" style="margin:0;">
+      {% if page_obj.has_previous %}
+        <a href="?page={{ page_obj.previous_page_number }}{% if pagination_extra %}&{{ pagination_extra }}{% endif %}">Previous</a>
+      {% endif %}
+      <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+      {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}{% if pagination_extra %}&{{ pagination_extra }}{% endif %}">Next</a>
+      {% endif %}
+    </nav>
+    {% else %}
+    <span></span>
+    {% endif %}
+    <a href="{{ django_admin_url }}" class="activity-logs-admin-link" target="_blank" rel="noopener">Open raw logs in Django Admin</a>
+  </div>
 </div>
-
-<form method="get" class="admin-list-search" style="margin-bottom: var(--space-lg); display:flex; flex-wrap:wrap; gap:var(--space-sm); align-items:flex-end;">
-  <div style="flex:1; min-width:200px;">
-    <label class="filter-label" for="q">Search</label>
-    <input id="q" type="search" name="q" value="{{ search }}" class="form-input" placeholder="User, action, object, path…">
-  </div>
-  <div>
-    <label class="filter-label" for="verb">Verb</label>
-    <select id="verb" name="verb" class="form-select">
-      <option value="">All verbs</option>
-      {% for value, label in verb_choices %}
-        <option value="{{ value }}" {% if verb == value %}selected{% endif %}>{{ label }}</option>
-      {% endfor %}
-    </select>
-  </div>
-  <button type="submit" class="btn btn-primary" style="padding:0.55rem 1rem;">Filter</button>
-  <a href="{% url 'accounts:admin_action_logs' %}" class="btn btn-secondary" style="padding:0.55rem 1rem;">Reset</a>
-</form>
-
-<div class="admin-table-wrap">
-  <table class="admin-table">
-    <thead>
-      <tr>
-        <th>When</th>
-        <th>User</th>
-        <th>Verb</th>
-        <th>Action</th>
-        <th>Object</th>
-        <th>HTTP</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for row in page_obj %}
-      <tr>
-        <td style="white-space:nowrap;font-size:0.82rem;">{{ row.created_at|date:"d M Y H:i" }}</td>
-        <td style="font-size:0.85rem;">{{ row.actor_label|default:"—" }}</td>
-        <td><span class="badge badge-gold">{{ row.get_verb_display }}</span></td>
-        <td style="font-size:0.82rem;max-width:12rem;word-break:break-word;">{{ row.action }}</td>
-        <td style="font-size:0.82rem;max-width:16rem;">
-          {% if row.object_type %}
-            <div style="color:var(--clr-text-muted);font-size:0.72rem;">{{ row.object_type }} #{{ row.object_id }}</div>
-            <div style="word-break:break-word;">{{ row.object_repr|truncatechars:120 }}</div>
-          {% else %}
-            <span style="color:var(--clr-text-muted);">{{ row.request_path|truncatechars:80 }}</span>
-          {% endif %}
-        </td>
-        <td style="font-size:0.78rem;white-space:nowrap;">
-          {{ row.request_method }} {% if row.status_code %}{{ row.status_code }}{% endif %}
-        </td>
-      </tr>
-      {% empty %}
-      <tr>
-        <td colspan="6" style="text-align:center;padding:var(--space-xl);color:var(--clr-text-muted);">
-          No audit entries yet.
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-</div>
-
-{% if page_obj.paginator.num_pages > 1 %}
-<nav class="admin-pagination" aria-label="Action log pages">
-  {% if page_obj.has_previous %}
-    <a href="?page={{ page_obj.previous_page_number }}{% if pagination_extra %}&{{ pagination_extra }}{% endif %}">Previous</a>
-  {% endif %}
-  <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
-  {% if page_obj.has_next %}
-    <a href="?page={{ page_obj.next_page_number }}{% if pagination_extra %}&{{ pagination_extra }}{% endif %}">Next</a>
-  {% endif %}
-</nav>
-{% endif %}
 {% endblock %}

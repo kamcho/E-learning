@@ -32,59 +32,48 @@
   .teacher-stats-row {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: var(--space-lg);
+    gap: var(--space-md);
     margin-bottom: var(--space-xl);
   }
 
   .admin-stat-card {
     background: var(--clr-surface);
-    border-radius: var(--radius-xl);
-    padding: var(--space-lg) var(--space-xl);
-    box-shadow: var(--shadow-sm);
+    border-radius: var(--radius-md);
+    padding: var(--space-md) var(--space-lg);
     border: 1px solid var(--clr-border);
+    border-left-width: 3px;
     display: flex;
     flex-direction: column;
-    gap: var(--space-md);
+    gap: 0.35rem;
+    min-height: 0;
   }
 
-  .admin-stat-top {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-  }
-
-  .admin-stat-icon {
-    width: 48px;
-    height: 48px;
-    border-radius: var(--radius-lg);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.35rem;
-  }
-
-  .admin-stat-icon.blue { background: rgba(59, 130, 246, 0.12); }
-  .admin-stat-icon.purple { background: rgba(139, 92, 246, 0.12); }
-  .admin-stat-icon.orange { background: rgba(249, 115, 22, 0.12); }
-  .admin-stat-icon.green { background: rgba(13, 138, 78, 0.12); }
+  .admin-stat-card.stat-blue { border-left-color: #3b82f6; }
+  .admin-stat-card.stat-purple { border-left-color: #7c3aed; }
+  .admin-stat-card.stat-orange { border-left-color: #ea580c; }
+  .admin-stat-card.stat-green { border-left-color: var(--clr-primary); }
 
   .admin-stat-label {
-    font-size: 0.82rem;
-    font-weight: 600;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
     color: var(--clr-text-muted);
   }
 
   .admin-stat-value {
     font-family: var(--font-heading);
-    font-size: 1.75rem;
+    font-size: 1.5rem;
     font-weight: 800;
     color: var(--clr-text);
-    line-height: 1.1;
+    line-height: 1.15;
   }
 
   .admin-stat-meta {
-    font-size: 0.8rem;
-    color: var(--clr-text-muted);
+    font-size: 0.78rem;
+    color: var(--clr-text-light);
+    line-height: 1.4;
+    margin-top: 0.15rem;
   }
 
   @media (max-width: 1200px) { .teacher-stats-row { grid-template-columns: repeat(2, 1fr); } }
@@ -93,8 +82,7 @@
   .teacher-section {
     background: var(--clr-surface);
     border: 1px solid var(--clr-border);
-    border-radius: var(--radius-xl);
-    box-shadow: var(--shadow-sm);
+    border-radius: var(--radius-md);
     margin-bottom: var(--space-xl);
     overflow: hidden;
   }
@@ -208,7 +196,7 @@
 <div class="teacher-page-header">
   <div>
     <h1>Teacher Dashboard</h1>
-    <p>Welcome, {{ teacher.get_full_name|default:teacher.phone }}. Track your subjects, questions, and learner performance.</p>
+    <p>Welcome, {{ teacher.full_name|default:teacher.phone }}. Track your subjects, questions, and learner performance.</p>
   </div>
   <div class="teacher-actions">
     <a href="{% url 'core:quiz_builder_list' %}" class="primary">Quiz Builder</a>
@@ -217,44 +205,24 @@
 </div>
 
 <div class="teacher-stats-row">
-  <div class="admin-stat-card">
-    <div class="admin-stat-top">
-      <div>
-        <div class="admin-stat-label">Subjects</div>
-        <div class="admin-stat-value">{{ summary.subject_count }}</div>
-      </div>
-      <div class="admin-stat-icon blue">&#128218;</div>
-    </div>
+  <div class="admin-stat-card stat-blue">
+    <div class="admin-stat-label">Subjects</div>
+    <div class="admin-stat-value">{{ summary.subject_count }}</div>
     <div class="admin-stat-meta">Assigned or with your content</div>
   </div>
-  <div class="admin-stat-card">
-    <div class="admin-stat-top">
-      <div>
-        <div class="admin-stat-label">Questions added</div>
-        <div class="admin-stat-value">{{ summary.question_count }}</div>
-      </div>
-      <div class="admin-stat-icon purple">&#10067;</div>
-    </div>
+  <div class="admin-stat-card stat-purple">
+    <div class="admin-stat-label">Questions added</div>
+    <div class="admin-stat-value">{{ summary.question_count }}</div>
     <div class="admin-stat-meta">{{ summary.active_questions }} active · {{ summary.pending_questions }} pending review</div>
   </div>
-  <div class="admin-stat-card">
-    <div class="admin-stat-top">
-      <div>
-        <div class="admin-stat-label">Quizzes created</div>
-        <div class="admin-stat-value">{{ summary.quiz_count }}</div>
-      </div>
-      <div class="admin-stat-icon orange">&#128221;</div>
-    </div>
+  <div class="admin-stat-card stat-orange">
+    <div class="admin-stat-label">Quizzes created</div>
+    <div class="admin-stat-value">{{ summary.quiz_count }}</div>
     <div class="admin-stat-meta">Across your subjects</div>
   </div>
-  <div class="admin-stat-card">
-    <div class="admin-stat-top">
-      <div>
-        <div class="admin-stat-label">Learner attempts</div>
-        <div class="admin-stat-value">{{ summary.attempt_count }}</div>
-      </div>
-      <div class="admin-stat-icon green">&#128200;</div>
-    </div>
+  <div class="admin-stat-card stat-green">
+    <div class="admin-stat-label">Learner attempts</div>
+    <div class="admin-stat-value">{{ summary.attempt_count }}</div>
     <div class="admin-stat-meta">{{ summary.completed_attempts }} completed · {{ summary.avg_score }}% avg score</div>
   </div>
 </div>
@@ -264,7 +232,7 @@
     <h2>Add questions by grade</h2>
     <span style="font-size:0.82rem;color:var(--clr-text-muted);">Browse curriculum → sub-strand → AI prompt &amp; paste import</span>
   </div>
-  <div class="teacher-section-body" style="padding: var(--space-xl);">
+  <div class="teacher-section-body" style="padding: var(--space-lg);">
     {% if grade_cards %}
     <div class="tc-grade-cards-grid">
       {% for card in grade_cards %}
@@ -274,7 +242,6 @@
             <h3 class="tc-grade-card-title">{{ card.grade.name }}</h3>
             <span class="tc-grade-card-band">{{ card.grade.get_level_display }}</span>
           </div>
-          <span class="tc-grade-card-icon" aria-hidden="true">&#127979;</span>
         </div>
         <div class="tc-grade-card-stats">
           <div>

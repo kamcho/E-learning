@@ -1324,10 +1324,23 @@ def admin_action_logs_view(request):
     if denied:
         return denied
 
-    from accounts.models import UserActionLog
+    from datetime import datetime, time
+
+    from django.utils.dateparse import parse_date
+
+    from accounts.audit_display import (
+        LOG_CATEGORY_CHOICES,
+        enrich_log_row,
+        filter_queryset_by_category,
+    )
+    from accounts.models import MyUser, UserActionLog
 
     search = request.GET.get('q', '').strip()
-    verb = request.GET.get('verb', '').strip()
+    category = request.GET.get('category', '').strip()
+    user_id = request.GET.get('user', '').strip()
+    date_from = parse_date(request.GET.get('date_from', '').strip() or '')
+    date_to = parse_date(request.GET.get('date_to', '').strip() or '')
+
     logs_qs = UserActionLog.objects.select_related('user').order_by('-created_at')
     if search:
         logs_qs = logs_qs.filter(
@@ -1338,16 +1351,33 @@ def admin_action_logs_view(request):
             | Q(object_type__icontains=search)
             | Q(request_path__icontains=search)
         )
-    if verb:
-        logs_qs = logs_qs.filter(verb=verb)
+    if user_id.isdigit():
+        logs_qs = logs_qs.filter(user_id=int(user_id))
+    if date_from:
+        logs_qs = logs_qs.filter(created_at__gte=datetime.combine(date_from, time.min))
+    if date_to:
+        logs_qs = logs_qs.filter(created_at__lte=datetime.combine(date_to, time.max))
+    logs_qs = filter_queryset_by_category(logs_qs, category)
 
-    page_obj = Paginator(logs_qs, ADMIN_LIST_PAGE_SIZE).get_page(request.GET.get('page'))
+    page_obj = Paginator(logs_qs, 20).get_page(request.GET.get('page'))
+    log_rows = [enrich_log_row(row) for row in page_obj.object_list]
+
+    performer_choices = (
+        MyUser.objects.filter(action_logs__isnull=False)
+        .distinct()
+        .order_by('first_name', 'last_name')[:100]
+    )
 
     return render(request, 'accounts/admin_action_logs.html', {
         'page_obj': page_obj,
+        'log_rows': log_rows,
         'search': search,
-        'verb': verb,
-        'verb_choices': UserActionLog.VERB_CHOICES,
+        'category': category,
+        'category_choices': LOG_CATEGORY_CHOICES,
+        'user_id': user_id,
+        'date_from': request.GET.get('date_from', '').strip(),
+        'date_to': request.GET.get('date_to', '').strip(),
+        'performer_choices': performer_choices,
         'pagination_extra': _pagination_extra_params(request, ['page']),
         'django_admin_url': reverse('admin:accounts_useractionlog_changelist'),
     })
