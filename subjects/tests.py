@@ -916,3 +916,90 @@ class SubjectImportTests(TestCase):
 
         with self.assertRaises(SubjectImportError):
             load_subject_preview(token, another_grade)
+
+
+class CurriculumProgressTests(TestCase):
+    def setUp(self):
+        self.grade = GradeLevel.objects.create(
+            name='Grade 6',
+            slug='grade-6',
+            level='Upper Primary',
+        )
+        self.discipline = Discipline.objects.create(
+            name='Science',
+            slug='science-g6',
+        )
+        self.subject = Subject.objects.create(
+            name='Integrated Science',
+            slug='integrated-science-g6',
+            grade_level=self.grade,
+            discipline=self.discipline,
+        )
+        from subjects.models import Strand, SubStrand
+
+        self.strand = Strand.objects.create(
+            name='Living Things',
+            slug='living-things-g6',
+            subject=self.subject,
+            order=1,
+        )
+        self.sub_a = SubStrand.objects.create(
+            name='Plants',
+            slug='plants-g6',
+            strand=self.strand,
+            order=1,
+        )
+        self.sub_b = SubStrand.objects.create(
+            name='Animals',
+            slug='animals-g6',
+            strand=self.strand,
+            order=2,
+        )
+        self.admin = get_user_model().objects.create_user(
+            phone='0755555510',
+            password='1234',
+            role=Role.ADMIN,
+        )
+
+    def test_progress_averages_substrand_completion(self):
+        from core.models import Question
+        from subjects.curriculum_progress import build_curriculum_progress_by_subject
+
+        for index in range(7):
+            Question.objects.create(
+                quiz=f'Q plant {index}',
+                difficulty='Easy',
+                quiz_type='Multiple Choice',
+                sub_strand=self.sub_a,
+                score=1,
+            )
+        Question.objects.create(
+            quiz='Q animal',
+            difficulty='Easy',
+            quiz_type='Multiple Choice',
+            sub_strand=self.sub_b,
+            score=1,
+        )
+
+        stats = build_curriculum_progress_by_subject([self.subject.pk])[self.subject.pk]
+        self.assertEqual(stats['ready_count'], 1)
+        self.assertEqual(stats['substrand_count'], 2)
+        self.assertEqual(stats['question_count'], 8)
+        # 100% + ~14% → ~57%
+        self.assertEqual(stats['progress_pct'], 57)
+
+    def test_subject_list_shows_progress_pct(self):
+        from core.models import Question
+
+        for index in range(7):
+            Question.objects.create(
+                quiz=f'Q open {index}',
+                difficulty='Easy',
+                quiz_type='OpenEnded',
+                sub_strand=self.sub_a,
+            )
+        self.client.force_login(self.admin)
+        response = self.client.get(reverse('subjects:subject_list') + '?grade=grade-6')
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Question bank progress')
+        self.assertContains(response, '1/2 sub-strands at 7+ questions')

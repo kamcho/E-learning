@@ -48,6 +48,55 @@
     border-color: var(--clr-primary);
     color: #fff;
   }
+
+  .subject-progress-wrap {
+    margin-top: var(--space-sm);
+    max-width: 22rem;
+  }
+
+  .subject-progress-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.35rem 0.75rem;
+    font-size: 0.78rem;
+    color: var(--clr-text-muted);
+    margin-bottom: 0.35rem;
+  }
+
+  .subject-progress-pct {
+    font-weight: 800;
+    font-family: var(--font-heading);
+    color: var(--clr-primary);
+    font-size: 0.9rem;
+  }
+
+  .subject-progress-track {
+    height: 8px;
+    border-radius: var(--radius-full);
+    background: var(--clr-surface-alt);
+    border: 1px solid var(--clr-border);
+    overflow: hidden;
+  }
+
+  .subject-progress-fill {
+    height: 100%;
+    border-radius: var(--radius-full);
+    background: linear-gradient(90deg, var(--clr-primary), var(--clr-primary-light));
+    transition: width 0.25s ease;
+  }
+
+  .subject-progress-hint {
+    font-size: 0.72rem;
+    color: var(--clr-text-light);
+    margin-top: 0.35rem;
+    line-height: 1.35;
+  }
+
+  .list-item {
+    align-items: flex-start;
+  }
 </style>
 {% endblock %}
 
@@ -70,6 +119,7 @@
         {% else %}
           Browse subjects by grade level.
         {% endif %}
+        Each sub-strand counts toward 100% when it has at least {{ substrand_question_target }} active questions.
       </p>
     </div>
   </div>
@@ -108,17 +158,35 @@
         {% if show_all_grades %}All Subjects{% elif active_grade %}{{ active_grade.name }} Subjects{% else %}Subjects{% endif %}
       </h2>
 
-      {% if subjects %}
+      {% if subject_entries %}
         <div class="item-list">
-          {% for subject in subjects %}
+          {% for entry in subject_entries %}
+            {% with subject=entry.subject %}
             <div class="list-item">
-              <div>
+              <div style="flex: 1; min-width: 0;">
                 <a href="{% url 'subjects:subject_detail' subject.slug %}" class="list-item-title">
                   {{ subject.name }}
                 </a>
                 <div class="list-item-meta">
                   Grade Level: <strong>{{ subject.grade_level.name }}</strong>
                   &middot; Discipline: <strong>{{ subject.discipline.name }}</strong>
+                </div>
+                <div class="subject-progress-wrap">
+                  <div class="subject-progress-meta">
+                    <span>Question bank progress</span>
+                    <span class="subject-progress-pct">{{ entry.progress_pct }}%</span>
+                  </div>
+                  <div class="subject-progress-track" role="progressbar" aria-valuenow="{{ entry.progress_pct }}" aria-valuemin="0" aria-valuemax="100" aria-label="Question bank progress for {{ subject.name }}">
+                    <div class="subject-progress-fill" style="width: {{ entry.progress_pct }}%;"></div>
+                  </div>
+                  <p class="subject-progress-hint">
+                    {% if entry.substrand_count %}
+                      {{ entry.ready_count }}/{{ entry.substrand_count }} sub-strand{{ entry.substrand_count|pluralize }} at {{ substrand_question_target }}+ questions
+                      &middot; {{ entry.question_count }} question{{ entry.question_count|pluralize }} total
+                    {% else %}
+                      No sub-strands yet — add curriculum to track progress.
+                    {% endif %}
+                  </p>
                 </div>
               </div>
               <div style="display: flex; gap: var(--space-sm); align-items: center; flex-wrap: wrap; justify-content: flex-end;">
@@ -128,27 +196,12 @@
                   <span class="badge badge-danger">Inactive</span>
                 {% endif %}
                 <a href="{% url 'subjects:subject_detail' subject.slug %}" class="btn btn-secondary" style="padding: 0.4rem 1rem; font-size: 0.8rem;">Curriculum</a>
-                <button
-                  type="button"
-                  class="btn btn-secondary"
-                  style="padding: 0.4rem 0.85rem; font-size: 0.8rem;"
-                  data-subject-edit
-                  data-subject-slug="{{ subject.slug }}"
-                  data-post-action="{{ subject_list_post_url }}"
-                >Edit</button>
-                <button
-                  type="button"
-                  class="btn btn-secondary"
-                  style="padding: 0.4rem 0.85rem; font-size: 0.8rem; color: var(--clr-danger);"
-                  data-subject-delete
-                  data-subject-slug="{{ subject.slug }}"
-                  data-post-action="{{ subject_list_post_url }}"
-                >Delete</button>
               </div>
             </div>
+            {% endwith %}
           {% endfor %}
         </div>
-      {% else %}
+      {% elif not subjects %}
         <div class="empty-state">
           <div class="empty-state-icon">📚</div>
           <h3>No Subjects Found</h3>
@@ -245,5 +298,4 @@
   </div>
 </div>
 
-{% include 'subjects/partials/subject_manage_modal.html' %}
 {% endblock %}

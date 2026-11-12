@@ -32,6 +32,10 @@ from .objectives_import import (
     parse_subject_objectives_text,
     sign_subject_objectives_preview,
 )
+from .curriculum_progress import (
+    SUBSTRAND_QUESTION_TARGET,
+    build_curriculum_progress_by_subject,
+)
 from .subject_import import (
     SubjectImportError,
     create_subjects,
@@ -289,7 +293,23 @@ def subject_list(request):
             if active_grade:
                 subjects = subjects.filter(grade_level=active_grade)
 
-    subjects = subjects.order_by('grade_level__name', 'name')
+    subjects = list(subjects.order_by('grade_level__name', 'name'))
+    curriculum_progress = build_curriculum_progress_by_subject([s.pk for s in subjects])
+    subject_entries = [
+        {
+            'subject': subject,
+            **curriculum_progress.get(
+                subject.pk,
+                {
+                    'progress_pct': 0,
+                    'substrand_count': 0,
+                    'ready_count': 0,
+                    'question_count': 0,
+                },
+            ),
+        }
+        for subject in subjects
+    ]
     subject_import_text = ''
     subject_preview = None
     subject_preview_token = ''
@@ -352,6 +372,8 @@ def subject_list(request):
 
     return render(request, 'subjects/subject_list.html', {
         'subjects': subjects,
+        'subject_entries': subject_entries,
+        'substrand_question_target': SUBSTRAND_QUESTION_TARGET,
         'form': form,
         'subject_edit_form': subject_edit_form,
         'all_grade_levels': all_grade_levels,
