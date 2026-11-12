@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
-from .models import MyUser, Student, LinkedStudents, ReferralPointLog
+from .models import MyUser, Student, LinkedStudents, ReferralPointLog, UserActionLog
 
 
 @admin.register(Student)
@@ -47,6 +47,28 @@ class MyUserAdmin(BaseUserAdmin):
             'fields': ('phone', 'first_name', 'last_name', 'role', 'password1', 'password2'),
         }),
     )
+
+
+@admin.register(UserActionLog)
+class UserActionLogAdmin(admin.ModelAdmin):
+    list_display = (
+        'created_at', 'actor_label', 'verb', 'action', 'object_type',
+        'object_id', 'request_method', 'status_code',
+    )
+    list_filter = ('verb', 'object_type', 'request_method', 'created_at')
+    search_fields = ('actor_label', 'action', 'object_repr', 'object_id', 'request_path')
+    readonly_fields = (
+        'user', 'actor_label', 'action', 'verb', 'object_type', 'object_id',
+        'object_repr', 'request_path', 'request_method', 'ip_address',
+        'status_code', 'metadata', 'created_at',
+    )
+    date_hierarchy = 'created_at'
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
 
 
 @admin.register(ReferralPointLog)

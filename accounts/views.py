@@ -1318,6 +1318,42 @@ def admin_database_backup_view(request):
 
 
 @login_required(login_url='accounts:signin')
+def admin_action_logs_view(request):
+    """Paginated audit log of user actions."""
+    denied = _admin_access_or_redirect(request)
+    if denied:
+        return denied
+
+    from accounts.models import UserActionLog
+
+    search = request.GET.get('q', '').strip()
+    verb = request.GET.get('verb', '').strip()
+    logs_qs = UserActionLog.objects.select_related('user').order_by('-created_at')
+    if search:
+        logs_qs = logs_qs.filter(
+            Q(actor_label__icontains=search)
+            | Q(action__icontains=search)
+            | Q(object_repr__icontains=search)
+            | Q(object_id__icontains=search)
+            | Q(object_type__icontains=search)
+            | Q(request_path__icontains=search)
+        )
+    if verb:
+        logs_qs = logs_qs.filter(verb=verb)
+
+    page_obj = Paginator(logs_qs, ADMIN_LIST_PAGE_SIZE).get_page(request.GET.get('page'))
+
+    return render(request, 'accounts/admin_action_logs.html', {
+        'page_obj': page_obj,
+        'search': search,
+        'verb': verb,
+        'verb_choices': UserActionLog.VERB_CHOICES,
+        'pagination_extra': _pagination_extra_params(request, ['page']),
+        'django_admin_url': reverse('admin:accounts_useractionlog_changelist'),
+    })
+
+
+@login_required(login_url='accounts:signin')
 def admin_users_list_view(request):
     """Paginated list of all platform users."""
     denied = _admin_access_or_redirect(request)

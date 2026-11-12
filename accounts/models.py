@@ -220,6 +220,60 @@ class LinkedStudents(models.Model):
         return f'{self.user.phone} linked to {self.students.count()} students'
 
 
+class UserActionLog(models.Model):
+    """Immutable audit trail of user actions and affected objects."""
+
+    VERB_CHOICES = (
+        ('create', 'Create'),
+        ('update', 'Update'),
+        ('delete', 'Delete'),
+        ('request', 'Request'),
+        ('login', 'Login'),
+        ('logout', 'Logout'),
+        ('view', 'View'),
+    )
+
+    user = models.ForeignKey(
+        MyUser,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='action_logs',
+    )
+    actor_label = models.CharField(
+        max_length=120,
+        blank=True,
+        help_text='Snapshot of who acted (phone/name) if the user row is removed later.',
+    )
+    action = models.CharField(
+        max_length=120,
+        db_index=True,
+        help_text='Semantic code, e.g. core:Question.create or auth.login',
+    )
+    verb = models.CharField(max_length=20, choices=VERB_CHOICES, default='request', db_index=True)
+    object_type = models.CharField(max_length=100, blank=True, db_index=True)
+    object_id = models.CharField(max_length=64, blank=True, db_index=True)
+    object_repr = models.TextField(blank=True)
+    request_path = models.CharField(max_length=512, blank=True)
+    request_method = models.CharField(max_length=10, blank=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    status_code = models.PositiveSmallIntegerField(null=True, blank=True)
+    metadata = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ('-created_at',)
+        verbose_name = 'User action log'
+        verbose_name_plural = 'User action logs'
+        indexes = [
+            models.Index(fields=['object_type', 'object_id']),
+        ]
+
+    def __str__(self):
+        who = self.actor_label or (str(self.user_id) if self.user_id else 'anonymous')
+        return f'{who} · {self.action} · {self.created_at:%Y-%m-%d %H:%M}'
+
+
 class ReferralPointLog(models.Model):
     """Audit log for referral rewards — one row per successful referred payment."""
 

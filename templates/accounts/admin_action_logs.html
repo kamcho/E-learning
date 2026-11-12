@@ -1,0 +1,90 @@
+{% extends 'accounts/admin_base.html' %}
+
+{% block title %}Action logs — Admin — Soma Smart{% endblock %}
+
+{% block extra_head %}
+{% include 'accounts/partials/admin_list_styles.html' %}
+{% endblock %}
+
+{% block admin_content %}
+<div class="admin-list-banner">
+  <div>
+    <a href="{% url 'accounts:admin_dashboard' %}" class="admin-list-back admin-list-back--light">&larr; Back to dashboard</a>
+    <h1>User action logs</h1>
+    <p>Who did what, which object was affected, and when.</p>
+  </div>
+  <a href="{{ django_admin_url }}" class="btn-list-banner" target="_blank" rel="noopener">Open in Django Admin</a>
+</div>
+
+<form method="get" class="admin-list-search" style="margin-bottom: var(--space-lg); display:flex; flex-wrap:wrap; gap:var(--space-sm); align-items:flex-end;">
+  <div style="flex:1; min-width:200px;">
+    <label class="filter-label" for="q">Search</label>
+    <input id="q" type="search" name="q" value="{{ search }}" class="form-input" placeholder="User, action, object, path…">
+  </div>
+  <div>
+    <label class="filter-label" for="verb">Verb</label>
+    <select id="verb" name="verb" class="form-select">
+      <option value="">All verbs</option>
+      {% for value, label in verb_choices %}
+        <option value="{{ value }}" {% if verb == value %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <button type="submit" class="btn btn-primary" style="padding:0.55rem 1rem;">Filter</button>
+  <a href="{% url 'accounts:admin_action_logs' %}" class="btn btn-secondary" style="padding:0.55rem 1rem;">Reset</a>
+</form>
+
+<div class="admin-table-wrap">
+  <table class="admin-table">
+    <thead>
+      <tr>
+        <th>When</th>
+        <th>User</th>
+        <th>Verb</th>
+        <th>Action</th>
+        <th>Object</th>
+        <th>HTTP</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in page_obj %}
+      <tr>
+        <td style="white-space:nowrap;font-size:0.82rem;">{{ row.created_at|date:"d M Y H:i" }}</td>
+        <td style="font-size:0.85rem;">{{ row.actor_label|default:"—" }}</td>
+        <td><span class="badge badge-gold">{{ row.get_verb_display }}</span></td>
+        <td style="font-size:0.82rem;max-width:12rem;word-break:break-word;">{{ row.action }}</td>
+        <td style="font-size:0.82rem;max-width:16rem;">
+          {% if row.object_type %}
+            <div style="color:var(--clr-text-muted);font-size:0.72rem;">{{ row.object_type }} #{{ row.object_id }}</div>
+            <div style="word-break:break-word;">{{ row.object_repr|truncatechars:120 }}</div>
+          {% else %}
+            <span style="color:var(--clr-text-muted);">{{ row.request_path|truncatechars:80 }}</span>
+          {% endif %}
+        </td>
+        <td style="font-size:0.78rem;white-space:nowrap;">
+          {{ row.request_method }} {% if row.status_code %}{{ row.status_code }}{% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="6" style="text-align:center;padding:var(--space-xl);color:var(--clr-text-muted);">
+          No audit entries yet.
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% if page_obj.paginator.num_pages > 1 %}
+<nav class="admin-pagination" aria-label="Action log pages">
+  {% if page_obj.has_previous %}
+    <a href="?page={{ page_obj.previous_page_number }}{% if pagination_extra %}&{{ pagination_extra }}{% endif %}">Previous</a>
+  {% endif %}
+  <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+  {% if page_obj.has_next %}
+    <a href="?page={{ page_obj.next_page_number }}{% if pagination_extra %}&{{ pagination_extra }}{% endif %}">Next</a>
+  {% endif %}
+</nav>
+{% endif %}
+{% endblock %}

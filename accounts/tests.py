@@ -449,6 +449,73 @@ class AddLearnerTests(TestCase):
         self.assertTrue(self.guardian.linked_students.filter(students=created).exists())
 
 
+class UserActionLogTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.guardian = get_user_model().objects.create_user(
+            phone='0777000101',
+            password='1234',
+            role=Role.GUARDIAN,
+            first_name='Audit',
+            last_name='Guardian',
+        )
+
+    def test_log_user_action_persists_object_reference(self):
+        from accounts.audit import log_user_action
+        from accounts.models import UserActionLog
+
+        log_user_action(
+            action='test.manual',
+            verb='create',
+            user=self.guardian,
+            obj=self.guardian,
+            metadata={'demo': True},
+        )
+        row = UserActionLog.objects.get(action='test.manual')
+        self.assertEqual(row.user_id, self.guardian.pk)
+        self.assertEqual(row.object_type, 'accounts.MyUser')
+        self.assertEqual(row.object_id, str(self.guardian.pk))
+
+    def test_question_save_creates_audit_row(self):
+        from accounts.models import UserActionLog
+        from core.models import Question
+        from subjects.models import Discipline, GradeLevel, Strand, Subject, SubStrand
+
+        grade = GradeLevel.objects.create(name='Grade 3', slug='grade-3-audit', level='Lower Primary')
+        discipline = Discipline.objects.create(name='Math A', slug='math-audit')
+        subject = Subject.objects.create(
+            name='Math G3',
+            slug='math-g3-audit',
+            grade_level=grade,
+            discipline=discipline,
+        )
+        strand = Strand.objects.create(name='Num', slug='num-g3-audit', subject=subject, order=1)
+        sub = SubStrand.objects.create(name='Add', slug='add-g3-audit', strand=strand, order=1)
+
+        self.client.force_login(self.guardian)
+        self.client.get(reverse('accounts:guardian_dashboard'))
+
+        Question.objects.create(
+            quiz='Audit signal question?',
+            difficulty='Easy',
+            quiz_type='OpenEnded',
+            sub_strand=sub,
+            created_by=self.guardian,
+        )
+        self.assertTrue(
+            UserActionLog.objects.filter(
+                action='core.Question.create',
+                verb='create',
+                object_type='core.Question',
+            ).exists()
+        )
+
+    def test_admin_action_logs_requires_admin(self):
+        self.client.force_login(self.guardian)
+        response = self.client.get(reverse('accounts:admin_action_logs'))
+        self.assertEqual(response.status_code, 302)
+
+
 class TeacherCurriculumViewTests(TestCase):
     @classmethod
     def setUpTestData(cls):
