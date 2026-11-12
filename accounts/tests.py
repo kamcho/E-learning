@@ -519,6 +519,8 @@ class TeacherCurriculumViewTests(TestCase):
         self.assertContains(response, 'Generate prompt')
         self.assertContains(response, 'id="ai-prompt-generate-url"')
         self.assertContains(response, '/accounts/teacher-dashboard/ai-question-prompt/')
+        self.assertContains(response, 'Review questions')
+        self.assertContains(response, 'Approve all valid')
 
     def test_guardian_cannot_access_teacher_curriculum(self):
         self.client.force_login(self.guardian)

@@ -94,6 +94,38 @@ class QuestionImportTests(TestCase):
         self.assertEqual(cleaned['quiz'], 'What is 2 + 2?')
         self.assertEqual(len(cleaned['choices']), 2)
 
+    def test_preview_reports_valid_and_invalid_rows(self):
+        from core.question_import import preview_questions_import
+
+        result = preview_questions_import({
+            'preview': True,
+            'questions': [
+                {
+                    'quiz': 'Valid?',
+                    'sub_strand_id': self.sub_strand.pk,
+                    'difficulty': 'Easy',
+                    'quiz_type': 'True or False',
+                    'choices': [
+                        {'option': 'True', 'is_correct': True},
+                        {'option': 'False', 'is_correct': False},
+                    ],
+                },
+                {
+                    'quiz': '',
+                    'sub_strand_id': self.sub_strand.pk,
+                    'difficulty': 'Easy',
+                    'quiz_type': 'Multiple Choice',
+                    'choices': [],
+                },
+            ],
+        })
+        self.assertTrue(result['preview'])
+        self.assertEqual(result['total'], 2)
+        self.assertEqual(result['valid'], 1)
+        self.assertEqual(result['invalid'], 1)
+        self.assertEqual(result['items'][0]['status'], 'valid')
+        self.assertEqual(result['items'][1]['status'], 'invalid')
+
     def test_bulk_create_sets_active_and_created_by(self):
         result = bulk_create_questions({
             'questions': [

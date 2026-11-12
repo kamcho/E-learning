@@ -134,6 +134,107 @@ def validate_question_item(data, index=0):
     }
 
 
+def _question_dict_for_client(*, cleaned=None, raw=None):
+    """Serializable question payload for the teacher review UI."""
+    if cleaned:
+        return {
+            'quiz': cleaned['quiz'],
+            'difficulty': cleaned['difficulty'],
+            'quiz_type': cleaned['quiz_type'],
+            'sub_strand_id': cleaned['sub_strand'].pk,
+            'sub_strand_slug': cleaned['sub_strand'].slug,
+            'score': cleaned['score'],
+            'metadata': cleaned['metadata'],
+            'image_alt_text': cleaned['image_alt_text'],
+            'is_active': cleaned['is_active'],
+            'choices': [dict(choice) for choice in cleaned['choices']],
+        }
+    if isinstance(raw, dict):
+        choices = []
+        for item in raw.get('choices') or []:
+            if not isinstance(item, dict):
+                continue
+            choices.append({
+                'option': (item.get('option') or '').strip(),
+                'is_correct': bool(item.get('is_correct', False)),
+                'is_active': bool(item.get('is_active', True)),
+            })
+        is_active = raw.get('is_active', True)
+        if not isinstance(is_active, bool):
+            is_active = True
+        return {
+            'quiz': (raw.get('quiz') or '').strip(),
+            'difficulty': (raw.get('difficulty') or 'Easy').strip() or 'Easy',
+            'quiz_type': (raw.get('quiz_type') or 'Multiple Choice').strip() or 'Multiple Choice',
+            'sub_strand_id': raw.get('sub_strand_id'),
+            'sub_strand_slug': (raw.get('sub_strand_slug') or '').strip(),
+            'score': raw.get('score', 1),
+            'metadata': raw.get('metadata') if isinstance(raw.get('metadata'), list) else [],
+            'image_alt_text': (raw.get('image_alt_text') or '').strip(),
+            'is_active': is_active,
+            'choices': choices,
+        }
+    return {
+        'quiz': '',
+        'difficulty': 'Easy',
+        'quiz_type': 'Multiple Choice',
+        'sub_strand_id': None,
+        'sub_strand_slug': '',
+        'score': 1,
+        'metadata': [],
+        'image_alt_text': '',
+        'is_active': True,
+        'choices': [],
+    }
+
+
+def preview_questions_import(payload):
+    """Validate questions without saving; return review rows for the teacher UI."""
+    if not isinstance(payload, dict):
+        raise ValueError('Request body must be a JSON object.')
+
+    raw_questions = payload.get('questions')
+    if raw_questions is None:
+        raise ValueError('"questions" is required.')
+    if not isinstance(raw_questions, list):
+        raise ValueError('"questions" must be a list.')
+
+    items = []
+    valid_count = 0
+    for index, item in enumerate(raw_questions):
+        if not isinstance(item, dict):
+            items.append({
+                'index': index,
+                'status': 'invalid',
+                'error': f'questions[{index}] must be an object.',
+                'question': _question_dict_for_client(),
+            })
+            continue
+        try:
+            cleaned = validate_question_item(item, index=index)
+            valid_count += 1
+            items.append({
+                'index': index,
+                'status': 'valid',
+                'question': _question_dict_for_client(cleaned=cleaned),
+            })
+        except ValueError as exc:
+            items.append({
+                'index': index,
+                'status': 'invalid',
+                'error': str(exc),
+                'question': _question_dict_for_client(raw=item),
+            })
+
+    return {
+        'preview': True,
+        'total': len(items),
+        'valid': valid_count,
+        'invalid': len(items) - valid_count,
+        'items': items,
+    }
+
+
 def create_question_from_item(cleaned, created_by):
     """Create one question and its options; return uuids."""
     with transaction.atomic():

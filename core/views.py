@@ -1272,6 +1272,15 @@ def bulk_create_questions_api_view(request):
     except (json.JSONDecodeError, UnicodeDecodeError):
         return JsonResponse({'error': 'Invalid JSON body.'}, status=400)
 
+    if payload.get('preview'):
+        from core.question_import import preview_questions_import
+
+        try:
+            result = preview_questions_import(payload)
+        except ValueError as exc:
+            return JsonResponse({'error': str(exc)}, status=400)
+        return JsonResponse(result)
+
     from core.question_import import bulk_create_questions
 
     try:

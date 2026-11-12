@@ -24,29 +24,40 @@
   <h1>{{ sub_strand.name }}</h1>
   <p>
     {{ grade.name }} · {{ subject.name }} · Strand: {{ strand.name }}.
-    Use the prompt wizard, paste the AI output below as JSON. Imported questions are <strong>active</strong> by default and ready for quizzes and practice.
+    Generate a prompt, paste the AI JSON, then review each question before it goes live on this sub-strand.
   </p>
 </div>
 
 {% include 'core/partials/ai_question_prompt_wizard.html' %}
 
 <div class="tc-import-panel">
-  <h2>2. Paste AI JSON and import</h2>
+  <h2>2. Paste AI JSON</h2>
   <p style="font-size:0.85rem;color:var(--clr-text-muted);margin:0 0 var(--space-md);">
-    Questions are saved on this sub-strand (id {{ sub_strand.pk }}), even if the JSON has a different id.
-    We try to fix common paste issues (smart quotes, <code>\</code>, <code>\[</code>), but correct JSON from the AI works best.
+    Questions are saved on this sub-strand (id {{ sub_strand.pk }}). We fix common paste issues (smart quotes, line-break backslashes).
   </p>
   <textarea id="tc-import-json" class="tc-textarea tall" spellcheck="false" placeholder='{"questions": [ ... ]}'></textarea>
   <div class="tc-actions">
-    <button type="button" class="btn btn-primary" id="tc-import-submit">Create questions</button>
+    <button type="button" class="btn btn-primary" id="tc-review-parse">Review questions</button>
     <button type="button" class="btn btn-secondary" id="tc-import-example">Load example JSON</button>
   </div>
   <div id="tc-import-result" class="tc-result" role="status"></div>
+</div>
+
+<div id="tc-review-panel" class="tc-review-panel" hidden>
+  <h2>3. Review &amp; publish</h2>
+  <p class="tc-review-summary" id="tc-review-summary"></p>
+  <div class="tc-review-toolbar">
+    <button type="button" class="btn btn-primary" id="tc-approve-all">Approve all valid</button>
+    <button type="button" class="btn btn-secondary" id="tc-revalidate-all">Re-check all</button>
+    <button type="button" class="btn btn-secondary tc-btn-ghost danger" id="tc-discard-review">Discard review</button>
+  </div>
+  <div id="tc-review-list" class="tc-review-list" aria-live="polite"></div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
 {{ example_payload|json_script:"tc-example-payload" }}
+{{ question_quiz_types|json_script:"tc-quiz-types" }}
 <script>
 {% include 'core/partials/question_import_paste.js' %}
 (function () {
@@ -56,9 +67,18 @@
   var examplePayload = JSON.parse(document.getElementById('tc-example-payload').textContent);
 
   var jsonArea = document.getElementById('tc-import-json');
-  var importBtn = document.getElementById('tc-import-submit');
+  var parseBtn = document.getElementById('tc-review-parse');
   var exampleBtn = document.getElementById('tc-import-example');
   var resultBox = document.getElementById('tc-import-result');
+  var reviewPanel = document.getElementById('tc-review-panel');
+  var reviewSummary = document.getElementById('tc-review-summary');
+  var reviewList = document.getElementById('tc-review-list');
+  var approveAllBtn = document.getElementById('tc-approve-all');
+  var revalidateAllBtn = document.getElementById('tc-revalidate-all');
+  var discardBtn = document.getElementById('tc-discard-review');
+
+  var reviewItems = [];
+  var idCounter = 0;
 
   function getCookie(name) {
     var match = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)'));
@@ -70,36 +90,321 @@
     resultBox.textContent = message;
   }
 
-  function applySubStrandDefaults(payload) {
-    if (!payload || !Array.isArray(payload.questions)) return payload;
-    payload.questions.forEach(function (q) {
-      q.sub_strand_id = subStrandId;
-      q.sub_strand_slug = subStrandSlug;
+  function applySubStrandDefaults(questions) {
+    return (questions || []).map(function (q) {
+      var copy = Object.assign({}, q);
+      copy.sub_strand_id = subStrandId;
+      copy.sub_strand_slug = subStrandSlug;
+      return copy;
     });
-    return payload;
   }
 
-  function failedDetails(results) {
-    return (results || [])
-      .filter(function (row) { return row.status === 'failed'; })
-      .slice(0, 5)
-      .map(function (row) {
-        return 'Question ' + (row.index + 1) + ': ' + (row.error || 'failed');
-      })
-      .join('\n');
+  function choiceLetter(index) {
+    return String.fromCharCode(65 + index);
   }
 
-  exampleBtn.addEventListener('click', function () {
-    jsonArea.value = JSON.stringify(examplePayload, null, 2);
-    resultBox.classList.remove('is-visible');
-  });
+  function esc(text) {
+  var div = document.createElement('div');
+    div.textContent = text == null ? '' : String(text);
+    return div.innerHTML;
+  }
 
-  importBtn.addEventListener('click', async function () {
+  async function postPayload(payload) {
+    var response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': getCookie('csrftoken'),
+      },
+      body: JSON.stringify(payload),
+    });
+    var body;
+    try {
+      body = await response.json();
+    } catch (err) {
+      throw new Error('Unexpected server response.');
+    }
+    if (!response.ok) {
+      throw new Error(body.error || 'Request failed.');
+    }
+    return body;
+  }
+
+  async function previewQuestions(questions) {
+    return postPayload({ preview: true, questions: applySubStrandDefaults(questions) });
+  }
+
+  async function createQuestions(questions) {
+    return postPayload({ questions: applySubStrandDefaults(questions) });
+  }
+
+  function updateSummary() {
+    var pending = reviewItems.filter(function (item) { return !item.approved; });
+    var valid = pending.filter(function (item) { return item.status === 'valid'; });
+    var invalid = pending.filter(function (item) { return item.status === 'invalid'; });
+    reviewSummary.textContent =
+      pending.length + ' pending · ' + valid.length + ' ready to approve · ' + invalid.length + ' need fixes';
+    approveAllBtn.disabled = valid.length === 0;
+  }
+
+  function readEditForm(card, item) {
+    var q = Object.assign({}, item.question);
+    q.quiz = card.querySelector('[data-field="quiz"]').value.trim();
+    q.difficulty = card.querySelector('[data-field="difficulty"]').value;
+    q.quiz_type = card.querySelector('[data-field="quiz_type"]').value;
+    q.score = parseInt(card.querySelector('[data-field="score"]').value, 10) || 1;
+    q.choices = [];
+    card.querySelectorAll('[data-choice-row]').forEach(function (row) {
+      var text = row.querySelector('[data-choice-text]').value.trim();
+      if (!text) return;
+      q.choices.push({
+        option: text,
+        is_correct: row.querySelector('[data-choice-correct]').checked,
+        is_active: true,
+      });
+    });
+    return q;
+  }
+
+  function renderChoicesList(choices) {
+    if (!choices || !choices.length) {
+      return '<p style="font-size:0.85rem;color:var(--clr-text-muted);margin:0;">No choices (open-ended / matching).</p>';
+    }
+    var html = '<ul class="tc-q-choices">';
+    choices.forEach(function (choice, index) {
+      var correct = choice.is_correct ? ' is-correct' : '';
+      html += '<li class="tc-q-choice' + correct + '">';
+      html += '<span class="tc-q-choice-letter">' + choiceLetter(index) + '</span>';
+      html += '<span class="tc-q-choice-text">' + esc(choice.option);
+      if (choice.is_correct) {
+        html += ' <span style="color:var(--clr-primary);font-weight:700;font-size:0.78rem;">(correct)</span>';
+      }
+      html += '</span></li>';
+    });
+    html += '</ul>';
+    return html;
+  }
+
+  function renderEditForm(item) {
+    var q = item.question;
+    var difficulties = ['Easy', 'Medium', 'Hard'];
+    var types = JSON.parse(document.getElementById('tc-quiz-types').textContent);
+    var html = '<div class="tc-q-edit-form">';
+    html += '<label>Question</label>';
+    html += '<textarea data-field="quiz" rows="3">' + esc(q.quiz) + '</textarea>';
+    html += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:var(--space-sm);">';
+    html += '<div><label>Difficulty</label><select data-field="difficulty">';
+    difficulties.forEach(function (d) {
+      html += '<option value="' + esc(d) + '"' + (q.difficulty === d ? ' selected' : '') + '>' + esc(d) + '</option>';
+    });
+    html += '</select></div>';
+    html += '<div><label>Type</label><select data-field="quiz_type">';
+    types.forEach(function (t) {
+      html += '<option value="' + esc(t) + '"' + (q.quiz_type === t ? ' selected' : '') + '>' + esc(t) + '</option>';
+    });
+    html += '</select></div>';
+    html += '<div><label>Score</label><input type="text" data-field="score" value="' + esc(String(q.score || 1)) + '"></div>';
+    html += '</div>';
+    html += '<label style="margin-top:var(--space-sm);">Choices</label>';
+    html += '<div class="tc-q-edit-choices" data-choices-wrap>';
+    (q.choices || []).forEach(function (choice, index) {
+      html += '<div class="tc-q-edit-choice-row" data-choice-row>';
+      html += '<input type="text" data-choice-text value="' + esc(choice.option) + '" placeholder="Option text">';
+      html += '<label style="margin:0;font-size:0.78rem;display:flex;align-items:center;gap:0.25rem;"><input type="checkbox" data-choice-correct' + (choice.is_correct ? ' checked' : '') + '> Correct</label>';
+      html += '<button type="button" class="tc-btn-ghost danger" data-remove-choice>Remove</button>';
+      html += '</div>';
+    });
+    html += '</div>';
+    html += '<button type="button" class="tc-btn-ghost" data-add-choice>+ Add choice</button>';
+    html += '<div style="display:flex;gap:var(--space-sm);margin-top:var(--space-md);">';
+    html += '<button type="button" class="btn btn-primary" data-save-edit>Save edits</button>';
+    html += '<button type="button" class="btn btn-secondary" data-cancel-edit>Cancel</button>';
+    html += '</div></div>';
+    return html;
+  }
+
+  function bindCardEvents(card, item) {
+    card.querySelector('[data-action="edit"]').addEventListener('click', function () {
+      item.editing = true;
+      renderReviewList();
+    });
+    card.querySelector('[data-action="remove"]').addEventListener('click', function () {
+      if (!window.confirm('Remove this question from the review list?')) return;
+      reviewItems = reviewItems.filter(function (row) { return row.id !== item.id; });
+      if (!reviewItems.length) {
+        reviewPanel.hidden = true;
+      }
+      renderReviewList();
+    });
+    card.querySelector('[data-action="approve"]').addEventListener('click', function () {
+      approveOne(item);
+    });
+
+    if (item.editing) {
+      card.querySelector('[data-cancel-edit]').addEventListener('click', function () {
+        item.editing = false;
+        renderReviewList();
+      });
+      card.querySelector('[data-add-choice]').addEventListener('click', function () {
+        var wrap = card.querySelector('[data-choices-wrap]');
+        var row = document.createElement('div');
+        row.className = 'tc-q-edit-choice-row';
+        row.setAttribute('data-choice-row', '');
+        row.innerHTML =
+          '<input type="text" data-choice-text value="" placeholder="Option text">' +
+          '<label style="margin:0;font-size:0.78rem;display:flex;align-items:center;gap:0.25rem;">' +
+          '<input type="checkbox" data-choice-correct> Correct</label>' +
+          '<button type="button" class="tc-btn-ghost danger" data-remove-choice>Remove</button>';
+        wrap.appendChild(row);
+        row.querySelector('[data-remove-choice]').addEventListener('click', function () {
+          row.remove();
+        });
+      });
+      card.querySelectorAll('[data-remove-choice]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          btn.closest('[data-choice-row]').remove();
+        });
+      });
+      card.querySelector('[data-save-edit]').addEventListener('click', async function () {
+        item.question = readEditForm(card, item);
+        item.editing = false;
+        await revalidateItem(item);
+        renderReviewList();
+      });
+    }
+  }
+
+  function renderReviewList() {
+    reviewList.innerHTML = '';
+    var visibleIndex = 0;
+    reviewItems.forEach(function (item) {
+      if (item.approved) return;
+      visibleIndex += 1;
+      var card = document.createElement('article');
+      card.className = 'tc-q-card' + (item.status === 'invalid' ? ' is-invalid' : '');
+      var statusClass = item.status === 'valid' ? 'valid' : 'invalid';
+      var statusLabel = item.status === 'valid' ? 'Ready' : 'Fix required';
+      var html = '<div class="tc-q-card-header">';
+      html += '<div class="tc-q-card-title-row">';
+      html += '<span class="tc-q-num">Question ' + visibleIndex + '</span>';
+      html += '<span class="tc-q-badge">' + esc(item.question.quiz_type || 'Type') + '</span>';
+      html += '<span class="tc-q-badge">' + esc(item.question.difficulty || '') + '</span>';
+      html += '<span class="tc-q-badge ' + statusClass + '">' + statusLabel + '</span>';
+      html += '</div>';
+      html += '<div class="tc-q-card-actions">';
+      html += '<button type="button" class="tc-btn-ghost" data-action="edit">Edit</button>';
+      html += '<button type="button" class="tc-btn-ghost danger" data-action="remove">Delete</button>';
+      html += '<button type="button" class="btn btn-primary" style="padding:0.35rem 0.75rem;font-size:0.8rem;" data-action="approve"' +
+        (item.status !== 'valid' ? ' disabled' : '') + '>Approve</button>';
+      html += '</div></div><div class="tc-q-card-body">';
+      if (item.error) {
+        html += '<p class="tc-q-error">' + esc(item.error) + '</p>';
+      }
+      if (item.editing) {
+        html += renderEditForm(item);
+      } else {
+        html += '<p class="tc-q-prompt">' + esc(item.question.quiz) + '</p>';
+        html += renderChoicesList(item.question.choices);
+      }
+      html += '</div>';
+      card.innerHTML = html;
+      bindCardEvents(card, item);
+      reviewList.appendChild(card);
+    });
+    updateSummary();
+  }
+
+  async function revalidateItem(item) {
+    var preview = await previewQuestions([item.question]);
+    var row = (preview.items && preview.items[0]) || {};
+    item.status = row.status || 'invalid';
+    item.error = row.error || '';
+    if (row.question) {
+      item.question = row.question;
+    }
+  }
+
+  async function revalidateAll() {
+    if (!reviewItems.length) return;
+    revalidateAllBtn.disabled = true;
+    revalidateAllBtn.textContent = 'Checking…';
+    try {
+      var pending = reviewItems.filter(function (item) { return !item.approved; });
+      var preview = await previewQuestions(pending.map(function (item) { return item.question; }));
+      (preview.items || []).forEach(function (row, index) {
+        if (!pending[index]) return;
+        pending[index].status = row.status;
+        pending[index].error = row.error || '';
+        if (row.question) {
+          pending[index].question = row.question;
+        }
+      });
+      renderReviewList();
+      showResult(preview.invalid > 0 ? 'warning' : 'success',
+        preview.valid + ' ready, ' + preview.invalid + ' still need fixes.');
+    } catch (err) {
+      showResult('error', err.message);
+    } finally {
+      revalidateAllBtn.disabled = false;
+      revalidateAllBtn.textContent = 'Re-check all';
+    }
+  }
+
+  async function approveOne(item) {
+    if (item.status !== 'valid') return;
+    try {
+      var result = await createQuestions([item.question]);
+      if (result.failed > 0) {
+        var err = (result.results && result.results[0] && result.results[0].error) || 'Could not save.';
+        item.status = 'invalid';
+        item.error = err;
+        renderReviewList();
+        showResult('error', err);
+        return;
+      }
+      item.approved = true;
+      renderReviewList();
+      showResult('success', 'Question saved and active.');
+    } catch (err) {
+      showResult('error', err.message);
+    }
+  }
+
+  async function approveAll() {
+    var pending = reviewItems.filter(function (item) { return !item.approved && item.status === 'valid'; });
+    if (!pending.length) return;
+    approveAllBtn.disabled = true;
+    approveAllBtn.textContent = 'Saving…';
+    try {
+      var result = await createQuestions(pending.map(function (item) { return item.question; }));
+      var msg = 'Created ' + result.created + ' question(s).';
+      (result.results || []).forEach(function (row) {
+        if (!pending[row.index]) return;
+        if (row.status === 'created') {
+          pending[row.index].approved = true;
+        } else if (row.status === 'failed') {
+          pending[row.index].status = 'invalid';
+          pending[row.index].error = row.error || 'Import failed';
+        }
+      });
+      if (result.failed > 0) {
+        msg += ' ' + result.failed + ' failed — fix those cards and approve again.';
+      }
+      renderReviewList();
+      showResult(result.failed > 0 ? 'warning' : 'success', msg);
+    } catch (err) {
+      showResult('error', err.message);
+    } finally {
+      approveAllBtn.disabled = false;
+      approveAllBtn.textContent = 'Approve all valid';
+    }
+  }
+
+  async function loadReviewFromJson() {
     if (!jsonArea.value.trim()) {
       showResult('error', 'Paste JSON from your AI assistant first.');
       return;
     }
-
     var payload;
     try {
       payload = parseJsonPaste(jsonArea.value);
@@ -107,50 +412,54 @@
       showResult('error', 'Invalid JSON: ' + err.message);
       return;
     }
-
-    payload = applySubStrandDefaults(payload);
-    importBtn.disabled = true;
-    importBtn.textContent = 'Importing…';
-
-    try {
-      var response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRFToken': getCookie('csrftoken'),
-        },
-        body: JSON.stringify(payload),
-      });
-
-      var body;
-      try {
-        body = await response.json();
-      } catch (parseErr) {
-        showResult('error', 'Unexpected server response.');
-        return;
-      }
-
-      if (!response.ok) {
-        showResult('error', body.error || 'Import failed.');
-        return;
-      }
-
-      var kind = body.failed > 0 ? 'warning' : 'success';
-      var msg = 'Created ' + body.created + ' question(s)';
-      if (body.failed > 0) {
-        msg += ', ' + body.failed + ' failed.';
-        var details = failedDetails(body.results);
-        if (details) msg += '\n' + details;
-      } else {
-        msg += '. They are active and ready to use.';
-      }
-      showResult(kind, msg);
-    } catch (err) {
-      showResult('error', 'Network error: ' + err.message);
-    } finally {
-      importBtn.disabled = false;
-      importBtn.textContent = 'Create questions';
+    if (!payload.questions || !payload.questions.length) {
+      showResult('error', 'JSON must include a non-empty "questions" array.');
+      return;
     }
+
+    parseBtn.disabled = true;
+    parseBtn.textContent = 'Parsing…';
+    try {
+      var preview = await previewQuestions(payload.questions);
+      reviewItems = (preview.items || []).map(function (row) {
+        return {
+          id: 'q-' + (++idCounter),
+          question: row.question,
+          status: row.status,
+          error: row.error || '',
+          editing: false,
+          approved: false,
+        };
+      });
+      reviewPanel.hidden = false;
+      renderReviewList();
+      reviewPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      showResult(
+        preview.invalid > 0 ? 'warning' : 'success',
+        'Loaded ' + preview.total + ' question(s): ' + preview.valid + ' ready, ' + preview.invalid + ' need edits.'
+      );
+    } catch (err) {
+      showResult('error', err.message);
+    } finally {
+      parseBtn.disabled = false;
+      parseBtn.textContent = 'Review questions';
+    }
+  }
+
+  exampleBtn.addEventListener('click', function () {
+    jsonArea.value = JSON.stringify(examplePayload, null, 2);
+    resultBox.classList.remove('is-visible');
+  });
+
+  parseBtn.addEventListener('click', loadReviewFromJson);
+  approveAllBtn.addEventListener('click', approveAll);
+  revalidateAllBtn.addEventListener('click', revalidateAll);
+  discardBtn.addEventListener('click', function () {
+    if (reviewItems.length && !window.confirm('Discard the current review list?')) return;
+    reviewItems = [];
+    reviewPanel.hidden = true;
+    reviewList.innerHTML = '';
+    resultBox.classList.remove('is-visible');
   });
 })();
 </script>
