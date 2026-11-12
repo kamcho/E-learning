@@ -515,6 +515,34 @@ class UserActionLogTests(TestCase):
         response = self.client.get(reverse('accounts:admin_action_logs'))
         self.assertEqual(response.status_code, 302)
 
+    def test_bulk_question_creates_grouped_in_list(self):
+        from accounts.audit_grouping import build_activity_display_items
+        from accounts.models import UserActionLog
+        from django.utils import timezone
+
+        base = timezone.now()
+        for index in range(5):
+            row = UserActionLog(
+                user=self.guardian,
+                actor_label='Test',
+                action='core.Question.create',
+                verb='create',
+                object_type='core.Question',
+                object_id=str(1000 + index),
+                object_repr=f'Question {index}',
+                metadata={'source': 'model_signal'},
+            )
+            row.save()
+            UserActionLog.objects.filter(pk=row.pk).update(
+                created_at=base.replace(microsecond=index)
+            )
+
+        qs = UserActionLog.objects.filter(action='core.Question.create', user=self.guardian)
+        items = build_activity_display_items(qs)
+        batches = [item for item in items if item['kind'] == 'batch']
+        self.assertEqual(len(batches), 1)
+        self.assertEqual(batches[0]['count'], 5)
+
 
 class TeacherCurriculumViewTests(TestCase):
     @classmethod

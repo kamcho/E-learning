@@ -75,9 +75,9 @@
         </tr>
       </thead>
       <tbody>
-        {% for row in log_rows %}
+        {% for row in activity_rows %}
         {% with log=row.log %}
-        <tr>
+        <tr class="activity-log-row" data-href="{{ row.detail_url }}" style="cursor:pointer;">
           <td class="al-timestamp">
             <span class="al-date">{{ log.created_at|date:"M d, Y" }}</span>
             <span class="al-time">{{ log.created_at|date:"H:i:s" }}</span>
@@ -94,12 +94,17 @@
             <span class="al-cat al-cat--{{ row.category_slug }}">{{ row.category_label }}</span>
           </td>
           <td class="al-action">{{ row.action_label }}</td>
-          <td class="al-desc">{{ row.description }}</td>
+          <td class="al-desc">
+            {{ row.description }}
+            {% if row.is_batch %}
+              <span class="al-batch-badge">{{ row.batch_count }} records</span>
+            {% endif %}
+          </td>
           <td>
             {% if row.target_label %}
             <div class="al-target">
               <span class="al-target-pill">{{ row.target_label }}</span>
-              <span class="al-target-id">#{{ row.target_id }}</span>
+              <span class="al-target-id">{% if row.is_batch %}batch{% else %}#{{ row.target_id }}{% endif %}</span>
             </div>
             {% else %}
             <span class="al-target-id">—</span>
@@ -135,4 +140,12 @@
     <a href="{{ django_admin_url }}" class="activity-logs-admin-link" target="_blank" rel="noopener">Open raw logs in Django Admin</a>
   </div>
 </div>
+<script>
+  document.querySelectorAll('.activity-log-row[data-href]').forEach(function (row) {
+    row.addEventListener('click', function (event) {
+      if (event.target.closest('a, button, input, select')) return;
+      window.location = row.getAttribute('data-href');
+    });
+  });
+</script>
 {% endblock %}

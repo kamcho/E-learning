@@ -283,4 +283,54 @@
     color: var(--clr-primary);
     text-decoration: underline;
   }
+
+  .al-batch-badge {
+    display: inline-block;
+    margin-left: 0.35rem;
+    padding: 0.15rem 0.45rem;
+    border-radius: var(--radius-sm);
+    background: var(--clr-bg);
+    border: 1px solid var(--clr-border);
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--clr-text-muted);
+    white-space: nowrap;
+  }
+
+  .al-detail-dl {
+    display: grid;
+    grid-template-columns: 10rem 1fr;
+    gap: 0.65rem 1rem;
+    margin: 0;
+    font-size: 0.88rem;
+  }
+
+  .al-detail-dl dt {
+    margin: 0;
+    font-weight: 700;
+    color: var(--clr-text-muted);
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  .al-detail-dl dd {
+    margin: 0;
+    color: var(--clr-text);
+    word-break: break-word;
+  }
+
+  .al-detail-meta {
+    font-family: var(--font-mono, ui-monospace, monospace);
+    font-size: 0.8rem;
+    background: var(--clr-bg);
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-md);
+    overflow-x: auto;
+    white-space: pre-wrap;
+  }
+
+  .al-exists-pill--yes { color: #027a48; font-weight: 600; }
+  .al-exists-pill--no { color: var(--clr-text-muted); }
 </style>

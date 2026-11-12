@@ -1,0 +1,144 @@
+{% extends 'accounts/admin_base.html' %}
+
+{% block title %}Activity detail — Admin — Soma Smart{% endblock %}
+
+{% block extra_head %}
+{% include 'accounts/partials/admin_action_logs_styles.html' %}
+{% include 'accounts/partials/admin_list_styles.html' %}
+<style>
+  .activity-detail-page { max-width: 56rem; margin: 0 auto; padding-bottom: var(--space-2xl); }
+  .activity-detail-back {
+    display: inline-block;
+    margin-bottom: var(--space-md);
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--clr-primary);
+    text-decoration: none;
+  }
+  .activity-detail-back:hover { text-decoration: underline; }
+  .activity-detail-head { margin-bottom: var(--space-lg); }
+  .activity-detail-head h1 {
+    font-family: var(--font-heading);
+    font-size: 1.5rem;
+    font-weight: 800;
+    margin: 0 0 0.35rem;
+  }
+  .activity-detail-head p { margin: 0; color: var(--clr-text-muted); font-size: 0.92rem; }
+  .activity-detail-card {
+    background: var(--clr-surface);
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-lg) var(--space-xl);
+    margin-bottom: var(--space-lg);
+    box-shadow: var(--shadow-sm);
+  }
+  .activity-detail-card h2 {
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--clr-text-muted);
+    margin: 0 0 var(--space-md);
+  }
+</style>
+{% endblock %}
+
+{% block admin_content %}
+<div class="activity-detail-page">
+  <a href="{{ list_url }}" class="activity-detail-back">&larr; Back to activity logs</a>
+
+  <header class="activity-detail-head">
+    <h1>{% if is_batch %}Batch activity ({{ batch_count }} records){% else %}Activity detail{% endif %}</h1>
+    <p>{{ description }}</p>
+  </header>
+
+  <section class="activity-detail-card" aria-labelledby="al-summary-heading">
+    <h2 id="al-summary-heading">Summary</h2>
+    <dl class="al-detail-dl">
+      <dt>Timestamp</dt>
+      <dd>{{ primary.created_at|date:"M d, Y H:i:s" }}</dd>
+      <dt>Performed by</dt>
+      <dd>
+        {% if primary.user %}{{ primary.user.full_name }} ({{ primary.user.phone|default:primary.user.email }}){% else %}{{ primary.actor_label|default:"Anonymous" }}{% endif %}
+      </dd>
+      <dt>Category</dt>
+      <dd><span class="al-cat al-cat--{{ category_slug }}">{{ category_label }}</span></dd>
+      <dt>Action</dt>
+      <dd>{{ action_label }}</dd>
+      <dt>Audit code</dt>
+      <dd><code>{{ primary.action }}</code></dd>
+      {% if primary.ip_address %}
+      <dt>IP address</dt>
+      <dd>{{ primary.ip_address }}</dd>
+      {% endif %}
+      {% if not is_batch and primary.request_path %}
+      <dt>Request path</dt>
+      <dd>{{ primary.request_method }} {{ primary.request_path }}</dd>
+      {% endif %}
+      {% if is_batch %}
+      <dt>Database rows</dt>
+      <dd>{{ batch_count }} separate audit entries (grouped for display only)</dd>
+      {% endif %}
+    </dl>
+  </section>
+
+  {% if not is_batch and primary.metadata %}
+  <section class="activity-detail-card" aria-labelledby="al-meta-heading">
+    <h2 id="al-meta-heading">Metadata</h2>
+    <pre class="al-detail-meta">{{ metadata_pretty }}</pre>
+  </section>
+  {% endif %}
+
+  <section class="activity-detail-card" aria-labelledby="al-affected-heading">
+    <h2 id="al-affected-heading">Affected object{% if is_batch %}s{% endif %}</h2>
+    <div class="activity-logs-table-wrap" style="border:none;box-shadow:none;">
+      <table class="activity-logs-table">
+        <thead>
+          <tr>
+            <th>Type</th>
+            <th>ID</th>
+            <th>Description</th>
+            <th>Status</th>
+            <th>Logged at</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in affected_page %}
+          <tr>
+            <td>{{ row.object_type|default:"—" }}</td>
+            <td class="al-target-id">#{{ row.object_id|default:"—" }}</td>
+            <td class="al-desc">{{ row.object_repr|truncatechars:240 }}</td>
+            <td>
+              {% if row.still_exists %}
+                <span class="al-exists-pill--yes">Still in database</span>
+              {% else %}
+                <span class="al-exists-pill--no">Removed or unavailable</span>
+              {% endif %}
+            </td>
+            <td class="al-timestamp">
+              <span class="al-date">{{ row.log.created_at|date:"M d, Y" }}</span>
+              <span class="al-time">{{ row.log.created_at|date:"H:i:s" }}</span>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="5" style="text-align:center;padding:var(--space-lg);color:var(--clr-text-muted);">No object reference stored.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% if affected_page.paginator.num_pages > 1 %}
+    <nav class="admin-pagination" aria-label="Affected objects pages" style="margin-top:var(--space-md);">
+      {% if affected_page.has_previous %}
+        <a href="?{% if request.GET.ids %}ids={{ request.GET.ids|urlencode }}&amp;{% endif %}affected_page={{ affected_page.previous_page_number }}">Previous</a>
+      {% endif %}
+      <span>Page {{ affected_page.number }} of {{ affected_page.paginator.num_pages }}</span>
+      {% if affected_page.has_next %}
+        <a href="?{% if request.GET.ids %}ids={{ request.GET.ids|urlencode }}&amp;{% endif %}affected_page={{ affected_page.next_page_number }}">Next</a>
+      {% endif %}
+    </nav>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

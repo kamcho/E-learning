@@ -35,9 +35,6 @@ def category_for_log(log):
         return 'LEARNERS', 'learners'
     if object_type.startswith('accounts.'):
         return 'USER ACCOUNTS', 'accounts'
-    meta = log.metadata if isinstance(log.metadata, dict) else {}
-    if meta.get('source') == 'http_middleware':
-        return 'HTTP REQUEST', 'http'
     return 'GENERAL', 'general'
 
 
@@ -80,9 +77,6 @@ def description_for_log(log):
         return f'Updated {type_short}: {obj_name}'[:500]
     if verb == 'delete' and obj_name:
         return f'Deleted {type_short}: {obj_name}'[:500]
-    if log.request_path and meta.get('source') == 'http_middleware':
-        code = f' (HTTP {log.status_code})' if log.status_code else ''
-        return f'{log.request_method or "POST"} {log.request_path}{code}'[:500]
     if obj_name:
         return f'{type_short}: {obj_name}'[:500]
     if log.request_path:
@@ -150,8 +144,6 @@ def filter_queryset_by_category(qs, slug):
         return qs.filter(object_type__istartswith='accounts.').exclude(
             object_type__istartswith='accounts.student'
         )
-    if slug == 'http':
-        return qs.filter(metadata__source='http_middleware')
     if slug == 'general':
         known = (
             Q(action__istartswith='auth.')
@@ -163,7 +155,6 @@ def filter_queryset_by_category(qs, slug):
             | Q(action__icontains='curriculum')
             | Q(object_type__istartswith='core.')
             | Q(object_type__istartswith='accounts.')
-            | Q(metadata__source='http_middleware')
         )
         return qs.exclude(known)
     return qs
@@ -178,6 +169,36 @@ LOG_CATEGORY_CHOICES = [
     ('assessments', 'ASSESSMENTS'),
     ('learners', 'LEARNERS'),
     ('accounts', 'USER ACCOUNTS'),
-    ('http', 'HTTP REQUEST'),
     ('general', 'GENERAL'),
 ]
+
+
+def try_fetch_affected_object(log):
+    """Load the live model row for an audit entry when it still exists."""
+    if not log.object_type or not log.object_id:
+        return None
+    from django.apps import apps
+
+    try:
+        app_label, model_name = log.object_type.split('.', 1)
+        model = apps.get_model(app_label, model_name)
+    except (ValueError, LookupError):
+        return None
+    if model is None:
+        return None
+    try:
+        return model.objects.filter(pk=log.object_id).first()
+    except Exception:
+        return None
+
+
+def affected_object_summary(log, live_obj=None):
+    live_obj = live_obj if live_obj is not None else try_fetch_affected_object(log)
+    return {
+        'log': log,
+        'live_obj': live_obj,
+        'still_exists': live_obj is not None,
+        'object_type': log.object_type,
+        'object_id': log.object_id,
+        'object_repr': (log.object_repr or '').strip() or '—',
+    }

@@ -10,7 +10,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login as auth_login, logout as auth_logout, authenticate
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.http import FileResponse, JsonResponse
+from django.http import FileResponse, Http404, JsonResponse
 from django.views.decorators.http import require_http_methods, require_POST
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.db import connections
@@ -1328,11 +1328,8 @@ def admin_action_logs_view(request):
 
     from django.utils.dateparse import parse_date
 
-    from accounts.audit_display import (
-        LOG_CATEGORY_CHOICES,
-        enrich_log_row,
-        filter_queryset_by_category,
-    )
+    from accounts.audit_display import LOG_CATEGORY_CHOICES, filter_queryset_by_category
+    from accounts.audit_grouping import build_activity_display_items, detail_ids_query
     from accounts.models import MyUser, UserActionLog
 
     search = request.GET.get('q', '').strip()
@@ -1341,7 +1338,11 @@ def admin_action_logs_view(request):
     date_from = parse_date(request.GET.get('date_from', '').strip() or '')
     date_to = parse_date(request.GET.get('date_to', '').strip() or '')
 
-    logs_qs = UserActionLog.objects.select_related('user').order_by('-created_at')
+    logs_qs = (
+        UserActionLog.objects.select_related('user')
+        .exclude(verb='request')
+        .order_by('-created_at')
+    )
     if search:
         logs_qs = logs_qs.filter(
             Q(actor_label__icontains=search)
@@ -1359,8 +1360,24 @@ def admin_action_logs_view(request):
         logs_qs = logs_qs.filter(created_at__lte=datetime.combine(date_to, time.max))
     logs_qs = filter_queryset_by_category(logs_qs, category)
 
-    page_obj = Paginator(logs_qs, 20).get_page(request.GET.get('page'))
-    log_rows = [enrich_log_row(row) for row in page_obj.object_list]
+    display_items = build_activity_display_items(logs_qs)
+    page_obj = Paginator(display_items, 20).get_page(request.GET.get('page'))
+
+    activity_rows = []
+    for item in page_obj.object_list:
+        row = dict(item['row'])
+        row['is_batch'] = item['kind'] == 'batch'
+        row['batch_count'] = item.get('count')
+        if item['kind'] == 'batch':
+            row['detail_url'] = (
+                f"{reverse('accounts:admin_action_log_batch')}?ids={detail_ids_query(item['log_ids'])}"
+            )
+        else:
+            row['detail_url'] = reverse(
+                'accounts:admin_action_log_detail',
+                kwargs={'log_id': item['log_id']},
+            )
+        activity_rows.append(row)
 
     performer_choices = (
         MyUser.objects.filter(action_logs__isnull=False)
@@ -1370,7 +1387,7 @@ def admin_action_logs_view(request):
 
     return render(request, 'accounts/admin_action_logs.html', {
         'page_obj': page_obj,
-        'log_rows': log_rows,
+        'activity_rows': activity_rows,
         'search': search,
         'category': category,
         'category_choices': LOG_CATEGORY_CHOICES,
@@ -1380,6 +1397,75 @@ def admin_action_logs_view(request):
         'performer_choices': performer_choices,
         'pagination_extra': _pagination_extra_params(request, ['page']),
         'django_admin_url': reverse('admin:accounts_useractionlog_changelist'),
+    })
+
+
+@login_required(login_url='accounts:signin')
+def admin_action_log_detail_view(request, log_id=None):
+    """Single audit entry or grouped batch (same DB rows, one screen)."""
+    denied = _admin_access_or_redirect(request)
+    if denied:
+        return denied
+
+    from django.core.paginator import Paginator as DjPaginator
+
+    from accounts.audit_display import (
+        action_label_for_log,
+        affected_object_summary,
+        category_for_log,
+        description_for_log,
+        enrich_log_row,
+    )
+    from accounts.audit_grouping import description_for_batch
+    from accounts.models import UserActionLog
+
+    ids_param = request.GET.get('ids', '').strip()
+    id_list = []
+    if ids_param:
+        id_list = [int(part) for part in ids_param.split(',') if part.isdigit()][:500]
+    elif log_id is not None:
+        id_list = [log_id]
+
+    if not id_list:
+        messages.error(request, 'No activity log entry specified.')
+        return redirect('accounts:admin_action_logs')
+
+    logs = list(
+        UserActionLog.objects.select_related('user')
+        .filter(pk__in=id_list)
+        .order_by('-created_at')
+    )
+    if not logs:
+        raise Http404('Activity log entries not found.')
+
+    is_batch = len(logs) > 1
+    primary = logs[0]
+    category_label, category_slug = category_for_log(primary)
+    summary = enrich_log_row(primary)
+    if is_batch:
+        summary['description'] = description_for_batch(logs)
+
+    affected_rows = [affected_object_summary(entry) for entry in logs]
+    affected_page = DjPaginator(affected_rows, 50).get_page(request.GET.get('affected_page'))
+
+    metadata_pretty = ''
+    if not is_batch and isinstance(primary.metadata, dict) and primary.metadata:
+        metadata_pretty = json.dumps(primary.metadata, indent=2, default=str)
+
+    return render(request, 'accounts/admin_action_log_detail.html', {
+        'logs': logs,
+        'primary': primary,
+        'is_batch': is_batch,
+        'batch_count': len(logs),
+        'category_label': category_label,
+        'category_slug': category_slug,
+        'action_label': action_label_for_log(primary),
+        'description': summary['description'] if is_batch else description_for_log(primary),
+        'summary_row': summary,
+        'affected_page': affected_page,
+        'affected_pagination_extra': _pagination_extra_params(request, ['affected_page']),
+        'list_url': reverse('accounts:admin_action_logs'),
+        'metadata_pretty': metadata_pretty,
     })
 
 

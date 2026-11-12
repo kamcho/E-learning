@@ -93,6 +93,16 @@ urlpatterns = [
     path('admin-dashboard/', views.admin_dashboard_view, name='admin_dashboard'),
     path('admin/database-backup/', views.admin_database_backup_view, name='admin_database_backup'),
     path('admin/action-logs/', views.admin_action_logs_view, name='admin_action_logs'),
+    path(
+        'admin/action-logs/batch/',
+        views.admin_action_log_detail_view,
+        name='admin_action_log_batch',
+    ),
+    path(
+        'admin/action-logs/<int:log_id>/',
+        views.admin_action_log_detail_view,
+        name='admin_action_log_detail',
+    ),
     path('admin/users/', views.admin_users_list_view, name='admin_users_list'),
     path('admin/students/', views.admin_students_list_view, name='admin_students_list'),
     path('admin-profile/', views.admin_profile_view, name='admin_profile'),
