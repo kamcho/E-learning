@@ -18,8 +18,9 @@ def normalize_question_math_text(text: str) -> str:
     if not text:
         return text
     text = text.strip()
-    text = text.replace(r'\_\_\_', r'$\underline{\quad\quad\quad}$')
-    text = re.sub(r'\\{3,}', r'$\underline{\quad\quad\quad}$', text)
+    blank = r'$\underline{\quad\quad\quad}$'
+    text = text.replace(r'\_\_\_', blank)
+    text = re.sub(r'\\{3,}', blank, text)
 
     def mixed_replace(match):
         whole, num, den = match.group(1), match.group(2), match.group(3)

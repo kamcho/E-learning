@@ -1978,6 +1978,7 @@ def teacher_curriculum_sub_strand_view(request, grade_slug, subject_slug, strand
         'example_json': json.dumps(example_payload, indent=2),
         'example_payload': example_payload,
         'import_api_url': reverse('core:bulk_create_questions_api'),
+        'reformat_draft_api_url': reverse('core:question_reformat_math_draft'),
         'strand_url': reverse(
             'accounts:teacher_curriculum_strand',
             kwargs={

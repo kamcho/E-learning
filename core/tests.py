@@ -20,6 +20,19 @@ from subscriptions.models import GuestDemoPayment, SubscriptionPlan
 User = get_user_model()
 
 
+class QuestionMathNormalizeTests(TestCase):
+    def test_plain_fraction_becomes_latex(self):
+        from core.question_math_normalize import normalize_question_math_text
+
+        self.assertIn('\\frac{1}{3}', normalize_question_math_text('Start at 1/3 and add 1/6.'))
+
+    def test_mixed_number(self):
+        from core.question_math_normalize import normalize_question_math_text
+
+        out = normalize_question_math_text('The answer is 1 1/4 litres.')
+        self.assertIn('1\\frac{1}{4}', out)
+
+
 class JsonPasteTests(TestCase):
     def test_normalize_removes_line_continuation_backslashes(self):
         # Chat UIs often insert "\" before line breaks — invalid JSON until stripped.

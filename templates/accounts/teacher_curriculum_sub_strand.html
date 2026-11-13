@@ -5,6 +5,12 @@
 {% block extra_head %}
 {% include 'accounts/partials/admin_list_styles.html' %}
 {% include 'accounts/partials/teacher_curriculum_styles.html' %}
+{% include 'core/partials/question_rich_styles.html' %}
+{% include 'core/partials/question_math_assets.html' %}
+<style>
+  .tc-q-prompt.question-rich-text { font-size: 0.95rem; line-height: 1.55; margin: 0 0 var(--space-sm); }
+  .tc-q-choice-text.question-rich-text { display: inline; }
+</style>
 {% endblock %}
 
 {% block admin_content %}
@@ -64,6 +70,9 @@
   var subStrandId = {{ sub_strand.pk }};
   var subStrandSlug = '{{ sub_strand.slug|escapejs }}';
   var apiUrl = '{{ import_api_url|escapejs }}';
+  var reformatDraftUrl = '{{ reformat_draft_api_url|escapejs }}';
+  var curriculumGradeName = '{{ grade.name|escapejs }}';
+  var curriculumSubjectName = '{{ subject.name|escapejs }}';
   var examplePayload = JSON.parse(document.getElementById('tc-example-payload').textContent);
 
   var jsonArea = document.getElementById('tc-import-json');
@@ -175,11 +184,11 @@
       var correct = choice.is_correct ? ' is-correct' : '';
       html += '<li class="tc-q-choice' + correct + '">';
       html += '<span class="tc-q-choice-letter">' + choiceLetter(index) + '</span>';
-      html += '<span class="tc-q-choice-text">' + esc(choice.option);
+      html += '<span class="tc-q-choice-text question-rich-text" data-math-content data-choice-preview></span>';
       if (choice.is_correct) {
         html += ' <span style="color:var(--clr-primary);font-weight:700;font-size:0.78rem;">(correct)</span>';
       }
-      html += '</span></li>';
+      html += '</li>';
     });
     html += '</ul>';
     return html;
@@ -224,6 +233,12 @@
   }
 
   function bindCardEvents(card, item) {
+    var formatBtn = card.querySelector('[data-action="format-math"]');
+    if (formatBtn) {
+      formatBtn.addEventListener('click', function () {
+        formatMathDraft(item, formatBtn);
+      });
+    }
     card.querySelector('[data-action="edit"]').addEventListener('click', function () {
       item.editing = true;
       renderReviewList();
@@ -292,6 +307,7 @@
       html += '<span class="tc-q-badge ' + statusClass + '">' + statusLabel + '</span>';
       html += '</div>';
       html += '<div class="tc-q-card-actions">';
+      html += '<button type="button" class="tc-btn-ghost" data-action="format-math" title="Wrap fractions and algebra in LaTeX">Format math (AI)</button>';
       html += '<button type="button" class="tc-btn-ghost" data-action="edit">Edit</button>';
       html += '<button type="button" class="tc-btn-ghost danger" data-action="remove">Delete</button>';
       html += '<button type="button" class="btn btn-primary" style="padding:0.35rem 0.75rem;font-size:0.8rem;" data-action="approve"' +
@@ -303,15 +319,59 @@
       if (item.editing) {
         html += renderEditForm(item);
       } else {
-        html += '<p class="tc-q-prompt">' + esc(item.question.quiz) + '</p>';
+        html += '<div class="tc-q-prompt question-rich-text" data-math-content data-q-quiz-preview></div>';
         html += renderChoicesList(item.question.choices);
       }
       html += '</div>';
       card.innerHTML = html;
+      if (!item.editing) {
+        var promptEl = card.querySelector('[data-q-quiz-preview]');
+        if (promptEl) promptEl.textContent = item.question.quiz || '';
+        card.querySelectorAll('[data-choice-preview]').forEach(function (el, choiceIndex) {
+          var choice = (item.question.choices || [])[choiceIndex];
+          if (choice) el.textContent = choice.option || '';
+        });
+        if (window.renderQuestionMath) {
+          window.renderQuestionMath(card, { force: true });
+        }
+      }
       bindCardEvents(card, item);
       reviewList.appendChild(card);
     });
     updateSummary();
+  }
+
+  async function formatMathDraft(item, button) {
+    if (button) button.disabled = true;
+    try {
+      var res = await fetch(reformatDraftUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': getCookie('csrftoken'),
+        },
+        body: JSON.stringify({
+          question: item.question,
+          grade_level: curriculumGradeName,
+          subject: curriculumSubjectName,
+        }),
+      });
+      var body = await res.json();
+      if (!res.ok) throw new Error(body.error || 'Format failed.');
+      item.question.quiz = body.reformatted.quiz;
+      (body.reformatted.options || []).forEach(function (row, index) {
+        if (item.question.choices && item.question.choices[index]) {
+          item.question.choices[index].option = row.option;
+        }
+      });
+      await revalidateItem(item);
+      renderReviewList();
+      showResult('success', 'Math formatting applied — check the preview.');
+    } catch (err) {
+      showResult('error', err.message || 'Format failed.');
+    } finally {
+      if (button) button.disabled = false;
+    }
   }
 
   async function revalidateItem(item) {
