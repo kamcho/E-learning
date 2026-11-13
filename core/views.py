@@ -1320,8 +1320,6 @@ def bulk_create_questions_api_view(request):
 )
 def question_reformat_math_api_view(request, question_uuid):
     """Preview or apply AI LaTeX reformatting for a question stem and choices."""
-    from core.ai import REFORMAT_QUESTION_MATH_TASK, ai_service
-    from core.ai.exceptions import AIServiceError
     from core.question_reformat import apply_question_math_reformat, question_option_payload
     from subjects.views import _user_can_reformat_question
 
@@ -1356,39 +1354,35 @@ def question_reformat_math_api_view(request, question_uuid):
         options = payload.get('options')
         if not quiz or not isinstance(options, list):
             return JsonResponse({'error': 'quiz and options are required to apply.'}, status=400)
+        from core.question_reformat_ai import sanitize_manual_apply
+
+        cleaned = sanitize_manual_apply(quiz=quiz, options=options)
         try:
-            apply_question_math_reformat(question, quiz=quiz, options=options)
+            apply_question_math_reformat(
+                question,
+                quiz=cleaned['quiz'],
+                options=cleaned['options'],
+            )
         except ValueError as exc:
             return JsonResponse({'error': str(exc)}, status=400)
         return JsonResponse({'ok': True, 'question_uuid': str(question.uuid)})
 
     option_payload = question_option_payload(question)
-    try:
-        result = ai_service.run(
-            REFORMAT_QUESTION_MATH_TASK,
-            quiz=question.quiz,
-            quiz_type=question.quiz_type,
-            options=[
-                {
-                    'uuid': str(row['uuid']),
-                    'option': row['option'],
-                    'is_correct': row['is_correct'],
-                }
-                for row in option_payload
-            ],
-            grade_level=grade_name,
-            subject=subject.name,
-        )
-    except AIServiceError as exc:
-        return JsonResponse({'error': str(exc)}, status=502)
-    except ValueError as exc:
-        return JsonResponse({'error': str(exc)}, status=400)
+    from core.question_reformat_ai import build_original_payload, reformat_question_math_with_fallback
 
-    return JsonResponse(_reformat_math_response(question, result, option_payload))
+    result = reformat_question_math_with_fallback(
+        quiz=question.quiz,
+        quiz_type=question.quiz_type,
+        options=option_payload,
+        grade_level=grade_name,
+        subject=subject.name,
+    )
+    return JsonResponse(_reformat_math_response(question, result, option_payload, result_meta=result))
 
 
-def _reformat_math_response(question, result, option_payload):
-    return {
+def _reformat_math_response(question, result, option_payload, result_meta=None):
+    meta = result_meta or result
+    body = {
         'ok': True,
         'question_uuid': str(question.uuid),
         'original': {
@@ -1402,7 +1396,9 @@ def _reformat_math_response(question, result, option_payload):
             'quiz': result['quiz'],
             'options': result['options'],
         },
+        'used_fallback': bool(meta.get('used_fallback')),
     }
+    return body
 
 
 @login_required(login_url='accounts:signin')
@@ -1425,9 +1421,8 @@ def _reformat_math_response(question, result, option_payload):
 )
 def question_reformat_math_draft_api_view(request):
     """AI LaTeX reformat for unsaved questions in the import review UI."""
-    from core.ai import REFORMAT_QUESTION_MATH_TASK, ai_service
-    from core.ai.exceptions import AIServiceError
     from core.question_math_normalize import normalize_question_item_math
+    from core.question_reformat_ai import reformat_question_math_with_fallback
 
     if not _is_quiz_builder_allowed(request.user):
         return JsonResponse({'error': 'Permission denied.'}, status=403)
@@ -1455,26 +1450,13 @@ def question_reformat_math_draft_api_view(request):
     grade_level = (payload.get('grade_level') or '').strip()
     subject = (payload.get('subject') or '').strip()
 
-    try:
-        result = ai_service.run(
-            REFORMAT_QUESTION_MATH_TASK,
-            quiz=quiz,
-            quiz_type=(question.get('quiz_type') or 'Multiple Choice').strip(),
-            options=[
-                {
-                    'uuid': row['uuid'],
-                    'option': row['option'],
-                    'is_correct': row['is_correct'],
-                }
-                for row in option_payload
-            ],
-            grade_level=grade_level,
-            subject=subject,
-        )
-    except AIServiceError as exc:
-        return JsonResponse({'error': str(exc)}, status=502)
-    except ValueError as exc:
-        return JsonResponse({'error': str(exc)}, status=400)
+    result = reformat_question_math_with_fallback(
+        quiz=quiz,
+        quiz_type=(question.get('quiz_type') or 'Multiple Choice').strip(),
+        options=option_payload,
+        grade_level=grade_level,
+        subject=subject,
+    )
 
     return JsonResponse({
         'ok': True,
@@ -1492,6 +1474,7 @@ def question_reformat_math_draft_api_view(request):
                 for row in result['options']
             ],
         },
+        'used_fallback': result.get('used_fallback', False),
     })
 
 

@@ -28,14 +28,28 @@
   }
 
   function renderPanel(panel, quiz, options) {
-    var html = '<div class="question-rich-text">' + escapeHtml(quiz) + '</div>';
+    panel.innerHTML = '';
+    panel.setAttribute('data-math-content', '');
+    var quizEl = document.createElement('div');
+    quizEl.className = 'question-rich-text';
+    quizEl.setAttribute('data-math-content', '');
+    quizEl.textContent = quiz || '';
+    panel.appendChild(quizEl);
     if (options && options.length) {
       options.forEach(function (row, index) {
-        html += '<div class="qr-option-row"><strong>' + String.fromCharCode(65 + index) + '.</strong> ' +
-          '<span class="option-rich-text">' + escapeHtml(row.option) + '</span></div>';
+        var rowEl = document.createElement('div');
+        rowEl.className = 'qr-option-row';
+        var label = document.createElement('strong');
+        label.textContent = String.fromCharCode(65 + index) + '. ';
+        rowEl.appendChild(label);
+        var span = document.createElement('span');
+        span.className = 'option-rich-text';
+        span.setAttribute('data-math-content', '');
+        span.textContent = row.option || '';
+        rowEl.appendChild(span);
+        panel.appendChild(rowEl);
       });
     }
-    panel.innerHTML = html;
     delete panel.dataset.mathRendered;
     if (window.renderQuestionMath) {
       window.renderQuestionMath(panel, { force: true });
@@ -90,6 +104,9 @@
       renderPanel(panelAfter, body.reformatted.quiz, body.reformatted.options);
       pendingReformat = body.reformatted;
       applyBtn.disabled = false;
+      if (body.used_fallback) {
+        showError('AI was unavailable — applied local fraction formatting instead.');
+      }
     } catch (err) {
       showError(err.message || 'Request failed.');
       panelAfter.innerHTML = '';

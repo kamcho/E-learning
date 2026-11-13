@@ -15,6 +15,7 @@ Rules:
 - Sequences like 1/3, 1/2, 2/3, 5/6 may stay as comma-separated $\\frac{1}{3}$, $\\frac{1}{2}$, $\\frac{2}{3}$, $\\frac{5}{6}$ inside one $...$ group or as separate $...$ tokens — pick the clearer layout.
 - Replace broken blank markers (e.g. \\_\\_\\_ , ___) with $\\underline{\\quad\\quad\\quad}$ or plain "______" outside math if it reads better.
 - Fix stray backslashes from bad imports (e.g. \\_\\_\\_) without doubling backslashes for the database (single backslashes in JSON strings for LaTeX commands like \\frac).
+- CRITICAL for JSON output: double every backslash (e.g. \\\\frac{1}{3} in JSON so the stored text is \\frac{1}{3}). A single \\f before rac is invalid and breaks fractions.
 - Plain English words stay outside $...$.
 - For True/False or text-only options with no numbers, return unchanged unless a fraction is present.
 
@@ -76,7 +77,7 @@ Options (keep uuid; only reformat option text):
             model=self.client.model,
             api_key=self.client.api_key,
             timeout=self.client.timeout,
-            max_tokens=max(500, self.client.max_tokens),
+            max_tokens=max(1200, self.client.max_tokens),
         )
         raw = client.chat(
             system_prompt=SYSTEM_PROMPT,
@@ -111,8 +112,14 @@ Options (keep uuid; only reformat option text):
                 raise AITaskError(f'AI reformat did not return option uuid {uid}.')
             normalized.append({'uuid': uid, 'option': by_uuid[uid]})
 
+        from core.question_reformat_sanitize import sanitize_reformat_payload
+
+        cleaned = sanitize_reformat_payload(
+            quiz=data['quiz'].strip(),
+            options=normalized,
+        )
         return {
             'task': self.task_name,
-            'quiz': data['quiz'].strip(),
-            'options': normalized,
+            'quiz': cleaned['quiz'],
+            'options': cleaned['options'],
         }

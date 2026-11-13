@@ -8,6 +8,31 @@ _PLAIN_FRACTION = re.compile(
 _MIXED_NUMBER = re.compile(
     r'(?<!\$)(?<![\w\\])(\d+)\s+(\d{1,2})\s*/\s*(\d{1,2})(?!\s*/)(?![\d%])',
 )
+# AI JSON often emits "\frac" which JSON parses as form-feed (\\f) + "rac".
+_FORM_FEED_FRAC = re.compile(r'\x0c\s*rac(\{|\b)')
+_DIGIT_BROKEN_FRAC = re.compile(r'(\d)\s*rac\{')
+_BARE_RAC = re.compile(r'(?<!\\)(?<![A-Za-z$])rac\{')
+_TAB_TIMES = re.compile(r'\t+\s*imes\b')
+
+
+def repair_broken_latex_escapes(text: str) -> str:
+    """Fix LaTeX corrupted by JSON \\f, \\t, or missing backslashes after AI/import."""
+    if not text:
+        return text
+    text = _FORM_FEED_FRAC.sub(r'\\frac\1', text)
+    text = _DIGIT_BROKEN_FRAC.sub(r'\1\\frac{', text)
+    text = _BARE_RAC.sub(r'\\frac{', text)
+    text = _TAB_TIMES.sub(r'\\times', text)
+    text = text.replace('\x0c', '')
+    text = text.replace('\x08eta', '\\beta')
+    text = text.replace('\x08ar', '\\bar')
+    return text
+
+
+def finalize_math_display_text(text: str) -> str:
+    """Repair JSON/AI glitches, then normalize plain fractions for MathJax."""
+    text = repair_broken_latex_escapes((text or '').strip())
+    return normalize_question_math_text(text)
 
 
 def normalize_question_math_text(text: str) -> str:
@@ -17,10 +42,10 @@ def normalize_question_math_text(text: str) -> str:
     """
     if not text:
         return text
-    text = text.strip()
+    text = repair_broken_latex_escapes(text.strip())
     blank = r'$\underline{\quad\quad\quad}$'
     text = text.replace(r'\_\_\_', blank)
-    text = re.sub(r'\\{3,}', blank, text)
+    text = re.sub(r'\\{3,}', lambda _m: blank, text)
 
     def mixed_replace(match):
         whole, num, den = match.group(1), match.group(2), match.group(3)
@@ -38,7 +63,7 @@ def normalize_question_math_text(text: str) -> str:
     for command in ('leq', 'geq', 'times', 'div', 'cdot', 'pm'):
         text = re.sub(
             rf'(?<!\$)\\{command}(?!\w)',
-            rf'$\\{command}$',
+            lambda _m, cmd=command: f'$\\{cmd}$',
             text,
         )
 

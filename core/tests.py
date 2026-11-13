@@ -32,6 +32,18 @@ class QuestionMathNormalizeTests(TestCase):
         out = normalize_question_math_text('The answer is 1 1/4 litres.')
         self.assertIn('1\\frac{1}{4}', out)
 
+    def test_repair_json_form_feed_frac(self):
+        import re
+
+        from core.question_math_normalize import finalize_math_display_text
+
+        broken = 'Start at \x0crac{1}{3} and \x0crac{1}{6}'
+        out = finalize_math_display_text(broken)
+        self.assertIn('\\frac{1}{3}', out)
+        self.assertNotIn('\x0c', out)
+        # Valid \\frac contains the substring "rac{"; only bare/form-feed breaks count.
+        self.assertIsNone(re.search(r'\x0crac|(?<!\\f)rac\{', out))
+
 
 class JsonPasteTests(TestCase):
     def test_normalize_removes_line_continuation_backslashes(self):
