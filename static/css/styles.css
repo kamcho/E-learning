@@ -2250,13 +2250,42 @@ body.landing-ks {
 }
 
 .landing-ks .hero .container {
-  display: block;
-  max-width: 52rem;
-  margin: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3xl);
+  align-items: center;
+  max-width: var(--container-max, 75rem);
+  margin: 0 auto;
 }
 
 .landing-ks .hero-visual {
-  display: none;
+  display: block;
+}
+
+@media (max-width: 1024px) {
+  .landing-ks .hero .container {
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
+
+  .landing-ks .hero-description {
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .landing-ks .hero-cta {
+    justify-content: center;
+  }
+
+  .landing-ks .hero-stats {
+    justify-content: center;
+  }
+
+  .landing-ks .hero-visual {
+    max-width: 32rem;
+    margin: 0 auto;
+    order: -1;
+  }
 }
 
 .landing-ks .hero-badge {
@@ -2282,7 +2311,7 @@ body.landing-ks {
   font-weight: 800;
   letter-spacing: -0.04em;
   line-height: 1.05;
-  max-width: 14ch;
+  max-width: min(14ch, 100%);
 }
 
 .landing-ks .hero h1 .highlight {
