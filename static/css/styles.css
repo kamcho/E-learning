@@ -1141,70 +1141,74 @@ html[data-theme="dark"] .audience-card--school {
 
 .levels-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: var(--space-lg);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1.25rem;
 }
 
-.level-card {
-  background: var(--clr-surface);
-  border-radius: var(--radius-xl);
-  padding: var(--space-2xl) var(--space-lg);
-  text-align: center;
-  border: 1px solid var(--clr-border);
-  transition: all var(--transition-base);
-  position: relative;
-  overflow: hidden;
+.audience-card--preprimary {
+  border-color: #bbf7d0;
+  background: linear-gradient(180deg, #f4fbf7 0%, var(--clr-surface) 42%);
 }
 
-.level-card:hover {
-  transform: translateY(-8px);
-  box-shadow: var(--shadow-lg);
+.audience-card--lower {
+  border-color: #ddd6fe;
+  background: linear-gradient(180deg, #faf8ff 0%, var(--clr-surface) 42%);
 }
 
-.level-card .level-emoji {
-  font-size: 2.8rem;
-  margin-bottom: var(--space-md);
-  display: block;
+.audience-card--upper {
+  border-color: #bae6fd;
+  background: linear-gradient(180deg, #f0f9ff 0%, var(--clr-surface) 42%);
 }
 
-.level-card h3 {
-  font-family: var(--font-heading);
-  font-size: 1.05rem;
-  font-weight: 700;
-  color: var(--clr-text);
-  margin-bottom: var(--space-xs);
+.audience-card--junior {
+  border-color: #fde68a;
+  background: linear-gradient(180deg, #fffbeb 0%, var(--clr-surface) 42%);
 }
 
-.level-card .level-grades {
-  font-size: 0.82rem;
-  color: var(--clr-primary);
-  font-weight: 600;
-  margin-bottom: var(--space-md);
+.audience-card--preprimary .audience-icon {
+  background: #dcfce7;
+  color: #16a34a;
 }
 
-.level-card .level-desc {
-  font-size: 0.85rem;
-  color: var(--clr-text-muted);
-  line-height: 1.6;
+.audience-card--lower .audience-icon {
+  background: #f3e8ff;
+  color: #7c3aed;
 }
 
-.level-card .level-bar {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 4px;
-  transition: height var(--transition-base);
+.audience-card--upper .audience-icon {
+  background: #e0f2fe;
+  color: #0284c7;
 }
 
-.level-card:hover .level-bar {
-  height: 6px;
+.audience-card--junior .audience-icon {
+  background: #fef3c7;
+  color: #d97706;
 }
 
-.level-card:nth-child(1) .level-bar { background: var(--clr-primary-light); }
-.level-card:nth-child(2) .level-bar { background: var(--clr-accent); }
-.level-card:nth-child(3) .level-bar { background: var(--clr-danger-light); }
-.level-card:nth-child(4) .level-bar { background: #6C63FF; }
+.audience-card--preprimary .audience-link { color: #15803d; }
+.audience-card--lower .audience-link { color: #7c3aed; }
+.audience-card--upper .audience-link { color: #0369a1; }
+.audience-card--junior .audience-link { color: #c2410c; }
+
+html[data-theme="dark"] .audience-card--preprimary {
+  background: color-mix(in srgb, #16a34a 10%, var(--clr-surface));
+  border-color: color-mix(in srgb, #16a34a 35%, var(--clr-border));
+}
+
+html[data-theme="dark"] .audience-card--lower {
+  background: color-mix(in srgb, #7c3aed 10%, var(--clr-surface));
+  border-color: color-mix(in srgb, #7c3aed 35%, var(--clr-border));
+}
+
+html[data-theme="dark"] .audience-card--upper {
+  background: color-mix(in srgb, #0284c7 10%, var(--clr-surface));
+  border-color: color-mix(in srgb, #0284c7 35%, var(--clr-border));
+}
+
+html[data-theme="dark"] .audience-card--junior {
+  background: color-mix(in srgb, #d97706 10%, var(--clr-surface));
+  border-color: color-mix(in srgb, #d97706 35%, var(--clr-border));
+}
 
 /* ============================================
    PRICING / SUBSCRIPTIONS

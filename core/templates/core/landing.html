@@ -486,49 +486,54 @@
       </div>
 
       <div class="levels-grid">
-        <div class="level-card reveal">
-          <span class="level-emoji">🌱</span>
+        <article class="audience-card audience-card--preprimary reveal">
+          <div class="audience-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 3v18"/>
+              <path d="M8 7c2 3 6 3 8 0"/>
+              <path d="M7 14c2.5 3 7.5 3 10 0"/>
+            </svg>
+          </div>
           <h3>Pre-Primary</h3>
-          <p class="level-grades">PP1 – PP2</p>
-          <p class="level-desc">
-            Play-based learning activities that build foundational literacy,
-            numeracy and creativity skills.
-          </p>
-          <div class="level-bar"></div>
-        </div>
+          <p>Play-based learning for PP1–PP2 that builds literacy, numeracy, and creativity.</p>
+          <a href="{% url 'core:exam_wizard' %}" class="audience-link">Explore PP1–PP2 <span aria-hidden="true">→</span></a>
+        </article>
 
-        <div class="level-card reveal">
-          <span class="level-emoji">📗</span>
+        <article class="audience-card audience-card--lower reveal">
+          <div class="audience-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+            </svg>
+          </div>
           <h3>Lower Primary</h3>
-          <p class="level-grades">Grade 1 – 3</p>
-          <p class="level-desc">
-            Core subjects with integrated approaches nurturing
-            communication and social competencies.
-          </p>
-          <div class="level-bar"></div>
-        </div>
+          <p>Core Grade 1–3 subjects with integrated approaches that nurture communication and social skills.</p>
+          <a href="{% url 'core:exam_wizard' %}" class="audience-link">Explore Grades 1–3 <span aria-hidden="true">→</span></a>
+        </article>
 
-        <div class="level-card reveal">
-          <span class="level-emoji">📘</span>
+        <article class="audience-card audience-card--upper reveal">
+          <div class="audience-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="4" width="18" height="16" rx="2"/>
+              <path d="M7 8h10M7 12h6"/>
+            </svg>
+          </div>
           <h3>Upper Primary</h3>
-          <p class="level-grades">Grade 4 – 6</p>
-          <p class="level-desc">
-            Deeper subject exploration preparing learners for
-            Junior School with critical thinking focus.
-          </p>
-          <div class="level-bar"></div>
-        </div>
+          <p>Deeper Grade 4–6 exploration that prepares learners for Junior School with critical thinking.</p>
+          <a href="{% url 'core:exam_wizard' %}" class="audience-link">Explore Grades 4–6 <span aria-hidden="true">→</span></a>
+        </article>
 
-        <div class="level-card reveal">
-          <span class="level-emoji">🎓</span>
+        <article class="audience-card audience-card--junior reveal">
+          <div class="audience-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 10 12 5 2 10l10 5 10-5z"/>
+              <path d="M6 12v5c0 1.7 2.7 3 6 3s6-1.3 6-3v-5"/>
+            </svg>
+          </div>
           <h3>Junior School</h3>
-          <p class="level-grades">Grade 7 – 9</p>
-          <p class="level-desc">
-            Pathway subjects and career guidance helping learners
-            discover their talents and interests.
-          </p>
-          <div class="level-bar"></div>
-        </div>
+          <p>Pathway subjects and career guidance for Grades 7–9 so learners discover their talents.</p>
+          <a href="{% url 'core:exam_wizard' %}" class="audience-link">Explore Grades 7–9 <span aria-hidden="true">→</span></a>
+        </article>
       </div>
     </div>
   </section>
