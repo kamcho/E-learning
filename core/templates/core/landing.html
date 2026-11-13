@@ -191,14 +191,8 @@
             </a>
             {% endif %}
           {% else %}
-            <a href="{% url 'core:exam_wizard' %}" class="btn btn-start-exam">
-              Start Exam
-              <span class="btn-icon">→</span>
-            </a>
-            <a href="{% url 'accounts:signup' %}" class="btn btn-primary">
-              Get Started
-              <span class="btn-icon">→</span>
-            </a>
+            <a href="{% url 'core:exam_wizard' %}" class="btn btn-start-exam">Start Exam</a>
+            <a href="{% url 'accounts:signup' %}" class="btn btn-primary">Create account</a>
             <a href="{% url 'accounts:signin' %}" class="btn btn-outline">
               Log In
             </a>
@@ -405,10 +399,7 @@
             <li>Works on phone, tablet, or laptop</li>
           </ul>
           <div class="demo-panel-actions">
-            <a href="{% url 'core:exam_wizard' %}" class="btn btn-start-exam">
-              Start Exam
-              <span class="btn-icon">→</span>
-            </a>
+            <a href="{% url 'core:exam_wizard' %}" class="btn btn-start-exam">Start Exam</a>
             <a href="{% url 'accounts:signup' %}" class="btn btn-outline">Create account</a>
           </div>
         </div>

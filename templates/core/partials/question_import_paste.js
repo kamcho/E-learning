@@ -10,6 +10,8 @@ function normalizeJsonPaste(text) {
   }
   trimmed = trimmed.replace(/\\\s*\r?\n/g, '\n');
   trimmed = trimmed.replace(/\\([\[\]{}])/g, '$1');
+  // LaTeX/backslash-heavy text: \( \) \_ \times etc. are invalid unless escaped as \\
+  trimmed = trimmed.replace(/(?<!\\)\\(?!["\\/bfnrt]|u(?:[0-9a-fA-F]{4}))/g, '\\\\');
   // Curly “smart” quotes (WhatsApp, Word, etc.) are invalid in JSON
   trimmed = trimmed
     .replace(/[\u201C\u201D\u201E\u2033\u00AB\u00BB]/g, '"')

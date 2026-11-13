@@ -41,6 +41,24 @@ class JsonPasteTests(TestCase):
         self.assertEqual(len(parsed['questions']), 1)
         self.assertEqual(parsed['questions'][0]['quiz'], 'Test?')
 
+    def test_fixup_invalid_latex_escapes(self):
+        # AI paste often includes \( in math strings — invalid JSON until backslashes are doubled.
+        bad = (
+            '{"questions":[{"quiz":"Solve \\(x)", "difficulty": "Easy", '
+            '"quiz_type": "OpenEnded", "choices": []}]}'
+        )
+        parsed = parse_json_paste(bad)
+        self.assertEqual(parsed['questions'][0]['quiz'], 'Solve \\(x)')
+
+    def test_does_not_corrupt_already_valid_latex_escapes(self):
+        raw = (
+            '{"questions":[{"quiz":"$7 \\\\;\\\\square\\\\; 4$", "difficulty": "Easy", '
+            '"quiz_type": "Multiple Choice", "choices": '
+            '[{"option":"$x \\\\geq \\\\frac{1}{2}$", "is_correct": true}]}]}'
+        )
+        parsed = parse_json_paste(raw)
+        self.assertEqual(parsed['questions'][0]['quiz'], '$7 \\;\\square\\; 4$')
+
 
 class PresentationShuffleTests(TestCase):
     def test_stable_shuffle_is_deterministic(self):

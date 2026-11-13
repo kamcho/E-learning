@@ -14,6 +14,18 @@ def _normalize_smart_quotes(text):
     return text
 
 
+_VALID_JSON_ESCAPE = re.compile(
+    r'(?<!\\)\\(?!["\\/bfnrt]|u(?:[0-9a-fA-F]{4}))'
+)
+
+
+def _fix_invalid_json_escapes(text):
+    """
+    Double backslashes that are not valid JSON escapes (e.g. LaTeX \\(, \\_, \\times).
+    """
+    return _VALID_JSON_ESCAPE.sub(r'\\\\', text)
+
+
 def normalize_json_paste(text):
     """
     Clean common AI/chat paste artifacts so json.loads can succeed.
@@ -32,6 +44,7 @@ def normalize_json_paste(text):
     text = re.sub(r'\\\s*\r?\n', '\n', text)
     # Chat tools often escape [ ] { } for markdown (e.g. "\["), which is invalid JSON.
     text = re.sub(r'\\([\[\]{}])', r'\1', text)
+    text = _fix_invalid_json_escapes(text)
     return text.strip()
 
 

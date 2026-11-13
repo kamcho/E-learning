@@ -2330,21 +2330,85 @@ body.landing-ks {
   max-width: 38rem;
 }
 
-.landing-ks .hero-cta .btn-start-exam,
-.landing-ks .hero-cta .btn-primary {
-  background: #fff;
+.landing-ks .hero-cta .btn {
+  border-radius: var(--radius-md);
+}
+
+.landing-ks .hero-cta .btn-start-exam {
+  background: #f5e36a;
   color: #1a1a1a;
   border: none;
-  border-radius: 999px;
   font-weight: 700;
-  box-shadow: none;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.12);
+  animation: none;
+  padding: 0.85rem 1.65rem;
+}
+
+.landing-ks .hero-cta .btn-start-exam:hover {
+  background: #e8d654;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+}
+
+.landing-ks .hero-cta .btn-primary {
+  background: #fff;
+  color: #0b6b3d;
+  border: 2px solid #fff;
+  font-weight: 700;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.08);
+}
+
+.landing-ks .hero-cta .btn-primary:hover {
+  background: #f0fdf4;
+  color: #085c34;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
 }
 
 .landing-ks .hero-cta .btn-outline {
-  border: 1.5px solid rgba(255, 255, 255, 0.75);
+  border: 2px solid rgba(255, 255, 255, 0.9);
   color: #fff;
-  border-radius: 999px;
   background: transparent;
+  font-weight: 600;
+}
+
+.landing-ks .hero-cta .btn-outline:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: #fff;
+}
+
+.landing-ks .demo-panel-actions .btn {
+  border-radius: var(--radius-md);
+}
+
+.landing-ks .demo-panel-actions .btn-start-exam {
+  background: var(--clr-primary);
+  color: #fff;
+  border: none;
+  font-weight: 700;
+  animation: none;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.1);
+  padding: 0.85rem 1.65rem;
+}
+
+.landing-ks .demo-panel-actions .btn-start-exam:hover {
+  background: var(--clr-primary-dark, #0b6b3d);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.landing-ks .demo-panel-actions .btn-outline {
+  border: 2px solid var(--clr-primary);
+  color: var(--clr-primary);
+  background: var(--clr-surface);
+  backdrop-filter: none;
+  font-weight: 600;
+}
+
+.landing-ks .demo-panel-actions .btn-outline:hover {
+  background: rgba(13, 138, 78, 0.08);
+  border-color: var(--clr-primary);
+  color: var(--clr-primary);
 }
 
 .landing-ks .hero-stats {

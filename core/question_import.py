@@ -351,7 +351,10 @@ QUESTION_IMPORT_UI_GUIDE = [
     },
     {
         'title': 'No markdown',
-        'detail': 'Do not wrap in ```json fences. No \\ at the end of lines. No \\[ or \\] around arrays.',
+        'detail': (
+            'Do not wrap in ```json fences. No \\ at the end of lines. No \\[ or \\] around arrays. '
+            'For LaTeX/math, every backslash in text must be doubled in JSON (e.g. \\\\frac not \\frac).'
+        ),
     },
     {
         'title': 'Activation',
@@ -379,6 +382,7 @@ def question_import_ai_delivery_rules():
         'Formatting rules:',
         '- Do NOT wrap the JSON in markdown code fences (no ```json).',
         '- Do NOT add backslashes before line breaks, brackets, or braces (no \\, no \\[, no \\{).',
+        '- In string values, every literal backslash must be written twice in JSON (\\\\frac not \\frac; \\\\( not \\().',
         '- Pretty-printed JSON with normal newlines is fine; compact single-line JSON is also fine.',
         '',
         'Schema reminder:',
