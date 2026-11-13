@@ -597,6 +597,12 @@ class LandingPageNavbarTests(TestCase):
         self.assertContains(response, 'Start Exam')
         self.assertContains(response, 'Free practice exam')
         self.assertNotContains(response, 'free demo')
+        self.assertContains(response, 'audience-card--parent')
+        self.assertContains(response, 'audience-card--teacher')
+        self.assertContains(response, 'audience-card--school')
+        self.assertContains(response, f"{reverse('accounts:signup')}?role=guardian")
+        self.assertContains(response, f"{reverse('accounts:signup')}?role=teacher")
+        self.assertContains(response, f"{reverse('accounts:signup')}?role=partner")
 
     def test_anonymous_user_does_not_see_dashboard_or_curriculum_builder_in_navbar(self):
         response = self.client.get(reverse('core:landing'))

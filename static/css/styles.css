@@ -926,6 +926,133 @@ body.nav-open .navbar-drawer {
   line-height: 1.7;
 }
 
+.audience {
+  padding: var(--space-2xl) 0 var(--space-3xl);
+  background: var(--clr-bg);
+}
+
+.audience-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.25rem;
+}
+
+.audience-card {
+  background: var(--clr-surface);
+  border-radius: 18px;
+  padding: 2rem 1.6rem 1.75rem;
+  text-align: center;
+  border: 1.5px solid var(--clr-border);
+  box-shadow: 0 8px 28px rgba(16, 35, 26, 0.04);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100%;
+}
+
+.audience-card--parent {
+  border-color: #ddd6fe;
+  background: linear-gradient(180deg, #faf8ff 0%, var(--clr-surface) 42%);
+}
+
+.audience-card--teacher {
+  border-color: #bbf7d0;
+  background: linear-gradient(180deg, #f4fbf7 0%, var(--clr-surface) 42%);
+}
+
+.audience-card--school {
+  border-color: #fde68a;
+  background: linear-gradient(180deg, #fffbeb 0%, var(--clr-surface) 42%);
+}
+
+.audience-icon {
+  width: 3.4rem;
+  height: 3.4rem;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1.1rem;
+}
+
+.audience-icon svg {
+  width: 1.55rem;
+  height: 1.55rem;
+}
+
+.audience-card--parent .audience-icon {
+  background: #f3e8ff;
+  color: #7c3aed;
+}
+
+.audience-card--teacher .audience-icon {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.audience-card--school .audience-icon {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.audience-card h3 {
+  font-family: var(--font-heading);
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--clr-text);
+  margin: 0 0 0.55rem;
+}
+
+.audience-card p {
+  font-size: 0.92rem;
+  line-height: 1.55;
+  color: var(--clr-text-muted);
+  margin: 0 0 1.15rem;
+  max-width: 22rem;
+}
+
+.audience-link {
+  font-size: 0.92rem;
+  font-weight: 700;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  margin-top: auto;
+}
+
+.audience-card--parent .audience-link { color: #7c3aed; }
+.audience-card--teacher .audience-link { color: #15803d; }
+.audience-card--school .audience-link { color: #c2410c; }
+
+.audience-link:hover { text-decoration: underline; }
+
+.audience-link--secondary {
+  margin-top: 0.65rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.audience-link--secondary svg {
+  flex-shrink: 0;
+}
+
+html[data-theme="dark"] .audience-card--parent {
+  background: color-mix(in srgb, #7c3aed 10%, var(--clr-surface));
+  border-color: color-mix(in srgb, #7c3aed 35%, var(--clr-border));
+}
+
+html[data-theme="dark"] .audience-card--teacher {
+  background: color-mix(in srgb, #16a34a 10%, var(--clr-surface));
+  border-color: color-mix(in srgb, #16a34a 35%, var(--clr-border));
+}
+
+html[data-theme="dark"] .audience-card--school {
+  background: color-mix(in srgb, #d97706 10%, var(--clr-surface));
+  border-color: color-mix(in srgb, #d97706 35%, var(--clr-border));
+}
+
 .features-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -1776,6 +1903,7 @@ body.nav-open .navbar-drawer {
     margin: 0 auto;
   }
 
+  .audience-grid,
   .features-grid {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -1820,6 +1948,7 @@ body.nav-open .navbar-drawer {
     gap: var(--space-xl);
   }
 
+  .audience-grid,
   .features-grid {
     grid-template-columns: 1fr;
   }
