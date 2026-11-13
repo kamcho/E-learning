@@ -40,6 +40,16 @@ urlpatterns = [
     path('questions/', views.question_bank_list_view, name='question_bank_list'),
     path('questions/bulk-import/', views.bulk_question_import_view, name='bulk_question_import'),
     path('api/questions/bulk/', views.bulk_create_questions_api_view, name='bulk_create_questions_api'),
+    path(
+        'api/questions/<uuid:question_uuid>/reformat-math/',
+        views.question_reformat_math_api_view,
+        name='question_reformat_math',
+    ),
+    path(
+        'api/questions/reformat-math/draft/',
+        views.question_reformat_math_draft_api_view,
+        name='question_reformat_math_draft',
+    ),
     path('api/exam-filters/', views.exam_filter_options_api_view, name='exam_filter_options_api'),
     path('exam/', demo_views.demo_wizard_view, name='exam_wizard'),
     path('exam/start/', demo_views.demo_start_view, name='exam_start'),

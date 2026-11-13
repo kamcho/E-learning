@@ -3,6 +3,7 @@
 from django.db import IntegrityError, transaction
 
 from core.models import Option, Question
+from core.question_math_normalize import normalize_question_item_math, normalize_question_math_text
 from subjects.models import SubStrand
 
 VALID_DIFFICULTIES = {choice[0] for choice in Question.DIFFICULTY_CHOICES}
@@ -43,7 +44,7 @@ def _normalize_choices(raw_choices):
     for idx, item in enumerate(raw_choices):
         if not isinstance(item, dict):
             raise ValueError(f'choices[{idx}] must be an object.')
-        option_text = (item.get('option') or '').strip()
+        option_text = normalize_question_math_text((item.get('option') or '').strip())
         if not option_text:
             raise ValueError(f'choices[{idx}].option is required.')
         normalized.append({
@@ -85,7 +86,7 @@ def validate_question_item(data, index=0):
     if not isinstance(data, dict):
         raise ValueError(f'questions[{index}] must be an object.')
 
-    quiz = (data.get('quiz') or '').strip()
+    quiz = normalize_question_math_text((data.get('quiz') or '').strip())
     if not quiz:
         raise ValueError(f'questions[{index}].quiz is required.')
 
@@ -211,6 +212,7 @@ def preview_questions_import(payload):
             })
             continue
         try:
+            item = normalize_question_item_math(item)
             cleaned = validate_question_item(item, index=index)
             valid_count += 1
             items.append({
@@ -384,6 +386,13 @@ def question_import_ai_delivery_rules():
         '- Do NOT add backslashes before line breaks, brackets, or braces (no \\, no \\[, no \\{).',
         '- In string values, every literal backslash must be written twice in JSON (\\\\frac not \\frac; \\\\( not \\().',
         '- Pretty-printed JSON with normal newlines is fine; compact single-line JSON is also fine.',
+        '',
+        '## Mathematics display (MathJax on Soma Smart)',
+        '- Wrap all math in $...$ (inline). Use \\\\frac{n}{d} for fractions, never leave bare 1/3 in final JSON.',
+        '- Mixed numbers: $1\\\\frac{3}{4}$. Inequalities: $x \\\\geq 5$, $n < 10$. Algebra: $2x$, $x + 4 < 9$.',
+        '- Choice lists of fractions: $\\frac{1}{3}$, $\\frac{1}{2}$, $\\frac{2}{3}$ (comma-separated inside or outside $ as needed).',
+        '- Blanks: $\\underline{\\quad\\quad\\quad}$ — not \\_\\_\\_ or raw underscores.',
+        '- Do not use \\(...\\) delimiters; only $...$.',
         '',
         'Schema reminder:',
         f'- difficulty: one of {difficulties}',

@@ -165,6 +165,107 @@
     border-color: rgba(193, 39, 45, 0.25);
     color: var(--clr-danger);
   }
+
+  .question-reformat-btn {
+    padding: 0.35rem 0.65rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: var(--radius-md);
+    border: 1px solid rgba(99, 102, 241, 0.35);
+    background: rgba(99, 102, 241, 0.08);
+    color: #4338ca;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .question-reformat-btn:hover {
+    background: rgba(99, 102, 241, 0.15);
+  }
+
+  .question-reformat-btn:disabled {
+    opacity: 0.55;
+    cursor: wait;
+  }
+
+  .qr-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.5);
+    z-index: 500;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-lg);
+  }
+
+  .qr-modal-backdrop.is-open {
+    display: flex;
+  }
+
+  .qr-modal {
+    background: var(--clr-surface);
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-xl);
+    max-width: 720px;
+    width: 100%;
+    max-height: 90vh;
+    overflow: auto;
+    box-shadow: var(--shadow-lg);
+    padding: var(--space-xl);
+  }
+
+  .qr-modal h3 {
+    margin: 0 0 var(--space-md);
+    font-size: 1.1rem;
+  }
+
+  .qr-modal-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-md);
+  }
+
+  @media (max-width: 700px) {
+    .qr-modal-grid { grid-template-columns: 1fr; }
+  }
+
+  .qr-panel {
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-md);
+    background: var(--clr-surface-alt);
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+
+  .qr-panel-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--clr-text-muted);
+    margin-bottom: var(--space-sm);
+  }
+
+  .qr-option-row {
+    margin-top: 0.45rem;
+    padding-top: 0.45rem;
+    border-top: 1px dashed var(--clr-border);
+  }
+
+  .qr-modal-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-sm);
+    margin-top: var(--space-lg);
+    justify-content: flex-end;
+  }
+
+  .qr-modal-error {
+    color: var(--clr-danger);
+    font-size: 0.88rem;
+    margin-top: var(--space-sm);
+  }
 </style>
 {% endblock %}
 
@@ -315,7 +416,7 @@
 
   {% if questions %}
     {% for question in questions %}
-      <div class="question-item">
+      <div class="question-item" data-question-uuid="{{ question.uuid }}">
         <div class="question-item-head">
           <div class="question-item-title">
             {% include 'core/partials/question_prompt.html' with question=question %}
@@ -327,6 +428,16 @@
               <span class="badge badge-primary">Active</span>
             {% else %}
               <span class="badge badge-danger">Inactive</span>
+            {% endif %}
+            {% if question.user_can_reformat %}
+            <button
+              type="button"
+              class="question-reformat-btn js-question-reformat"
+              data-question-uuid="{{ question.uuid }}"
+              title="Use AI to wrap fractions and number sequences in LaTeX for clearer display"
+            >
+              Format math (AI)
+            </button>
             {% endif %}
             {% if question.user_can_toggle %}
             <form method="post" class="question-toggle-form" action="">
@@ -386,4 +497,32 @@
     </div>
   {% endif %}
 </div>
+
+<div class="qr-modal-backdrop" id="qr-modal-backdrop" aria-hidden="true">
+  <div class="qr-modal" role="dialog" aria-labelledby="qr-modal-title" aria-modal="true">
+    <h3 id="qr-modal-title">Reformat math with AI</h3>
+    <p style="margin:0 0 var(--space-md);font-size:0.88rem;color:var(--clr-text-muted);">
+      Preview LaTeX formatting for fractions and sequences. Meaning and correct answers stay the same.
+    </p>
+    <div class="qr-modal-grid">
+      <div>
+        <div class="qr-panel-label">Before</div>
+        <div class="qr-panel" id="qr-panel-before" data-math-content></div>
+      </div>
+      <div>
+        <div class="qr-panel-label">After (preview)</div>
+        <div class="qr-panel" id="qr-panel-after" data-math-content></div>
+      </div>
+    </div>
+    <p class="qr-modal-error" id="qr-modal-error" hidden></p>
+    <div class="qr-modal-actions">
+      <button type="button" class="btn btn-secondary" id="qr-modal-cancel">Cancel</button>
+      <button type="button" class="btn btn-primary" id="qr-modal-apply" disabled>Save formatted text</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% include 'core/partials/question_reformat_script.html' %}
 {% endblock %}

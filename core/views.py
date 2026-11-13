@@ -1301,6 +1301,201 @@ def bulk_create_questions_api_view(request):
 
 
 @login_required(login_url='accounts:signin')
+@require_POST
+@rate_limit(
+    key='ai_reformat_burst',
+    limit=8,
+    window=60,
+    by='user',
+    methods=['POST'],
+    json_error='Too many reformat requests. Please wait a minute.',
+)
+@rate_limit(
+    key='ai_reformat_hour',
+    limit=40,
+    window=3600,
+    by='user',
+    methods=['POST'],
+    json_error='Reformat limit reached for this hour. Try again later.',
+)
+def question_reformat_math_api_view(request, question_uuid):
+    """Preview or apply AI LaTeX reformatting for a question stem and choices."""
+    from core.ai import REFORMAT_QUESTION_MATH_TASK, ai_service
+    from core.ai.exceptions import AIServiceError
+    from core.question_reformat import apply_question_math_reformat, question_option_payload
+    from subjects.views import _user_can_reformat_question
+
+    if not _is_quiz_builder_allowed(request.user):
+        return JsonResponse({'error': 'Permission denied.'}, status=403)
+
+    question = get_object_or_404(
+        Question.objects.select_related(
+            'sub_strand',
+            'sub_strand__strand',
+            'sub_strand__strand__subject',
+            'sub_strand__strand__subject__grade_level',
+        ).prefetch_related('options'),
+        uuid=question_uuid,
+    )
+    if not _user_can_reformat_question(request.user, question):
+        return JsonResponse({'error': 'Permission denied.'}, status=403)
+
+    try:
+        payload = json.loads(request.body.decode('utf-8'))
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        return JsonResponse({'error': 'Invalid JSON body.'}, status=400)
+
+    action = (payload.get('action') or 'preview').strip().lower()
+    subject = question.sub_strand.strand.subject
+    grade_name = ''
+    if subject.grade_level_id:
+        grade_name = subject.grade_level.name
+
+    if action == 'apply':
+        quiz = (payload.get('quiz') or '').strip()
+        options = payload.get('options')
+        if not quiz or not isinstance(options, list):
+            return JsonResponse({'error': 'quiz and options are required to apply.'}, status=400)
+        try:
+            apply_question_math_reformat(question, quiz=quiz, options=options)
+        except ValueError as exc:
+            return JsonResponse({'error': str(exc)}, status=400)
+        return JsonResponse({'ok': True, 'question_uuid': str(question.uuid)})
+
+    option_payload = question_option_payload(question)
+    try:
+        result = ai_service.run(
+            REFORMAT_QUESTION_MATH_TASK,
+            quiz=question.quiz,
+            quiz_type=question.quiz_type,
+            options=[
+                {
+                    'uuid': str(row['uuid']),
+                    'option': row['option'],
+                    'is_correct': row['is_correct'],
+                }
+                for row in option_payload
+            ],
+            grade_level=grade_name,
+            subject=subject.name,
+        )
+    except AIServiceError as exc:
+        return JsonResponse({'error': str(exc)}, status=502)
+    except ValueError as exc:
+        return JsonResponse({'error': str(exc)}, status=400)
+
+    return JsonResponse(_reformat_math_response(question, result, option_payload))
+
+
+def _reformat_math_response(question, result, option_payload):
+    return {
+        'ok': True,
+        'question_uuid': str(question.uuid),
+        'original': {
+            'quiz': question.quiz,
+            'options': [
+                {'uuid': str(row['uuid']), 'option': row['option']}
+                for row in option_payload
+            ],
+        },
+        'reformatted': {
+            'quiz': result['quiz'],
+            'options': result['options'],
+        },
+    }
+
+
+@login_required(login_url='accounts:signin')
+@require_POST
+@rate_limit(
+    key='ai_reformat_burst',
+    limit=8,
+    window=60,
+    by='user',
+    methods=['POST'],
+    json_error='Too many reformat requests. Please wait a minute.',
+)
+@rate_limit(
+    key='ai_reformat_hour',
+    limit=40,
+    window=3600,
+    by='user',
+    methods=['POST'],
+    json_error='Reformat limit reached for this hour. Try again later.',
+)
+def question_reformat_math_draft_api_view(request):
+    """AI LaTeX reformat for unsaved questions in the import review UI."""
+    from core.ai import REFORMAT_QUESTION_MATH_TASK, ai_service
+    from core.ai.exceptions import AIServiceError
+    from core.question_math_normalize import normalize_question_item_math
+
+    if not _is_quiz_builder_allowed(request.user):
+        return JsonResponse({'error': 'Permission denied.'}, status=403)
+
+    try:
+        payload = json.loads(request.body.decode('utf-8'))
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        return JsonResponse({'error': 'Invalid JSON body.'}, status=400)
+
+    question = normalize_question_item_math(payload.get('question') or {})
+    quiz = (question.get('quiz') or '').strip()
+    if not quiz:
+        return JsonResponse({'error': 'question.quiz is required.'}, status=400)
+
+    option_payload = []
+    for idx, row in enumerate(question.get('choices') or []):
+        if not isinstance(row, dict):
+            continue
+        option_payload.append({
+            'uuid': str(row.get('uuid') or f'draft-{idx}'),
+            'option': (row.get('option') or '').strip(),
+            'is_correct': bool(row.get('is_correct')),
+        })
+
+    grade_level = (payload.get('grade_level') or '').strip()
+    subject = (payload.get('subject') or '').strip()
+
+    try:
+        result = ai_service.run(
+            REFORMAT_QUESTION_MATH_TASK,
+            quiz=quiz,
+            quiz_type=(question.get('quiz_type') or 'Multiple Choice').strip(),
+            options=[
+                {
+                    'uuid': row['uuid'],
+                    'option': row['option'],
+                    'is_correct': row['is_correct'],
+                }
+                for row in option_payload
+            ],
+            grade_level=grade_level,
+            subject=subject,
+        )
+    except AIServiceError as exc:
+        return JsonResponse({'error': str(exc)}, status=502)
+    except ValueError as exc:
+        return JsonResponse({'error': str(exc)}, status=400)
+
+    return JsonResponse({
+        'ok': True,
+        'original': {
+            'quiz': quiz,
+            'options': [{'uuid': r['uuid'], 'option': r['option']} for r in option_payload],
+        },
+        'reformatted': {
+            'quiz': result['quiz'],
+            'options': [
+                {
+                    'uuid': row['uuid'],
+                    'option': row['option'],
+                }
+                for row in result['options']
+            ],
+        },
+    })
+
+
+@login_required(login_url='accounts:signin')
 def question_bank_list_view(request):
     """Browse and manage questions with curriculum filters."""
     from core.models import Question

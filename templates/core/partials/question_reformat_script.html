@@ -1,0 +1,148 @@
+<script>
+(function () {
+  var backdrop = document.getElementById('qr-modal-backdrop');
+  if (!backdrop) return;
+
+  var panelBefore = document.getElementById('qr-panel-before');
+  var panelAfter = document.getElementById('qr-panel-after');
+  var errorEl = document.getElementById('qr-modal-error');
+  var applyBtn = document.getElementById('qr-modal-apply');
+  var cancelBtn = document.getElementById('qr-modal-cancel');
+  var apiBase = '{% url "core:question_reformat_math" question_uuid="00000000-0000-0000-0000-000000000000" %}';
+  var activeUuid = '';
+  var pendingReformat = null;
+
+  function getCookie(name) {
+    var match = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)'));
+    return match ? decodeURIComponent(match[1]) : '';
+  }
+
+  function apiUrl(uuid) {
+    return apiBase.replace('00000000-0000-0000-0000-000000000000', uuid);
+  }
+
+  function escapeHtml(text) {
+    var div = document.createElement('div');
+    div.textContent = text || '';
+    return div.innerHTML;
+  }
+
+  function renderPanel(panel, quiz, options) {
+    var html = '<div class="question-rich-text">' + escapeHtml(quiz) + '</div>';
+    if (options && options.length) {
+      options.forEach(function (row, index) {
+        html += '<div class="qr-option-row"><strong>' + String.fromCharCode(65 + index) + '.</strong> ' +
+          '<span class="option-rich-text">' + escapeHtml(row.option) + '</span></div>';
+      });
+    }
+    panel.innerHTML = html;
+    delete panel.dataset.mathRendered;
+    if (window.renderQuestionMath) {
+      window.renderQuestionMath(panel, { force: true });
+    }
+  }
+
+  function showError(message) {
+    errorEl.hidden = !message;
+    errorEl.textContent = message || '';
+  }
+
+  function openModal() {
+    backdrop.classList.add('is-open');
+    backdrop.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeModal() {
+    backdrop.classList.remove('is-open');
+    backdrop.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+    activeUuid = '';
+    pendingReformat = null;
+    applyBtn.disabled = true;
+    showError('');
+  }
+
+  async function runPreview(uuid, button) {
+    button.disabled = true;
+    showError('');
+    applyBtn.disabled = true;
+    pendingReformat = null;
+    panelBefore.innerHTML = '<p>Loading…</p>';
+    panelAfter.innerHTML = '<p>Loading…</p>';
+    openModal();
+    activeUuid = uuid;
+
+    try {
+      var res = await fetch(apiUrl(uuid), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': getCookie('csrftoken'),
+        },
+        body: JSON.stringify({ action: 'preview' }),
+      });
+      var body = await res.json();
+      if (!res.ok) {
+        throw new Error(body.error || 'Could not reformat this question.');
+      }
+      renderPanel(panelBefore, body.original.quiz, body.original.options);
+      renderPanel(panelAfter, body.reformatted.quiz, body.reformatted.options);
+      pendingReformat = body.reformatted;
+      applyBtn.disabled = false;
+    } catch (err) {
+      showError(err.message || 'Request failed.');
+      panelAfter.innerHTML = '';
+    } finally {
+      button.disabled = false;
+    }
+  }
+
+  async function applyReformat() {
+    if (!activeUuid || !pendingReformat) return;
+    applyBtn.disabled = true;
+    applyBtn.textContent = 'Saving…';
+    showError('');
+    try {
+      var res = await fetch(apiUrl(activeUuid), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': getCookie('csrftoken'),
+        },
+        body: JSON.stringify({
+          action: 'apply',
+          quiz: pendingReformat.quiz,
+          options: pendingReformat.options,
+        }),
+      });
+      var body = await res.json();
+      if (!res.ok) {
+        throw new Error(body.error || 'Save failed.');
+      }
+      window.location.reload();
+    } catch (err) {
+      showError(err.message || 'Save failed.');
+      applyBtn.disabled = false;
+      applyBtn.textContent = 'Save formatted text';
+    }
+  }
+
+  document.querySelectorAll('.js-question-reformat').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var uuid = btn.getAttribute('data-question-uuid');
+      if (uuid) runPreview(uuid, btn);
+    });
+  });
+
+  cancelBtn.addEventListener('click', closeModal);
+  backdrop.addEventListener('click', function (e) {
+    if (e.target === backdrop) closeModal();
+  });
+  applyBtn.addEventListener('click', applyReformat);
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && backdrop.classList.contains('is-open')) closeModal();
+  });
+})();
+</script>

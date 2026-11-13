@@ -71,6 +71,22 @@ def _user_can_toggle_question(user, question):
     return False
 
 
+def _user_can_reformat_question(user, question):
+    """Admins/staff: any question; teachers: own questions or assigned subject."""
+    if not user.is_authenticated:
+        return False
+    if user.is_admin_role or user.is_staff:
+        return True
+    if not user.is_teacher:
+        return False
+    if question.created_by_id == user.pk:
+        return True
+    subject_id = question.sub_strand.strand.subject_id
+    from .models import TeacherSubject
+
+    return TeacherSubject.objects.filter(teacher=user, subject_id=subject_id).exists()
+
+
 def admin_curriculum_required(view_func):
     """Restrict curriculum configuration views to platform admins."""
     @login_required(login_url='accounts:signin')
@@ -692,6 +708,7 @@ def sub_strand_detail(request, slug):
     user = request.user
     for question in questions:
         question.user_can_toggle = _user_can_toggle_question(user, question)
+        question.user_can_reformat = _user_can_reformat_question(user, question)
 
     ai_prompt_generate_url = ''
     question_quiz_types = []

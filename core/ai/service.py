@@ -3,8 +3,10 @@ from .exceptions import AITaskNotFoundError
 from .tasks import (
     EXPLAIN_ANSWER_TASK,
     GRADE_OPEN_ANSWER_TASK,
+    REFORMAT_QUESTION_MATH_TASK,
     ExplainAnswerTask,
     GradeOpenAnswerTask,
+    ReformatQuestionMathTask,
 )
 
 
@@ -16,6 +18,7 @@ class AIService:
         self._tasks = {
             EXPLAIN_ANSWER_TASK: ExplainAnswerTask(client=self.client),
             GRADE_OPEN_ANSWER_TASK: GradeOpenAnswerTask(client=self.client),
+            REFORMAT_QUESTION_MATH_TASK: ReformatQuestionMathTask(client=self.client),
         }
 
     def run(self, task_name: str, **kwargs) -> dict:
