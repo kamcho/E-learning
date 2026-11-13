@@ -620,7 +620,8 @@ class LandingPageNavbarTests(TestCase):
         html = response.content.decode('utf-8')
         navbar_chunk = html[html.find('<div class="navbar-links">'):html.find('</div>\n\n      <div class="navbar-actions">')]
         self.assertNotIn('Curriculum Builder', navbar_chunk)
-        self.assertIn(f'<a href="{reverse("accounts:guardian_dashboard")}">Dashboard</a>', navbar_chunk)
+        self.assertIn(f'href="{reverse("accounts:guardian_dashboard")}"', navbar_chunk)
+        self.assertContains(response, 'nav-dropdown')
 
     def test_authenticated_admin_sees_admin_dashboard_in_navbar(self):
         self.client.force_login(self.admin)
@@ -629,7 +630,7 @@ class LandingPageNavbarTests(TestCase):
         html = response.content.decode('utf-8')
         navbar_chunk = html[html.find('<div class="navbar-links">'):html.find('</div>\n\n      <div class="navbar-actions">')]
         self.assertNotIn('Curriculum Builder', navbar_chunk)
-        self.assertIn(f'<a href="{reverse("accounts:admin_dashboard")}">Dashboard</a>', navbar_chunk)
+        self.assertIn(f'href="{reverse("accounts:admin_dashboard")}"', navbar_chunk)
 
 
 class ServerErrorDiagnosticsTests(TestCase):

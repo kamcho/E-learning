@@ -2149,6 +2149,90 @@ body.landing-ks {
   background: #f3f4f6;
 }
 
+.landing-ks .nav-dropdown {
+  position: relative;
+}
+
+.landing-ks .nav-dropdown summary {
+  list-style: none;
+  cursor: pointer;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 999px;
+  padding: 0.5rem 1.05rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #1a1a1a;
+  white-space: nowrap;
+}
+
+.landing-ks .nav-dropdown summary::-webkit-details-marker {
+  display: none;
+}
+
+.landing-ks .nav-dropdown summary::after {
+  content: ' ▾';
+  font-size: 0.7em;
+}
+
+.landing-ks .nav-dropdown[open] summary {
+  background: var(--clr-primary);
+  color: #fff;
+  border-color: var(--clr-primary);
+}
+
+.landing-ks .nav-dropdown-menu {
+  position: absolute;
+  left: 0;
+  top: calc(100% + 0.4rem);
+  min-width: 11.5rem;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(16, 24, 40, 0.12);
+  padding: 0.4rem;
+  z-index: 25;
+}
+
+.landing-ks .nav-dropdown-menu a {
+  display: block;
+  padding: 0.55rem 0.75rem;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #1a1a1a;
+  border: none;
+}
+
+.landing-ks .nav-dropdown-menu a:hover {
+  background: #f3f4f6;
+  color: #1a1a1a;
+}
+
+.landing-ks .navbar-drawer-links .nav-drawer-group {
+  border-bottom: 1px solid var(--clr-border);
+  padding-bottom: var(--space-sm);
+  margin-bottom: var(--space-sm);
+}
+
+.landing-ks .navbar-drawer-links .nav-drawer-group summary {
+  list-style: none;
+  cursor: pointer;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--clr-text-muted);
+  padding: 0.5rem 0.75rem;
+}
+
+.landing-ks .navbar-drawer-links .nav-drawer-group summary::-webkit-details-marker {
+  display: none;
+}
+
+.landing-ks .navbar-drawer-links .nav-drawer-group a {
+  padding-left: 1.25rem;
+}
+
 .landing-ks .menu-toggle {
   border-color: #e5e7eb;
   background: #fff;
@@ -2318,5 +2402,19 @@ html[data-theme="dark"] .landing-ks .nav-signup-menu {
 }
 
 html[data-theme="dark"] .landing-ks .nav-signup-menu a {
+  color: var(--clr-text);
+}
+
+html[data-theme="dark"] .landing-ks .nav-dropdown summary {
+  color: var(--clr-text);
+  border-color: var(--clr-border);
+}
+
+html[data-theme="dark"] .landing-ks .nav-dropdown-menu {
+  background: var(--clr-surface);
+  border-color: var(--clr-border);
+}
+
+html[data-theme="dark"] .landing-ks .nav-dropdown-menu a {
   color: var(--clr-text);
 }
