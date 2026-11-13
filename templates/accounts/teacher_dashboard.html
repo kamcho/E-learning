@@ -199,6 +199,7 @@
     <p>Welcome, {{ teacher.full_name|default:teacher.phone }}. Track your subjects, questions, and learner performance.</p>
   </div>
   <div class="teacher-actions">
+    <a href="{% url 'core:question_bank_list' %}" class="primary">Question bank</a>
     <a href="{% url 'core:quiz_builder_list' %}" class="primary">Quiz Builder</a>
     <a href="{% url 'core:exams_list' %}">Exam Center</a>
   </div>

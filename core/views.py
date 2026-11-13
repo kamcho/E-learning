@@ -1301,6 +1301,103 @@ def bulk_create_questions_api_view(request):
 
 
 @login_required(login_url='accounts:signin')
+def question_bank_list_view(request):
+    """Browse and manage questions with curriculum filters."""
+    from core.models import Question
+    from core.question_bank import (
+        apply_question_bank_filters,
+        base_questions_queryset,
+        paginate_question_bank,
+        resolve_bank_filters,
+        serialize_question_bank_row,
+    )
+    from subjects.views import _user_can_toggle_question
+
+    if not _is_quiz_builder_allowed(request.user):
+        messages.error(request, "You don't have permission to access the question bank.")
+        return redirect('core:exams_list')
+
+    if request.method == 'POST' and request.POST.get('action') == 'toggle_question_active':
+        question = get_object_or_404(Question, uuid=request.POST.get('question_uuid'))
+        if not _user_can_toggle_question(request.user, question):
+            messages.error(request, "You don't have permission to change this question's status.")
+        else:
+            question.is_active = not question.is_active
+            question.save(update_fields=['is_active', 'updated_at'])
+            verb = 'activated' if question.is_active else 'deactivated'
+            messages.success(request, f'Question {verb}.')
+        redirect_url = request.POST.get('return_to') or reverse('core:question_bank_list')
+        return redirect(redirect_url)
+
+    grade_slug = request.GET.get('grade', '').strip()
+    subject_slug = request.GET.get('subject', '').strip()
+    strand_slug = request.GET.get('strand', '').strip()
+    sub_strand_slug = request.GET.get('sub_strand', '').strip()
+    difficulty = request.GET.get('difficulty', '').strip()
+    quiz_type = request.GET.get('quiz_type', '').strip()
+    status = request.GET.get('status', '').strip()
+    search = request.GET.get('q', '').strip()
+
+    filter_ctx = resolve_bank_filters(
+        request.user,
+        grade_slug=grade_slug,
+        subject_slug=subject_slug,
+        strand_slug=strand_slug,
+        sub_strand_slug=sub_strand_slug,
+    )
+
+    qs = base_questions_queryset(request.user)
+    if grade_slug and not filter_ctx['grade']:
+        qs = qs.none()
+    elif subject_slug and not filter_ctx['subject']:
+        qs = qs.none()
+    elif strand_slug and not filter_ctx['strand']:
+        qs = qs.none()
+    elif sub_strand_slug and not filter_ctx['sub_strand']:
+        qs = qs.none()
+    qs = apply_question_bank_filters(
+        qs,
+        grade=filter_ctx['grade'],
+        subject=filter_ctx['subject'],
+        strand=filter_ctx['strand'],
+        sub_strand=filter_ctx['sub_strand'],
+        difficulty=difficulty,
+        quiz_type=quiz_type,
+        status=status,
+        search=search,
+    )
+
+    page = paginate_question_bank(qs, request.GET.get('page'))
+    question_rows = [serialize_question_bank_row(q, request.user) for q in page.object_list]
+
+    create_question_url = ''
+    if filter_ctx['subject']:
+        create_question_url = reverse(
+            'subjects:create_question',
+            kwargs={'subject_id': filter_ctx['subject'].pk},
+        )
+        if filter_ctx['sub_strand']:
+            create_question_url += f'?sub_strand={filter_ctx["sub_strand"].pk}'
+
+    return render(request, 'core/question_bank_list.html', {
+        'question_rows': question_rows,
+        'page': page,
+        'grade_slug': grade_slug,
+        'subject_slug': subject_slug,
+        'strand_slug': strand_slug,
+        'sub_strand_slug': sub_strand_slug,
+        'difficulty': difficulty,
+        'quiz_type': quiz_type,
+        'status': status,
+        'search': search,
+        'difficulty_choices': Question.DIFFICULTY_CHOICES,
+        'quiz_type_choices': Question.QUIZ_TYPE_CHOICES,
+        'create_question_url': create_question_url,
+        **filter_ctx,
+    })
+
+
+@login_required(login_url='accounts:signin')
 def quiz_questions_api_view(request):
     """AJAX: Return questions filtered by subject and optional strand/sub-strand."""
     if not _is_quiz_builder_allowed(request.user):

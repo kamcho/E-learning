@@ -1,0 +1,313 @@
+{% extends 'accounts/admin_base.html' %}
+
+{% block title %}Question Bank — Soma Smart{% endblock %}
+
+{% block extra_head %}
+{% include 'accounts/partials/admin_list_styles.html' %}
+<style>
+  .qbk-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-md);
+    margin-bottom: var(--space-xl);
+  }
+
+  .qbk-header h1 {
+    font-size: 1.5rem;
+    font-weight: 800;
+    margin: 0 0 var(--space-xs);
+    letter-spacing: -0.02em;
+  }
+
+  .qbk-header p {
+    margin: 0;
+    color: var(--clr-text-muted);
+    font-size: 0.9rem;
+    max-width: 36rem;
+    line-height: 1.5;
+  }
+
+  .qbk-filters {
+    background: var(--clr-surface);
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-lg);
+    margin-bottom: var(--space-xl);
+  }
+
+  .qbk-filter-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+    gap: var(--space-md);
+    align-items: end;
+  }
+
+  .qbk-filter-grid label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--clr-text-muted);
+    margin-bottom: 0.35rem;
+  }
+
+  .qbk-filter-grid select,
+  .qbk-filter-grid input[type="search"] {
+    width: 100%;
+    padding: 0.5rem 0.65rem;
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-md);
+    font-size: 0.88rem;
+    background: var(--clr-surface);
+    color: var(--clr-text);
+  }
+
+  .qbk-filter-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-sm);
+    margin-top: var(--space-md);
+    align-items: center;
+  }
+
+  .qbk-count {
+    margin-left: auto;
+    font-size: 0.85rem;
+    color: var(--clr-text-muted);
+    font-weight: 600;
+  }
+
+  .qbk-prompt {
+    font-size: 0.88rem;
+    line-height: 1.45;
+    color: var(--clr-text);
+    max-width: 28rem;
+  }
+
+  .qbk-path {
+    font-size: 0.78rem;
+    color: var(--clr-text-muted);
+    margin-top: 0.2rem;
+  }
+
+  .qbk-actions-cell {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    align-items: center;
+  }
+
+  .qbk-toggle-form {
+    display: inline;
+    margin: 0;
+  }
+
+  .qbk-toggle-btn {
+    border: 1px solid var(--clr-border);
+    background: var(--clr-surface-alt);
+    color: var(--clr-text);
+    border-radius: var(--radius-md);
+    padding: 0.25rem 0.55rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .qbk-toggle-btn.is-deactivate {
+    border-color: rgba(193, 39, 45, 0.25);
+    color: var(--clr-danger);
+  }
+
+  .qbk-pagination {
+    display: flex;
+    justify-content: center;
+    gap: var(--space-sm);
+    margin-top: var(--space-xl);
+    flex-wrap: wrap;
+  }
+
+  .qbk-pagination a,
+  .qbk-pagination span {
+    padding: 0.45rem 0.75rem;
+    border-radius: var(--radius-md);
+    font-size: 0.85rem;
+    font-weight: 600;
+    border: 1px solid var(--clr-border);
+    text-decoration: none;
+    color: var(--clr-text);
+    background: var(--clr-surface);
+  }
+
+  .qbk-pagination .is-current {
+    background: var(--clr-primary);
+    color: #fff;
+    border-color: var(--clr-primary);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="qbk-header">
+  <div>
+    <h1>Question bank</h1>
+    <p>Filter by grade through sub-strand, then open a question or activate and deactivate items in your scope.</p>
+  </div>
+  <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+    {% if create_question_url %}
+    <a href="{{ create_question_url }}" class="btn btn-primary">+ Add question</a>
+    {% endif %}
+    <a href="{% url 'core:bulk_question_import' %}" class="btn btn-secondary">Bulk import</a>
+  </div>
+</div>
+
+<form method="get" class="qbk-filters" action="{% url 'core:question_bank_list' %}">
+  <div class="qbk-filter-grid">
+    <div>
+      <label for="qbk-grade">Grade</label>
+      <select name="grade" id="qbk-grade" onchange="this.form.submit()">
+        <option value="">All grades</option>
+        {% for g in grade_options %}
+        <option value="{{ g.slug }}"{% if grade and grade.pk == g.pk %} selected{% endif %}>{{ g.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label for="qbk-subject">Subject</label>
+      <select name="subject" id="qbk-subject" onchange="this.form.submit()"{% if not grade %} disabled{% endif %}>
+        <option value="">All subjects</option>
+        {% for s in subject_options %}
+        <option value="{{ s.slug }}"{% if subject and subject.pk == s.pk %} selected{% endif %}>{{ s.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label for="qbk-strand">Strand</label>
+      <select name="strand" id="qbk-strand" onchange="this.form.submit()"{% if not subject %} disabled{% endif %}>
+        <option value="">All strands</option>
+        {% for st in strand_options %}
+        <option value="{{ st.slug }}"{% if strand and strand.pk == st.pk %} selected{% endif %}>{{ st.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label for="qbk-sub-strand">Sub-strand</label>
+      <select name="sub_strand" id="qbk-sub-strand"{% if not subject %} disabled{% endif %}>
+        <option value="">All sub-strands</option>
+        {% for ss in sub_strand_options %}
+        <option value="{{ ss.slug }}"{% if sub_strand and sub_strand.pk == ss.pk %} selected{% endif %}>
+          {% if not strand %}{{ ss.strand.name }} · {% endif %}{{ ss.name }}
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label for="qbk-difficulty">Difficulty</label>
+      <select name="difficulty" id="qbk-difficulty">
+        <option value="">Any</option>
+        {% for value, label in difficulty_choices %}
+        <option value="{{ value }}"{% if difficulty == value %} selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label for="qbk-type">Type</label>
+      <select name="quiz_type" id="qbk-type">
+        <option value="">Any</option>
+        {% for value, label in quiz_type_choices %}
+        <option value="{{ value }}"{% if quiz_type == value %} selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label for="qbk-status">Status</label>
+      <select name="status" id="qbk-status">
+        <option value="">Any</option>
+        <option value="active"{% if status == 'active' %} selected{% endif %}>Active</option>
+        <option value="inactive"{% if status == 'inactive' %} selected{% endif %}>Inactive</option>
+      </select>
+    </div>
+    <div style="grid-column: span 2;">
+      <label for="qbk-search">Search</label>
+      <input type="search" name="q" id="qbk-search" value="{{ search }}" placeholder="Question text, subject, strand…">
+    </div>
+  </div>
+  <div class="qbk-filter-actions">
+    <button type="submit" class="btn btn-primary">Apply filters</button>
+    <a href="{% url 'core:question_bank_list' %}" class="btn btn-secondary">Clear</a>
+    <span class="qbk-count">{{ page.paginator.count }} question{{ page.paginator.count|pluralize }}</span>
+  </div>
+</form>
+
+{% if question_rows %}
+<table class="admin-table teacher-table">
+  <thead>
+    <tr>
+      <th>Question</th>
+      <th>Curriculum</th>
+      <th>Type</th>
+      <th>Difficulty</th>
+      <th>Status</th>
+      <th>Added</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for row in question_rows %}
+    <tr>
+      <td>
+        <div class="qbk-prompt">{{ row.quiz_preview }}</div>
+      </td>
+      <td>
+        <div class="qbk-path">{{ row.grade }} · {{ row.subject }}</div>
+        <div class="qbk-path">{{ row.strand }} · {{ row.sub_strand }}</div>
+      </td>
+      <td>{{ row.quiz_type }}</td>
+      <td>{{ row.difficulty }}</td>
+      <td>
+        <span class="teacher-badge {% if row.is_active %}active{% else %}pending{% endif %}">
+          {% if row.is_active %}Active{% else %}Inactive{% endif %}
+        </span>
+      </td>
+      <td>{{ row.created_at|date:"d M Y" }}</td>
+      <td class="qbk-actions-cell">
+        <a href="{{ row.detail_url }}" class="teacher-link">View</a>
+        <a href="{{ row.sub_strand_url }}" class="teacher-link">Sub-strand</a>
+        {% if row.can_toggle %}
+        <form method="post" class="qbk-toggle-form" action="{% url 'core:question_bank_list' %}">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="toggle_question_active">
+          <input type="hidden" name="question_uuid" value="{{ row.uuid }}">
+          <input type="hidden" name="return_to" value="{{ request.get_full_path }}">
+          <button type="submit" class="qbk-toggle-btn{% if row.is_active %} is-deactivate{% endif %}">
+            {% if row.is_active %}Deactivate{% else %}Activate{% endif %}
+          </button>
+        </form>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+{% if page.has_other_pages %}
+<nav class="qbk-pagination" aria-label="Questions pages">
+  {% if page.has_previous %}
+  <a href="?page={{ page.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&amp;{{ key }}={{ value|urlencode }}{% endif %}{% endfor %}">Previous</a>
+  {% endif %}
+  <span class="is-current">Page {{ page.number }} of {{ page.paginator.num_pages }}</span>
+  {% if page.has_next %}
+  <a href="?page={{ page.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&amp;{{ key }}={{ value|urlencode }}{% endif %}{% endfor %}">Next</a>
+  {% endif %}
+</nav>
+{% endif %}
+
+{% else %}
+<div class="teacher-empty">
+  <strong>No questions match these filters</strong>
+  <p>Try clearing filters or add questions via sub-strand import or bulk import.</p>
+</div>
+{% endif %}
+{% endblock %}

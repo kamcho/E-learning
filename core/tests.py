@@ -590,6 +590,52 @@ class PrivacyPolicyTests(TestCase):
         self.assertContains(response, 'Retention and deletion')
 
 
+class QuestionBankTests(TestCase):
+    def setUp(self):
+        self.teacher = User.objects.create_user(
+            phone='0744444441',
+            password='1234',
+            role=Role.TEACHER,
+            first_name='Teach',
+            last_name='Er',
+        )
+        self.grade = GradeLevel.objects.create(name='G6 Bank', slug='g6-bank', level='Upper Primary')
+        self.discipline = Discipline.objects.create(name='Math', slug='math-bank')
+        self.subject = Subject.objects.create(
+            name='Mathematics',
+            slug='math-bank-subj',
+            grade_level=self.grade,
+            discipline=self.discipline,
+        )
+        self.strand = Strand.objects.create(name='Measurement', slug='meas-bank', subject=self.subject)
+        self.sub = SubStrand.objects.create(name='Area', slug='area-bank', strand=self.strand)
+        Question.objects.create(
+            quiz='What is area?',
+            difficulty='Easy',
+            quiz_type='Multiple Choice',
+            sub_strand=self.sub,
+            created_by=self.teacher,
+            is_active=True,
+        )
+
+    def test_teacher_can_open_question_bank(self):
+        self.client.force_login(self.teacher)
+        response = self.client.get(reverse('core:question_bank_list'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'What is area?')
+
+    def test_grade_filter_narrows_results(self):
+        self.client.force_login(self.teacher)
+        url = reverse('core:question_bank_list')
+        self.assertEqual(self.client.get(url, {'grade': self.grade.slug}).status_code, 200)
+        self.assertContains(self.client.get(url, {'grade': self.grade.slug}), 'What is area?')
+        other_grade = GradeLevel.objects.create(name='G7 Bank', slug='g7-bank', level='Junior Secondary')
+        self.assertNotContains(
+            self.client.get(url, {'grade': other_grade.slug}),
+            'What is area?',
+        )
+
+
 class LandingPageNavbarTests(TestCase):
     def setUp(self):
         self.guardian = User.objects.create_user(
