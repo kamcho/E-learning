@@ -4,6 +4,8 @@ openai>=1.0.0
 python-dotenv>=1.0.0
 requests>=2.31.0
 google-auth>=2.29.0
+pyotp>=2.9.0
+qrcode[pil]>=7.4.0
 
 # --- Production server (ASGI): gunicorn process manager + uvicorn async workers ---
 gunicorn>=22.0.0

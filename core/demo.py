@@ -86,6 +86,10 @@ def start_demo_session(
     sub_strand=None,
     questions,
 ):
+    from core.presentation import demo_questions_presentation_order
+
+    demo_id = str(uuid_lib.uuid4())
+    questions = demo_questions_presentation_order(demo_id, list(questions))
     question_ids = [str(question.uuid) for question in questions]
     scope_label = {
         'general': 'Whole subject',
@@ -94,7 +98,7 @@ def start_demo_session(
     }.get(scope, scope)
 
     return {
-        'demo_id': str(uuid_lib.uuid4()),
+        'demo_id': demo_id,
         'started_at': timezone.now().isoformat(),
         'grade_slug': grade.slug,
         'grade_name': grade.name,
@@ -181,7 +185,9 @@ def build_demo_breakdown(demo, questions):
         fb = demo.get('feedback', {}).get(qid, {})
         answer_uuid = demo.get('answers', {}).get(qid, '')
         options_list = []
-        for opt in question.options.filter(is_active=True).order_by('created_at'):
+        from core.presentation import options_for_demo
+
+        for opt in options_for_demo(demo.get('demo_id', ''), question):
             options_list.append({
                 'uuid': str(opt.uuid),
                 'option': opt.option,

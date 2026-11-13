@@ -449,8 +449,7 @@
             Select all answers that apply.
           </p>
           <div class="option-list">
-            {% for option in question.options.all %}
-              {% if option.is_active %}
+            {% for option in choice_options %}
                 <label class="option-label">
                   <input type="checkbox" name="answer" value="{{ option.uuid }}"
                     {% if option.uuid|stringformat:"s" in saved_answer_ids %}checked{% endif %}>
@@ -460,13 +459,11 @@
                     {% include 'core/partials/option_content.html' with text=option.option image_url='' %}
                   {% endif %}
                 </label>
-              {% endif %}
             {% endfor %}
           </div>
           {% else %}
           <div class="option-list">
-            {% for option in question.options.all %}
-              {% if option.is_active %}
+            {% for option in choice_options %}
                 <label class="option-label">
                   <input type="radio" name="answer" value="{{ option.uuid }}"
                     {% if saved_answer == option.uuid|stringformat:"s" %}checked{% endif %} required>
@@ -476,7 +473,6 @@
                     {% include 'core/partials/option_content.html' with text=option.option image_url='' %}
                   {% endif %}
                 </label>
-              {% endif %}
             {% endfor %}
           </div>
           {% endif %}

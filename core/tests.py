@@ -12,6 +12,7 @@ from core.error_views import server_error
 from core.models import Option, Question, Quiz, UserAttempts
 from core.scoring import finalize_attempt, grade_text_question, upsert_response
 from core.json_paste import normalize_json_paste, parse_json_paste
+from core.presentation import options_for_attempt, questions_for_attempt, stable_shuffle
 from core.question_import import bulk_create_questions, validate_question_item
 from subjects.models import Discipline, GradeLevel, Strand, Subject, SubStrand
 from subscriptions.models import GuestDemoPayment, SubscriptionPlan
@@ -39,6 +40,45 @@ class JsonPasteTests(TestCase):
         parsed = parse_json_paste(raw)
         self.assertEqual(len(parsed['questions']), 1)
         self.assertEqual(parsed['questions'][0]['quiz'], 'Test?')
+
+
+class PresentationShuffleTests(TestCase):
+    def test_stable_shuffle_is_deterministic(self):
+        items = list(range(10))
+        first = stable_shuffle(items, 'attempt-a', 'options')
+        second = stable_shuffle(items, 'attempt-a', 'options')
+        self.assertEqual(first, second)
+        third = stable_shuffle(items, 'attempt-b', 'options')
+        self.assertNotEqual(first, third)
+
+    def test_questions_for_attempt_respects_attempt_seed(self):
+        grade = GradeLevel.objects.create(name='G5', slug='g5-shuf', level='Upper Primary')
+        discipline = Discipline.objects.create(name='D', slug='d-shuf')
+        subject = Subject.objects.create(name='S', slug='s-shuf', grade_level=grade, discipline=discipline)
+        strand = Strand.objects.create(name='St', slug='st-shuf', subject=subject)
+        sub = SubStrand.objects.create(name='Sub', slug='sub-shuf', strand=strand)
+        teacher = User.objects.create_user(phone='0700000001', password='1234', role=Role.TEACHER)
+        student = Student.objects.create(first_name='A', last_name='B', grade_level=grade)
+        quiz = Quiz.objects.create(title='Shuffle quiz', subject=subject, created_by=teacher)
+        for index in range(5):
+            q = Question.objects.create(
+                quiz=f'Q{index}?',
+                quiz_type='Multiple Choice',
+                difficulty='Easy',
+                sub_strand=sub,
+            )
+            Option.objects.create(question=q, option='A', is_correct=True)
+            quiz.questions.add(q)
+        attempt = UserAttempts.objects.create(
+            user=teacher,
+            student=student,
+            quiz=quiz,
+            is_active=True,
+        )
+        order_one = [q.pk for q in questions_for_attempt(attempt, quiz)]
+        order_two = [q.pk for q in questions_for_attempt(attempt, quiz)]
+        self.assertEqual(order_one, order_two)
+        self.assertEqual(len(order_one), 5)
 
 
 class QuestionImportTests(TestCase):

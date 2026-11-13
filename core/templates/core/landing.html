@@ -36,6 +36,7 @@
       </a>
 
       <div class="navbar-links">
+        <a href="#get-started">Get started</a>
         <a href="#exam">Practice exam</a>
         <a href="#how-it-works">How it works</a>
         <a href="#about">About</a>
@@ -82,6 +83,7 @@
       <span class="brand-text" style="color: var(--clr-text);">Soma Smart</span>
     </div>
     <div class="navbar-drawer-links">
+      <a href="#get-started">Get started</a>
       <a href="#exam">Practice exam</a>
       <a href="#how-it-works">How it works</a>
       <a href="#about">About</a>
@@ -205,6 +207,71 @@
             <div class="card-subtitle">KICD Approved Content</div>
           </div>
         </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════ AUDIENCE CARDS ═══════════════ -->
+  <section class="audience" id="get-started">
+    <div class="container">
+      <div class="audience-grid">
+        <article class="audience-card audience-card--parent reveal">
+          <div class="audience-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+              <circle cx="9" cy="7" r="4"/>
+              <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+            </svg>
+          </div>
+          <h3>Parent</h3>
+          <p>Register your children, track their progress, and manage their learning journey.</p>
+          {% if request.user.is_authenticated %}
+            <a href="{{ request.user.dashboard_url }}" class="audience-link">Go to dashboard <span aria-hidden="true">→</span></a>
+          {% else %}
+            <a href="{% url 'accounts:signup' %}?role=guardian" class="audience-link">Sign up <span aria-hidden="true">→</span></a>
+          {% endif %}
+        </article>
+
+        <article class="audience-card audience-card--teacher reveal">
+          <div class="audience-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 10 12 5 2 10l10 5 10-5z"/>
+              <path d="M6 12v5c0 1.7 2.7 3 6 3s6-1.3 6-3v-5"/>
+            </svg>
+          </div>
+          <h3>Teacher</h3>
+          <p>Get a free class code, track all your students’ progress in one dashboard.</p>
+          {% if request.user.is_authenticated %}
+            <a href="{{ request.user.dashboard_url }}" class="audience-link">Go to dashboard <span aria-hidden="true">→</span></a>
+          {% else %}
+            <a href="{% url 'accounts:signup' %}?role=teacher" class="audience-link">Sign up free <span aria-hidden="true">→</span></a>
+          {% endif %}
+          <a href="#teachers" class="audience-link audience-link--secondary">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+              <polyline points="9 22 9 12 15 12 15 22"/>
+            </svg>
+            Learn about Teacher Partners
+          </a>
+        </article>
+
+        <article class="audience-card audience-card--school reveal">
+          <div class="audience-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 21h18"/>
+              <path d="M5 21V8l7-5 7 5v13"/>
+              <path d="M9 21v-6h6v6"/>
+            </svg>
+          </div>
+          <h3>School</h3>
+          <p>Buy learner places, add your teachers, and every child joins through a class link — one place per child, paid by the school.</p>
+          {% if request.user.is_authenticated %}
+            <a href="{% url 'subscriptions:plans' %}" class="audience-link">View plans <span aria-hidden="true">→</span></a>
+          {% else %}
+            <a href="{% url 'accounts:signup' %}?role=partner" class="audience-link">Find out more <span aria-hidden="true">→</span></a>
+          {% endif %}
+        </article>
       </div>
     </div>
   </section>
@@ -394,7 +461,8 @@
             <h3>Who we serve</h3>
             <p><strong>Learners</strong> — PP1 to Grade 9 revising at their own pace.</p>
             <p><strong>Guardians</strong> — tracking progress without the guesswork.</p>
-            <p><strong>Teachers &amp; partners</strong> — aligning practice to CBE strands.</p>
+            <p id="teachers"><strong>Teachers &amp; partners</strong> — aligning practice to CBE strands, with a free class code to track every learner.</p>
+            <p id="schools"><strong>Schools</strong> — buy learner places, add teachers, and let every child join through a class link.</p>
           </div>
           <div class="about-aside-card about-aside-card--accent">
             <h3>Our promise</h3>

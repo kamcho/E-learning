@@ -114,6 +114,16 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
         default=0,
         help_text='Reward points earned from successful referral subscriptions.',
     )
+    totp_enabled = models.BooleanField(
+        default=False,
+        help_text='Require an authenticator app code at sign-in.',
+    )
+    totp_secret = models.CharField(
+        max_length=255,
+        blank=True,
+        default='',
+        help_text='Encrypted TOTP shared secret (set via Security settings).',
+    )
 
     # Django auth flags
     is_active = models.BooleanField(default=True)

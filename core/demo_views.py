@@ -406,7 +406,9 @@ def demo_take_view(request):
     current_question = questions[display_index]
     qid = str(current_question.uuid)
     feedback = demo.get('feedback', {}).get(qid) if showing_feedback else None
-    options = list(current_question.options.filter(is_active=True).order_by('created_at'))
+    from core.presentation import options_for_demo
+
+    options = options_for_demo(demo.get('demo_id', ''), current_question)
 
     nav_states = []
     for index, question in enumerate(questions):

@@ -398,9 +398,9 @@ def _build_attempt_breakdown(attempt):
         str(r.question_id): r
         for r in attempt.responses.select_related('selected_option').order_by('answered_at')
     }
-    questions = list(
-        attempt.quiz.questions.filter(is_active=True).prefetch_related('options').order_by('created_at')
-    )
+    from core.presentation import options_for_attempt, questions_for_attempt
+
+    questions = questions_for_attempt(attempt, attempt.quiz)
     rows = []
     for index, question in enumerate(questions, start=1):
         response = responses.get(str(question.uuid))
@@ -415,7 +415,7 @@ def _build_attempt_breakdown(attempt):
                     selected_ids = {response.text_answer}
 
         options_list = []
-        for opt in question.options.filter(is_active=True).order_by('created_at'):
+        for opt in options_for_attempt(attempt, question):
             options_list.append({
                 'uuid': str(opt.uuid),
                 'option': opt.option,
@@ -501,9 +501,9 @@ def test_take_view(request, quiz_uuid, student_uuid):
         messages.error(request, "You don't have permission to take this exam.")
         return redirect('core:exams_list')
 
-    questions = list(
-        quiz.questions.filter(is_active=True).prefetch_related('options').order_by('created_at')
-    )
+    from core.presentation import options_for_attempt, questions_for_attempt
+
+    questions = questions_for_attempt(attempt, quiz)
     question_count = len(questions)
 
     if attempt.is_complete:
@@ -613,8 +613,15 @@ def test_take_view(request, quiz_uuid, student_uuid):
             parse_matching_submission,
         )
 
-        matching_rows = matching_rows_for_display(current_question)
-        matching_choices = matching_choice_pool(current_question)
+        presentation_seed = attempt.uuid
+        matching_rows = matching_rows_for_display(
+            current_question,
+            presentation_seed=presentation_seed,
+        )
+        matching_choices = matching_choice_pool(
+            current_question,
+            presentation_seed=presentation_seed,
+        )
         saved_matching = parse_matching_submission(saved_answer)
         for row in matching_rows:
             row['saved_right'] = saved_matching.get(row['left'], '')
@@ -622,11 +629,11 @@ def test_take_view(request, quiz_uuid, student_uuid):
             matching_ui_mode = 'rows'
         elif current_question.options.filter(is_active=True).exists():
             matching_ui_mode = 'pick_option'
-            matching_options = list(
-                current_question.options.filter(is_active=True).order_by('created_at')
-            )
+            matching_options = options_for_attempt(attempt, current_question)
         else:
             matching_ui_mode = 'text'
+
+    choice_options = options_for_attempt(attempt, current_question)
 
     return render(
         request,
@@ -636,6 +643,7 @@ def test_take_view(request, quiz_uuid, student_uuid):
             'quiz': quiz,
             'student': student,
             'question': current_question,
+            'choice_options': choice_options,
             'question_number': current_index + 1,
             'question_count': question_count,
             'saved_answer': saved_answer,

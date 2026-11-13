@@ -335,9 +335,9 @@ def finalize_attempt(attempt):
 
     Unanswered questions count toward marks_possible with 0 marks earned.
     """
-    questions = list(
-        attempt.quiz.questions.filter(is_active=True).order_by('created_at')
-    )
+    from core.presentation import questions_for_attempt
+
+    questions = questions_for_attempt(attempt, attempt.quiz)
     if not questions:
         return 0, 0, 0, 0, 0
 

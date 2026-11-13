@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}Authenticator code — Soma Smart{% endblock %}
+{% block body_class %} auth-page{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width:420px;margin:3rem auto;padding:0 1rem;">
+  <div class="card" style="padding:1.75rem;border-radius:12px;border:1px solid var(--clr-border);">
+    <h1 style="font-family:var(--font-heading);font-size:1.35rem;margin:0 0 0.5rem;">Two-step verification</h1>
+    <p style="font-size:0.9rem;color:var(--clr-text-muted);margin:0 0 1.25rem;">
+      Open your authenticator app (Google Authenticator, Authy, Microsoft Authenticator, etc.) and enter the 6-digit code.
+    </p>
+    <form method="post" action="">
+      {% csrf_token %}
+      {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+      <label class="form-label" for="code">Authentication code</label>
+      <input
+        id="code"
+        name="code"
+        type="text"
+        inputmode="numeric"
+        pattern="[0-9 ]*"
+        maxlength="8"
+        class="form-input"
+        placeholder="000000"
+        autocomplete="one-time-code"
+        required
+        autofocus
+        style="font-size:1.25rem;letter-spacing:0.2em;text-align:center;margin-bottom:1rem;"
+      >
+      <button type="submit" class="btn btn-primary" style="width:100%;">Verify and continue</button>
+    </form>
+    <p style="margin-top:1rem;font-size:0.82rem;text-align:center;">
+      <a href="{% url 'accounts:signin' %}">Back to sign in</a>
+    </p>
+  </div>
+</div>
+{% endblock %}

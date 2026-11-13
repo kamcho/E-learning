@@ -485,6 +485,21 @@
 
   <div class="profile-panel">
     <div class="profile-panel-head">
+      <span>&#128274;</span>
+      <h2>Security</h2>
+    </div>
+    <div class="profile-panel-body">
+      <p style="font-size: 0.88rem; color: var(--clr-text-muted); line-height: 1.6; margin-bottom: 1rem;">
+        Use an authenticator app for a second step when signing in.
+      </p>
+      <a href="{% url 'accounts:account_security' %}" class="quick-action" style="display:inline-flex;">
+        <span>&#128273;</span> Two-factor authentication
+      </a>
+    </div>
+  </div>
+
+  <div class="profile-panel">
+    <div class="profile-panel-head">
       <span>&#9881;</span>
       <h2>Access &amp; Permissions</h2>
     </div>

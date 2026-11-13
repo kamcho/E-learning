@@ -129,7 +129,13 @@ def signup_view(request):
         else:
             messages.error(request, "Please correct the errors in the signup form.")
     else:
-        form = SignUpForm(initial={'referral_code': referral_code} if referral_code else None)
+        initial = {}
+        if referral_code:
+            initial['referral_code'] = referral_code
+        role_param = (request.GET.get('role') or '').strip().lower()
+        if role_param in {Role.GUARDIAN, Role.TEACHER, Role.PARTNER, Role.REFERRAL}:
+            initial['role'] = role_param
+        form = SignUpForm(initial=initial or None)
 
     return render(request, 'accounts/signup.html', _auth_page_context(
         form=form,
@@ -166,6 +172,15 @@ def signin_view(request):
 
             user = authenticate(request, phone=phone, password=password)
             if user is not None:
+                from .totp import begin_pending_2fa, user_has_totp_enabled
+
+                if user_has_totp_enabled(user):
+                    begin_pending_2fa(request, user, next_url)
+                    messages.info(
+                        request,
+                        'Enter the 6-digit code from your authenticator app.',
+                    )
+                    return redirect('accounts:totp_verify')
                 auth_login(request, user)
                 messages.success(request, f"Welcome back, {user.first_name}!")
                 return redirect(_resolve_post_login_redirect(request, user, next_url))
@@ -216,6 +231,16 @@ def google_auth_view(request):
     if not user.is_active:
         return JsonResponse({'ok': False, 'error': 'This account is inactive.'}, status=403)
 
+    from .totp import begin_pending_2fa, user_has_totp_enabled
+
+    next_url = payload.get('next')
+    if user_has_totp_enabled(user):
+        begin_pending_2fa(request, user, next_url or '')
+        return JsonResponse({
+            'ok': True,
+            'redirect': reverse('accounts:totp_verify'),
+        })
+
     auth_login(
         request,
         user,
@@ -228,7 +253,7 @@ def google_auth_view(request):
 
     return JsonResponse({
         'ok': True,
-        'redirect': _resolve_post_login_redirect(request, user, payload.get('next')),
+        'redirect': _resolve_post_login_redirect(request, user, next_url),
     })
 
 
@@ -274,9 +299,135 @@ def complete_profile_view(request):
 
 def signout_view(request):
     """View to handle log out."""
+    from .totp import clear_2fa_session
+
+    clear_2fa_session(request)
     auth_logout(request)
     messages.success(request, "You have been logged out successfully.")
     return redirect('core:landing')
+
+
+def _finish_login_after_2fa(request, user, next_url=''):
+    from .totp import mark_2fa_verified, pop_pending_2fa_user_id
+
+    if not request.user.is_authenticated:
+        auth_login(
+            request,
+            user,
+            backend='django.contrib.auth.backends.ModelBackend',
+        )
+    pop_pending_2fa_user_id(request)
+    request.session.pop('pending_2fa_next', None)
+    mark_2fa_verified(request, user)
+    messages.success(request, f"Welcome back, {user.first_name}!")
+    return redirect(_resolve_post_login_redirect(request, user, next_url))
+
+
+@require_http_methods(['GET', 'POST'])
+def totp_verify_view(request):
+    """Second step after phone/PIN or Google when authenticator 2FA is enabled."""
+    from .totp import (
+        PENDING_2FA_USER_KEY,
+        pending_2fa_next,
+        user_has_totp_enabled,
+        verify_user_totp,
+    )
+
+    user = None
+    if request.user.is_authenticated:
+        user = request.user
+    else:
+        raw = request.session.get(PENDING_2FA_USER_KEY)
+        if raw:
+            user = MyUser.objects.filter(pk=int(raw), is_active=True).first()
+
+    if not user or not user_has_totp_enabled(user):
+        messages.info(request, 'Sign in with your phone and PIN first.')
+        return redirect('accounts:signin')
+
+    if request.method == 'POST':
+        code = (request.POST.get('code') or '').strip()
+        if verify_user_totp(user, code):
+            next_url = pending_2fa_next(request) or request.GET.get('next', '')
+            return _finish_login_after_2fa(request, user, next_url)
+        messages.error(request, 'Invalid or expired code. Try again.')
+
+    return render(request, 'accounts/totp_verify.html', {
+        'next': pending_2fa_next(request),
+    })
+
+
+@login_required(login_url='accounts:signin')
+def account_security_view(request):
+    """Enable or disable authenticator app 2FA."""
+    from .totp import (
+        SESSION_SETUP_SECRET,
+        encrypt_totp_secret,
+        generate_totp_secret,
+        provisioning_uri,
+        qrcode_data_url,
+        user_has_totp_enabled,
+        verify_totp_code,
+    )
+
+    user = request.user
+    setup_secret = request.session.get(SESSION_SETUP_SECRET)
+
+    if request.method == 'POST':
+        from .totp import verify_user_totp
+
+        action = request.POST.get('action', '')
+        if action == 'start_setup' and not user_has_totp_enabled(user):
+            setup_secret = generate_totp_secret()
+            request.session[SESSION_SETUP_SECRET] = setup_secret
+            request.session.modified = True
+            messages.info(request, 'Scan the QR code, then enter a code to confirm.')
+        elif action == 'confirm_setup':
+            setup_secret = request.session.get(SESSION_SETUP_SECRET, '')
+            code = (request.POST.get('code') or '').strip()
+            if not setup_secret or not verify_totp_code(setup_secret, code):
+                messages.error(request, 'Could not verify that code. Try again.')
+            else:
+                user.totp_secret = encrypt_totp_secret(setup_secret)
+                user.totp_enabled = True
+                user.save(update_fields=['totp_secret', 'totp_enabled', 'updated_at'])
+                request.session.pop(SESSION_SETUP_SECRET, None)
+                from .totp import mark_2fa_verified
+
+                mark_2fa_verified(request, user)
+                messages.success(request, 'Authenticator app 2FA is now enabled.')
+                return redirect('accounts:account_security')
+        elif action == 'disable' and user_has_totp_enabled(user):
+            pin = (request.POST.get('pin') or '').strip()
+            code = (request.POST.get('code') or '').strip()
+            if not user.check_password(pin):
+                messages.error(request, 'Incorrect PIN.')
+            elif not verify_user_totp(user, code):
+                messages.error(request, 'Invalid authenticator code.')
+            else:
+                user.totp_enabled = False
+                user.totp_secret = ''
+                user.save(update_fields=['totp_enabled', 'totp_secret', 'updated_at'])
+                request.session.pop(SESSION_SETUP_SECRET, None)
+                from .totp import mark_2fa_verified
+
+                mark_2fa_verified(request, user)
+                messages.success(request, 'Two-factor authentication has been turned off.')
+                return redirect('accounts:account_security')
+
+    qr_data_url = ''
+    manual_secret = ''
+    if setup_secret and not user_has_totp_enabled(user):
+        uri = provisioning_uri(user, setup_secret)
+        qr_data_url = qrcode_data_url(uri)
+        manual_secret = setup_secret
+
+    return render(request, 'accounts/account_security.html', {
+        'totp_enabled': user_has_totp_enabled(user),
+        'qr_data_url': qr_data_url,
+        'manual_secret': manual_secret,
+        'setup_pending': bool(setup_secret and not user_has_totp_enabled(user)),
+    })
 
 
 @login_required(login_url='accounts:signin')

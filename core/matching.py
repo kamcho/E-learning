@@ -92,8 +92,10 @@ def parse_matching_pairs(question):
     return pairs
 
 
-def matching_choice_pool(question):
+def matching_choice_pool(question, *, presentation_seed=None):
     """Unique right-column labels for dropdowns."""
+    from core.presentation import stable_shuffle
+
     labels = []
     seen = set()
     for pair in parse_matching_pairs(question):
@@ -103,6 +105,8 @@ def matching_choice_pool(question):
             seen.add(key)
             labels.append(label)
     if labels:
+        if presentation_seed is not None:
+            return stable_shuffle(labels, presentation_seed, question.uuid, 'matching_choices')
         return labels
     for opt in question.options.filter(is_active=True).order_by('created_at'):
         text = (opt.option or '').strip()
@@ -112,13 +116,19 @@ def matching_choice_pool(question):
         if key not in seen:
             seen.add(key)
             labels.append(text)
+    if presentation_seed is not None and labels:
+        labels = stable_shuffle(labels, presentation_seed, question.uuid, 'matching_choices')
     return labels
 
 
-def matching_rows_for_display(question):
+def matching_rows_for_display(question, *, presentation_seed=None):
     """Rows for the take-exam matching UI."""
+    from core.presentation import stable_shuffle
+
     pairs = parse_matching_pairs(question)
     if pairs:
+        if presentation_seed is not None:
+            pairs = stable_shuffle(pairs, presentation_seed, question.uuid, 'matching_rows')
         return pairs
     labels = matching_choice_pool(question)
     if not labels:
