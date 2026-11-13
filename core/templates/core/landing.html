@@ -25,7 +25,7 @@
   </script>
   <link rel="stylesheet" href="{% static 'css/styles.css' %}">
 </head>
-<body>
+<body class="landing-ks">
 
   <!-- ═══════════════ NAVBAR ═══════════════ -->
   <nav class="navbar" id="navbar">
@@ -36,7 +36,6 @@
       </a>
 
       <div class="navbar-links">
-        <a href="#audience">Get started</a>
         <a href="#exam">Practice exam</a>
         <a href="#how-it-works">How it works</a>
         <a href="#about">About</a>
@@ -58,13 +57,18 @@
           </svg>
         </button>
         {% if request.user.is_authenticated %}
-          <span style="font-weight: 600; font-size: 0.95rem; color: rgba(255,255,255,0.9); margin-right: 10px;">
-            Hi, {{ request.user.first_name }}!
-          </span>
-          <a href="{% url 'accounts:signout' %}" class="btn-signup" style="background: var(--clr-danger); color: white; box-shadow: none;">Log Out</a>
+          <span class="navbar-greeting">Hi, {{ request.user.first_name }}!</span>
+          <a href="{% url 'accounts:signout' %}" class="btn-signup">Log Out</a>
         {% else %}
+          <details class="nav-signup">
+            <summary>Sign Up</summary>
+            <div class="nav-signup-menu">
+              <a href="{% url 'accounts:signup' %}?role=guardian">Parent</a>
+              <a href="{% url 'accounts:signup' %}?role=teacher">Teacher</a>
+              <a href="{% url 'accounts:signup' %}?role=partner">School</a>
+            </div>
+          </details>
           <a href="{% url 'accounts:signin' %}" class="btn-login">Log In</a>
-          <a href="{% url 'accounts:signup' %}" class="btn-signup">Get Started</a>
         {% endif %}
       </div>
 
@@ -83,7 +87,6 @@
       <span class="brand-text" style="color: var(--clr-text);">Soma Smart</span>
     </div>
     <div class="navbar-drawer-links">
-      <a href="#audience">Get started</a>
       <a href="#exam">Practice exam</a>
       <a href="#how-it-works">How it works</a>
       <a href="#about">About</a>
@@ -92,6 +95,10 @@
         <a href="{{ request.user.dashboard_url }}">Dashboard</a>
         <a href="{% url 'core:exams_list' %}">Exam Center</a>
         <a href="{% url 'subscriptions:plans' %}">Subscriptions</a>
+      {% else %}
+        <a href="{% url 'accounts:signup' %}?role=guardian">Parent sign up</a>
+        <a href="{% url 'accounts:signup' %}?role=teacher">Teacher sign up</a>
+        <a href="{% url 'accounts:signup' %}?role=partner">School sign up</a>
       {% endif %}
     </div>
     <div class="navbar-drawer-actions">
@@ -120,7 +127,6 @@
     <div class="container">
       <div class="hero-content">
         <div class="hero-badge">
-          <span class="badge-dot"></span>
           PP1 to Grade 9 · KPSEA, KJSEA &amp; KCBE ready
         </div>
 

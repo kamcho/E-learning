@@ -2000,3 +2000,323 @@ html[data-theme="dark"] .audience-card--junior {
     gap: var(--space-lg);
   }
 }
+
+/* ============================================
+   Kusoma-style landing layout (Soma Smart copy)
+   ============================================ */
+body.landing-ks {
+  padding-top: 4.5rem;
+  background: #fafafa;
+}
+
+.landing-ks .navbar {
+  background: #fff;
+  border-bottom: 1px solid #eee;
+  padding: 0.7rem 0;
+  box-shadow: none;
+}
+
+.landing-ks .navbar.scrolled {
+  background: #fff;
+  box-shadow: 0 4px 18px rgba(16, 24, 40, 0.06);
+  padding: 0.7rem 0;
+}
+
+.landing-ks .navbar-brand .logo-icon {
+  background: var(--clr-primary);
+  color: #fff;
+  box-shadow: none;
+  border-radius: 12px;
+}
+
+.landing-ks .navbar-brand .brand-text,
+.landing-ks .navbar.scrolled .brand-text {
+  color: #1a1a1a;
+}
+
+.landing-ks .navbar-links {
+  gap: 0.55rem;
+}
+
+.landing-ks .navbar-links a {
+  color: #1a1a1a;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 999px;
+  padding: 0.5rem 1.05rem;
+  font-weight: 600;
+  font-size: 0.88rem;
+}
+
+.landing-ks .navbar-links a::after {
+  display: none;
+}
+
+.landing-ks .navbar-links a:hover,
+.landing-ks .navbar.scrolled .navbar-links a:hover {
+  color: #fff;
+  background: var(--clr-primary);
+  border-color: var(--clr-primary);
+}
+
+.landing-ks .navbar.scrolled .navbar-links a {
+  color: #1a1a1a;
+}
+
+.landing-ks .navbar .theme-toggle,
+.landing-ks .navbar.scrolled .theme-toggle {
+  background: #fff;
+  border-color: #e5e7eb;
+  color: #1a1a1a;
+}
+
+.landing-ks .navbar-greeting {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #1a1a1a;
+}
+
+.landing-ks .navbar-actions .btn-login {
+  color: #1a1a1a;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 999px;
+  padding: 0.5rem 1.15rem;
+}
+
+.landing-ks .navbar.scrolled .navbar-actions .btn-login {
+  color: #1a1a1a;
+}
+
+.landing-ks .navbar-actions .btn-signup {
+  background: var(--clr-primary);
+  color: #fff;
+  box-shadow: none;
+  border-radius: 999px;
+}
+
+.landing-ks .navbar-actions .btn-signup:hover {
+  transform: none;
+  box-shadow: none;
+  filter: brightness(1.05);
+}
+
+.landing-ks .nav-signup {
+  position: relative;
+}
+
+.landing-ks .nav-signup summary {
+  list-style: none;
+  cursor: pointer;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 999px;
+  padding: 0.5rem 1.15rem;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+.landing-ks .nav-signup summary::-webkit-details-marker {
+  display: none;
+}
+
+.landing-ks .nav-signup summary::after {
+  content: ' ▾';
+  font-size: 0.7em;
+}
+
+.landing-ks .nav-signup-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.4rem);
+  min-width: 11rem;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(16, 24, 40, 0.12);
+  padding: 0.4rem;
+  z-index: 20;
+}
+
+.landing-ks .nav-signup-menu a {
+  display: block;
+  padding: 0.55rem 0.75rem;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.landing-ks .nav-signup-menu a:hover {
+  background: #f3f4f6;
+}
+
+.landing-ks .menu-toggle {
+  border-color: #e5e7eb;
+  background: #fff;
+}
+
+.landing-ks .menu-toggle span {
+  background: #1a1a1a;
+}
+
+.landing-ks .hero {
+  min-height: 0;
+  align-items: flex-start;
+  background: #0d8a4e;
+  padding: 4.5rem 0 8.5rem;
+}
+
+.landing-ks .hero .container {
+  display: block;
+  max-width: 52rem;
+  margin: 0;
+}
+
+.landing-ks .hero-visual {
+  display: none;
+}
+
+.landing-ks .hero-badge {
+  background: #f5e36a;
+  color: #1a1a1a;
+  border: none;
+  border-radius: 4px;
+  padding: 0.4rem 0.85rem;
+  font-size: 0.92rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+  transform: rotate(-1.2deg);
+  margin-bottom: 1.4rem;
+}
+
+.landing-ks .hero-badge .badge-dot {
+  display: none;
+}
+
+.landing-ks .hero h1 {
+  font-size: clamp(2.6rem, 6vw, 4.35rem);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1.05;
+  max-width: 14ch;
+}
+
+.landing-ks .hero h1 .highlight {
+  background: #f5e36a;
+  -webkit-background-clip: unset;
+  background-clip: unset;
+  -webkit-text-fill-color: #1a1a1a;
+  color: #1a1a1a;
+  padding: 0 0.12em;
+  border-radius: 4px;
+}
+
+.landing-ks .hero-description {
+  font-size: 1.12rem;
+  color: rgba(255, 255, 255, 0.88);
+  max-width: 38rem;
+}
+
+.landing-ks .hero-cta .btn-start-exam,
+.landing-ks .hero-cta .btn-primary {
+  background: #fff;
+  color: #1a1a1a;
+  border: none;
+  border-radius: 999px;
+  font-weight: 700;
+  box-shadow: none;
+}
+
+.landing-ks .hero-cta .btn-outline {
+  border: 1.5px solid rgba(255, 255, 255, 0.75);
+  color: #fff;
+  border-radius: 999px;
+  background: transparent;
+}
+
+.landing-ks .hero-stats {
+  border-top: 1px solid rgba(255, 255, 255, 0.18);
+  margin-top: 2.5rem;
+  padding-top: 1.5rem;
+}
+
+.landing-ks .audience {
+  margin-top: -4.5rem;
+  padding: 0 0 3.5rem;
+  position: relative;
+  z-index: 4;
+  background: transparent;
+}
+
+.landing-ks .features {
+  background: #fff;
+  padding: var(--space-4xl) 0;
+}
+
+.landing-ks .feature-card {
+  border-radius: 18px;
+  border: 1.5px solid #e5e7eb;
+  box-shadow: none;
+  text-align: left;
+}
+
+.landing-ks .feature-card::before {
+  display: none;
+}
+
+.landing-ks .feature-card:hover {
+  transform: none;
+  box-shadow: 0 10px 28px rgba(16, 24, 40, 0.06);
+}
+
+.landing-ks .levels,
+.landing-ks .about,
+.landing-ks .how-it-works {
+  background: #fff;
+}
+
+.landing-ks .pricing {
+  background: #fafafa;
+}
+
+.landing-ks .cta-section {
+  background: #0d8a4e;
+}
+
+.landing-ks .cta-section .section-title,
+.landing-ks .cta-section .section-subtitle {
+  color: #fff;
+}
+
+html[data-theme="dark"] body.landing-ks {
+  background: var(--clr-bg);
+}
+
+html[data-theme="dark"] .landing-ks .navbar,
+html[data-theme="dark"] .landing-ks .navbar.scrolled {
+  background: var(--clr-surface);
+  border-bottom-color: var(--clr-border);
+}
+
+html[data-theme="dark"] .landing-ks .navbar-brand .brand-text,
+html[data-theme="dark"] .landing-ks .navbar-links a,
+html[data-theme="dark"] .landing-ks .navbar-actions .btn-login,
+html[data-theme="dark"] .landing-ks .nav-signup summary,
+html[data-theme="dark"] .landing-ks .navbar-greeting {
+  color: var(--clr-text);
+}
+
+html[data-theme="dark"] .landing-ks .navbar-links a,
+html[data-theme="dark"] .landing-ks .navbar-actions .btn-login,
+html[data-theme="dark"] .landing-ks .nav-signup summary {
+  border-color: var(--clr-border);
+}
+
+html[data-theme="dark"] .landing-ks .nav-signup-menu {
+  background: var(--clr-surface);
+  border-color: var(--clr-border);
+}
+
+html[data-theme="dark"] .landing-ks .nav-signup-menu a {
+  color: var(--clr-text);
+}
