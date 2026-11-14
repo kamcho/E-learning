@@ -21,8 +21,9 @@
 {% endblock %}
 
 {% block admin_content %}
-<a href="{% url 'accounts:admin_dashboard' %}" class="admin-back-link">&larr; Back to Dashboard</a>
+<a href="{% url 'accounts:admin_students_list' %}" class="admin-back-link">&larr; Back to learners</a>
 {% include 'accounts/partials/student_analytics_body.html' %}
+{% include 'accounts/partials/admin_member_lifecycle.html' with entity_type='student' entity_deleted=student_inactive entity_deleted_at=student_deleted_at %}
 {% endblock %}
 
 {% block extra_js %}

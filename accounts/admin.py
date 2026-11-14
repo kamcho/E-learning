@@ -5,8 +5,8 @@ from .models import MyUser, Student, LinkedStudents, ReferralPointLog, UserActio
 
 @admin.register(Student)
 class StudentAdmin(admin.ModelAdmin):
-    list_display = ('first_name', 'last_name', 'grade_level', 'gender', 'dob')
-    list_filter = ('gender', 'grade_level')
+    list_display = ('first_name', 'last_name', 'grade_level', 'gender', 'is_active', 'dob')
+    list_filter = ('is_active', 'gender', 'grade_level')
     search_fields = ('first_name', 'last_name')
 
 
@@ -23,7 +23,7 @@ class MyUserAdmin(BaseUserAdmin):
 
     list_display = (
         'phone', 'email', 'first_name', 'last_name', 'county', 'role',
-        'referral_code', 'referral_points', 'is_active', 'date_joined',
+        'referral_code', 'referral_points', 'is_active', 'deleted_at', 'date_joined',
     )
     list_filter = ('role', 'county', 'is_active', 'is_staff', 'date_joined')
     search_fields = ('phone', 'first_name', 'last_name', 'email', 'referral_code', 'county')

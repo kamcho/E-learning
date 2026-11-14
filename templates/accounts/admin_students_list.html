@@ -101,6 +101,11 @@
       <option value="linked"{% if filter_linked == 'linked' %} selected{% endif %}>Linked to guardian</option>
       <option value="unlinked"{% if filter_linked == 'unlinked' %} selected{% endif %}>Not linked</option>
     </select>
+    <select name="status" class="admin-list-filter-select" aria-label="Filter by status">
+      <option value="active"{% if filter_status == 'active' %} selected{% endif %}>Active only</option>
+      <option value="inactive"{% if filter_status == 'inactive' %} selected{% endif %}>Soft-deleted</option>
+      <option value="all"{% if filter_status == 'all' %} selected{% endif %}>All statuses</option>
+    </select>
     <button type="submit">Apply</button>
     {% if has_filters %}
       <a href="{% url 'accounts:admin_students_list' %}" class="admin-page-btn">Clear</a>
@@ -115,6 +120,7 @@
         <th>Grade</th>
         <th>Gender</th>
         <th>Date of Birth</th>
+        <th>Status</th>
         <th></th>
       </tr>
     </thead>
@@ -141,6 +147,13 @@
           <span class="gender-pill gender-pill--{{ student.gender|lower }}">{{ student.gender }}</span>
         </td>
         <td class="table-cell-date">{{ student.dob|date:"d M Y"|default:"—" }}</td>
+        <td>
+          {% if student.is_active %}
+            <span class="badge badge-primary">Active</span>
+          {% else %}
+            <span class="badge badge-gold">Deleted</span>
+          {% endif %}
+        </td>
         <td><span class="list-row-action">Analytics &rarr;</span></td>
       </tr>
       {% endfor %}

@@ -109,6 +109,16 @@ urlpatterns = [
     path('admin/students/', views.admin_students_list_view, name='admin_students_list'),
     path('admin-profile/', views.admin_profile_view, name='admin_profile'),
     path('admin/users/<int:user_id>/', views.admin_user_detail_view, name='admin_user_detail'),
+    path(
+        'admin/users/<int:user_id>/lifecycle/',
+        views.admin_user_lifecycle_view,
+        name='admin_user_lifecycle',
+    ),
+    path(
+        'admin/students/<uuid:student_uuid>/lifecycle/',
+        views.admin_student_lifecycle_view,
+        name='admin_student_lifecycle',
+    ),
     path('learners/add/', views.add_learner_view, name='add_learner'),
     path('learners/<uuid:student_uuid>/analytics/', views.student_analytics_view, name='student_analytics'),
     path(

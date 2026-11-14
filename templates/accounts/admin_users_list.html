@@ -83,8 +83,13 @@
       <span class="table-search-icon" aria-hidden="true">&#128269;</span>
       <input type="search" name="q" value="{{ search }}" placeholder="Search by user or linked learner name..." autocomplete="off">
     </label>
+    <select name="status" class="admin-list-filter-select" aria-label="Filter by status">
+      <option value="all"{% if filter_status == 'all' %} selected{% endif %}>All statuses</option>
+      <option value="active"{% if filter_status == 'active' %} selected{% endif %}>Active only</option>
+      <option value="inactive"{% if filter_status == 'inactive' %} selected{% endif %}>Soft-deleted</option>
+    </select>
     <button type="submit">Search</button>
-    {% if search %}
+    {% if search or filter_status != 'all' %}
       <a href="{% url 'accounts:admin_users_list' %}" class="admin-page-btn">Clear</a>
     {% endif %}
   </form>

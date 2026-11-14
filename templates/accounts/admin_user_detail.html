@@ -290,5 +290,7 @@
     </div>
     {% endif %}
   </div>
+
+  {% include 'accounts/partials/admin_member_lifecycle.html' with entity_type='user' entity_deleted=user_inactive entity_deleted_at=profile_user.deleted_at %}
 </div>
 {% endblock %}

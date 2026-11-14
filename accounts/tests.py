@@ -777,13 +777,12 @@ class LearnerAccessAndGuardianWallTests(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.url, reverse('accounts:guardian_dashboard'))
 
-    def test_staff_admin_cannot_view_unlinked_learner_analytics(self):
+    def test_staff_admin_can_view_unlinked_learner_analytics(self):
         self.client.force_login(self.staff_admin)
         response = self.client.get(
-            reverse('accounts:student_analytics', kwargs={'student_uuid': self.linked_student.uuid}),
+            reverse('accounts:student_analytics', kwargs={'student_uuid': self.other_student.uuid}),
         )
-        self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.url, reverse('accounts:guardian_dashboard'))
+        self.assertEqual(response.status_code, 200)
 
     def test_guardian_cannot_view_other_guardians_learner_analytics(self):
         self.client.force_login(self.guardian)
@@ -792,3 +791,89 @@ class LearnerAccessAndGuardianWallTests(TestCase):
         )
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.url, reverse('accounts:guardian_dashboard'))
+
+
+class MemberLifecycleTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        from accounts.models import LinkedStudents, Student
+        from subjects.models import GradeLevel
+
+        cls.admin = User.objects.create_user(
+            phone='0799990001',
+            password='1234',
+            role=Role.ADMIN,
+            is_staff=True,
+        )
+        cls.guardian = User.objects.create_user(
+            phone='0799990002',
+            password='1234',
+            role=Role.GUARDIAN,
+        )
+        cls.target_user = User.objects.create_user(
+            phone='0799990003',
+            password='1234',
+            role=Role.GUARDIAN,
+        )
+        cls.grade = GradeLevel.objects.create(
+            name='Grade 5', slug='grade-5-lifecycle', level='Upper Primary',
+        )
+        cls.student = Student.objects.create(
+            first_name='Lifecycle',
+            last_name='Learner',
+            grade_level=cls.grade,
+        )
+        link = LinkedStudents.objects.create(user=cls.guardian)
+        link.students.add(cls.student)
+
+    def setUp(self):
+        self.client = Client()
+
+    def test_soft_delete_user_blocks_login_and_can_restore(self):
+        from accounts.member_lifecycle import restore_user, soft_delete_user
+
+        soft_delete_user(user=self.target_user, actor=self.admin)
+        self.target_user.refresh_from_db()
+        self.assertFalse(self.target_user.is_active)
+        self.assertIsNotNone(self.target_user.deleted_at)
+
+        self.client.force_login(self.target_user)
+        response = self.client.get(reverse('accounts:guardian_dashboard'))
+        self.assertEqual(response.status_code, 302)
+
+        restore_user(user=self.target_user, actor=self.admin)
+        self.target_user.refresh_from_db()
+        self.assertTrue(self.target_user.is_active)
+
+    def test_soft_deleted_learner_hidden_from_guardian_dashboard_context(self):
+        from accounts.member_lifecycle import soft_delete_student
+        from accounts.views import _get_guardian_students
+
+        soft_delete_student(student=self.student, actor=self.admin)
+        rows = _get_guardian_students(self.guardian)
+        self.assertEqual(rows, [])
+
+    def test_admin_soft_delete_and_hard_delete_learner(self):
+        from accounts.models import Student
+        from core.models import UserAttempts
+
+        self.client.force_login(self.admin)
+        url = reverse('accounts:admin_student_lifecycle', kwargs={'student_uuid': self.student.uuid})
+
+        response = self.client.post(url, {'action': 'soft_delete'})
+        self.assertEqual(response.status_code, 302)
+        self.student.refresh_from_db()
+        self.assertFalse(self.student.is_active)
+
+        response = self.client.post(url, {'action': 'hard_delete', 'confirm': 'DELETE'})
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(Student.objects.filter(pk=self.student.pk).exists())
+        self.assertFalse(UserAttempts.objects.filter(student_id=self.student.pk).exists())
+
+    def test_admin_cannot_delete_self(self):
+        self.client.force_login(self.admin)
+        url = reverse('accounts:admin_user_lifecycle', kwargs={'user_id': self.admin.pk})
+        response = self.client.post(url, {'action': 'soft_delete'})
+        self.assertEqual(response.status_code, 302)
+        self.admin.refresh_from_db()
+        self.assertTrue(self.admin.is_active)

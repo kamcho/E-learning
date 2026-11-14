@@ -461,7 +461,7 @@ def _get_guardian_students(user):
     students = []
     seen = set()
     for link in user.linked_students.prefetch_related('students__grade_level', 'students__attempts'):
-        for student in link.students.all():
+        for student in link.students.filter(is_active=True):
             if student.pk not in seen:
                 seen.add(student.pk)
                 attempts = [a for a in student.attempts.all() if a.is_active]
@@ -884,8 +884,20 @@ def _pagination_extra_params(request, exclude_keys):
     return params.urlencode()
 
 
-def _get_admin_users_queryset(search=''):
-    qs = MyUser.objects.order_by('-date_joined')
+def _parse_admin_user_list_filters(request):
+    status = (request.GET.get('status') or 'all').strip()
+    if status not in ('all', 'active', 'inactive'):
+        status = 'all'
+    return {
+        'search': request.GET.get('q', '').strip(),
+        'status': status,
+    }
+
+
+def _get_admin_users_queryset(*, search='', status='all'):
+    from accounts.member_lifecycle import users_for_directory_qs
+
+    qs = users_for_directory_qs(status=status)
     if search:
         qs = qs.filter(
             Q(first_name__icontains=search)
@@ -921,6 +933,9 @@ def _parse_admin_student_list_filters(request):
     grade = request.GET.get('grade', '').strip()
     gender = request.GET.get('gender', '').strip()
     linked = request.GET.get('linked', '').strip()
+    status = (request.GET.get('status') or 'active').strip()
+    if status not in ('active', 'inactive', 'all'):
+        status = 'active'
     if gender not in ('Male', 'Female'):
         gender = ''
     if linked not in ('linked', 'unlinked'):
@@ -935,11 +950,14 @@ def _parse_admin_student_list_filters(request):
         'grade': grade,
         'gender': gender,
         'linked': linked,
+        'status': status,
     }
 
 
-def _get_admin_students_queryset(*, search='', grade='', gender='', linked=''):
-    qs = Student.objects.select_related('grade_level').order_by('first_name', 'last_name')
+def _get_admin_students_queryset(*, search='', grade='', gender='', linked='', status='active'):
+    from accounts.member_lifecycle import students_for_directory_qs
+
+    qs = students_for_directory_qs(status=status).order_by('first_name', 'last_name')
     if search:
         qs = qs.filter(
             Q(first_name__icontains=search)
@@ -972,11 +990,11 @@ def _admin_student_grade_choices():
 
 def _build_admin_user_stats():
     users_by_role = {
-        role.value: MyUser.objects.filter(role=role.value).count()
+        role.value: MyUser.objects.filter(role=role.value, is_active=True).count()
         for role in Role
     }
     return {
-        'total': MyUser.objects.count(),
+        'total': MyUser.objects.filter(is_active=True).count(),
         'active': MyUser.objects.filter(is_active=True).count(),
         'inactive': MyUser.objects.filter(is_active=False).count(),
         'guardians': users_by_role.get(Role.GUARDIAN.value, 0),
@@ -986,15 +1004,17 @@ def _build_admin_user_stats():
 
 
 def _build_admin_student_stats():
-    total = Student.objects.count()
-    graded = Student.objects.filter(grade_level__isnull=False).count()
+    active_qs = Student.objects.filter(is_active=True)
+    total = active_qs.count()
+    graded = active_qs.filter(grade_level__isnull=False).count()
     return {
         'total': total,
-        'male': Student.objects.filter(gender='Male').count(),
-        'female': Student.objects.filter(gender='Female').count(),
+        'male': active_qs.filter(gender='Male').count(),
+        'female': active_qs.filter(gender='Female').count(),
         'graded': graded,
         'ungraded': total - graded,
-        'linked': Student.objects.filter(linked_students__isnull=False).distinct().count(),
+        'linked': active_qs.filter(linked_students__isnull=False).distinct().count(),
+        'inactive': Student.objects.filter(is_active=False).count(),
     }
 
 
@@ -1325,12 +1345,19 @@ def student_analytics_view(request, student_uuid):
         messages.error(request, "You don't have permission to view this student's analytics.")
         return redirect('accounts:guardian_dashboard')
 
-    if request.user.is_superuser:
+    if request.user.is_platform_admin:
         context = _build_student_analytics_context(
             student,
             grade_slug=grade_slug,
             calendar_month=request.GET.get('cal_month', '').strip() or None,
         )
+        context['lifecycle_url'] = reverse(
+            'accounts:admin_student_lifecycle',
+            kwargs={'student_uuid': student.uuid},
+        )
+        context['can_manage_lifecycle'] = True
+        context['student_inactive'] = not student.is_active
+        context['student_deleted_at'] = student.deleted_at
         return render(request, 'accounts/admin_student_analytics.html', context)
 
     params = {'student': str(student.uuid)}
@@ -1631,8 +1658,10 @@ def admin_users_list_view(request):
     if denied:
         return denied
 
-    search = request.GET.get('q', '').strip()
-    users_qs = _prefetch_admin_users_for_list(_get_admin_users_queryset(search))
+    filters = _parse_admin_user_list_filters(request)
+    users_qs = _prefetch_admin_users_for_list(
+        _get_admin_users_queryset(search=filters['search'], status=filters['status']),
+    )
     page_obj = Paginator(
         users_qs,
         ADMIN_LIST_PAGE_SIZE,
@@ -1640,7 +1669,8 @@ def admin_users_list_view(request):
 
     return render(request, 'accounts/admin_users_list.html', {
         'page_obj': page_obj,
-        'search': search,
+        'search': filters['search'],
+        'filter_status': filters['status'],
         'stats': _build_admin_user_stats(),
         'pagination_extra': _pagination_extra_params(request, ['page']),
         'django_admin_url': reverse('admin:accounts_myuser_changelist'),
@@ -1660,7 +1690,15 @@ def admin_students_list_view(request):
         ADMIN_STUDENTS_LIST_PAGE_SIZE,
     ).get_page(request.GET.get('page'))
 
-    has_filters = any(filters.values())
+    has_filters = any(
+        [
+            filters['search'],
+            filters['grade'],
+            filters['gender'],
+            filters['linked'],
+            filters['status'] != 'active',
+        ],
+    )
 
     return render(request, 'accounts/admin_students_list.html', {
         'page_obj': page_obj,
@@ -1668,6 +1706,7 @@ def admin_students_list_view(request):
         'filter_grade': filters['grade'],
         'filter_gender': filters['gender'],
         'filter_linked': filters['linked'],
+        'filter_status': filters['status'],
         'has_filters': has_filters,
         'grade_choices': _admin_student_grade_choices(),
         'stats': _build_admin_student_stats(),
@@ -1716,8 +1755,111 @@ def admin_user_detail_view(request, user_id):
         },
         'recent_attempts': attempts_qs.order_by('-created_at')[:10],
         'django_admin_url': reverse('admin:accounts_myuser_change', args=[profile_user.pk]),
+        'lifecycle_url': reverse('accounts:admin_user_lifecycle', kwargs={'user_id': profile_user.pk}),
+        'can_manage_lifecycle': profile_user.pk != request.user.pk,
+        'user_inactive': not profile_user.is_active,
     }
     return render(request, 'accounts/admin_user_detail.html', context)
+
+
+@login_required(login_url='accounts:signin')
+@require_POST
+def admin_user_lifecycle_view(request, user_id):
+    """Soft delete, restore, or permanently delete a platform user."""
+    from accounts.member_lifecycle import (
+        MemberLifecycleError,
+        hard_delete_user,
+        restore_user,
+        soft_delete_user,
+    )
+
+    denied = _admin_access_or_redirect(request)
+    if denied:
+        return denied
+
+    profile_user = get_object_or_404(MyUser, pk=user_id)
+    action = (request.POST.get('action') or '').strip()
+    return_to = (request.POST.get('return_to') or '').strip()
+    if not return_to:
+        return_to = reverse('accounts:admin_user_detail', kwargs={'user_id': profile_user.pk})
+
+    def _redirect(kind, message):
+        if kind == 'success':
+            messages.success(request, message)
+        elif kind == 'warning':
+            messages.warning(request, message)
+        else:
+            messages.error(request, message)
+        return redirect(return_to)
+
+    try:
+        if action == 'soft_delete':
+            soft_delete_user(user=profile_user, actor=request.user)
+            return _redirect('success', f'User {profile_user.full_name} deactivated (soft delete).')
+        if action == 'restore':
+            restore_user(user=profile_user, actor=request.user)
+            return _redirect('success', f'User {profile_user.full_name} restored.')
+        if action == 'hard_delete':
+            confirm = (request.POST.get('confirm') or '').strip()
+            if confirm != 'DELETE':
+                return _redirect('error', 'Type DELETE in the confirmation box to permanently remove this user.')
+            hard_delete_user(user=profile_user, actor=request.user)
+            messages.success(request, 'User permanently deleted.')
+            return redirect('accounts:admin_users_list')
+        return _redirect('error', 'Unknown action.')
+    except MemberLifecycleError as exc:
+        return _redirect('error', str(exc))
+
+
+@login_required(login_url='accounts:signin')
+@require_POST
+def admin_student_lifecycle_view(request, student_uuid):
+    """Soft delete, restore, or permanently delete a learner."""
+    from accounts.member_lifecycle import (
+        MemberLifecycleError,
+        hard_delete_student,
+        restore_student,
+        soft_delete_student,
+    )
+
+    denied = _admin_access_or_redirect(request)
+    if denied:
+        return denied
+
+    student = get_object_or_404(Student, uuid=student_uuid)
+    action = (request.POST.get('action') or '').strip()
+    return_to = (request.POST.get('return_to') or '').strip()
+    if not return_to:
+        return_to = reverse('accounts:student_analytics', kwargs={'student_uuid': student.uuid})
+
+    def _redirect(kind, message):
+        if kind == 'success':
+            messages.success(request, message)
+        elif kind == 'warning':
+            messages.warning(request, message)
+        else:
+            messages.error(request, message)
+        return redirect(return_to)
+
+    try:
+        if action == 'soft_delete':
+            soft_delete_student(student=student, actor=request.user)
+            name = f'{student.first_name} {student.last_name}'
+            return _redirect('success', f'Learner {name} deactivated (soft delete).')
+        if action == 'restore':
+            restore_student(student=student, actor=request.user)
+            name = f'{student.first_name} {student.last_name}'
+            return _redirect('success', f'Learner {name} restored.')
+        if action == 'hard_delete':
+            confirm = (request.POST.get('confirm') or '').strip()
+            if confirm != 'DELETE':
+                return _redirect('error', 'Type DELETE in the confirmation box to permanently remove this learner.')
+            hard_delete_student(student=student, actor=request.user)
+            messages.success(request, 'Learner permanently deleted.')
+            return redirect('accounts:admin_students_list')
+        return _redirect('error', 'Unknown action.')
+    except MemberLifecycleError as exc:
+        return _redirect('error', str(exc))
 
 
 @login_required(login_url='accounts:signin')

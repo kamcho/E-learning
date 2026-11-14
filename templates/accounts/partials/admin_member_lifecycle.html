@@ -1,0 +1,119 @@
+{% if can_manage_lifecycle and lifecycle_url %}
+<style>
+  .admin-lifecycle-panel {
+    margin-top: var(--space-xl);
+    border: 1px solid color-mix(in srgb, var(--clr-danger, #c41e3a) 35%, var(--clr-border));
+    border-radius: var(--radius-md, 6px);
+    background: var(--clr-surface);
+  }
+  .admin-lifecycle-panel .admin-panel-head-flex {
+    border-bottom: 1px solid var(--clr-border);
+    padding: var(--space-md) var(--space-xl);
+  }
+  .admin-lifecycle-panel .admin-panel-body {
+    padding: var(--space-lg) var(--space-xl);
+  }
+  .admin-lifecycle-intro {
+    font-size: 0.88rem;
+    color: var(--clr-text-muted);
+    margin: 0 0 var(--space-md);
+    line-height: 1.5;
+  }
+  .admin-lifecycle-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-lg);
+  }
+  .admin-lifecycle-hard {
+    margin-top: var(--space-md);
+    padding-top: var(--space-md);
+    border-top: 1px dashed var(--clr-border);
+  }
+  .admin-lifecycle-hard label {
+    display: block;
+    font-size: 0.82rem;
+    font-weight: 600;
+    margin-bottom: 0.35rem;
+  }
+  .admin-lifecycle-hard input[type="text"] {
+    width: 100%;
+    max-width: 12rem;
+    padding: 0.45rem 0.6rem;
+    border: 1px solid var(--clr-border);
+    border-radius: 4px;
+    font-size: 0.88rem;
+  }
+  .btn-lifecycle-danger {
+    background: color-mix(in srgb, #c41e3a 92%, #000);
+    color: #fff;
+    border: none;
+  }
+  .btn-lifecycle-danger:hover { filter: brightness(1.05); }
+  .admin-lifecycle-status-deleted {
+    display: inline-block;
+    margin-bottom: var(--space-sm);
+    padding: 0.35rem 0.65rem;
+    border-radius: 4px;
+    background: color-mix(in srgb, #c41e3a 12%, transparent);
+    color: #a31630;
+    font-size: 0.82rem;
+    font-weight: 600;
+  }
+</style>
+
+<div class="admin-panel admin-lifecycle-panel">
+  <div class="admin-panel-head-flex">
+    <div>
+      <h2>Account lifecycle</h2>
+      <p class="admin-panel-sub">Soft delete keeps records; permanent delete cannot be undone</p>
+    </div>
+  </div>
+  <div class="admin-panel-body">
+    {% if entity_deleted %}
+    <p class="admin-lifecycle-status-deleted">
+      Soft-deleted{% if entity_deleted_at %} on {{ entity_deleted_at|date:"d M Y, H:i" }}{% endif %}
+      — guardians cannot sign in or see this {% if entity_type == 'user' %}account{% else %}learner{% endif %}.
+    </p>
+    {% endif %}
+
+    <p class="admin-lifecycle-intro">
+      <strong>Soft delete</strong> deactivates the {% if entity_type == 'user' %}account{% else %}learner{% endif %}
+      (login and dashboards stop working; exam history is kept).
+      <strong>Permanent delete</strong> removes the database row and linked exam data for learners.
+    </p>
+
+    <div class="admin-lifecycle-actions">
+      {% if entity_deleted %}
+      <form method="post" action="{{ lifecycle_url }}">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="restore">
+        <input type="hidden" name="return_to" value="{{ request.get_full_path }}">
+        <button type="submit" class="btn btn-primary">Restore</button>
+      </form>
+      {% else %}
+      <form method="post" action="{{ lifecycle_url }}" onsubmit="return confirm('Soft-delete this {% if entity_type == 'user' %}user{% else %}learner{% endif %}? They will lose access until restored.');">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="soft_delete">
+        <input type="hidden" name="return_to" value="{{ request.get_full_path }}">
+        <button type="submit" class="btn btn-secondary">Soft delete</button>
+      </form>
+      {% endif %}
+    </div>
+
+    <div class="admin-lifecycle-hard">
+      <p class="admin-lifecycle-intro" style="margin-bottom: 0.75rem;">
+        Permanent delete requires typing <code>DELETE</code> below.
+      </p>
+      <form method="post" action="{{ lifecycle_url }}" onsubmit="return confirm('This cannot be undone. Permanently delete?');">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="hard_delete">
+        <input type="hidden" name="return_to" value="{{ request.get_full_path }}">
+        <label for="lifecycle-confirm-{{ entity_type }}">Confirmation</label>
+        <input type="text" id="lifecycle-confirm-{{ entity_type }}" name="confirm" autocomplete="off" placeholder="DELETE" required>
+        <button type="submit" class="btn btn-lifecycle-danger" style="margin-top: 0.65rem;">Delete permanently</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endif %}

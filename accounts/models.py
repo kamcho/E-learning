@@ -128,6 +128,14 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
     # Django auth flags
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
+    deleted_at = models.DateTimeField(null=True, blank=True, db_index=True)
+    deleted_by = models.ForeignKey(
+        'self',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='users_deleted',
+    )
 
     # Timestamps
     date_joined = models.DateTimeField(auto_now_add=True)
@@ -201,7 +209,7 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
         seen = set()
         learners = []
         for link in self.linked_students.all():
-            for student in link.students.all():
+            for student in link.students.filter(is_active=True):
                 if student.pk in seen:
                     continue
                 seen.add(student.pk)
@@ -217,6 +225,16 @@ class Student(models.Model):
     grade_level = models.ForeignKey('subjects.GradeLevel', on_delete=models.SET_NULL, null=True, blank=True)
     gender = models.CharField(max_length=10,choices=[('Male','Male'),('Female','Female')],default='Male')
     dob=models.DateField(null=True,blank=True)
+    is_active = models.BooleanField(default=True, db_index=True)
+    deleted_at = models.DateTimeField(null=True, blank=True, db_index=True)
+    deleted_by = models.ForeignKey(
+        MyUser,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='students_deleted',
+    )
+    updated_at = models.DateTimeField(auto_now=True)
     
     def __str__(self):
         return f'{self.first_name} {self.last_name} ({self.uuid})'
