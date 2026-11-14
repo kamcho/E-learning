@@ -185,17 +185,15 @@
               Exam Center
             </a>
             {% else %}
-            <a href="{% url 'subjects:grade_level_list' %}" class="btn btn-primary">
-              Go to Curriculum Builder
-              <span class="btn-icon">→</span>
-            </a>
+            <a href="{% url 'core:exam_wizard' %}" class="btn btn-start-exam">Start Exam</a>
             {% endif %}
           {% else %}
             <a href="{% url 'core:exam_wizard' %}" class="btn btn-start-exam">Start Exam</a>
-            <a href="{% url 'accounts:signup' %}" class="btn btn-primary">Create account</a>
-            <a href="{% url 'accounts:signin' %}" class="btn btn-outline">
-              Log In
-            </a>
+            <div class="hero-split-btn" role="group" aria-label="Create account or log in">
+              <a href="{% url 'accounts:signup' %}" class="hero-split-btn__main">Create account</a>
+              <span class="hero-split-btn__divider" aria-hidden="true"></span>
+              <a href="{% url 'accounts:signin' %}" class="hero-split-btn__side">Log In</a>
+            </div>
             {% if google_client_id %}
             <div class="hero-google" style="width:100%;max-width:360px;margin-top:0.35rem;">
               {% include 'accounts/partials/google_signin.html' with google_button_id='landingGoogleSignIn' google_button_text='continue_with' google_divider_before='or continue with Google' %}
