@@ -650,6 +650,9 @@ class QuestionBankTests(TestCase):
         response = self.client.get(reverse('core:question_bank_list'))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'What is area?')
+        self.assertContains(response, 'qbk-table')
+        self.assertContains(response, 'Question bank')
+        self.assertContains(response, 'qbk-table')
 
     def test_grade_filter_narrows_results(self):
         self.client.force_login(self.teacher)
@@ -1071,6 +1074,40 @@ class MatchingGradingTests(TestCase):
         response = attempt.responses.get(question=question)
         self.assertTrue(response.is_correct)
         self.assertEqual(response.marks_awarded, 1)
+
+
+class QuestionMediaTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.teacher = User.objects.create_user(
+            phone='0760000101',
+            password='1234',
+            role=Role.TEACHER,
+        )
+        cls.grade = GradeLevel.objects.create(name='Grade 4', slug='grade-4', level='Upper Primary')
+        cls.discipline = Discipline.objects.create(name='Science', slug='science-g4')
+        cls.subject = Subject.objects.create(
+            name='Science G4',
+            slug='science-g4',
+            grade_level=cls.grade,
+            discipline=cls.discipline,
+        )
+        cls.strand = Strand.objects.create(name='Living things', slug='living-g4', subject=cls.subject)
+        cls.sub_strand = SubStrand.objects.create(name='Plants', slug='plants-g4', strand=cls.strand)
+        cls.question = Question.objects.create(
+            quiz='What do plants need?',
+            difficulty='Easy',
+            quiz_type='True or False',
+            sub_strand=cls.sub_strand,
+            created_by=cls.teacher,
+        )
+
+    def test_teacher_can_open_media_page(self):
+        self.client.force_login(self.teacher)
+        url = reverse('core:question_media', kwargs={'question_uuid': self.question.uuid})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Question audio')
 
 
 class OpenAITtsTests(TestCase):

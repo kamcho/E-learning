@@ -923,7 +923,8 @@
             <button type="button" class="btn-ai-explain" data-attempt-uuid="{{ attempt.uuid }}" data-question-uuid="{{ row.question_uuid }}">
               ✨ Explain answer
             </button>
-            <div class="ai-explanation-box" id="ai-explanation-{{ row.question_uuid }}" data-speech-region>
+            <div class="ai-explanation-box" id="ai-explanation-{{ row.question_uuid }}" data-speech-region
+              {% if row.question.explanation_audio %}data-speech-audio-url="{{ row.question.explanation_audio.url }}"{% endif %}>
               <div class="ai-explanation-label">AI Tutor</div>
               <div class="ai-explanation-text" data-speech-text data-math-content></div>
               <div class="explanation-speech-controls">

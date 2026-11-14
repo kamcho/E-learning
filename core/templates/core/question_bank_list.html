@@ -5,48 +5,70 @@
 {% block extra_head %}
 {% include 'accounts/partials/admin_list_styles.html' %}
 <style>
-  .qbk-header {
+  .qbk-banner-actions {
     display: flex;
+    gap: 0.5rem;
     flex-wrap: wrap;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: var(--space-md);
+    align-items: center;
+  }
+
+  .qbk-filters-panel {
     margin-bottom: var(--space-xl);
   }
 
-  .qbk-header h1 {
-    font-size: 1.5rem;
+  .qbk-filter-sections {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-lg);
+    padding: var(--space-lg) var(--space-xl);
+    background: var(--clr-surface-alt);
+    border-bottom: 1px solid var(--clr-border);
+  }
+
+  .qbk-filter-section-title {
+    font-size: 0.68rem;
     font-weight: 800;
-    margin: 0 0 var(--space-xs);
-    letter-spacing: -0.02em;
-  }
-
-  .qbk-header p {
-    margin: 0;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
     color: var(--clr-text-muted);
-    font-size: 0.9rem;
-    max-width: 36rem;
-    line-height: 1.5;
+    margin: 0 0 var(--space-sm);
   }
 
-  .qbk-filters {
-    background: var(--clr-surface);
-    border: 1px solid var(--clr-border);
-    border-radius: var(--radius-lg);
-    padding: var(--space-lg);
-    margin-bottom: var(--space-xl);
-  }
-
-  .qbk-filter-grid {
+  .qbk-filter-row {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: var(--space-md);
     align-items: end;
   }
 
-  .qbk-filter-grid label {
+  .qbk-filter-row--meta {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .qbk-filter-row--search {
+    grid-template-columns: 1fr auto;
+    align-items: end;
+    gap: var(--space-md);
+  }
+
+  @media (max-width: 900px) {
+    .qbk-filter-row,
+    .qbk-filter-row--meta {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 520px) {
+    .qbk-filter-row,
+    .qbk-filter-row--meta,
+    .qbk-filter-row--search {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .qbk-field label {
     display: block;
-    font-size: 0.75rem;
+    font-size: 0.72rem;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.04em;
@@ -54,91 +76,243 @@
     margin-bottom: 0.35rem;
   }
 
-  .qbk-filter-grid select,
-  .qbk-filter-grid input[type="search"] {
+  .qbk-field select,
+  .qbk-field input[type="search"] {
     width: 100%;
+    min-height: 38px;
     padding: 0.5rem 0.65rem;
     border: 1px solid var(--clr-border);
     border-radius: var(--radius-md);
     font-size: 0.88rem;
     background: var(--clr-surface);
     color: var(--clr-text);
+    font-family: var(--font-body);
   }
 
-  .qbk-filter-actions {
+  .qbk-field select:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
+  .qbk-filter-footer {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--space-sm);
-    margin-top: var(--space-md);
     align-items: center;
+    gap: var(--space-sm);
+    padding: var(--space-md) var(--space-xl);
+    border-bottom: 1px solid var(--clr-border);
+    background: var(--clr-surface);
   }
 
-  .qbk-count {
+  .qbk-result-count {
     margin-left: auto;
-    font-size: 0.85rem;
+    font-size: 0.82rem;
     color: var(--clr-text-muted);
     font-weight: 600;
   }
 
+  .qbk-table-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .qbk-table {
+    width: 100%;
+    min-width: 56rem;
+    border-collapse: collapse;
+  }
+
+  .qbk-table th,
+  .qbk-table td {
+    text-align: left;
+    padding: 0.85rem 1.1rem;
+    font-size: 0.84rem;
+    border-bottom: 1px solid var(--clr-border);
+    vertical-align: top;
+  }
+
+  .qbk-table th {
+    color: var(--clr-text-muted);
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 0.65rem;
+    letter-spacing: 0.06em;
+    background: var(--clr-surface-alt);
+    white-space: nowrap;
+  }
+
+  .qbk-table tbody tr:hover td {
+    background: color-mix(in srgb, var(--clr-primary) 6%, var(--clr-surface));
+  }
+
+  .qbk-table tr:last-child td {
+    border-bottom: none;
+  }
+
+  .qbk-col-question {
+    width: 32%;
+    min-width: 14rem;
+  }
+
+  .qbk-col-actions {
+    width: 1%;
+    white-space: nowrap;
+  }
+
   .qbk-prompt {
     font-size: 0.88rem;
-    line-height: 1.45;
+    line-height: 1.5;
     color: var(--clr-text);
-    max-width: 28rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
   }
 
-  .qbk-path {
-    font-size: 0.78rem;
-    color: var(--clr-text-muted);
-    margin-top: 0.2rem;
-  }
-
-  .qbk-actions-cell {
+  .qbk-prompt-meta {
     display: flex;
     flex-wrap: wrap;
     gap: 0.35rem;
+    margin-top: 0.45rem;
+  }
+
+  .qbk-crumb {
+    font-size: 0.78rem;
+    line-height: 1.45;
+    color: var(--clr-text-muted);
+  }
+
+  .qbk-crumb strong {
+    color: var(--clr-text);
+    font-weight: 600;
+  }
+
+  .qbk-pill {
+    display: inline-flex;
     align-items: center;
+    padding: 0.2rem 0.55rem;
+    border-radius: var(--radius-full);
+    font-size: 0.72rem;
+    font-weight: 700;
+    border: 1px solid var(--clr-border);
+    background: var(--clr-surface-alt);
+    color: var(--clr-text-muted);
+    white-space: nowrap;
+  }
+
+  .qbk-pill--type {
+    border-color: color-mix(in srgb, var(--clr-primary) 25%, var(--clr-border));
+    color: var(--clr-primary);
+    background: color-mix(in srgb, var(--clr-primary) 8%, var(--clr-surface));
+  }
+
+  .qbk-pill--easy { color: #0d8a4e; border-color: rgba(13, 138, 78, 0.25); background: rgba(13, 138, 78, 0.08); }
+  .qbk-pill--medium { color: #b45309; border-color: rgba(180, 83, 9, 0.25); background: rgba(249, 115, 22, 0.1); }
+  .qbk-pill--hard { color: #b91c1c; border-color: rgba(185, 28, 28, 0.25); background: rgba(239, 68, 68, 0.08); }
+
+  .qbk-status {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.6rem;
+    border-radius: var(--radius-full);
+    font-size: 0.72rem;
+    font-weight: 700;
+  }
+
+  .qbk-status.is-active {
+    background: rgba(13, 138, 78, 0.12);
+    color: var(--clr-primary);
+  }
+
+  .qbk-status.is-inactive {
+    background: rgba(249, 115, 22, 0.12);
+    color: #c2410c;
+  }
+
+  .qbk-date {
+    font-size: 0.82rem;
+    color: var(--clr-text-muted);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  .qbk-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.35rem;
+    min-width: 7.5rem;
+  }
+
+  .qbk-action-links {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.35rem 0.5rem;
+  }
+
+  .qbk-action-link {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--clr-primary);
+    text-decoration: none;
+  }
+
+  .qbk-action-link:hover {
+    text-decoration: underline;
   }
 
   .qbk-toggle-form {
-    display: inline;
+    display: block;
     margin: 0;
   }
 
   .qbk-toggle-btn {
     border: 1px solid var(--clr-border);
-    background: var(--clr-surface-alt);
+    background: var(--clr-surface);
     color: var(--clr-text);
     border-radius: var(--radius-md);
-    padding: 0.25rem 0.55rem;
-    font-size: 0.75rem;
-    font-weight: 600;
+    padding: 0.3rem 0.65rem;
+    font-size: 0.72rem;
+    font-weight: 700;
     cursor: pointer;
+    width: 100%;
+    text-align: center;
   }
 
   .qbk-toggle-btn.is-deactivate {
-    border-color: rgba(193, 39, 45, 0.25);
+    border-color: rgba(193, 39, 45, 0.3);
     color: var(--clr-danger);
+  }
+
+  .qbk-audio-tag {
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: var(--clr-primary);
+    letter-spacing: 0.02em;
   }
 
   .qbk-pagination {
     display: flex;
     justify-content: center;
+    align-items: center;
     gap: var(--space-sm);
-    margin-top: var(--space-xl);
+    padding: var(--space-lg) var(--space-xl);
     flex-wrap: wrap;
+    border-top: 1px solid var(--clr-border);
+    background: var(--clr-surface);
   }
 
   .qbk-pagination a,
   .qbk-pagination span {
-    padding: 0.45rem 0.75rem;
+    padding: 0.45rem 0.85rem;
     border-radius: var(--radius-md);
-    font-size: 0.85rem;
+    font-size: 0.82rem;
     font-weight: 600;
     border: 1px solid var(--clr-border);
     text-decoration: none;
     color: var(--clr-text);
-    background: var(--clr-surface);
+    background: var(--clr-surface-alt);
   }
 
   .qbk-pagination .is-current {
@@ -146,168 +320,239 @@
     color: #fff;
     border-color: var(--clr-primary);
   }
+
+  .qbk-empty {
+    padding: var(--space-2xl) var(--space-xl);
+    text-align: center;
+    color: var(--clr-text-muted);
+  }
+
+  .qbk-empty strong {
+    display: block;
+    font-size: 1rem;
+    color: var(--clr-text);
+    margin-bottom: 0.35rem;
+  }
 </style>
 {% endblock %}
 
-{% block content %}
-<div class="qbk-header">
+{% block admin_content %}
+<div class="admin-list-banner">
   <div>
-    <h1>Question bank</h1>
-    <p>Filter by grade through sub-strand, then open a question or activate and deactivate items in your scope.</p>
-  </div>
-  <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
-    {% if create_question_url %}
-    <a href="{{ create_question_url }}" class="btn btn-primary">+ Add question</a>
+    {% if request.user.is_admin_role or request.user.is_staff %}
+    <a href="{% url 'accounts:admin_dashboard' %}" class="admin-list-back admin-list-back--light">&larr; Dashboard</a>
+    {% else %}
+    <a href="{% url 'accounts:teacher_dashboard' %}" class="admin-list-back admin-list-back--light">&larr; Teacher dashboard</a>
     {% endif %}
-    <a href="{% url 'core:bulk_question_import' %}" class="btn btn-secondary">Bulk import</a>
+    <h1>Question bank</h1>
+    <p>Browse, filter, and manage questions in your curriculum scope.</p>
+  </div>
+  <div class="qbk-banner-actions">
+    {% if create_question_url %}
+    <a href="{{ create_question_url }}" class="btn-list-banner" style="background:#fff;color:var(--clr-primary);border-color:#fff;">+ Add question</a>
+    {% endif %}
+    <a href="{% url 'core:bulk_question_import' %}" class="btn-list-banner">Bulk import</a>
   </div>
 </div>
 
-<form method="get" class="qbk-filters" action="{% url 'core:question_bank_list' %}">
-  <div class="qbk-filter-grid">
+<div class="admin-panel qbk-filters-panel">
+  <div class="admin-panel-head-flex">
     <div>
-      <label for="qbk-grade">Grade</label>
-      <select name="grade" id="qbk-grade" onchange="this.form.submit()">
-        <option value="">All grades</option>
-        {% for g in grade_options %}
-        <option value="{{ g.slug }}"{% if grade and grade.pk == g.pk %} selected{% endif %}>{{ g.name }}</option>
-        {% endfor %}
-      </select>
+      <h2>Filters</h2>
+      <p class="admin-panel-sub">Narrow by curriculum path, question type, or search text.</p>
     </div>
-    <div>
-      <label for="qbk-subject">Subject</label>
-      <select name="subject" id="qbk-subject" onchange="this.form.submit()"{% if not grade %} disabled{% endif %}>
-        <option value="">All subjects</option>
-        {% for s in subject_options %}
-        <option value="{{ s.slug }}"{% if subject and subject.pk == s.pk %} selected{% endif %}>{{ s.name }}</option>
-        {% endfor %}
-      </select>
-    </div>
-    <div>
-      <label for="qbk-strand">Strand</label>
-      <select name="strand" id="qbk-strand" onchange="this.form.submit()"{% if not subject %} disabled{% endif %}>
-        <option value="">All strands</option>
-        {% for st in strand_options %}
-        <option value="{{ st.slug }}"{% if strand and strand.pk == st.pk %} selected{% endif %}>{{ st.name }}</option>
-        {% endfor %}
-      </select>
-    </div>
-    <div>
-      <label for="qbk-sub-strand">Sub-strand</label>
-      <select name="sub_strand" id="qbk-sub-strand"{% if not subject %} disabled{% endif %}>
-        <option value="">All sub-strands</option>
-        {% for ss in sub_strand_options %}
-        <option value="{{ ss.slug }}"{% if sub_strand and sub_strand.pk == ss.pk %} selected{% endif %}>
-          {% if not strand %}{{ ss.strand.name }} · {% endif %}{{ ss.name }}
-        </option>
-        {% endfor %}
-      </select>
-    </div>
-    <div>
-      <label for="qbk-difficulty">Difficulty</label>
-      <select name="difficulty" id="qbk-difficulty">
-        <option value="">Any</option>
-        {% for value, label in difficulty_choices %}
-        <option value="{{ value }}"{% if difficulty == value %} selected{% endif %}>{{ label }}</option>
-        {% endfor %}
-      </select>
-    </div>
-    <div>
-      <label for="qbk-type">Type</label>
-      <select name="quiz_type" id="qbk-type">
-        <option value="">Any</option>
-        {% for value, label in quiz_type_choices %}
-        <option value="{{ value }}"{% if quiz_type == value %} selected{% endif %}>{{ label }}</option>
-        {% endfor %}
-      </select>
-    </div>
-    <div>
-      <label for="qbk-status">Status</label>
-      <select name="status" id="qbk-status">
-        <option value="">Any</option>
-        <option value="active"{% if status == 'active' %} selected{% endif %}>Active</option>
-        <option value="inactive"{% if status == 'inactive' %} selected{% endif %}>Inactive</option>
-      </select>
-    </div>
-    <div style="grid-column: span 2;">
-      <label for="qbk-search">Search</label>
-      <input type="search" name="q" id="qbk-search" value="{{ search }}" placeholder="Question text, subject, strand…">
-    </div>
+    <span class="table-count">{{ page.paginator.count }} result{{ page.paginator.count|pluralize }}</span>
   </div>
-  <div class="qbk-filter-actions">
-    <button type="submit" class="btn btn-primary">Apply filters</button>
-    <a href="{% url 'core:question_bank_list' %}" class="btn btn-secondary">Clear</a>
-    <span class="qbk-count">{{ page.paginator.count }} question{{ page.paginator.count|pluralize }}</span>
-  </div>
-</form>
 
-{% if question_rows %}
-<table class="admin-table teacher-table">
-  <thead>
-    <tr>
-      <th>Question</th>
-      <th>Curriculum</th>
-      <th>Type</th>
-      <th>Difficulty</th>
-      <th>Status</th>
-      <th>Added</th>
-      <th></th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for row in question_rows %}
-    <tr>
-      <td>
-        <div class="qbk-prompt">{{ row.quiz_preview }}</div>
-      </td>
-      <td>
-        <div class="qbk-path">{{ row.grade }} · {{ row.subject }}</div>
-        <div class="qbk-path">{{ row.strand }} · {{ row.sub_strand }}</div>
-      </td>
-      <td>{{ row.quiz_type }}</td>
-      <td>{{ row.difficulty }}</td>
-      <td>
-        <span class="teacher-badge {% if row.is_active %}active{% else %}pending{% endif %}">
-          {% if row.is_active %}Active{% else %}Inactive{% endif %}
-        </span>
-      </td>
-      <td>{{ row.created_at|date:"d M Y" }}</td>
-      <td class="qbk-actions-cell">
-        <a href="{{ row.detail_url }}" class="teacher-link">View</a>
-        <a href="{{ row.sub_strand_url }}" class="teacher-link">Sub-strand</a>
-        {% if row.can_toggle %}
-        <form method="post" class="qbk-toggle-form" action="{% url 'core:question_bank_list' %}">
-          {% csrf_token %}
-          <input type="hidden" name="action" value="toggle_question_active">
-          <input type="hidden" name="question_uuid" value="{{ row.uuid }}">
-          <input type="hidden" name="return_to" value="{{ request.get_full_path }}">
-          <button type="submit" class="qbk-toggle-btn{% if row.is_active %} is-deactivate{% endif %}">
-            {% if row.is_active %}Deactivate{% else %}Activate{% endif %}
-          </button>
-        </form>
-        {% endif %}
-      </td>
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
+  <form method="get" action="{% url 'core:question_bank_list' %}">
+    <div class="qbk-filter-sections">
+      <div>
+        <p class="qbk-filter-section-title">Curriculum</p>
+        <div class="qbk-filter-row">
+          <div class="qbk-field">
+            <label for="qbk-grade">Grade</label>
+            <select name="grade" id="qbk-grade" onchange="this.form.submit()">
+              <option value="">All grades</option>
+              {% for g in grade_options %}
+              <option value="{{ g.slug }}"{% if grade and grade.pk == g.pk %} selected{% endif %}>{{ g.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="qbk-field">
+            <label for="qbk-subject">Subject</label>
+            <select name="subject" id="qbk-subject" onchange="this.form.submit()"{% if not grade %} disabled{% endif %}>
+              <option value="">All subjects</option>
+              {% for s in subject_options %}
+              <option value="{{ s.slug }}"{% if subject and subject.pk == s.pk %} selected{% endif %}>{{ s.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="qbk-field">
+            <label for="qbk-strand">Strand</label>
+            <select name="strand" id="qbk-strand" onchange="this.form.submit()"{% if not subject %} disabled{% endif %}>
+              <option value="">All strands</option>
+              {% for st in strand_options %}
+              <option value="{{ st.slug }}"{% if strand and strand.pk == st.pk %} selected{% endif %}>{{ st.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="qbk-field">
+            <label for="qbk-sub-strand">Sub-strand</label>
+            <select name="sub_strand" id="qbk-sub-strand"{% if not subject %} disabled{% endif %}>
+              <option value="">All sub-strands</option>
+              {% for ss in sub_strand_options %}
+              <option value="{{ ss.slug }}"{% if sub_strand and sub_strand.pk == ss.pk %} selected{% endif %}>
+                {% if not strand %}{{ ss.strand.name }} · {% endif %}{{ ss.name }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+      </div>
 
-{% if page.has_other_pages %}
-<nav class="qbk-pagination" aria-label="Questions pages">
-  {% if page.has_previous %}
-  <a href="?page={{ page.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&amp;{{ key }}={{ value|urlencode }}{% endif %}{% endfor %}">Previous</a>
-  {% endif %}
-  <span class="is-current">Page {{ page.number }} of {{ page.paginator.num_pages }}</span>
-  {% if page.has_next %}
-  <a href="?page={{ page.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&amp;{{ key }}={{ value|urlencode }}{% endif %}{% endfor %}">Next</a>
-  {% endif %}
-</nav>
-{% endif %}
+      <div>
+        <p class="qbk-filter-section-title">Question attributes</p>
+        <div class="qbk-filter-row qbk-filter-row--meta">
+          <div class="qbk-field">
+            <label for="qbk-difficulty">Difficulty</label>
+            <select name="difficulty" id="qbk-difficulty">
+              <option value="">Any</option>
+              {% for value, label in difficulty_choices %}
+              <option value="{{ value }}"{% if difficulty == value %} selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="qbk-field">
+            <label for="qbk-type">Type</label>
+            <select name="quiz_type" id="qbk-type">
+              <option value="">Any</option>
+              {% for value, label in quiz_type_choices %}
+              <option value="{{ value }}"{% if quiz_type == value %} selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="qbk-field">
+            <label for="qbk-status">Status</label>
+            <select name="status" id="qbk-status">
+              <option value="">Any</option>
+              <option value="active"{% if status == 'active' %} selected{% endif %}>Active</option>
+              <option value="inactive"{% if status == 'inactive' %} selected{% endif %}>Inactive</option>
+            </select>
+          </div>
+          <div class="qbk-field">
+            <label for="qbk-search">Search</label>
+            <input type="search" name="q" id="qbk-search" value="{{ search }}" placeholder="Question text, strand…" autocomplete="off">
+          </div>
+        </div>
+      </div>
+    </div>
 
-{% else %}
-<div class="teacher-empty">
-  <strong>No questions match these filters</strong>
-  <p>Try clearing filters or add questions via sub-strand import or bulk import.</p>
+    <div class="qbk-filter-footer">
+      <button type="submit" class="btn btn-primary">Apply filters</button>
+      <a href="{% url 'core:question_bank_list' %}" class="btn btn-secondary">Clear all</a>
+    </div>
+  </form>
 </div>
-{% endif %}
+
+<div class="admin-panel">
+  <div class="admin-panel-head-flex">
+    <div>
+      <h2>Questions</h2>
+      <p class="admin-panel-sub">Open a row for details, audio, or activation.</p>
+    </div>
+  </div>
+
+  {% if question_rows %}
+  <div class="qbk-table-scroll">
+    <table class="qbk-table data-table">
+      <thead>
+        <tr>
+          <th class="qbk-col-question">Question</th>
+          <th>Curriculum path</th>
+          <th>Type</th>
+          <th>Level</th>
+          <th>Status</th>
+          <th>Added</th>
+          <th class="qbk-col-actions">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in question_rows %}
+        <tr>
+          <td class="qbk-col-question">
+            <div class="qbk-prompt">{{ row.quiz_preview }}</div>
+            {% if row.has_any_audio %}
+            <div class="qbk-prompt-meta">
+              <span class="qbk-audio-tag">Audio on file</span>
+            </div>
+            {% endif %}
+          </td>
+          <td>
+            <div class="qbk-crumb"><strong>{{ row.grade }}</strong> · {{ row.subject }}</div>
+            <div class="qbk-crumb">{{ row.strand }} · {{ row.sub_strand }}</div>
+          </td>
+          <td>
+            <span class="qbk-pill qbk-pill--type">{{ row.quiz_type }}</span>
+          </td>
+          <td>
+            <span class="qbk-pill qbk-pill--{{ row.difficulty|lower }}">{{ row.difficulty }}</span>
+          </td>
+          <td>
+            <span class="qbk-status {% if row.is_active %}is-active{% else %}is-inactive{% endif %}">
+              {% if row.is_active %}Active{% else %}Inactive{% endif %}
+            </span>
+          </td>
+          <td class="qbk-date">{{ row.created_at|date:"d M Y" }}</td>
+          <td class="qbk-col-actions">
+            <div class="qbk-actions">
+              <div class="qbk-action-links">
+                <a href="{{ row.detail_url }}" class="qbk-action-link">View</a>
+                {% if row.can_manage_media %}
+                <a href="{{ row.media_url }}?next={{ request.get_full_path|urlencode }}" class="qbk-action-link">
+                  {% if row.has_any_audio %}Audio &#128266;{% else %}Add audio{% endif %}
+                </a>
+                {% endif %}
+                <a href="{{ row.sub_strand_url }}" class="qbk-action-link">Sub-strand</a>
+              </div>
+              {% if row.can_toggle %}
+              <form method="post" class="qbk-toggle-form" action="{% url 'core:question_bank_list' %}">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="toggle_question_active">
+                <input type="hidden" name="question_uuid" value="{{ row.uuid }}">
+                <input type="hidden" name="return_to" value="{{ request.get_full_path }}">
+                <button type="submit" class="qbk-toggle-btn{% if row.is_active %} is-deactivate{% endif %}">
+                  {% if row.is_active %}Deactivate{% else %}Activate{% endif %}
+                </button>
+              </form>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if page.has_other_pages %}
+  <nav class="qbk-pagination" aria-label="Questions pages">
+    {% if page.has_previous %}
+    <a href="?page={{ page.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&amp;{{ key }}={{ value|urlencode }}{% endif %}{% endfor %}">Previous</a>
+    {% endif %}
+    <span class="is-current">Page {{ page.number }} of {{ page.paginator.num_pages }}</span>
+    {% if page.has_next %}
+    <a href="?page={{ page.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&amp;{{ key }}={{ value|urlencode }}{% endif %}{% endfor %}">Next</a>
+    {% endif %}
+  </nav>
+  {% endif %}
+
+  {% else %}
+  <div class="qbk-empty">
+    <strong>No questions match these filters</strong>
+    <p>Try clearing filters, or add questions via sub-strand pages or bulk import.</p>
+    {% if create_question_url %}
+    <p style="margin-top:var(--space-md);"><a href="{{ create_question_url }}" class="btn btn-primary">Add a question</a></p>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
 {% endblock %}

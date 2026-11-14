@@ -1990,10 +1990,13 @@ def teacher_question_detail_view(request, question_uuid):
         uuid=question_uuid,
         created_by=teacher,
     )
+    from subjects.views import _user_can_reformat_question
+
     detail = build_teacher_question_detail(teacher, question)
     context = {
         'teacher': teacher,
         'detail': detail,
+        'can_manage_media': _user_can_reformat_question(request.user, question),
         **detail,
     }
     return render(request, 'accounts/teacher_question_detail.html', context)

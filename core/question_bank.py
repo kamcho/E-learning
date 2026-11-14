@@ -19,6 +19,7 @@ def base_questions_queryset(user):
             'sub_strand__strand__subject',
             'sub_strand__strand__subject__grade_level',
         )
+        .prefetch_related('options')
         .order_by('-created_at', 'uuid')
     )
     if user.is_admin_role or user.is_staff:
@@ -161,7 +162,7 @@ def serialize_question_bank_row(question, user):
             kwargs={'question_uuid': question.uuid},
         )
 
-    from subjects.views import _user_can_toggle_question
+    from subjects.views import _user_can_reformat_question, _user_can_toggle_question
 
     return {
         'uuid': question.uuid,
@@ -178,6 +179,15 @@ def serialize_question_bank_row(question, user):
         'detail_url': detail_url,
         'sub_strand_url': reverse('subjects:sub_strand_detail', kwargs={'slug': question.sub_strand.slug}),
         'can_toggle': _user_can_toggle_question(user, question),
+        'can_manage_media': _user_can_reformat_question(user, question),
+        'has_prompt_audio': bool(question.prompt_audio),
+        'has_explanation_audio': bool(question.explanation_audio),
+        'has_any_audio': bool(
+            question.prompt_audio
+            or question.explanation_audio
+            or any(opt.option_audio for opt in question.options.all())
+        ),
+        'media_url': reverse('core:question_media', kwargs={'question_uuid': question.uuid}),
     }
 
 

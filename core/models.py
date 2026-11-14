@@ -32,6 +32,12 @@ class Question(models.Model):
         null=True,
         help_text='Optional audio narration (MP3, WAV, OGG).',
     )
+    explanation_audio=models.FileField(
+        upload_to='questions/explanations/%Y/%m/',
+        blank=True,
+        null=True,
+        help_text='Optional pre-recorded explanation (used instead of TTS when present).',
+    )
     image_alt_text=models.CharField(
         max_length=255,
         blank=True,
@@ -71,6 +77,12 @@ class Option(models.Model):
         blank=True,
         null=True,
         help_text='Optional image for visual answer choices.',
+    )
+    option_audio=models.FileField(
+        upload_to='questions/options/audio/%Y/%m/',
+        blank=True,
+        null=True,
+        help_text='Optional audio for this answer choice.',
     )
     is_correct=models.BooleanField(default=False)
     is_active=models.BooleanField(default=True)

@@ -194,11 +194,16 @@ def build_demo_breakdown(demo, questions):
                 'is_correct': opt.is_correct,
                 'is_selected': str(opt.uuid) == answer_uuid,
             })
+        explanation_audio_url = ''
+        if question.explanation_audio:
+            explanation_audio_url = question.explanation_audio.url
+
         rows.append({
             'number': index,
             'question': question,
             'question_uuid': qid,
             'question_text': question.quiz,
+            'explanation_audio_url': explanation_audio_url,
             'options': options_list,
             'is_correct': fb.get('is_correct'),
             'answered': bool(answer_uuid),

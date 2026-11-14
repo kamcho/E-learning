@@ -420,6 +420,7 @@ def _build_attempt_breakdown(attempt):
                 'uuid': str(opt.uuid),
                 'option': opt.option,
                 'option_image_url': opt.option_image.url if opt.option_image else '',
+                'option_audio_url': opt.option_audio.url if opt.option_audio else '',
                 'is_correct': opt.is_correct,
                 'is_selected': str(opt.uuid) in selected_ids,
             })
@@ -1634,6 +1635,78 @@ def question_bank_list_view(request):
         'create_question_url': create_question_url,
         **filter_ctx,
     })
+
+
+@login_required(login_url='accounts:signin')
+def question_media_view(request, question_uuid):
+    """Upload prompt, explanation, and option audio for a question."""
+    from core.forms import OptionMediaForm, QuestionMediaForm
+    from subjects.views import _user_can_reformat_question
+
+    if not _is_quiz_builder_allowed(request.user):
+        messages.error(request, "You don't have permission to manage question audio.")
+        return redirect('core:exams_list')
+
+    question = get_object_or_404(
+        Question.objects.select_related(
+            'sub_strand',
+            'sub_strand__strand',
+            'sub_strand__strand__subject',
+            'sub_strand__strand__subject__grade_level',
+        ).prefetch_related('options'),
+        uuid=question_uuid,
+    )
+    if not _user_can_reformat_question(request.user, question):
+        messages.error(request, "You don't have permission to edit this question.")
+        return redirect('core:question_bank_list')
+
+    options = list(question.options.filter(is_active=True).order_by('created_at'))
+    return_to = request.GET.get('next') or request.POST.get('return_to') or reverse('core:question_bank_list')
+
+    if request.method == 'POST':
+        question_form = QuestionMediaForm(
+            request.POST,
+            request.FILES,
+            instance=question,
+        )
+        option_forms = [
+            OptionMediaForm(
+                request.POST,
+                request.FILES,
+                instance=opt,
+                prefix=f'opt_{opt.pk}',
+            )
+            for opt in options
+        ]
+        forms_ok = question_form.is_valid() and all(f.is_valid() for f in option_forms)
+        if forms_ok:
+            question_form.save()
+            for opt_form in option_forms:
+                opt_form.save()
+            messages.success(request, 'Audio files saved.')
+            return redirect(return_to)
+        messages.error(request, 'Could not save audio. Check file types (MP3, WAV, OGG, AAC).')
+    else:
+        question_form = QuestionMediaForm(instance=question)
+        option_forms = [
+            OptionMediaForm(instance=opt, prefix=f'opt_{opt.pk}')
+            for opt in options
+        ]
+
+    subject = question.sub_strand.strand.subject
+    option_pairs = list(zip(options, option_forms))
+
+    return render(
+        request,
+        'core/question_media.html',
+        {
+            'question': question,
+            'subject': subject,
+            'question_form': question_form,
+            'option_pairs': option_pairs,
+            'return_to': return_to,
+        },
+    )
 
 
 @login_required(login_url='accounts:signin')

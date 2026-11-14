@@ -2,7 +2,6 @@
   var openaiCfg = window.SomaOpenAITts;
   var openaiEnabled = !!(openaiCfg && openaiCfg.url && openaiCfg.voices && openaiCfg.voices.length);
   var browserTtsSupported = 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window;
-  var canSpeak = openaiEnabled || browserTtsSupported;
 
   var openaiVoiceKey = 'soma-openai-tts-voice';
   var browserVoiceKey = 'soma-smart-explanation-voice';
@@ -32,6 +31,11 @@
     if (element && element.hidden !== hidden) element.hidden = hidden;
   }
 
+  function prerecordedAudioUrl(region) {
+    if (!region) return '';
+    return (region.getAttribute('data-speech-audio-url') || '').trim();
+  }
+
   function getSpeechTextNode(region) {
     return region.querySelector('[data-speech-text]');
   }
@@ -39,7 +43,16 @@
   function speechPlainText(region) {
     var text = getSpeechTextNode(region);
     if (!text) return '';
+    if (text.hidden) return '';
     return text.textContent.replace(/\s+/g, ' ').trim();
+  }
+
+  function regionHasTts(region) {
+    return !!(speechPlainText(region) && (openaiEnabled || browserTtsSupported));
+  }
+
+  function regionCanSpeak(region) {
+    return !!(prerecordedAudioUrl(region) || regionHasTts(region));
   }
 
   function labelOpenAIVoice(name) {
@@ -117,8 +130,8 @@
 
     if (speakButton && speakButton.disabled !== playing) speakButton.disabled = playing;
     setHidden(stopButton, !playing);
-    if (status) {
-      var message = playing ? 'Preparing read-aloud…' : '';
+    if (status && playing) {
+      var message = prerecordedAudioUrl(region) ? 'Playing recording…' : 'Preparing read-aloud…';
       if (status.textContent !== message) status.textContent = message;
     }
   }
@@ -149,20 +162,56 @@
     }
   }
 
+  function wireAudioElement(region, audioEl) {
+    audioEl.onended = function () {
+      if (activeRegion === region) {
+        setPlaybackState(region, false);
+        activeRegion = null;
+        var status = region.querySelector('[data-speech-status]');
+        if (status) status.textContent = 'Playback finished.';
+      }
+      activeAudio = null;
+      revokeObjectUrl();
+    };
+    audioEl.onerror = function () {
+      if (activeRegion === region) {
+        setPlaybackState(region, false);
+        activeRegion = null;
+        var status = region.querySelector('[data-speech-status]');
+        if (status) status.textContent = 'Speech playback could not be completed.';
+      }
+      activeAudio = null;
+      revokeObjectUrl();
+    };
+    var status = region.querySelector('[data-speech-status]');
+    if (status) status.textContent = 'Speaking…';
+    return audioEl.play();
+  }
+
+  function playRecordedUrl(region, url) {
+    revokeObjectUrl();
+    activeAudio = new Audio(url);
+    return wireAudioElement(region, activeAudio);
+  }
+
   function updateRegion(region) {
     var speakButton = region.querySelector('[data-speech-speak]');
     var stopButton = region.querySelector('[data-speech-stop]');
     var voiceSelect = region.querySelector('[data-speech-voice]');
     var status = region.querySelector('[data-speech-status]');
-    var ready = !!speechPlainText(region);
+    var hasFile = !!prerecordedAudioUrl(region);
+    var plainText = speechPlainText(region);
+    var hasTts = !!(plainText && (openaiEnabled || browserTtsSupported));
+    var ready = hasFile || plainText;
+    var canSpeak = hasFile || hasTts;
 
     setHidden(speakButton, !ready || !canSpeak);
-    setHidden(voiceSelect, !ready || !canSpeak);
+    setHidden(voiceSelect, !hasTts || !(openaiEnabled || browserTtsSupported));
     var voiceLabel = voiceSelect && voiceSelect.closest('.speech-voice-choice');
-    if (voiceLabel) setHidden(voiceLabel, !ready || !canSpeak);
+    if (voiceLabel) setHidden(voiceLabel, voiceSelect.hidden);
     if (!ready) setHidden(stopButton, true);
 
-    if (!canSpeak && status) {
+    if (!canSpeak && status && ready) {
       var message = openaiCfg === null
         ? 'Read-aloud is not configured.'
         : 'Text-to-speech is not available in this browser.';
@@ -205,29 +254,7 @@
     revokeObjectUrl();
     activeObjectUrl = URL.createObjectURL(blob);
     activeAudio = new Audio(activeObjectUrl);
-    activeAudio.onended = function () {
-      if (activeRegion === region) {
-        setPlaybackState(region, false);
-        activeRegion = null;
-        var status = region.querySelector('[data-speech-status]');
-        if (status) status.textContent = 'Playback finished.';
-      }
-      revokeObjectUrl();
-      activeAudio = null;
-    };
-    activeAudio.onerror = function () {
-      if (activeRegion === region) {
-        setPlaybackState(region, false);
-        activeRegion = null;
-        var status = region.querySelector('[data-speech-status]');
-        if (status) status.textContent = 'Speech playback could not be completed.';
-      }
-      revokeObjectUrl();
-      activeAudio = null;
-    };
-    var status = region.querySelector('[data-speech-status]');
-    if (status) status.textContent = 'Speaking…';
-    return activeAudio.play();
+    return wireAudioElement(region, activeAudio);
   }
 
   function requestOpenAISpeech(region, plainText, voiceName) {
@@ -252,6 +279,40 @@
     });
   }
 
+  function playTtsForRegion(region, plainText) {
+    var voiceSelect = region.querySelector('[data-speech-voice]');
+    var selectedOpenAIVoice = voiceSelect && voiceSelect.value;
+
+    if (openaiEnabled) {
+      return requestOpenAISpeech(region, plainText, selectedOpenAIVoice)
+        .then(function (blob) {
+          if (activeRegion !== region) return;
+          return playOpenAIAudio(region, blob);
+        })
+        .catch(function (err) {
+          if (activeRegion !== region) return;
+          if (browserTtsSupported) {
+            var status = region.querySelector('[data-speech-status]');
+            if (status) {
+              status.textContent = (err && err.message ? err.message + ' ' : '') + 'Using browser voice instead.';
+            }
+            speakWithBrowser(region, plainText);
+            return;
+          }
+          setPlaybackState(region, false);
+          activeRegion = null;
+          var failStatus = region.querySelector('[data-speech-status]');
+          if (failStatus) {
+            failStatus.textContent = err && err.message ? err.message : 'Could not generate speech.';
+          }
+        });
+    }
+
+    if (browserTtsSupported) {
+      speakWithBrowser(region, plainText);
+    }
+  }
+
   document.querySelectorAll('[data-speech-region]').forEach(function (region) {
     updateRegion(region);
     var voiceSelect = region.querySelector('[data-speech-voice]');
@@ -274,7 +335,7 @@
       childList: true,
       characterData: true,
       subtree: true,
-      attributeFilter: ['hidden'],
+      attributeFilter: ['hidden', 'data-speech-audio-url'],
     });
   });
 
@@ -297,44 +358,31 @@
     if (!speakButton) return;
 
     var region = speakButton.closest('[data-speech-region]');
-    var plainText = region && speechPlainText(region);
-    if (!region || !plainText || !canSpeak) return;
+    if (!region || !regionCanSpeak(region)) return;
+
+    var fileUrl = prerecordedAudioUrl(region);
+    var plainText = speechPlainText(region);
+    if (!fileUrl && !plainText) return;
 
     stopSpeech();
     activeRegion = region;
     setPlaybackState(region, true);
 
-    var voiceSelect = region.querySelector('[data-speech-voice]');
-    var selectedOpenAIVoice = voiceSelect && voiceSelect.value;
-
-    if (openaiEnabled) {
-      requestOpenAISpeech(region, plainText, selectedOpenAIVoice)
-        .then(function (blob) {
-          if (activeRegion !== region) return;
-          return playOpenAIAudio(region, blob);
-        })
-        .catch(function (err) {
-          if (activeRegion !== region) return;
-          if (browserTtsSupported) {
-            var status = region.querySelector('[data-speech-status]');
-            if (status) {
-              status.textContent = (err && err.message ? err.message + ' ' : '') + 'Using browser voice instead.';
-            }
-            speakWithBrowser(region, plainText);
-            return;
-          }
-          setPlaybackState(region, false);
-          activeRegion = null;
-          var failStatus = region.querySelector('[data-speech-status]');
-          if (failStatus) {
-            failStatus.textContent = err && err.message ? err.message : 'Could not generate speech.';
-          }
-        });
+    if (fileUrl) {
+      playRecordedUrl(region, fileUrl).catch(function () {
+        if (activeRegion !== region) return;
+        if (plainText) {
+          var status = region.querySelector('[data-speech-status]');
+          if (status) status.textContent = 'Recording unavailable. Using generated speech.';
+          playTtsForRegion(region, plainText);
+          return;
+        }
+        setPlaybackState(region, false);
+        activeRegion = null;
+      });
       return;
     }
 
-    if (browserTtsSupported) {
-      speakWithBrowser(region, plainText);
-    }
+    playTtsForRegion(region, plainText);
   });
 })();

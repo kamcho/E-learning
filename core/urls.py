@@ -39,6 +39,11 @@ urlpatterns = [
     path('quizzes/<uuid:quiz_uuid>/delete/', views.quiz_delete_view, name='quiz_delete'),
     path('api/quiz-questions/', views.quiz_questions_api_view, name='quiz_questions_api'),
     path('questions/', views.question_bank_list_view, name='question_bank_list'),
+    path(
+        'questions/<uuid:question_uuid>/audio/',
+        views.question_media_view,
+        name='question_media',
+    ),
     path('questions/bulk-import/', views.bulk_question_import_view, name='bulk_question_import'),
     path('api/questions/bulk/', views.bulk_create_questions_api_view, name='bulk_create_questions_api'),
     path(

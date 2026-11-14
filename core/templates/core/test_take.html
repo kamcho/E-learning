@@ -406,8 +406,9 @@
       <div class="test-progress-fill" style="width: {{ progress_pct }}%;"></div>
     </div>
 
-    <div class="question-card" data-speech-region>
-      {% include 'core/partials/question_prompt.html' with question=question %}
+    <div class="question-card" data-speech-region
+      {% if question.prompt_audio %}data-speech-audio-url="{{ question.prompt_audio.url }}"{% endif %}>
+      {% include 'core/partials/question_prompt.html' with question=question hide_inline_audio=True %}
       <div class="explanation-speech-controls" style="margin-bottom: var(--space-md);">
         <span class="sr-only" data-speech-text>{{ question.quiz|striptags }}</span>
         <button type="button" class="btn btn-secondary" data-speech-speak hidden>Listen to question</button>

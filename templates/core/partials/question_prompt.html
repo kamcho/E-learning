@@ -18,7 +18,7 @@
   </figure>
   {% endif %}
 
-  {% if question.prompt_audio %}
+  {% if question.prompt_audio and not hide_inline_audio %}
   <div class="question-rich-audio">
     <span class="sr-only" id="audio-label-{{ question.uuid }}">Listen to this question</span>
     <audio

@@ -1,7 +1,7 @@
 from django import forms
 from django.core.exceptions import ValidationError
 
-from core.models import Question, Quiz
+from core.models import Option, Question, Quiz
 from core.validators import validate_option_image, validate_question_audio, validate_question_image
 from subjects.models import SubStrand, Subject, Strand
 
@@ -192,6 +192,82 @@ class QuizForm(forms.ModelForm):
         self.fields['sub_strand'].queryset = SubStrand.objects.all().select_related('strand__subject').order_by('name')
         self.fields['sub_strand'].empty_label = 'All sub-strands (optional)'
         self.fields['sub_strand'].required = False
+
+
+class QuestionMediaForm(forms.ModelForm):
+    """Upload or replace narration files on an existing question."""
+
+    class Meta:
+        model = Question
+        fields = ('prompt_audio', 'explanation_audio')
+        widgets = {
+            'prompt_audio': forms.ClearableFileInput(attrs={
+                'class': 'form-input',
+                'accept': 'audio/*',
+            }),
+            'explanation_audio': forms.ClearableFileInput(attrs={
+                'class': 'form-input',
+                'accept': 'audio/*',
+            }),
+        }
+        labels = {
+            'prompt_audio': 'Question prompt audio',
+            'explanation_audio': 'Explanation audio',
+        }
+        help_texts = {
+            'prompt_audio': 'Played when learners tap “Listen to question”.',
+            'explanation_audio': 'Played when learners tap “Listen to explanation” (before TTS).',
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field_name in ('prompt_audio', 'explanation_audio'):
+            self.fields[field_name].required = False
+            self.fields[field_name].validators = [validate_question_audio]
+
+    def clean_prompt_audio(self):
+        upload = self.cleaned_data.get('prompt_audio')
+        if upload is False:
+            return None
+        if upload:
+            validate_question_audio(upload)
+        return upload
+
+    def clean_explanation_audio(self):
+        upload = self.cleaned_data.get('explanation_audio')
+        if upload is False:
+            return None
+        if upload:
+            validate_question_audio(upload)
+        return upload
+
+
+class OptionMediaForm(forms.ModelForm):
+    class Meta:
+        model = Option
+        fields = ('option_audio',)
+        widgets = {
+            'option_audio': forms.ClearableFileInput(attrs={
+                'class': 'form-input',
+                'accept': 'audio/*',
+            }),
+        }
+        labels = {
+            'option_audio': 'Answer choice audio',
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['option_audio'].required = False
+        self.fields['option_audio'].validators = [validate_question_audio]
+
+    def clean_option_audio(self):
+        upload = self.cleaned_data.get('option_audio')
+        if upload is False:
+            return None
+        if upload:
+            validate_question_audio(upload)
+        return upload
 
 
 class QuizEditForm(forms.ModelForm):

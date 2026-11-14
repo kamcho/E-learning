@@ -171,6 +171,18 @@
   <h1 style="font-family:var(--font-heading);font-size:1.2rem;font-weight:800;margin:0 0 1rem;">Question</h1>
   <div class="question-prompt">{{ question.quiz }}</div>
 
+  {% if can_manage_media %}
+  <p style="margin:0 0 1rem;">
+    <a href="{% url 'core:question_media' question.uuid %}?next={{ request.get_full_path|urlencode }}" class="btn btn-secondary" style="font-size:0.85rem;">
+      Manage question &amp; explanation audio
+    </a>
+  </p>
+  {% endif %}
+
+  {% if question.prompt_audio or question.explanation_audio %}
+  <button type="button" class="question-pill" style="cursor:default;margin-bottom:0.75rem;">&#128266; Audio on file</button>
+  {% endif %}
+
   {% if question.image_alt_text %}
   <div class="detail-item" style="margin-bottom:1rem;">
     <label>Image description</label>
