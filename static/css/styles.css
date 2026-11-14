@@ -1634,53 +1634,183 @@ html[data-theme="dark"] .audience-card--junior {
 .how-steps {
   list-style: none;
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: var(--space-lg);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1.25rem;
   margin: 0;
   padding: 0;
-  counter-reset: none;
+  position: relative;
+}
+
+@media (min-width: 993px) {
+  .how-steps::before {
+    content: '';
+    position: absolute;
+    top: 2.35rem;
+    left: 12%;
+    right: 12%;
+    height: 2px;
+    background: linear-gradient(
+      90deg,
+      rgba(13, 138, 78, 0.35),
+      rgba(124, 58, 237, 0.35),
+      rgba(212, 160, 23, 0.35),
+      rgba(15, 118, 110, 0.35)
+    );
+    border-radius: 2px;
+    z-index: 0;
+    pointer-events: none;
+  }
 }
 
 .how-step {
+  --step-accent: var(--clr-primary);
+  --step-tint: rgba(13, 138, 78, 0.1);
+  --step-glow: rgba(13, 138, 78, 0.18);
   background: var(--clr-surface);
-  border: 1px solid var(--clr-border);
-  border-radius: var(--radius-xl);
-  padding: var(--space-xl);
-  box-shadow: var(--shadow-sm);
-  transition: transform var(--transition-base), box-shadow var(--transition-base);
+  border: 1.5px solid color-mix(in srgb, var(--step-accent) 18%, var(--clr-border));
+  border-radius: 20px;
+  padding: 1.55rem 1.45rem 1.45rem;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+  transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+  position: relative;
+  overflow: hidden;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+.how-step::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    115% 75% at 100% 0%,
+    var(--step-tint) 0%,
+    transparent 58%
+  );
+  pointer-events: none;
+  opacity: 0.88;
+}
+
+.how-step > * {
+  position: relative;
+  z-index: 1;
 }
 
 .how-step:hover {
   transform: translateY(-4px);
-  box-shadow: var(--shadow-md);
+  border-color: color-mix(in srgb, var(--step-accent) 42%, var(--clr-border));
+  box-shadow:
+    0 16px 36px -12px var(--step-glow),
+    0 4px 12px rgba(16, 24, 40, 0.06);
 }
 
-.how-step-num {
-  display: inline-block;
-  font-family: var(--font-heading);
-  font-size: 0.85rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  color: var(--clr-primary);
-  background: rgba(13, 138, 78, 0.1);
-  padding: 0.3rem 0.65rem;
+.how-step-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.65rem;
+  margin-bottom: 1.1rem;
+}
+
+.how-step-icon {
+  width: 3.1rem;
+  height: 3.1rem;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--step-accent) 16%, #fff),
+    var(--step-tint)
+  );
+  color: var(--step-accent);
+  border: 1px solid color-mix(in srgb, var(--step-accent) 22%, transparent);
+  box-shadow: 0 0 0 4px var(--clr-surface);
+}
+
+.how-step-icon svg {
+  width: 1.45rem;
+  height: 1.45rem;
+}
+
+.how-step-chip {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0.28rem 0.55rem;
   border-radius: var(--radius-full);
-  margin-bottom: var(--space-md);
+  color: var(--step-accent);
+  background: color-mix(in srgb, var(--step-accent) 10%, var(--clr-surface));
+  border: 1px solid color-mix(in srgb, var(--step-accent) 20%, transparent);
+  white-space: nowrap;
+}
+
+.how-step--signup {
+  --step-accent: #0d8a4e;
+  --step-tint: rgba(13, 138, 78, 0.1);
+  --step-glow: rgba(13, 138, 78, 0.2);
+}
+
+.how-step--learners {
+  --step-accent: #7c3aed;
+  --step-tint: rgba(124, 58, 237, 0.1);
+  --step-glow: rgba(124, 58, 237, 0.18);
+}
+
+.how-step--practice {
+  --step-accent: #c48a0a;
+  --step-tint: rgba(212, 160, 23, 0.12);
+  --step-glow: rgba(212, 160, 23, 0.22);
+}
+
+.how-step--track {
+  --step-accent: #0f766e;
+  --step-tint: rgba(15, 118, 110, 0.11);
+  --step-glow: rgba(15, 118, 110, 0.2);
 }
 
 .how-step h3 {
   font-family: var(--font-heading);
-  font-size: 1.1rem;
-  font-weight: 700;
+  font-size: 1.08rem;
+  font-weight: 800;
   color: var(--clr-text);
-  margin: 0 0 var(--space-sm);
+  margin: 0 0 0.45rem;
+  letter-spacing: -0.02em;
 }
 
 .how-step p {
   font-size: 0.9rem;
   color: var(--clr-text-muted);
-  line-height: 1.55;
+  line-height: 1.6;
   margin: 0;
+}
+
+html[data-theme="dark"] .how-step {
+  box-shadow: none;
+}
+
+html[data-theme="dark"] .how-step::after {
+  opacity: 0.55;
+}
+
+html[data-theme="dark"] .how-step-icon {
+  box-shadow: 0 0 0 4px var(--clr-surface);
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--step-accent) 22%, var(--clr-surface)),
+    color-mix(in srgb, var(--step-accent) 8%, var(--clr-surface))
+  );
+}
+
+@media (max-width: 992px) {
+  .how-steps::before {
+    display: none;
+  }
 }
 
 /* ============================================
@@ -2529,9 +2659,26 @@ html[data-theme="dark"] .landing-ks .features {
 }
 
 .landing-ks .levels,
-.landing-ks .about,
-.landing-ks .how-it-works {
+.landing-ks .about {
   background: #fff;
+}
+
+.landing-ks .how-it-works {
+  background: linear-gradient(180deg, #fff 0%, #f8faf9 55%, #fff 100%);
+  padding: var(--space-4xl) 0;
+}
+
+.landing-ks .how-it-works .section-header {
+  max-width: 42rem;
+}
+
+.landing-ks .how-it-works .section-tag {
+  background: rgba(13, 138, 78, 0.1);
+  border: 1px solid rgba(13, 138, 78, 0.14);
+}
+
+html[data-theme="dark"] .landing-ks .how-it-works {
+  background: var(--clr-bg);
 }
 
 .landing-ks .pricing {
