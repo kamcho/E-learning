@@ -27,8 +27,8 @@
 
     <div class="stk-pay-pulse" aria-hidden="true"><span></span><span></span><span></span></div>
 
-    <h1 class="stk-pay-title">Check your phone</h1>
-    <p class="stk-pay-lead">
+    <h1 class="stk-pay-title" id="stk-pay-title">Check your phone</h1>
+    <p class="stk-pay-lead" id="stk-pay-lead">
       We sent an M-Pesa STK push to <strong>{{ payment.phone_number }}</strong>.
       {% if payment.student %}This credit is for <strong>{{ payment.student.first_name }} {{ payment.student.last_name }}</strong>.{% endif %}
     </p>

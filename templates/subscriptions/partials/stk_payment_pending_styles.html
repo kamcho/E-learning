@@ -120,17 +120,28 @@
 
   .stk-pay-title {
     font-family: var(--font-heading);
-    font-size: 1.4rem;
+    font-size: clamp(1.05rem, 3.2vw, 1.4rem);
     font-weight: 800;
     margin: 0 0 var(--space-sm);
     color: var(--clr-text);
+    line-height: 1.35;
+  }
+
+  .stk-pay-card.is-cancelled .stk-pay-title,
+  .stk-pay-card.is-failed .stk-pay-title {
+    color: inherit;
   }
 
   .stk-pay-lead {
     color: var(--clr-text-muted);
     line-height: 1.55;
     margin: 0 0 var(--space-md);
-    font-size: 0.95rem;
+    font-size: 0.92rem;
+    text-align: left;
+  }
+
+  .stk-pay-card.is-waiting .stk-pay-lead {
+    text-align: center;
   }
 
   .stk-pay-amount {
