@@ -31,6 +31,9 @@ def extract_mpesa_receipt_from_message(text: str) -> str:
     raw = (text or '').strip()
     if not raw:
         return ''
+    compact = re.sub(r'\s+', '', raw).upper()
+    if is_valid_mpesa_receipt_code(compact):
+        return compact
     for pattern in _RECEIPT_PATTERNS:
         match = pattern.search(raw)
         if match:

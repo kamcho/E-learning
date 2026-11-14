@@ -25,7 +25,8 @@
   var waitingLeadHtml = leadEl ? leadEl.innerHTML : '';
 
   var polls = 0;
-  var finished = false;
+  var pollActive = true;
+  var paymentSucceeded = false;
 
   var copy = {
     waiting: {
@@ -164,8 +165,9 @@
   }
 
   function finishSuccess(data) {
-    if (finished) return;
-    finished = true;
+    if (paymentSucceeded) return;
+    paymentSucceeded = true;
+    pollActive = false;
     setState('success', data.result_description);
     if (data.mpesa_receipt_number && receiptEl) {
       receiptEl.textContent = 'M-Pesa receipt: ' + data.mpesa_receipt_number;
@@ -177,8 +179,8 @@
   }
 
   function finishTerminal(state, resultDescription) {
-    if (finished) return;
-    finished = true;
+    pollActive = false;
+    if (paymentSucceeded) return;
     setState(state, resultDescription);
     showReconcilePanel();
   }
@@ -191,31 +193,55 @@
   function bindReconcileForm() {
     if (!reconcileForm || !reconcileUrl) return;
     showReconcilePanel();
-    reconcileForm.addEventListener('submit', function (event) {
-      event.preventDefault();
-      if (finished) return;
+    function submitReconcile() {
+      if (paymentSucceeded) return;
       var messageField = document.getElementById('stk-mpesa-message');
       var message = messageField ? messageField.value.trim() : '';
-      if (!message) return;
+      if (!message) {
+        if (reconcileError) {
+          reconcileError.textContent = 'Enter your M-Pesa confirmation code or SMS.';
+          reconcileError.hidden = false;
+        }
+        return;
+      }
 
       if (reconcileError) reconcileError.hidden = true;
       if (reconcileSubmit) reconcileSubmit.disabled = true;
       if (reconcilePanel) reconcilePanel.classList.add('is-submitting');
 
+      var csrf = getCsrfToken();
+      if (!csrf) {
+        if (reconcileError) {
+          reconcileError.textContent = 'Session expired. Refresh this page and try again.';
+          reconcileError.hidden = false;
+        }
+        if (reconcileSubmit) reconcileSubmit.disabled = false;
+        return;
+      }
+
       var body = new FormData();
       body.append('mpesa_message', message);
-      body.append('csrfmiddlewaretoken', getCsrfToken());
+      body.append('csrfmiddlewaretoken', csrf);
 
       fetch(reconcileUrl, {
         method: 'POST',
         body: body,
         credentials: 'same-origin',
-        headers: { Accept: 'application/json' },
+        headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
       })
         .then(function (res) {
-          return res.json().then(function (data) {
-            return { ok: res.ok, data: data };
-          });
+          return res.json().then(
+            function (data) {
+              return { ok: res.ok, status: res.status, data: data };
+            },
+            function () {
+              return {
+                ok: false,
+                status: res.status,
+                data: { error: 'Unexpected server response. Refresh and try again.' },
+              };
+            },
+          );
         })
         .then(function (result) {
           if (result.ok && result.data.ok) {
@@ -238,11 +264,23 @@
           if (reconcileSubmit) reconcileSubmit.disabled = false;
           if (reconcilePanel) reconcilePanel.classList.remove('is-submitting');
         });
+    }
+
+    reconcileForm.addEventListener('submit', function (event) {
+      event.preventDefault();
+      submitReconcile();
     });
+
+    if (reconcileSubmit) {
+      reconcileSubmit.addEventListener('click', function (event) {
+        event.preventDefault();
+        submitReconcile();
+      });
+    }
   }
 
   function poll() {
-    if (finished) return;
+    if (!pollActive || paymentSucceeded) return;
     polls += 1;
     fetch(statusUrl, { headers: { Accept: 'application/json' }, credentials: 'same-origin' })
       .then(function (res) {
@@ -270,7 +308,7 @@
         }
       })
       .catch(function () {
-        if (finished) return;
+        if (!pollActive || paymentSucceeded) return;
         if (polls < maxPolls) {
           setState('error');
           setTimeout(poll, Math.max(pollMs, 4000));

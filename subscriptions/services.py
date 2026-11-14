@@ -1,6 +1,7 @@
 """Subscription lifecycle and test-credit helpers."""
 
 import logging
+import re
 from decimal import Decimal
 
 from django.db import models, transaction
@@ -323,13 +324,19 @@ def _stk_query_indicates_success(checkout_request_id: str) -> bool:
 
 
 def _validate_reconcile_message(*, sms_text: str, expected_amount_kes, receipt: str):
-    if not sms_text.strip():
-        raise PaymentReconcileError('missing_message', 'Paste the full M-Pesa confirmation message.')
+    stripped = (sms_text or '').strip()
+    if not stripped:
+        raise PaymentReconcileError(
+            'missing_message',
+            'Paste your M-Pesa confirmation code or the full SMS.',
+        )
+    compact = re.sub(r'\s+', '', stripped).upper()
+    receipt_only = is_valid_mpesa_receipt_code(compact)
     receipt = (receipt or extract_mpesa_receipt_from_message(sms_text)).strip().upper()
     if not is_valid_mpesa_receipt_code(receipt):
         raise PaymentReconcileError(
             'invalid_receipt',
-            'We could not find a valid M-Pesa receipt code (e.g. ABC12DEF34) in that message.',
+            'Enter a valid M-Pesa code (8–12 letters and numbers, e.g. TH78X9K2L1).',
         )
     parsed_amount = parse_kes_amount_from_message(sms_text)
     expected = Decimal(str(expected_amount_kes)).quantize(Decimal('0.01'))
@@ -338,7 +345,7 @@ def _validate_reconcile_message(*, sms_text: str, expected_amount_kes, receipt: 
             'amount_mismatch',
             f'This payment is KES {expected:.0f}, but the message shows KES {parsed_amount:.2f}.',
         )
-    return receipt, bool(parsed_amount is not None)
+    return receipt, bool(parsed_amount is not None), receipt_only
 
 
 @transaction.atomic
@@ -352,7 +359,7 @@ def reconcile_subscription_payment(payment: Payment, *, sms_text: str, receipt: 
     ):
         raise PaymentReconcileError('not_reconcilable', 'This payment cannot be updated.')
 
-    receipt, amount_seen = _validate_reconcile_message(
+    receipt, amount_seen, receipt_only = _validate_reconcile_message(
         sms_text=sms_text,
         expected_amount_kes=payment.amount_kes,
         receipt=receipt,
@@ -364,10 +371,10 @@ def reconcile_subscription_payment(payment: Payment, *, sms_text: str, receipt: 
         )
 
     stk_verified = _stk_query_indicates_success(payment.checkout_request_id)
-    if not stk_verified and not amount_seen:
+    if not stk_verified and not amount_seen and not receipt_only:
         raise PaymentReconcileError(
             'needs_amount',
-            'Include the full M-Pesa SMS showing the amount paid (Ksh…), or try again when M-Pesa is reachable.',
+            'Paste the confirmation code only, or the full SMS with the Ksh amount.',
         )
 
     payment.mpesa_receipt_number = receipt
@@ -378,6 +385,7 @@ def reconcile_subscription_payment(payment: Payment, *, sms_text: str, receipt: 
         'sms_excerpt': sms_text.strip()[:500],
         'stk_verified': stk_verified,
         'amount_seen_in_sms': amount_seen,
+        'receipt_only': receipt_only,
     }
     payment.callback_payload = payload
     payment.save(update_fields=[
@@ -403,7 +411,7 @@ def reconcile_guest_demo_payment(payment: GuestDemoPayment, *, sms_text: str, re
     ):
         raise PaymentReconcileError('not_reconcilable', 'This payment cannot be updated.')
 
-    receipt, amount_seen = _validate_reconcile_message(
+    receipt, amount_seen, receipt_only = _validate_reconcile_message(
         sms_text=sms_text,
         expected_amount_kes=payment.amount_kes,
         receipt=receipt,
@@ -415,10 +423,10 @@ def reconcile_guest_demo_payment(payment: GuestDemoPayment, *, sms_text: str, re
         )
 
     stk_verified = _stk_query_indicates_success(payment.checkout_request_id)
-    if not stk_verified and not amount_seen:
+    if not stk_verified and not amount_seen and not receipt_only:
         raise PaymentReconcileError(
             'needs_amount',
-            'Include the full M-Pesa SMS showing the amount paid (Ksh…), or try again when M-Pesa is reachable.',
+            'Paste the confirmation code only, or the full SMS with the Ksh amount.',
         )
 
     payment.mpesa_receipt_number = receipt
@@ -430,6 +438,7 @@ def reconcile_guest_demo_payment(payment: GuestDemoPayment, *, sms_text: str, re
         'sms_excerpt': sms_text.strip()[:500],
         'stk_verified': stk_verified,
         'amount_seen_in_sms': amount_seen,
+        'receipt_only': receipt_only,
     }
     payment.callback_payload = payload
     payment.save(update_fields=[

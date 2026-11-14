@@ -364,6 +364,11 @@ class MpesaSmsParseTests(TestCase):
         )
         self.assertEqual(extract_mpesa_receipt_from_message(sms), 'ABC12DEF34')
 
+    def test_extracts_receipt_when_only_code_pasted(self):
+        from subscriptions.mpesa_sms import extract_mpesa_receipt_from_message
+
+        self.assertEqual(extract_mpesa_receipt_from_message('  th78x9k2l1  '), 'TH78X9K2L1')
+
     def test_parse_amount_from_sms(self):
         from subscriptions.mpesa_sms import parse_kes_amount_from_message
 
@@ -405,6 +410,16 @@ class PaymentReconcileTests(TestCase):
         sms = 'TH78X9K2L1 Confirmed. Ksh15.00 paid to Soma Smart.'
         with patch('subscriptions.services._stk_query_indicates_success', return_value=True):
             reconcile_subscription_payment(payment, sms_text=sms)
+        payment.refresh_from_db()
+        self.assertEqual(payment.status, Payment.Status.SUCCESS)
+        self.assertEqual(payment.mpesa_receipt_number, 'TH78X9K2L1')
+
+    def test_reconcile_accepts_confirmation_code_only(self):
+        from subscriptions.services import reconcile_subscription_payment
+
+        payment = self._pending_payment()
+        with patch('subscriptions.services._stk_query_indicates_success', return_value=False):
+            reconcile_subscription_payment(payment, sms_text='TH78X9K2L1')
         payment.refresh_from_db()
         self.assertEqual(payment.status, Payment.Status.SUCCESS)
         self.assertEqual(payment.mpesa_receipt_number, 'TH78X9K2L1')
