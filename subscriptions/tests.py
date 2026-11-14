@@ -408,21 +408,43 @@ class PaymentReconcileTests(TestCase):
 
         payment = self._pending_payment()
         sms = 'TH78X9K2L1 Confirmed. Ksh15.00 paid to Soma Smart.'
-        with patch('subscriptions.services._stk_query_indicates_success', return_value=True):
-            reconcile_subscription_payment(payment, sms_text=sms)
+        with patch(
+            'subscriptions.mpesa_pull.verify_receipt_via_pull_transactions',
+            return_value={'transaction_id': 'TH78X9K2L1', 'raw': {}},
+        ):
+            with patch('subscriptions.services._stk_query_indicates_success', return_value=True):
+                reconcile_subscription_payment(payment, sms_text=sms)
         payment.refresh_from_db()
         self.assertEqual(payment.status, Payment.Status.SUCCESS)
         self.assertEqual(payment.mpesa_receipt_number, 'TH78X9K2L1')
 
-    def test_reconcile_accepts_confirmation_code_only(self):
+    def test_reconcile_accepts_confirmation_code_only_when_pull_matches(self):
         from subscriptions.services import reconcile_subscription_payment
 
         payment = self._pending_payment()
-        with patch('subscriptions.services._stk_query_indicates_success', return_value=False):
-            reconcile_subscription_payment(payment, sms_text='TH78X9K2L1')
+        pull_row = {'transaction_id': 'TH78X9K2L1', 'amount': '15.00', 'msisdn': '254711998877', 'raw': {}}
+        with patch(
+            'subscriptions.mpesa_pull.verify_receipt_via_pull_transactions',
+            return_value=pull_row,
+        ):
+            with patch('subscriptions.services._stk_query_indicates_success', return_value=False):
+                reconcile_subscription_payment(payment, sms_text='TH78X9K2L1')
         payment.refresh_from_db()
         self.assertEqual(payment.status, Payment.Status.SUCCESS)
         self.assertEqual(payment.mpesa_receipt_number, 'TH78X9K2L1')
+        self.assertTrue(payment.callback_payload['manual_reconcile']['pull_verified'])
+
+    def test_reconcile_rejects_code_when_not_in_pull_or_stk(self):
+        from subscriptions.services import PaymentReconcileError, reconcile_subscription_payment
+
+        payment = self._pending_payment()
+        with patch(
+            'subscriptions.mpesa_pull.verify_receipt_via_pull_transactions',
+            return_value=None,
+        ):
+            with patch('subscriptions.services._stk_query_indicates_success', return_value=False):
+                with self.assertRaises(PaymentReconcileError):
+                    reconcile_subscription_payment(payment, sms_text='TH78X9K2L1')
 
     def test_reconcile_rejects_duplicate_receipt(self):
         from subscriptions.services import PaymentReconcileError, reconcile_subscription_payment

@@ -31,6 +31,11 @@ urlpatterns = [
         name='payment_reconcile',
     ),
     path('mpesa/callback/', views.mpesa_callback_view, name='mpesa_callback'),
+    path(
+        'mpesa/pull-register-callback/',
+        views.mpesa_pull_register_callback_view,
+        name='mpesa_pull_register_callback',
+    ),
     path('my-subscription/', views.my_subscription_view, name='my_subscription'),
     path('admin/payments/', views.admin_payments_list_view, name='admin_payments_list'),
     path('admin/subscriptions/', views.admin_subscriptions_list_view, name='admin_subscriptions_list'),

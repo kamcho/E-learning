@@ -768,6 +768,17 @@ def guest_demo_payment_reconcile_view(request, payment_uuid):
 
 @csrf_exempt
 @require_POST
+def mpesa_pull_register_callback_view(request):
+    """Safaricom Pull Transactions registration callback."""
+    logger.info(
+        'M-Pesa pull register callback: %s',
+        (request.body or b'')[:2000],
+    )
+    return JsonResponse({'ResultCode': 0, 'ResultDesc': 'Accepted'})
+
+
+@csrf_exempt
+@require_POST
 def mpesa_callback_view(request):
     """
     Safaricom STK callback endpoint.

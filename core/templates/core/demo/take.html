@@ -52,7 +52,7 @@
         {% endfor %}
       </div>
 
-      <div class="demo-feedback {% if feedback.is_correct %}is-correct{% else %}is-wrong{% endif %}">
+      <div class="demo-feedback {% if feedback.is_correct %}is-correct{% else %}is-wrong{% endif %}" id="demo-feedback-panel">
         {% if feedback.is_correct %}
           <div class="demo-feedback-title">Correct — well done!</div>
           <p style="margin:0;color:var(--demo-muted);font-size:0.88rem;">You earned {{ feedback.marks_awarded }}/{{ feedback.max_marks }} mark{{ feedback.max_marks|pluralize }}.</p>
@@ -154,6 +154,18 @@
 {% block extra_js %}
 {% load static %}
 <script src="{% static 'js/explanation-speech.js' %}" defer></script>
+{% if showing_feedback and feedback and feedback.is_correct %}
+<script src="{% static 'js/celebration-confetti.js' %}"></script>
+<script>
+(function () {
+  if (!window.SomaConfetti) return;
+  var anchor = document.getElementById('demo-feedback-panel');
+  requestAnimationFrame(function () {
+    window.SomaConfetti.celebrate({ anchor: anchor, particles: 160 });
+  });
+})();
+</script>
+{% endif %}
 {% if showing_feedback and feedback and not feedback.is_correct %}
 <script>
 (function () {

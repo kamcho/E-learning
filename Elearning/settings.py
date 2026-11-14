@@ -272,6 +272,8 @@ MPESA_CALLBACK_BASE_URL = (
     or os.environ.get('MPESA_CALLBACK_URL')
     or 'http://127.0.0.1:8000'
 )
+# MSISDN on the pay bill KYC (2547…) for Daraja Pull Transactions registration.
+MPESA_PULL_NOMINATED_NUMBER = os.environ.get('MPESA_PULL_NOMINATED_NUMBER', '')
 
 # Require active subscription for guardians to start exams (set false for local dev)
 SUBSCRIPTION_REQUIRED = os.environ.get('SUBSCRIPTION_REQUIRED', 'true').lower() == 'true'

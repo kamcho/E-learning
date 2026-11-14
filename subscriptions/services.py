@@ -310,6 +310,41 @@ def mpesa_receipt_already_used(
     return guest_qs.exists()
 
 
+def _verify_manual_payment_with_daraja(payment, *, receipt, amount_seen_in_sms, receipt_only):
+    """Confirm manual entry via Daraja Pull Transactions and/or STK query."""
+    from .mpesa import MpesaAPIError, MpesaConfigError
+    from .mpesa_pull import verify_receipt_via_pull_transactions
+
+    pull_row = None
+    try:
+        pull_row = verify_receipt_via_pull_transactions(
+            receipt=receipt,
+            phone_number=payment.phone_number,
+            amount_kes=payment.amount_kes,
+            payment_created_at=payment.created_at,
+        )
+    except MpesaConfigError as exc:
+        logger.warning('Pull verify skipped (config): %s', exc)
+    except MpesaAPIError as exc:
+        raise PaymentReconcileError(
+            'pull_failed',
+            str(exc) or 'M-Pesa could not verify this receipt.',
+        ) from exc
+
+    stk_verified = _stk_query_indicates_success(payment.checkout_request_id)
+
+    if pull_row:
+        return pull_row, stk_verified
+    if stk_verified:
+        return None, True
+
+    raise PaymentReconcileError(
+        'not_verified',
+        'M-Pesa did not show this receipt on your pay bill for this amount and phone. '
+        'Wait a minute and try again, or paste the full confirmation SMS.',
+    )
+
+
 def _stk_query_indicates_success(checkout_request_id: str) -> bool:
     if not checkout_request_id:
         return False
@@ -370,22 +405,24 @@ def reconcile_subscription_payment(payment: Payment, *, sms_text: str, receipt: 
             'That M-Pesa receipt is already linked to another successful payment.',
         )
 
-    stk_verified = _stk_query_indicates_success(payment.checkout_request_id)
-    if not stk_verified and not amount_seen and not receipt_only:
-        raise PaymentReconcileError(
-            'needs_amount',
-            'Paste the confirmation code only, or the full SMS with the Ksh amount.',
-        )
+    pull_row, stk_verified = _verify_manual_payment_with_daraja(
+        payment,
+        receipt=receipt,
+        amount_seen_in_sms=amount_seen,
+        receipt_only=receipt_only,
+    )
 
     payment.mpesa_receipt_number = receipt
     payment.result_code = 0
-    payment.result_description = 'Confirmed via M-Pesa confirmation message.'
+    payment.result_description = 'Confirmed via M-Pesa Pull Transactions.'
     payload = dict(payment.callback_payload or {})
     payload['manual_reconcile'] = {
         'sms_excerpt': sms_text.strip()[:500],
         'stk_verified': stk_verified,
         'amount_seen_in_sms': amount_seen,
         'receipt_only': receipt_only,
+        'pull_verified': bool(pull_row),
+        'pull_transaction': (pull_row or {}).get('raw'),
     }
     payment.callback_payload = payload
     payment.save(update_fields=[
@@ -422,16 +459,16 @@ def reconcile_guest_demo_payment(payment: GuestDemoPayment, *, sms_text: str, re
             'That M-Pesa receipt is already linked to another successful payment.',
         )
 
-    stk_verified = _stk_query_indicates_success(payment.checkout_request_id)
-    if not stk_verified and not amount_seen and not receipt_only:
-        raise PaymentReconcileError(
-            'needs_amount',
-            'Paste the confirmation code only, or the full SMS with the Ksh amount.',
-        )
+    pull_row, stk_verified = _verify_manual_payment_with_daraja(
+        payment,
+        receipt=receipt,
+        amount_seen_in_sms=amount_seen,
+        receipt_only=receipt_only,
+    )
 
     payment.mpesa_receipt_number = receipt
     payment.result_code = 0
-    payment.result_description = 'Confirmed via M-Pesa confirmation message.'
+    payment.result_description = 'Confirmed via M-Pesa Pull Transactions.'
     payment.status = GuestDemoPayment.Status.SUCCESS
     payload = dict(payment.callback_payload or {})
     payload['manual_reconcile'] = {
@@ -439,6 +476,8 @@ def reconcile_guest_demo_payment(payment: GuestDemoPayment, *, sms_text: str, re
         'stk_verified': stk_verified,
         'amount_seen_in_sms': amount_seen,
         'receipt_only': receipt_only,
+        'pull_verified': bool(pull_row),
+        'pull_transaction': (pull_row or {}).get('raw'),
     }
     payment.callback_payload = payload
     payment.save(update_fields=[

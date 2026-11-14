@@ -1,8 +1,8 @@
 <div class="stk-pay-reconcile" id="stk-pay-reconcile">
   <p class="stk-pay-reconcile-title">Already paid but this page didn’t update?</p>
   <p class="stk-pay-reconcile-lead">
-    Paste your <strong>M-Pesa confirmation code</strong> (e.g. <code>TH78X9K2L1</code>) or the full SMS.
-    We’ll match it to this payment and complete your order.
+    Paste your <strong>M-Pesa confirmation code</strong> or SMS. We verify it with Safaricom
+    <strong>Pull Transactions</strong> (pay bill records for the last 48 hours).
   </p>
   <form class="stk-pay-reconcile-form" id="stk-pay-reconcile-form" method="post" action="{{ reconcile_url }}">
     {% csrf_token %}
