@@ -353,6 +353,8 @@ class DemoPracticeTests(TestCase):
         self.assertContains(response, 'Choose a grade')
         self.assertEqual(response.context['phase'], 'grade')
         self.assertIsNone(response.context['active_grade'])
+        self.assertContains(response, self.subject.name)
+        self.assertGreater(response.context['wizard_total_subject_count'], 0)
 
     def test_exam_wizard_renders_for_authenticated_user(self):
         user = User.objects.create_user(phone='0722000000', password='1234', first_name='Jane')

@@ -32,6 +32,45 @@ from core.exam_filters import (
 from subjects.grade_utils import GRADE_SLUG_ORDER
 from subjects.models import GradeLevel, Strand, Subject, SubStrand
 
+_WIZARD_SUBJECT_CHIP_LIMIT = 8
+_WIZARD_STRAND_CHIP_LIMIT = 8
+
+
+def _strand_names_by_subject(subject_ids):
+    if not subject_ids:
+        return {}
+    names_by_subject = {sid: [] for sid in subject_ids}
+    for subject_id, name in (
+        Strand.objects.filter(is_active=True, subject_id__in=subject_ids)
+        .order_by('subject_id', 'order', 'name')
+        .values_list('subject_id', 'name')
+    ):
+        names_by_subject.setdefault(subject_id, []).append(name)
+    return names_by_subject
+
+
+def _attach_wizard_subjects_to_grades(grades, *, chip_limit=_WIZARD_SUBJECT_CHIP_LIMIT):
+    """Annotate grade levels with active curriculum subject names for wizard cards."""
+    if not grades:
+        return 0
+    grade_ids = [g.pk for g in grades]
+    names_by_grade = {gid: [] for gid in grade_ids}
+    for grade_id, name in (
+        Subject.objects.filter(is_active=True, grade_level_id__in=grade_ids)
+        .order_by('name')
+        .values_list('grade_level_id', 'name')
+    ):
+        names_by_grade.setdefault(grade_id, []).append(name)
+    total = 0
+    for grade in grades:
+        names = names_by_grade.get(grade.pk, [])
+        grade.wizard_subjects = names
+        grade.wizard_subject_count = len(names)
+        grade.wizard_subjects_preview = names[:chip_limit]
+        grade.wizard_subjects_more = max(0, len(names) - chip_limit)
+        total += len(names)
+    return total
+
 
 def _demo_wizard_phase(grade_chosen, subject_slug, scope, strand_slug, sub_strand_slug):
     if not grade_chosen:
@@ -178,6 +217,7 @@ def demo_wizard_view(request):
 
     all_grades_queryset = GradeLevel.objects.all()
     all_grades = sorted(all_grades_queryset, key=grade_sort_key)
+    wizard_total_subject_count = _attach_wizard_subjects_to_grades(all_grades)
     browse_all_grades = grade_slug == 'all'
     active_grade = None
     if browse_all_grades:
@@ -214,11 +254,15 @@ def demo_wizard_view(request):
             is_active=True,
             grade_level__in=grades_for_browse,
         ).select_related('grade_level')
-        for subject in sorted(subjects, key=lambda item: (grade_sort_key(item.grade_level), item.name)):
-            strand_count = strands_for_wizard(base_quizzes, subject=subject).count()
+        sorted_subjects = sorted(subjects, key=lambda item: (grade_sort_key(item.grade_level), item.name))
+        strand_names_map = _strand_names_by_subject([s.pk for s in sorted_subjects])
+        for subject in sorted_subjects:
+            strand_names = strand_names_map.get(subject.pk, [])
             browse_subjects.append({
                 'subject': subject,
-                'strand_count': strand_count,
+                'strand_count': len(strand_names),
+                'strands_preview': strand_names[:_WIZARD_STRAND_CHIP_LIMIT],
+                'strands_more': max(0, len(strand_names) - _WIZARD_STRAND_CHIP_LIMIT),
             })
 
     browse_strands = []
@@ -259,6 +303,7 @@ def demo_wizard_view(request):
         'demo_question_count': DEMO_QUESTION_COUNT,
         'demo_question_count_min': DEMO_QUESTION_COUNT_MIN,
         'demo_question_count_max': DEMO_QUESTION_COUNT_MAX,
+        'wizard_total_subject_count': wizard_total_subject_count,
     })
 
 

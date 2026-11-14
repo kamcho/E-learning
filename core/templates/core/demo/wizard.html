@@ -20,7 +20,7 @@
       {% else %}
       <p class="demo-hero-kicker">Welcome back{% if request.user.first_name %}, {{ request.user.first_name }}{% endif %}</p>
       {% endif %}
-      <h1 class="demo-hero-title">Start a free practice exam</h1>
+      <h1 class="demo-hero-title">Start your practice exam</h1>
       <p class="demo-hero-sub">Pick your grade and topic — we'll build an exam with <strong>at least {{ demo_question_count_min }}</strong> questions (up to {{ demo_question_count_max }}) plus instant marking and AI help when you miss an answer.</p>
     </div>
     {% if not request.user.is_authenticated %}
@@ -47,9 +47,6 @@
     {% include 'core/partials/exams_wizard_trail.html' with exams_wizard=demo_wizard %}
 
     <div class="ew-step ew-step--current">
-      <div class="ew-step-rail">
-        <div class="ew-step-marker">{{ demo_wizard.current_step_number }}</div>
-      </div>
       <div class="ew-step-card">
         <div class="ew-step-active-head">
           <div class="ew-step-active-icon" aria-hidden="true">
@@ -63,21 +60,6 @@
         <div class="ew-step-body">
 
           {% if phase == 'grade' %}
-          <div class="ew-picker-section">
-            <p class="ew-picker-section-label">All grades</p>
-            <ul class="ew-picker-list">
-              <li>
-                <a href="{% url 'core:exam_wizard' %}?grade=all" class="ew-picker-row ew-picker-row--lead">
-                  <span class="ew-picker-row-main">
-                    <span class="ew-picker-row-title">Browse all grades</span>
-                    <span class="ew-picker-row-desc">See every subject in the curriculum</span>
-                  </span>
-                  <span class="ew-picker-row-chevron" aria-hidden="true">→</span>
-                </a>
-              </li>
-            </ul>
-          </div>
-
           {% regroup all_grades by level as grade_bands %}
           {% for band in grade_bands %}
           <div class="ew-grade-band ew-picker-section">
@@ -85,10 +67,23 @@
             <ul class="ew-picker-list" aria-labelledby="ew-grade-band-{{ forloop.counter }}">
               {% for gl in band.list %}
               <li>
-                <a href="{% url 'core:exam_wizard' %}?grade={{ gl.slug }}" class="ew-picker-row">
+                <a href="{% url 'core:exam_wizard' %}?grade={{ gl.slug }}" class="ew-picker-row ew-picker-row--grade">
                   <span class="ew-picker-row-main">
                     <span class="ew-picker-row-title">{{ gl.name }}</span>
                     <span class="ew-picker-row-desc">{{ band.grouper }}</span>
+                    {% if gl.wizard_subject_count %}
+                    <span class="ew-picker-row-meta">{{ gl.wizard_subject_count }} subject{{ gl.wizard_subject_count|pluralize }}</span>
+                    <ul class="ew-picker-subject-chips" aria-label="Subjects in {{ gl.name }}">
+                      {% for subject_name in gl.wizard_subjects_preview %}
+                      <li>{{ subject_name }}</li>
+                      {% endfor %}
+                      {% if gl.wizard_subjects_more %}
+                      <li class="ew-picker-subject-more">+{{ gl.wizard_subjects_more }} more</li>
+                      {% endif %}
+                    </ul>
+                    {% else %}
+                    <span class="ew-picker-row-meta ew-picker-row-meta--muted">No subjects listed yet</span>
+                    {% endif %}
                   </span>
                   <span class="ew-picker-row-chevron" aria-hidden="true">→</span>
                 </a>
@@ -101,7 +96,7 @@
           {% endfor %}
 
           {% elif phase == 'subject' or not active_subject %}
-          <p class="ew-picker-note">Choose a subject — you’ll pick a <strong>strand</strong> (or whole subject) on the next screen.</p>
+          <p class="ew-picker-note">Choose a subject — each card lists its <strong>strands</strong>. Next, pick one strand or practise the whole subject.</p>
           <div class="grade-tabs" style="margin-bottom: var(--space-md);">
             <a href="{% url 'core:exam_wizard' %}" class="grade-tab">Change grade</a>
             {% if active_grade and not browse_all_grades %}
@@ -114,14 +109,24 @@
             {% for item in browse_subjects %}
             <li>
               <a href="{% url 'core:exam_wizard' %}?subject={{ item.subject.slug }}{% if browse_all_grades %}&grade={{ item.subject.grade_level.slug }}{% elif active_grade %}&grade={{ active_grade.slug }}{% endif %}"
-                 class="ew-picker-row">
+                 class="ew-picker-row ew-picker-row--subject">
                 <span class="ew-picker-row-main">
                   <span class="ew-picker-row-title">{{ item.subject.name }}</span>
                   <span class="ew-picker-row-desc">{{ item.subject.grade_level.name }}</span>
+                  {% if item.strand_count %}
+                  <span class="ew-picker-row-meta">{{ item.strand_count }} strand{{ item.strand_count|pluralize }}</span>
+                  <ul class="ew-picker-subject-chips" aria-label="Strands in {{ item.subject.name }}">
+                    {% for strand_name in item.strands_preview %}
+                    <li>{{ strand_name }}</li>
+                    {% endfor %}
+                    {% if item.strands_more %}
+                    <li class="ew-picker-subject-more">+{{ item.strands_more }} more</li>
+                    {% endif %}
+                  </ul>
+                  {% else %}
+                  <span class="ew-picker-row-meta ew-picker-row-meta--muted">No strands listed yet</span>
+                  {% endif %}
                 </span>
-                {% if item.strand_count %}
-                <span class="ew-picker-row-side">{{ item.strand_count }} strand{{ item.strand_count|pluralize }}</span>
-                {% endif %}
                 <span class="ew-picker-row-chevron" aria-hidden="true">→</span>
               </a>
             </li>
