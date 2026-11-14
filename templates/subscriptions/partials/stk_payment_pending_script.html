@@ -1,0 +1,122 @@
+<script>
+(function () {
+  var root = document.getElementById('stk-pay-root');
+  if (!root) return;
+
+  var statusUrl = root.getAttribute('data-status-url');
+  var redirectFallback = root.getAttribute('data-redirect-fallback') || '';
+  var pollMs = parseInt(root.getAttribute('data-poll-ms') || '3000', 10);
+  var maxPolls = parseInt(root.getAttribute('data-max-polls') || '60', 10);
+
+  var card = document.getElementById('stk-pay-card');
+  var statusBox = document.getElementById('stk-pay-status');
+  var statusLabel = document.getElementById('stk-pay-status-label');
+  var statusDetail = document.getElementById('stk-pay-status-detail');
+  var receiptEl = document.getElementById('stk-pay-receipt');
+
+  var polls = 0;
+  var finished = false;
+
+  var copy = {
+    waiting: {
+      label: 'Waiting for M-Pesa',
+      detail: 'Confirm the STK prompt on your phone. We will update this page automatically.',
+    },
+    success: {
+      label: 'Payment successful',
+      detail: 'Thank you! Your payment was received.',
+    },
+    failed: {
+      label: 'Payment failed',
+      detail: 'The payment did not go through. You can try again.',
+    },
+    cancelled: {
+      label: 'Payment cancelled',
+      detail: 'You cancelled the request or did not enter your PIN in time.',
+    },
+    timeout: {
+      label: 'Still waiting',
+      detail: 'If you already paid, give it a moment or check your subscription shortly.',
+    },
+    error: {
+      label: 'Connection issue',
+      detail: 'Could not reach the server. We will keep trying…',
+    },
+  };
+
+  function setState(state) {
+    if (!card || !statusBox) return;
+    card.className = 'stk-pay-card is-' + state;
+    statusBox.className = 'stk-pay-status is-' + state;
+    var text = copy[state] || copy.waiting;
+    if (statusLabel) statusLabel.textContent = text.label;
+    if (statusDetail) statusDetail.textContent = text.detail;
+  }
+
+  function finishSuccess(data) {
+    if (finished) return;
+    finished = true;
+    setState('success');
+    if (data.result_description && statusDetail) {
+      statusDetail.textContent = data.result_description;
+    }
+    if (data.mpesa_receipt_number && receiptEl) {
+      receiptEl.textContent = 'M-Pesa receipt: ' + data.mpesa_receipt_number;
+      receiptEl.hidden = false;
+    }
+    setTimeout(function () {
+      window.location.href = data.redirect_url || redirectFallback;
+    }, 1600);
+  }
+
+  function finishTerminal(state, message) {
+    if (finished) return;
+    finished = true;
+    setState(state);
+    if (message && statusDetail) statusDetail.textContent = message;
+  }
+
+  function poll() {
+    if (finished) return;
+    polls += 1;
+    fetch(statusUrl, { headers: { Accept: 'application/json' }, credentials: 'same-origin' })
+      .then(function (res) {
+        if (!res.ok) throw new Error('bad status');
+        return res.json();
+      })
+      .then(function (data) {
+        if (data.status === 'success') {
+          finishSuccess(data);
+          return;
+        }
+        if (data.status === 'failed') {
+          finishTerminal('failed', data.result_description || copy.failed.detail);
+          return;
+        }
+        if (data.status === 'cancelled') {
+          finishTerminal('cancelled', data.result_description || copy.cancelled.detail);
+          return;
+        }
+        setState('waiting');
+        if (polls < maxPolls) {
+          setTimeout(poll, pollMs);
+        } else {
+          finishTerminal('timeout', copy.timeout.detail);
+        }
+      })
+      .catch(function () {
+        if (finished) return;
+        if (polls < maxPolls) {
+          setState('error');
+          if (statusDetail) statusDetail.textContent = copy.error.detail;
+          setTimeout(poll, Math.max(pollMs, 4000));
+        } else {
+          finishTerminal('timeout', copy.timeout.detail);
+        }
+      });
+  }
+
+  setState('waiting');
+  setTimeout(poll, 1800);
+})();
+</script>
