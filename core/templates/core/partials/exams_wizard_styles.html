@@ -1,6 +1,7 @@
 <style>
   .exams-wizard-shell {
-    max-width: 1120px;
+    max-width: min(1400px, 100%);
+    width: 100%;
     margin: 0 auto;
     padding-bottom: var(--space-2xl);
   }
@@ -145,9 +146,13 @@
   .ew-step-card {
     background: var(--clr-surface);
     border: 1px solid var(--clr-border);
-    border-radius: 8px;
-    padding: 1rem 1.1rem 1.15rem;
+    border-radius: 14px;
+    padding: 1.25rem clamp(1rem, 2.5vw, 1.65rem) 1.45rem;
     margin-bottom: var(--space-xl);
+  }
+
+  .ew-step-body {
+    width: 100%;
   }
 
   .ew-step--current .ew-step-card {
@@ -248,6 +253,177 @@
     margin: 0 0 0.65rem;
   }
 
+  /* ── Grade picker (practice exam /exam/) ── */
+  .ew-grade-browser {
+    display: flex;
+    flex-direction: column;
+    gap: 1.35rem;
+  }
+
+  .ew-grade-band-title {
+    font-family: var(--font-heading);
+    font-size: 0.72rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--clr-text-muted);
+    margin: 0 0 0.65rem;
+  }
+
+  .ew-grade-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
+    gap: 0.85rem;
+  }
+
+  @media (min-width: 1100px) {
+    .ew-grade-grid {
+      grid-template-columns: repeat(auto-fill, minmax(9.25rem, 1fr));
+    }
+  }
+
+  .ew-grade-card {
+    --grade-accent: #0d8a4e;
+    --grade-tint: rgba(13, 138, 78, 0.1);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 1rem 0.95rem 1.05rem;
+    min-height: 7.5rem;
+    border-radius: 14px;
+    border: 1.5px solid color-mix(in srgb, var(--grade-accent) 20%, var(--clr-border));
+    background: var(--clr-surface);
+    text-decoration: none;
+    color: inherit;
+    overflow: hidden;
+    transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+  }
+
+  .ew-grade-card::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(120% 90% at 100% 0%, var(--grade-tint) 0%, transparent 55%);
+    pointer-events: none;
+    opacity: 0.85;
+  }
+
+  .ew-grade-card > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  .ew-grade-card:hover {
+    transform: translateY(-3px);
+    border-color: color-mix(in srgb, var(--grade-accent) 45%, var(--clr-border));
+    box-shadow: 0 12px 28px -10px color-mix(in srgb, var(--grade-accent) 35%, transparent);
+  }
+
+  .ew-grade-card--all {
+    --grade-accent: #6366f1;
+    --grade-tint: rgba(99, 102, 241, 0.1);
+    flex-direction: row;
+    align-items: center;
+    min-height: 0;
+    padding: 1rem 1.1rem;
+    grid-column: 1 / -1;
+  }
+
+  .ew-grade-card--ecde {
+    --grade-accent: #7c3aed;
+    --grade-tint: rgba(124, 58, 237, 0.1);
+  }
+
+  .ew-grade-card--lower-primary {
+    --grade-accent: #0d8a4e;
+    --grade-tint: rgba(13, 138, 78, 0.1);
+  }
+
+  .ew-grade-card--upper-primary {
+    --grade-accent: #2563eb;
+    --grade-tint: rgba(37, 99, 235, 0.1);
+  }
+
+  .ew-grade-card--junior-secondary {
+    --grade-accent: #ea580c;
+    --grade-tint: rgba(234, 88, 12, 0.1);
+  }
+
+  .ew-grade-card--senior-secondary {
+    --grade-accent: #0f766e;
+    --grade-tint: rgba(15, 118, 110, 0.1);
+  }
+
+  .ew-grade-card-icon {
+    width: 2.65rem;
+    height: 2.65rem;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    color: var(--grade-accent);
+    background: linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--grade-accent) 14%, var(--clr-surface)),
+      var(--grade-tint)
+    );
+    border: 1px solid color-mix(in srgb, var(--grade-accent) 22%, transparent);
+  }
+
+  .ew-grade-card-icon svg {
+    width: 1.35rem;
+    height: 1.35rem;
+  }
+
+  .ew-grade-card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    min-width: 0;
+    flex: 1;
+  }
+
+  .ew-grade-card-name {
+    font-family: var(--font-heading);
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: var(--clr-text);
+    line-height: 1.25;
+    letter-spacing: -0.02em;
+  }
+
+  .ew-grade-card-meta {
+    font-size: 0.74rem;
+    font-weight: 600;
+    color: var(--clr-text-muted);
+    line-height: 1.35;
+  }
+
+  .ew-grade-card-arrow {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--grade-accent);
+    flex-shrink: 0;
+  }
+
+  @media (max-width: 640px) {
+    .ew-grade-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .ew-grade-card {
+      min-height: 6.75rem;
+      padding: 0.85rem 0.8rem;
+    }
+
+    .ew-grade-card-name {
+      font-size: 0.88rem;
+    }
+  }
+
   /* ── Choice grids ── */
   .ew-choice-grid {
     display: grid;
@@ -259,19 +435,40 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
+  .ew-choice-grid--catalog,
+  .ew-choice-grid.topic-browser-grid {
+    grid-template-columns: repeat(auto-fill, minmax(10.5rem, 1fr));
+    gap: 0.85rem;
+    width: 100%;
+  }
+
+  @media (min-width: 1100px) {
+    .ew-choice-grid--catalog,
+    .ew-choice-grid.topic-browser-grid {
+      grid-template-columns: repeat(auto-fill, minmax(9.25rem, 1fr));
+    }
+  }
+
   .subject-browser-grid {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: var(--space-md);
+    grid-template-columns: repeat(auto-fill, minmax(12.5rem, 1fr));
+    gap: 0.85rem;
+    width: 100%;
   }
 
   @media (max-width: 900px) {
-    .ew-choice-grid { grid-template-columns: 1fr; }
+    .ew-choice-grid:not(.ew-choice-grid--catalog):not(.ew-choice-grid--focus):not(.topic-browser-grid) {
+      grid-template-columns: 1fr;
+    }
     .ew-choice-grid--focus { grid-template-columns: 1fr; }
     .subject-browser-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   }
 
   @media (max-width: 640px) {
+    .ew-choice-grid--catalog,
+    .ew-choice-grid.topic-browser-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
     .subject-browser-grid { grid-template-columns: 1fr; }
   }
 
@@ -335,6 +532,47 @@
 
   .ew-choice-card--tile .ew-choice-arrow {
     display: none;
+  }
+
+  .ew-choice-card--catalog.ew-choice-card--tile {
+    text-align: left;
+    align-items: flex-start;
+  }
+
+  .ew-choice-card--catalog {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+    text-align: left;
+    min-height: 7.25rem;
+    padding: 1.05rem 1rem 1.1rem;
+    border-radius: 14px;
+    border-width: 1.5px;
+  }
+
+  .ew-choice-card--catalog .ew-choice-icon-wrap {
+    width: 2.65rem;
+    height: 2.65rem;
+    border-radius: 12px;
+    font-size: 0.95rem;
+    margin-bottom: 0.65rem;
+  }
+
+  .ew-choice-card--catalog .ew-choice-name {
+    font-size: 0.92rem;
+    line-height: 1.35;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .ew-choice-card--catalog .ew-choice-desc {
+    font-size: 0.74rem;
+    margin-top: 0.15rem;
+  }
+
+  .test-type-browser {
+    width: 100%;
   }
 
   .ew-choice-icon-wrap {

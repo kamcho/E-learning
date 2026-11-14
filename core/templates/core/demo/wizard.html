@@ -62,23 +62,47 @@
         <div class="ew-step-body">
 
           {% if phase == 'grade' %}
-          <div class="ew-choice-grid">
-            {% for gl in all_grades %}
-            <a href="{% url 'core:exam_wizard' %}?grade={{ gl.slug }}"
-               class="ew-choice-card ew-choice-card--{% cycle '0' '1' '2' %}">
-              <span class="ew-choice-icon-wrap">🏫</span>
-              <span class="ew-choice-name">{{ gl.name }}</span>
-              {% if gl.level %}<span class="ew-choice-desc">{{ gl.level }}</span>{% endif %}
+          <div class="ew-grade-browser">
+            <a href="{% url 'core:exam_wizard' %}?grade=all" class="ew-grade-card ew-grade-card--all">
+              <span class="ew-grade-card-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                  <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                  <path d="M8 7h8M8 11h6"/>
+                </svg>
+              </span>
+              <span class="ew-grade-card-body">
+                <span class="ew-grade-card-name">All grades</span>
+                <span class="ew-grade-card-meta">Browse every subject across CBC bands</span>
+              </span>
+              <span class="ew-grade-card-arrow" aria-hidden="true">→</span>
             </a>
+
+            {% regroup all_grades by level as grade_bands %}
+            {% for band in grade_bands %}
+            <section class="ew-grade-band" aria-labelledby="ew-grade-band-{{ forloop.counter }}">
+              <h3 class="ew-grade-band-title" id="ew-grade-band-{{ forloop.counter }}">{{ band.grouper }}</h3>
+              <div class="ew-grade-grid">
+                {% for gl in band.list %}
+                <a href="{% url 'core:exam_wizard' %}?grade={{ gl.slug }}"
+                   class="ew-grade-card ew-grade-card--{{ band.grouper|slugify }}">
+                  <span class="ew-grade-card-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                      <polyline points="9 22 9 12 15 12 15 22"/>
+                    </svg>
+                  </span>
+                  <span class="ew-grade-card-body">
+                    <span class="ew-grade-card-name">{{ gl.name }}</span>
+                    <span class="ew-grade-card-meta">{{ band.grouper }}</span>
+                  </span>
+                </a>
+                {% endfor %}
+              </div>
+            </section>
             {% empty %}
             <p class="demo-empty">No grades are available yet.</p>
             {% endfor %}
-            <a href="{% url 'core:exam_wizard' %}?grade=all"
-               class="ew-choice-card ew-choice-card--0">
-              <span class="ew-choice-icon-wrap">📚</span>
-              <span class="ew-choice-name">All grades</span>
-              <span class="ew-choice-desc">Browse every subject</span>
-            </a>
           </div>
 
           {% elif phase == 'subject' or not active_subject %}
@@ -89,13 +113,15 @@
               <a href="{% url 'core:exam_wizard' %}?grade={{ gl.slug }}" class="grade-tab{% if active_grade and active_grade.pk == gl.pk and not browse_all_grades %} active{% endif %}">{{ gl.name }}</a>
             {% endfor %}
           </div>
-          <div class="subject-browser-grid">
+          <div class="subject-browser-grid ew-choice-grid--catalog">
             {% for item in browse_subjects %}
             <a href="{% url 'core:exam_wizard' %}?subject={{ item.subject.slug }}{% if browse_all_grades %}&grade={{ item.subject.grade_level.slug }}{% elif active_grade %}&grade={{ active_grade.slug }}{% endif %}"
-               class="ew-choice-card ew-choice-card--{% cycle '0' '1' '2' %}">
-              <span class="ew-choice-icon-wrap">📚</span>
-              <span class="ew-choice-name">{{ item.subject.name }}</span>
-              <span class="ew-choice-desc">{{ item.subject.grade_level.name }}</span>
+               class="ew-choice-card ew-choice-card--tile ew-choice-card--catalog ew-choice-card--{% cycle '0' '1' '2' %}">
+              <span class="ew-choice-icon-wrap" aria-hidden="true">{{ item.subject.name|slice:":1"|upper }}</span>
+              <span class="ew-choice-main">
+                <span class="ew-choice-name">{{ item.subject.name }}</span>
+                <span class="ew-choice-desc">{{ item.subject.grade_level.name }}</span>
+              </span>
             </a>
             {% empty %}
             <p class="demo-empty">No subjects found for this grade.</p>
@@ -125,12 +151,16 @@
           </div>
 
           {% elif phase == 'strand' %}
-          <div class="ew-choice-grid">
+          <div class="ew-choice-grid ew-choice-grid--catalog" role="list">
             {% for item in browse_strands %}
             <a href="{% url 'core:exam_wizard' %}?subject={{ active_subject.slug }}&scope=strand&strand={{ item.strand.slug }}{% if nav_grade %}&{{ nav_grade }}{% endif %}"
-               class="ew-choice-card ew-choice-card--{% cycle '0' '1' '2' %}">
-              <span class="ew-choice-icon-wrap">🧵</span>
-              <span class="ew-choice-name">{{ item.strand.name }}</span>
+               class="ew-choice-card ew-choice-card--tile ew-choice-card--catalog ew-choice-card--{% cycle '0' '1' '2' %}"
+               role="listitem">
+              <span class="ew-choice-icon-wrap" aria-hidden="true">{{ item.strand.name|slice:":1"|upper }}</span>
+              <span class="ew-choice-main">
+                <span class="ew-choice-name">{{ item.strand.name }}</span>
+                <span class="ew-choice-desc">{{ active_subject.name }}</span>
+              </span>
             </a>
             {% empty %}
             <p class="demo-empty">No strands defined for this subject yet.</p>
@@ -138,13 +168,16 @@
           </div>
 
           {% elif phase == 'sub_strand' %}
-          <div class="ew-choice-grid">
+          <div class="ew-choice-grid ew-choice-grid--catalog" role="list">
             {% for item in browse_sub_strands %}
             <a href="{% url 'core:exam_wizard' %}?subject={{ active_subject.slug }}&scope=sub_strand&sub_strand={{ item.sub_strand.slug }}{% if nav_grade %}&{{ nav_grade }}{% endif %}"
-               class="ew-choice-card ew-choice-card--{% cycle '0' '1' '2' %}">
-              <span class="ew-choice-icon-wrap">🔖</span>
-              <span class="ew-choice-name">{{ item.sub_strand.name }}</span>
-              <span class="ew-choice-desc">{{ item.strand.name }}</span>
+               class="ew-choice-card ew-choice-card--tile ew-choice-card--catalog ew-choice-card--{% cycle '0' '1' '2' %}"
+               role="listitem">
+              <span class="ew-choice-icon-wrap" aria-hidden="true">{{ item.sub_strand.name|slice:":1"|upper }}</span>
+              <span class="ew-choice-main">
+                <span class="ew-choice-name">{{ item.sub_strand.name }}</span>
+                <span class="ew-choice-desc">{{ item.strand.name }}</span>
+              </span>
             </a>
             {% empty %}
             <p class="demo-empty">No sub-strands defined for this subject yet.</p>

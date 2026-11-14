@@ -54,13 +54,14 @@
   }
 
   .demo-main {
-    padding: var(--space-lg) var(--space-xl) var(--space-2xl);
+    padding: var(--space-lg) clamp(1rem, 3vw, 2.25rem) var(--space-2xl);
     background: var(--demo-bg);
   }
 
   .demo-shell {
-    max-width: 1180px;
+    max-width: min(1400px, 100%);
     margin: 0 auto;
+    width: 100%;
   }
 
   .demo-hero {

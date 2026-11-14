@@ -461,27 +461,24 @@
 
   .topic-browser-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: var(--space-md);
+    grid-template-columns: repeat(auto-fill, minmax(10.5rem, 1fr));
+    gap: 0.85rem;
+    width: 100%;
   }
 
-  .topic-browser-card {
-    display: flex;
-    flex-direction: column;
-    gap: 0.3rem;
-    padding: 1rem;
-    border: 2px solid var(--clr-border);
-    border-radius: var(--radius-lg);
-    background: var(--clr-surface);
-    text-decoration: none;
-    color: inherit;
-    transition: border-color 0.15s ease, background 0.15s ease, transform 0.15s ease;
+  @media (min-width: 1100px) {
+    .topic-browser-grid {
+      grid-template-columns: repeat(auto-fill, minmax(9.25rem, 1fr));
+    }
   }
 
-  .topic-browser-card:hover {
-    border-color: var(--clr-primary);
-    background: rgba(13, 138, 78, 0.04);
-    transform: translateY(-2px);
+  .test-type-browser {
+    width: 100%;
+    max-width: none;
+  }
+
+  .topic-browser-card.ew-choice-card--catalog {
+    min-height: 7.25rem;
   }
 
   .topic-browser-name { font-weight: 700; font-size: 0.9rem; color: var(--clr-text); line-height: 1.35; }
@@ -1853,10 +1850,10 @@
       {% endif %}
     </p>
   </div>
-  <div class="ew-choice-grid topic-browser-grid">
+  <div class="ew-choice-grid ew-choice-grid--catalog topic-browser-grid">
     {% for item in browse_strands %}
       <a href="{% url 'core:exams_list' %}?{{ exams_nav_student_prefix }}subject={{ active_subject.slug }}&scope=strand&strand={{ item.strand.slug }}{% if exams_nav_grade %}&{{ exams_nav_grade }}{% endif %}"
-         class="ew-choice-card ew-choice-card--{% cycle '0' '1' '2' %} topic-browser-card">
+         class="ew-choice-card ew-choice-card--tile ew-choice-card--catalog ew-choice-card--{% cycle '0' '1' '2' %} topic-browser-card">
         <span class="ew-choice-icon-wrap" aria-hidden="true">{{ item.strand.name|slice:":1"|upper }}</span>
         <span class="ew-choice-main">
           <span class="ew-choice-name">{{ item.strand.name }}</span>
@@ -1893,10 +1890,10 @@
       {% endif %}
     </p>
   </div>
-  <div class="ew-choice-grid topic-browser-grid">
+  <div class="ew-choice-grid ew-choice-grid--catalog topic-browser-grid">
     {% for item in browse_sub_strands %}
       <a href="{% url 'core:exams_list' %}?{{ exams_nav_student_prefix }}subject={{ active_subject.slug }}&scope=sub_strand&sub_strand={{ item.sub_strand.slug }}{% if exams_nav_grade %}&{{ exams_nav_grade }}{% endif %}"
-         class="ew-choice-card ew-choice-card--{% cycle '0' '1' '2' %} topic-browser-card">
+         class="ew-choice-card ew-choice-card--tile ew-choice-card--catalog ew-choice-card--{% cycle '0' '1' '2' %} topic-browser-card">
         <span class="ew-choice-icon-wrap" aria-hidden="true">{{ item.sub_strand.name|slice:":1"|upper }}</span>
         <span class="ew-choice-main">
           <span class="ew-choice-name">{{ item.sub_strand.name }}</span>
