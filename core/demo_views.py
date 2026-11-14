@@ -135,8 +135,8 @@ def _build_demo_wizard_trail(*, phase, grade, subject, scope, strand, sub_strand
     labels = {
         'grade': ('Choose a grade', "Select the learner's grade to see matching subjects."),
         'subject': ('Choose a subject', 'Pick a subject for your free practice exam (at least 7 questions).'),
-        'scope': ('Test focus', 'Whole subject, one strand, or a specific sub-strand.'),
-        'strand': ('Choose a strand', 'Select the strand you want to practise.'),
+        'scope': ('Choose a strand', 'Pick a strand below, or start with the whole subject.'),
+        'strand': ('Choose a strand', 'Pick a strand below, or start with the whole subject.'),
         'sub_strand': ('Choose a sub-strand', 'Pick a focused sub-strand topic.'),
         'ready': (
             'Ready to start',
@@ -215,7 +215,11 @@ def demo_wizard_view(request):
             grade_level__in=grades_for_browse,
         ).select_related('grade_level')
         for subject in sorted(subjects, key=lambda item: (grade_sort_key(item.grade_level), item.name)):
-            browse_subjects.append({'subject': subject})
+            strand_count = strands_for_wizard(base_quizzes, subject=subject).count()
+            browse_subjects.append({
+                'subject': subject,
+                'strand_count': strand_count,
+            })
 
     browse_strands = []
     browse_sub_strands = []

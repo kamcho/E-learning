@@ -15,6 +15,28 @@
     background: var(--clr-surface);
     color: var(--clr-text);
   }
+
+  .plan-dist-bar-wrap {
+    margin-top: 0.35rem;
+    height: 6px;
+    border-radius: 999px;
+    background: var(--clr-surface-alt);
+    overflow: hidden;
+  }
+
+  .plan-dist-bar {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, var(--clr-primary), color-mix(in srgb, var(--clr-primary) 70%, #3dd6c6));
+    min-width: 2px;
+  }
+
+  .plan-dist-zero {
+    font-size: 0.78rem;
+    color: var(--clr-text-muted);
+    margin-top: 0.35rem;
+  }
 </style>
 {% endblock %}
 
@@ -76,6 +98,63 @@
       <span>Unsuccessful attempts</span>
     </div>
   </div>
+</div>
+
+<div class="admin-panel" style="margin-bottom: var(--space-xl);">
+  <div class="admin-panel-head-flex">
+    <div>
+      <h2>Payments by plan</h2>
+      <p class="admin-panel-sub">
+        Distribution across {{ plan_distribution.plan_count }} active plan{{ plan_distribution.plan_count|pluralize }}
+        &middot; {{ plan_distribution.totals.success }} successful
+        &middot; KES {{ plan_distribution.totals.revenue|floatformat:0 }} revenue
+      </p>
+    </div>
+  </div>
+  {% if plan_distribution.rows %}
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Plan</th>
+        <th>List price</th>
+        <th>Attempts</th>
+        <th>Successful</th>
+        <th>Pending</th>
+        <th>Failed</th>
+        <th>Revenue</th>
+        <th>Share of successful</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in plan_distribution.rows %}
+      <tr>
+        <td>
+          <div class="list-row-name">{{ row.plan.name }}</div>
+          <div class="list-row-meta">{{ row.plan.get_plan_type_display }} · {{ row.plan.tests_label }}</div>
+        </td>
+        <td>KES {{ row.plan.price_kes|floatformat:0 }}</td>
+        <td>{{ row.attempt_count }}</td>
+        <td><strong>{{ row.success_count }}</strong></td>
+        <td>{{ row.pending_count }}</td>
+        <td>{{ row.failed_count }}</td>
+        <td><span class="payment-amount">KES {{ row.revenue|floatformat:0 }}</span></td>
+        <td style="min-width: 140px;">
+          {% if row.success_count %}
+          <span class="list-row-name">{{ row.success_share_pct }}%</span>
+          <div class="plan-dist-bar-wrap" aria-hidden="true">
+            <span class="plan-dist-bar" style="width: {{ row.success_share_pct }}%;"></span>
+          </div>
+          {% else %}
+          <span class="plan-dist-zero">No successful payments yet</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="admin-panel-sub" style="padding: 0 var(--space-xl) var(--space-lg);">No active subscription plans configured.</p>
+  {% endif %}
 </div>
 
 <div class="admin-panel">

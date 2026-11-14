@@ -326,3 +326,29 @@ class AdminPaymentsLedgerTests(TestCase):
         self.assertContains(response, 'Guest exam')
         self.assertContains(response, 'QATEST001')
         self.assertContains(response, '254712345678')
+        self.assertContains(response, 'Payments by plan')
+
+    def test_admin_payments_plan_distribution_counts_success(self):
+        from subscriptions.models import Payment
+
+        self.plan.is_active = True
+        self.plan.save(update_fields=['is_active'])
+        guardian = User.objects.create_user(
+            phone='0711223344',
+            password='1234',
+            role=Role.GUARDIAN,
+        )
+        Payment.objects.create(
+            user=guardian,
+            plan=self.plan,
+            amount_kes=15,
+            phone_number='254712345678',
+            status=Payment.Status.SUCCESS,
+            mpesa_receipt_number='SUB001',
+        )
+        self.client.force_login(self.admin)
+        response = self.client.get(reverse('subscriptions:admin_payments_list'))
+        self.assertEqual(response.status_code, 200)
+        dist = response.context['plan_distribution']
+        guest_row = next(r for r in dist['rows'] if r['plan'].pk == self.plan.pk)
+        self.assertGreaterEqual(guest_row['success_count'], 2)

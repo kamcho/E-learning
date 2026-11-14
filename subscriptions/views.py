@@ -191,6 +191,69 @@ def _build_admin_payment_stats():
     }
 
 
+def _build_admin_payment_plan_distribution():
+    """Successful and attempted payments per available plan (subscription + guest)."""
+    success = Payment.Status.SUCCESS
+    pending = Payment.Status.PENDING
+    failed_states = [Payment.Status.FAILED, Payment.Status.CANCELLED]
+
+    plans = SubscriptionPlan.objects.filter(is_active=True).order_by('sort_order', 'name')
+    rows = []
+    totals = {
+        'attempts': 0,
+        'success': 0,
+        'revenue': 0,
+    }
+
+    for plan in plans:
+        sub_qs = Payment.objects.filter(plan=plan)
+        guest_qs = GuestDemoPayment.objects.filter(plan=plan)
+
+        success_count = (
+            sub_qs.filter(status=success).count()
+            + guest_qs.filter(status=success).count()
+        )
+        pending_count = (
+            sub_qs.filter(status=pending).count()
+            + guest_qs.filter(status=pending).count()
+        )
+        failed_count = (
+            sub_qs.filter(status__in=failed_states).count()
+            + guest_qs.filter(status__in=failed_states).count()
+        )
+        attempt_count = success_count + pending_count + failed_count
+
+        sub_rev = sub_qs.filter(status=success).aggregate(total=Sum('amount_kes'))['total'] or 0
+        guest_rev = guest_qs.filter(status=success).aggregate(total=Sum('amount_kes'))['total'] or 0
+        revenue = sub_rev + guest_rev
+
+        rows.append({
+            'plan': plan,
+            'attempt_count': attempt_count,
+            'success_count': success_count,
+            'pending_count': pending_count,
+            'failed_count': failed_count,
+            'revenue': revenue,
+            'success_share_pct': 0,
+        })
+        totals['attempts'] += attempt_count
+        totals['success'] += success_count
+        totals['revenue'] += revenue
+
+    success_grand = totals['success'] or 0
+    for row in rows:
+        if success_grand:
+            row['success_share_pct'] = round(100 * row['success_count'] / success_grand, 1)
+        else:
+            row['success_share_pct'] = 0
+
+    return {
+        'rows': rows,
+        'totals': totals,
+        'plan_count': len(rows),
+    }
+
+
 def _parse_admin_subscription_list_filters(request):
     """Read subscription-directory filters from the query string."""
     status = request.GET.get('status', '').strip()
@@ -795,6 +858,7 @@ def admin_payments_list_view(request):
         'status_filter': status,
         'status_choices': Payment.Status.choices,
         'stats': _build_admin_payment_stats(),
+        'plan_distribution': _build_admin_payment_plan_distribution(),
         'pagination_extra': _pagination_extra_params(request, ['page']),
         'django_admin_url': reverse('admin:subscriptions_payment_changelist'),
     })
