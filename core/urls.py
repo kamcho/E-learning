@@ -29,6 +29,7 @@ urlpatterns = [
         name='attempt_by_uuid',
     ),
     path('api/ai/explain-answer/', views.ai_explain_answer_view, name='ai_explain_answer'),
+    path('api/ai/tts/', views.openai_tts_view, name='openai_tts'),
     path('exams/', views.exams_list_view, name='exams_list'),
     path('exams/<uuid:quiz_uuid>/analytics/', views.exam_analytics_view, name='exam_analytics'),
     # Quiz Builder (teachers + admin)

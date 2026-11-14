@@ -3,7 +3,7 @@ from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AnonymousUser
-from django.test import RequestFactory, TestCase
+from django.test import Client, RequestFactory, TestCase, override_settings
 from django.urls import reverse
 from django.utils.functional import SimpleLazyObject
 
@@ -1071,3 +1071,46 @@ class MatchingGradingTests(TestCase):
         response = attempt.responses.get(question=question)
         self.assertTrue(response.is_correct)
         self.assertEqual(response.marks_awarded, 1)
+
+
+class OpenAITtsTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+
+    def test_prepare_text_strips_html_and_truncates(self):
+        from core.ai.tts_text import prepare_text_for_tts
+
+        out = prepare_text_for_tts('<p>Hello&nbsp;<strong>world</strong></p>')
+        self.assertEqual(out, 'Hello world')
+
+    @override_settings(OPENAI_API_KEY='')
+    def test_tts_endpoint_requires_configuration(self):
+        res = self.client.post(
+            reverse('core:openai_tts'),
+            data='{"text":"Hello"}',
+            content_type='application/json',
+        )
+        self.assertEqual(res.status_code, 503)
+        self.assertIn('error', res.json())
+
+    @override_settings(OPENAI_API_KEY='test-key')
+    @patch('core.ai.tts.synthesize_speech', return_value=b'\xff\xfb\x90\x00')
+    def test_tts_endpoint_returns_mp3(self, mock_synth):
+        res = self.client.post(
+            reverse('core:openai_tts'),
+            data='{"text":"Read this question aloud","voice":"nova"}',
+            content_type='application/json',
+        )
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res['Content-Type'], 'audio/mpeg')
+        self.assertEqual(res.content, b'\xff\xfb\x90\x00')
+        mock_synth.assert_called_once()
+
+    @override_settings(OPENAI_API_KEY='test-key')
+    def test_tts_endpoint_rejects_empty_text(self):
+        res = self.client.post(
+            reverse('core:openai_tts'),
+            data='{"text":""}',
+            content_type='application/json',
+        )
+        self.assertEqual(res.status_code, 400)

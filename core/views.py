@@ -10,7 +10,7 @@ from django.utils import timezone
 from django.utils.http import urlencode
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.http import JsonResponse
+from django.http import HttpResponse, JsonResponse
 from django.urls import reverse
 from django.views.decorators.http import require_POST
 
@@ -907,6 +907,67 @@ def ai_explain_answer_view(request):
         )
 
     return JsonResponse(result)
+
+
+@require_POST
+@rate_limit(
+    key='ai_tts_burst',
+    limit=15,
+    window=60,
+    by='ip',
+    methods=['POST'],
+    json_error='Too many read-aloud requests. Please wait a moment.',
+)
+@rate_limit(
+    key='ai_tts_hour',
+    limit=80,
+    window=3600,
+    by='ip',
+    methods=['POST'],
+    json_error='Read-aloud limit reached. Please try again later.',
+)
+@rate_limit(
+    key='ai_tts_user_hour',
+    limit=60,
+    window=3600,
+    by='user',
+    methods=['POST'],
+    json_error='Read-aloud limit reached for your account. Please try again later.',
+)
+def openai_tts_view(request):
+    """Stream OpenAI speech for exam explanations and questions (not persisted)."""
+    from core.ai.exceptions import AIConfigurationError, AIServiceError, AITaskError
+    from core.ai.tts import synthesize_speech
+
+    try:
+        payload = json.loads(request.body.decode('utf-8'))
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        return JsonResponse({'error': 'Invalid JSON body.'}, status=400)
+
+    text = str(payload.get('text', '')).strip()
+    if not text:
+        return JsonResponse({'error': 'text is required.'}, status=400)
+
+    voice = payload.get('voice')
+    if voice is not None:
+        voice = str(voice).strip().lower() or None
+
+    try:
+        audio = synthesize_speech(text, voice=voice)
+    except AIConfigurationError as exc:
+        return JsonResponse({'error': str(exc)}, status=503)
+    except AITaskError as exc:
+        return JsonResponse({'error': str(exc)}, status=400)
+    except AIServiceError as exc:
+        return JsonResponse({'error': str(exc)}, status=503)
+    except Exception:
+        logger.exception('OpenAI TTS failed')
+        return JsonResponse(
+            {'error': 'Could not generate speech right now. Please try again.'},
+            status=500,
+        )
+
+    return HttpResponse(audio, content_type='audio/mpeg')
 
 
 @login_required(login_url='accounts:signin')

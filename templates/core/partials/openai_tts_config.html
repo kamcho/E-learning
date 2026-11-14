@@ -1,0 +1,12 @@
+{% if openai_tts_enabled %}
+<script>
+  window.SomaOpenAITts = {
+    url: "{% url 'core:openai_tts' %}",
+    csrfToken: "{{ csrf_token }}",
+    voices: {{ openai_tts_voices|safe }},
+    defaultVoice: "{{ openai_tts_default_voice|escapejs }}"
+  };
+</script>
+{% else %}
+<script>window.SomaOpenAITts = null;</script>
+{% endif %}

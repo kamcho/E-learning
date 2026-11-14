@@ -406,8 +406,18 @@
       <div class="test-progress-fill" style="width: {{ progress_pct }}%;"></div>
     </div>
 
-    <div class="question-card">
+    <div class="question-card" data-speech-region>
       {% include 'core/partials/question_prompt.html' with question=question %}
+      <div class="explanation-speech-controls" style="margin-bottom: var(--space-md);">
+        <span class="sr-only" data-speech-text>{{ question.quiz|striptags }}</span>
+        <button type="button" class="btn btn-secondary" data-speech-speak hidden>Listen to question</button>
+        <button type="button" class="btn btn-secondary" data-speech-stop hidden>Stop speaking</button>
+        <label class="speech-voice-choice" hidden>
+          Voice
+          <select data-speech-voice aria-label="Choose read-aloud voice"></select>
+        </label>
+        <span data-speech-status role="status" aria-live="polite"></span>
+      </div>
 
       <form method="post">
         {% csrf_token %}
@@ -490,6 +500,10 @@
     <a href="{% url 'core:exams_list' %}" class="test-quit">Quit exam</a>
   {% endif %}
 </div>
+
+{% load static %}
+{% include 'core/partials/openai_tts_config.html' %}
+<script src="{% static 'js/explanation-speech.js' %}" defer></script>
 
 {% if has_time_limit and time_remaining_seconds is not None %}
 <script>

@@ -153,6 +153,7 @@
 
 {% block extra_js %}
 {% load static %}
+{% include 'core/partials/openai_tts_config.html' %}
 <script src="{% static 'js/explanation-speech.js' %}" defer></script>
 {% if showing_feedback and feedback and feedback.is_correct %}
 <script src="{% static 'js/celebration-confetti.js' %}"></script>

@@ -112,6 +112,7 @@ TEMPLATES = [
                 'accounts.context_processors.account_nav',
                 'accounts.context_processors.google_auth',
                 'accounts.context_processors.user_location',
+                'core.context_processors.openai_tts',
             ],
         },
     },
@@ -258,6 +259,8 @@ OPENAI_MODEL = os.environ.get('OPENAI_MODEL', 'gpt-4o-mini')
 OPENAI_TIMEOUT = float(os.environ.get('OPENAI_TIMEOUT', '60'))
 OPENAI_MAX_TOKENS = int(os.environ.get('OPENAI_MAX_TOKENS', '300'))
 OPENAI_MAX_RETRIES = int(os.environ.get('OPENAI_MAX_RETRIES', '1'))
+OPENAI_TTS_MODEL = os.environ.get('OPENAI_TTS_MODEL', 'tts-1')
+OPENAI_TTS_VOICE = os.environ.get('OPENAI_TTS_VOICE', 'nova')
 
 # M-Pesa Daraja (Lipa na M-Pesa STK Push)
 MPESA_ENVIRONMENT = os.environ.get('MPESA_ENVIRONMENT', 'sandbox')
