@@ -268,4 +268,84 @@
     gap: 0.5rem;
     align-items: center;
   }
+
+  .stk-pay-reconcile {
+    margin-top: var(--space-lg);
+    padding-top: var(--space-lg);
+    border-top: 1px dashed var(--clr-border);
+    text-align: left;
+  }
+
+  .stk-pay-card.is-success .stk-pay-reconcile {
+    display: none !important;
+  }
+
+  .stk-pay-reconcile-title {
+    font-family: var(--font-heading);
+    font-size: 1rem;
+    font-weight: 800;
+    margin: 0 0 0.35rem;
+    color: var(--clr-text);
+  }
+
+  .stk-pay-reconcile-lead {
+    font-size: 0.84rem;
+    color: var(--clr-text-muted);
+    line-height: 1.5;
+    margin: 0 0 var(--space-md);
+  }
+
+  .stk-pay-reconcile-label {
+    display: block;
+    font-size: 0.78rem;
+    font-weight: 700;
+    margin-bottom: 0.35rem;
+    color: var(--clr-text);
+  }
+
+  .stk-pay-reconcile-input {
+    width: 100%;
+    box-sizing: border-box;
+    font-family: inherit;
+    font-size: 0.88rem;
+    line-height: 1.45;
+    padding: 0.65rem 0.75rem;
+    border-radius: 10px;
+    border: 1px solid var(--clr-border);
+    background: var(--clr-surface-alt, var(--clr-surface));
+    color: var(--clr-text);
+    resize: vertical;
+    min-height: 6.5rem;
+  }
+
+  .stk-pay-reconcile-input:focus {
+    outline: 2px solid color-mix(in srgb, var(--clr-primary) 35%, transparent);
+    border-color: color-mix(in srgb, var(--clr-primary) 45%, var(--clr-border));
+  }
+
+  .stk-pay-reconcile-submit {
+    margin-top: var(--space-md);
+    width: 100%;
+  }
+
+  .stk-pay-reconcile-submit:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+  }
+
+  .stk-pay-reconcile-error {
+    margin: 0.5rem 0 0;
+    padding: 0.55rem 0.7rem;
+    border-radius: 8px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    line-height: 1.4;
+    color: #b91c1c;
+    background: #fee2e2;
+    border: 1px solid #fca5a5;
+  }
+
+  .stk-pay-reconcile.is-submitting .stk-pay-reconcile-submit {
+    opacity: 0.7;
+  }
 </style>

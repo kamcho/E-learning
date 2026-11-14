@@ -352,3 +352,86 @@ class AdminPaymentsLedgerTests(TestCase):
         dist = response.context['plan_distribution']
         guest_row = next(r for r in dist['rows'] if r['plan'].pk == self.plan.pk)
         self.assertGreaterEqual(guest_row['success_count'], 2)
+
+
+class MpesaSmsParseTests(TestCase):
+    def test_extracts_receipt_from_confirmation_sms(self):
+        from subscriptions.mpesa_sms import extract_mpesa_receipt_from_message
+
+        sms = (
+            'ABC12DEF34 Confirmed. Ksh15.00 paid to Soma Smart. '
+            'on 15/11/26 at 10:00 AM New M-PESA balance is Ksh100.00'
+        )
+        self.assertEqual(extract_mpesa_receipt_from_message(sms), 'ABC12DEF34')
+
+    def test_parse_amount_from_sms(self):
+        from subscriptions.mpesa_sms import parse_kes_amount_from_message
+
+        self.assertEqual(parse_kes_amount_from_message('Paid Ksh 1,250.50 today'), 1250.50)
+
+
+class PaymentReconcileTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.user = User.objects.create_user(
+            phone='0711998877',
+            password='1234',
+            role=Role.GUARDIAN,
+        )
+        cls.plan = SubscriptionPlan.objects.create(
+            name='Reconcile plan',
+            slug='reconcile-plan',
+            price_kes=15,
+            duration_days=7,
+            max_tests=1,
+        )
+
+    def _pending_payment(self, **kwargs):
+        defaults = {
+            'user': self.user,
+            'plan': self.plan,
+            'amount_kes': 15,
+            'phone_number': '254711998877',
+            'checkout_request_id': 'ws_CO_test',
+            'status': Payment.Status.FAILED,
+        }
+        defaults.update(kwargs)
+        return Payment.objects.create(**defaults)
+
+    def test_reconcile_activates_subscription_from_sms(self):
+        from subscriptions.services import reconcile_subscription_payment
+
+        payment = self._pending_payment()
+        sms = 'TH78X9K2L1 Confirmed. Ksh15.00 paid to Soma Smart.'
+        with patch('subscriptions.services._stk_query_indicates_success', return_value=True):
+            reconcile_subscription_payment(payment, sms_text=sms)
+        payment.refresh_from_db()
+        self.assertEqual(payment.status, Payment.Status.SUCCESS)
+        self.assertEqual(payment.mpesa_receipt_number, 'TH78X9K2L1')
+
+    def test_reconcile_rejects_duplicate_receipt(self):
+        from subscriptions.services import PaymentReconcileError, reconcile_subscription_payment
+
+        Payment.objects.create(
+            user=self.user,
+            plan=self.plan,
+            amount_kes=15,
+            phone_number='254711998877',
+            status=Payment.Status.SUCCESS,
+            mpesa_receipt_number='DUP1234567',
+        )
+        payment = self._pending_payment()
+        sms = 'DUP1234567 Confirmed. Ksh15.00 paid to Soma Smart.'
+        with patch('subscriptions.services._stk_query_indicates_success', return_value=True):
+            with self.assertRaises(PaymentReconcileError):
+                reconcile_subscription_payment(payment, sms_text=sms)
+
+    def test_reconcile_endpoint_requires_matching_user(self):
+        payment = self._pending_payment()
+        other = User.objects.create_user(phone='0700000001', password='1234', role=Role.GUARDIAN)
+        self.client.force_login(other)
+        response = self.client.post(
+            reverse('subscriptions:payment_reconcile', kwargs={'payment_uuid': payment.uuid}),
+            {'mpesa_message': 'TH78X9K2L1 Confirmed. Ksh15.00 paid.'},
+        )
+        self.assertEqual(response.status_code, 404)

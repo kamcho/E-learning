@@ -4,6 +4,7 @@
   if (!root) return;
 
   var statusUrl = root.getAttribute('data-status-url');
+  var reconcileUrl = root.getAttribute('data-reconcile-url') || '';
   var redirectFallback = root.getAttribute('data-redirect-fallback') || '';
   var pollMs = parseInt(root.getAttribute('data-poll-ms') || '3000', 10);
   var maxPolls = parseInt(root.getAttribute('data-max-polls') || '60', 10);
@@ -13,6 +14,10 @@
   var statusLabel = document.getElementById('stk-pay-status-label');
   var statusDetail = document.getElementById('stk-pay-status-detail');
   var receiptEl = document.getElementById('stk-pay-receipt');
+  var reconcilePanel = document.getElementById('stk-pay-reconcile');
+  var reconcileForm = document.getElementById('stk-pay-reconcile-form');
+  var reconcileError = document.getElementById('stk-pay-reconcile-error');
+  var reconcileSubmit = document.getElementById('stk-pay-reconcile-submit');
 
   var polls = 0;
   var finished = false;
@@ -28,21 +33,25 @@
     },
     failed: {
       label: 'Payment failed',
-      detail: 'The payment did not go through. You can try again.',
+      detail: 'The payment did not go through. Paste your M-Pesa SMS below if you were charged.',
     },
     cancelled: {
       label: 'Payment cancelled',
-      detail: 'You cancelled the request or did not enter your PIN in time.',
+      detail: 'You cancelled the request or did not enter your PIN in time. Paste your SMS if you still paid.',
     },
     timeout: {
       label: 'Still waiting',
-      detail: 'If you already paid, give it a moment or check your subscription shortly.',
+      detail: 'If you already paid, paste the M-Pesa confirmation message below.',
     },
     error: {
       label: 'Connection issue',
       detail: 'Could not reach the server. We will keep trying…',
     },
   };
+
+  function showReconcilePanel() {
+    if (reconcilePanel) reconcilePanel.hidden = false;
+  }
 
   function setState(state) {
     if (!card || !statusBox) return;
@@ -51,6 +60,9 @@
     var text = copy[state] || copy.waiting;
     if (statusLabel) statusLabel.textContent = text.label;
     if (statusDetail) statusDetail.textContent = text.detail;
+    if (state !== 'success' && state !== 'waiting') {
+      showReconcilePanel();
+    }
   }
 
   function finishSuccess(data) {
@@ -74,6 +86,65 @@
     finished = true;
     setState(state);
     if (message && statusDetail) statusDetail.textContent = message;
+    showReconcilePanel();
+  }
+
+  function getCsrfToken() {
+    var input = reconcileForm && reconcileForm.querySelector('input[name=csrfmiddlewaretoken]');
+    return input ? input.value : '';
+  }
+
+  function bindReconcileForm() {
+    if (!reconcileForm || !reconcileUrl) return;
+    showReconcilePanel();
+    reconcileForm.addEventListener('submit', function (event) {
+      event.preventDefault();
+      if (finished) return;
+      var messageField = document.getElementById('stk-mpesa-message');
+      var message = messageField ? messageField.value.trim() : '';
+      if (!message) return;
+
+      if (reconcileError) reconcileError.hidden = true;
+      if (reconcileSubmit) reconcileSubmit.disabled = true;
+      if (reconcilePanel) reconcilePanel.classList.add('is-submitting');
+
+      var body = new FormData();
+      body.append('mpesa_message', message);
+      body.append('csrfmiddlewaretoken', getCsrfToken());
+
+      fetch(reconcileUrl, {
+        method: 'POST',
+        body: body,
+        credentials: 'same-origin',
+        headers: { Accept: 'application/json' },
+      })
+        .then(function (res) {
+          return res.json().then(function (data) {
+            return { ok: res.ok, data: data };
+          });
+        })
+        .then(function (result) {
+          if (result.ok && result.data.ok) {
+            finishSuccess(result.data);
+            return;
+          }
+          var msg = (result.data && result.data.error) || 'Could not confirm that payment.';
+          if (reconcileError) {
+            reconcileError.textContent = msg;
+            reconcileError.hidden = false;
+          }
+        })
+        .catch(function () {
+          if (reconcileError) {
+            reconcileError.textContent = 'Could not reach the server. Please try again.';
+            reconcileError.hidden = false;
+          }
+        })
+        .finally(function () {
+          if (reconcileSubmit) reconcileSubmit.disabled = false;
+          if (reconcilePanel) reconcilePanel.classList.remove('is-submitting');
+        });
+    });
   }
 
   function poll() {
@@ -117,6 +188,7 @@
   }
 
   setState('waiting');
+  bindReconcileForm();
   setTimeout(poll, 1800);
 })();
 </script>

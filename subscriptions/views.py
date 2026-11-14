@@ -20,11 +20,14 @@ from .forms import SubscribeForm
 from .models import GuestDemoPayment, Payment, Subscription, SubscriptionPlan
 from .mpesa import MpesaAPIError, MpesaConfigError, initiate_stk_push, query_stk_status
 from .services import (
+    PaymentReconcileError,
     activate_subscription_from_payment,
     cancel_payment,
     fail_payment,
     get_active_subscription,
     parse_stk_callback,
+    reconcile_guest_demo_payment,
+    reconcile_subscription_payment,
     user_has_active_subscription,
 )
 from .pricing import grade_band_for_grade, grade_band_for_student
@@ -694,6 +697,72 @@ def payment_status_view(request, payment_uuid):
         'result_description': payment.result_description,
         'mpesa_receipt_number': payment.mpesa_receipt_number,
         'redirect_url': redirect_url,
+    })
+
+
+def _json_reconcile_error(exc: PaymentReconcileError, *, status=400):
+    return JsonResponse({'ok': False, 'error': str(exc), 'code': exc.code}, status=status)
+
+
+@login_required(login_url='accounts:signin')
+@require_POST
+@rate_limit(
+    key='subs_payment_reconcile',
+    limit=8,
+    window=900,
+    by='user',
+    methods=['POST'],
+    json_error='Too many confirmation attempts. Please wait a few minutes.',
+)
+def payment_reconcile_view(request, payment_uuid):
+    payment = get_object_or_404(
+        Payment,
+        uuid=payment_uuid,
+        user=request.user,
+    )
+    sms_text = request.POST.get('mpesa_message', '')
+    try:
+        reconcile_subscription_payment(payment, sms_text=sms_text)
+    except PaymentReconcileError as exc:
+        return _json_reconcile_error(exc)
+
+    payment.refresh_from_db()
+    return JsonResponse({
+        'ok': True,
+        'status': payment.status,
+        'mpesa_receipt_number': payment.mpesa_receipt_number,
+        'result_description': payment.result_description,
+        'redirect_url': reverse('subscriptions:my_subscription'),
+    })
+
+
+@require_POST
+@rate_limit(
+    key='subs_guest_reconcile',
+    limit=12,
+    window=900,
+    by='ip',
+    methods=['POST'],
+    json_error='Too many confirmation attempts. Please wait a few minutes.',
+)
+def guest_demo_payment_reconcile_view(request, payment_uuid):
+    payment = _guest_demo_payment_for_request(request, payment_uuid)
+    if not payment:
+        return JsonResponse({'ok': False, 'error': 'Payment not found.', 'code': 'not_found'}, status=404)
+
+    sms_text = request.POST.get('mpesa_message', '')
+    try:
+        reconcile_guest_demo_payment(payment, sms_text=sms_text)
+    except PaymentReconcileError as exc:
+        return _json_reconcile_error(exc)
+
+    payment.refresh_from_db()
+    return JsonResponse({
+        'ok': True,
+        'status': payment.status,
+        'mpesa_receipt_number': payment.mpesa_receipt_number,
+        'result_description': payment.result_description,
+        'redirect_url': reverse('core:exam_take'),
     })
 
 

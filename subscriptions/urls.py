@@ -18,8 +18,18 @@ urlpatterns = [
         views.guest_demo_payment_status_view,
         name='guest_demo_payment_status',
     ),
+    path(
+        'guest-demo/<uuid:payment_uuid>/reconcile/',
+        views.guest_demo_payment_reconcile_view,
+        name='guest_demo_payment_reconcile',
+    ),
     path('payments/<uuid:payment_uuid>/pending/', views.payment_pending_view, name='payment_pending'),
     path('payments/<uuid:payment_uuid>/status/', views.payment_status_view, name='payment_status'),
+    path(
+        'payments/<uuid:payment_uuid>/reconcile/',
+        views.payment_reconcile_view,
+        name='payment_reconcile',
+    ),
     path('mpesa/callback/', views.mpesa_callback_view, name='mpesa_callback'),
     path('my-subscription/', views.my_subscription_view, name='my_subscription'),
     path('admin/payments/', views.admin_payments_list_view, name='admin_payments_list'),

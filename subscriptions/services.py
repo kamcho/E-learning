@@ -1,9 +1,27 @@
 """Subscription lifecycle and test-credit helpers."""
 
+import logging
+from decimal import Decimal
+
 from django.db import models, transaction
 from django.utils import timezone
 
-from .models import Payment, Subscription, SubscriptionPlan, TestCreditLog
+from .models import GuestDemoPayment, Payment, Subscription, SubscriptionPlan, TestCreditLog
+from .mpesa_sms import (
+    extract_mpesa_receipt_from_message,
+    is_valid_mpesa_receipt_code,
+    parse_kes_amount_from_message,
+)
+
+logger = logging.getLogger(__name__)
+
+
+class PaymentReconcileError(Exception):
+    """User-facing M-Pesa message reconciliation failure."""
+
+    def __init__(self, code: str, message: str):
+        self.code = code
+        super().__init__(message)
 
 
 def _user_bypasses_subscription(user):
@@ -262,6 +280,166 @@ def fail_payment(payment: Payment, *, result_code=None, result_description=''):
     if payment.subscription and payment.subscription.status == Subscription.Status.PENDING:
         payment.subscription.status = Subscription.Status.CANCELLED
         payment.subscription.save(update_fields=['status', 'updated_at'])
+    return payment
+
+
+def mpesa_receipt_already_used(
+    receipt: str,
+    *,
+    exclude_payment_uuid=None,
+    exclude_guest_uuid=None,
+) -> bool:
+    receipt = (receipt or '').strip().upper()
+    if not receipt:
+        return False
+    qs = Payment.objects.filter(
+        status=Payment.Status.SUCCESS,
+        mpesa_receipt_number__iexact=receipt,
+    )
+    if exclude_payment_uuid:
+        qs = qs.exclude(pk=exclude_payment_uuid)
+    if qs.exists():
+        return True
+    guest_qs = GuestDemoPayment.objects.filter(
+        status=GuestDemoPayment.Status.SUCCESS,
+        mpesa_receipt_number__iexact=receipt,
+    )
+    if exclude_guest_uuid:
+        guest_qs = guest_qs.exclude(pk=exclude_guest_uuid)
+    return guest_qs.exists()
+
+
+def _stk_query_indicates_success(checkout_request_id: str) -> bool:
+    if not checkout_request_id:
+        return False
+    try:
+        from .mpesa import MpesaAPIError, MpesaConfigError, query_stk_status
+
+        data = query_stk_status(checkout_request_id)
+        return str(data.get('ResultCode')) == '0'
+    except (MpesaAPIError, MpesaConfigError) as exc:
+        logger.warning('STK query during reconcile failed: %s', exc)
+        return False
+
+
+def _validate_reconcile_message(*, sms_text: str, expected_amount_kes, receipt: str):
+    if not sms_text.strip():
+        raise PaymentReconcileError('missing_message', 'Paste the full M-Pesa confirmation message.')
+    receipt = (receipt or extract_mpesa_receipt_from_message(sms_text)).strip().upper()
+    if not is_valid_mpesa_receipt_code(receipt):
+        raise PaymentReconcileError(
+            'invalid_receipt',
+            'We could not find a valid M-Pesa receipt code (e.g. ABC12DEF34) in that message.',
+        )
+    parsed_amount = parse_kes_amount_from_message(sms_text)
+    expected = Decimal(str(expected_amount_kes)).quantize(Decimal('0.01'))
+    if parsed_amount is not None and parsed_amount != expected:
+        raise PaymentReconcileError(
+            'amount_mismatch',
+            f'This payment is KES {expected:.0f}, but the message shows KES {parsed_amount:.2f}.',
+        )
+    return receipt, bool(parsed_amount is not None)
+
+
+@transaction.atomic
+def reconcile_subscription_payment(payment: Payment, *, sms_text: str, receipt: str = ''):
+    if payment.status == Payment.Status.SUCCESS:
+        raise PaymentReconcileError('already_paid', 'This payment is already completed.')
+    if payment.status not in (
+        Payment.Status.PENDING,
+        Payment.Status.FAILED,
+        Payment.Status.CANCELLED,
+    ):
+        raise PaymentReconcileError('not_reconcilable', 'This payment cannot be updated.')
+
+    receipt, amount_seen = _validate_reconcile_message(
+        sms_text=sms_text,
+        expected_amount_kes=payment.amount_kes,
+        receipt=receipt,
+    )
+    if mpesa_receipt_already_used(receipt, exclude_payment_uuid=payment.uuid):
+        raise PaymentReconcileError(
+            'receipt_used',
+            'That M-Pesa receipt is already linked to another successful payment.',
+        )
+
+    stk_verified = _stk_query_indicates_success(payment.checkout_request_id)
+    if not stk_verified and not amount_seen:
+        raise PaymentReconcileError(
+            'needs_amount',
+            'Include the full M-Pesa SMS showing the amount paid (Ksh…), or try again when M-Pesa is reachable.',
+        )
+
+    payment.mpesa_receipt_number = receipt
+    payment.result_code = 0
+    payment.result_description = 'Confirmed via M-Pesa confirmation message.'
+    payload = dict(payment.callback_payload or {})
+    payload['manual_reconcile'] = {
+        'sms_excerpt': sms_text.strip()[:500],
+        'stk_verified': stk_verified,
+        'amount_seen_in_sms': amount_seen,
+    }
+    payment.callback_payload = payload
+    payment.save(update_fields=[
+        'mpesa_receipt_number',
+        'result_code',
+        'result_description',
+        'callback_payload',
+        'updated_at',
+    ])
+    activate_subscription_from_payment(payment)
+    payment.refresh_from_db()
+    return payment
+
+
+@transaction.atomic
+def reconcile_guest_demo_payment(payment: GuestDemoPayment, *, sms_text: str, receipt: str = ''):
+    if payment.status == GuestDemoPayment.Status.SUCCESS:
+        raise PaymentReconcileError('already_paid', 'This payment is already completed.')
+    if payment.status not in (
+        GuestDemoPayment.Status.PENDING,
+        GuestDemoPayment.Status.FAILED,
+        GuestDemoPayment.Status.CANCELLED,
+    ):
+        raise PaymentReconcileError('not_reconcilable', 'This payment cannot be updated.')
+
+    receipt, amount_seen = _validate_reconcile_message(
+        sms_text=sms_text,
+        expected_amount_kes=payment.amount_kes,
+        receipt=receipt,
+    )
+    if mpesa_receipt_already_used(receipt, exclude_guest_uuid=payment.uuid):
+        raise PaymentReconcileError(
+            'receipt_used',
+            'That M-Pesa receipt is already linked to another successful payment.',
+        )
+
+    stk_verified = _stk_query_indicates_success(payment.checkout_request_id)
+    if not stk_verified and not amount_seen:
+        raise PaymentReconcileError(
+            'needs_amount',
+            'Include the full M-Pesa SMS showing the amount paid (Ksh…), or try again when M-Pesa is reachable.',
+        )
+
+    payment.mpesa_receipt_number = receipt
+    payment.result_code = 0
+    payment.result_description = 'Confirmed via M-Pesa confirmation message.'
+    payment.status = GuestDemoPayment.Status.SUCCESS
+    payload = dict(payment.callback_payload or {})
+    payload['manual_reconcile'] = {
+        'sms_excerpt': sms_text.strip()[:500],
+        'stk_verified': stk_verified,
+        'amount_seen_in_sms': amount_seen,
+    }
+    payment.callback_payload = payload
+    payment.save(update_fields=[
+        'mpesa_receipt_number',
+        'result_code',
+        'result_description',
+        'status',
+        'callback_payload',
+        'updated_at',
+    ])
     return payment
 
 

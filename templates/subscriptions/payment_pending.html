@@ -11,6 +11,7 @@
   class="stk-pay-wrap"
   id="stk-pay-root"
   data-status-url="{% url 'subscriptions:payment_status' payment.uuid %}"
+  data-reconcile-url="{% url 'subscriptions:payment_reconcile' payment.uuid %}"
   data-redirect-fallback="{% url 'subscriptions:my_subscription' %}"
   data-poll-ms="3000"
   data-max-polls="60"
@@ -44,6 +45,9 @@
     <div class="stk-pay-actions">
       <a href="{% url 'subscriptions:plans' %}" class="btn btn-secondary" style="box-shadow: none;">Back to plans</a>
     </div>
+
+    {% url 'subscriptions:payment_reconcile' payment.uuid as reconcile_url %}
+    {% include 'subscriptions/partials/stk_payment_reconcile_panel.html' %}
   </div>
 </div>
 {% endblock %}
