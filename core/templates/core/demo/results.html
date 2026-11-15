@@ -126,8 +126,11 @@
           }
           textEl.textContent = result.data.explanation || '';
           textEl.hidden = false;
-          if (window.SomaSpeechRefresh) {
-            window.SomaSpeechRefresh(textEl);
+          if (window.SomaSpeechRevealListen) {
+            window.SomaSpeechRevealListen(textEl);
+          } else {
+            window.__somaSpeechRevealQueue = window.__somaSpeechRevealQueue || [];
+            window.__somaSpeechRevealQueue.push(textEl);
           }
           if (window.refreshExplanationMath) {
             window.refreshExplanationMath(textEl);

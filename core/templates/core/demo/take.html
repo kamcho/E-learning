@@ -40,7 +40,7 @@
       <span class="demo-q-badge demo-q-badge--mark">1 mark</span>
     </div>
 
-    <div data-speech-region class="demo-q-listen" style="margin-bottom:0.75rem;"
+    <div data-speech-region data-speech-auto-show="1" class="demo-q-listen" style="margin-bottom:0.75rem;"
       {% if question.prompt_audio %}data-speech-audio-url="{{ question.prompt_audio.url }}"{% endif %}>
       <span class="sr-only" data-speech-text>{{ question.quiz|striptags }}</span>
       <div class="explanation-speech-controls" style="margin-top:0.5rem;">
@@ -213,8 +213,11 @@
         }
         textEl.textContent = result.data.explanation || 'No explanation returned.';
         textEl.hidden = false;
-        if (window.SomaSpeechRefresh) {
-          window.SomaSpeechRefresh(textEl);
+        if (window.SomaSpeechRevealListen) {
+          window.SomaSpeechRevealListen(textEl);
+        } else {
+          window.__somaSpeechRevealQueue = window.__somaSpeechRevealQueue || [];
+          window.__somaSpeechRevealQueue.push(textEl);
         }
         if (window.refreshExplanationMath) {
           window.refreshExplanationMath(textEl);

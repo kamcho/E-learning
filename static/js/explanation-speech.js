@@ -3,7 +3,8 @@
 
   var openaiCfg = window.SomaOpenAITts;
   var openaiVoices = openaiCfg && Array.isArray(openaiCfg.voices) ? openaiCfg.voices : [];
-  var openaiEnabled = !!(openaiCfg && openaiCfg.url && openaiVoices.length);
+  var openaiEnabled = !!(openaiCfg && openaiCfg.url);
+  window.__somaSpeechRevealQueue = window.__somaSpeechRevealQueue || [];
   var browserTtsSupported = 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window;
 
   var openaiVoiceKey = 'soma-openai-tts-voice';
@@ -464,19 +465,23 @@
     var useRecording = willPlayRecording(region);
     var plainText = speechPlainText(region);
     var hasReadableText = !!plainText;
-    var hasTts = hasReadableText && (openaiEnabled || browserTtsSupported);
-    var canSpeak = useRecording || hasTts;
+    var hasTtsEngine = openaiEnabled || browserTtsSupported;
+    var canUseTts = hasReadableText && hasTtsEngine;
+    var contentReady = region.dataset.speechContentReady === '1';
+    var autoShow = region.getAttribute('data-speech-auto-show') === '1';
+    var showButton = useRecording || (canUseTts && (contentReady || autoShow));
+    var canSpeak = useRecording || canUseTts;
 
-    setHidden(speakButton, !canSpeak);
+    setHidden(speakButton, !showButton);
     if (speakButton) {
-      speakButton.disabled = false;
+      speakButton.disabled = !canSpeak;
       speakButton.setAttribute('aria-disabled', canSpeak ? 'false' : 'true');
     }
 
     if (useRecording) {
       region.classList.add('speech-region--recording');
       region.classList.remove('speech-region--tts');
-    } else if (hasTts) {
+    } else if (canUseTts) {
       region.classList.remove('speech-region--recording');
       region.classList.add('speech-region--tts');
     } else {
@@ -631,12 +636,35 @@
     if (stopButton) setHidden(stopButton, true);
   }
 
-  window.SomaSpeechRefresh = function (el) {
-    var region = el && el.closest ? el.closest('[data-speech-region]') : null;
-    if (region) {
-      observeSpeechTextChanges(region);
-      updateRegion(region);
+  function revealSpeechListen(el) {
+    if (!el) return;
+    var region = el.closest ? el.closest('[data-speech-region]') : null;
+    if (!region) return;
+
+    if (el.matches && el.matches('[data-speech-text], .ai-explanation-text, .demo-ai-text')) {
+      if (!el.classList.contains('demo-ai-error')) {
+        el.hidden = false;
+        el.removeAttribute('hidden');
+      }
     }
+
+    var text = speechPlainText(region);
+    if (!text) return;
+
+    region.dataset.speechContentReady = '1';
+    observeSpeechTextChanges(region);
+    updateRegion(region);
+
+    var speakButton = region.querySelector('[data-speech-speak]');
+    if (speakButton && speechPlainText(region)) {
+      speakButton.hidden = false;
+    }
+  }
+
+  window.SomaSpeechRevealListen = revealSpeechListen;
+
+  window.SomaSpeechRefresh = function (el) {
+    revealSpeechListen(el);
     bindInlineAudioPlayers();
   };
 
@@ -649,6 +677,8 @@
     document.querySelectorAll('[data-speech-region]').forEach(bindRegion);
     bindInlineAudioPlayers();
     initBrowserVoicesOnce();
+    (window.__somaSpeechRevealQueue || []).forEach(revealSpeechListen);
+    window.__somaSpeechRevealQueue = [];
   }
 
   if (document.readyState === 'loading') {
