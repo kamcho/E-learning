@@ -48,9 +48,35 @@
   }
 
   function speechPlainText(region) {
-    var text = region.querySelector('[data-speech-text]');
-    if (!text || text.hidden) return '';
-    return (text.textContent || '').replace(/\s+/g, ' ').trim();
+    if (!region) return '';
+
+    function normalize(node) {
+      if (!node) return '';
+      return (node.textContent || '').replace(/\s+/g, ' ').trim();
+    }
+
+    var textEl = region.querySelector('[data-speech-text]');
+    var fromSpeech = normalize(textEl);
+    if (fromSpeech) return fromSpeech;
+
+    var alt = region.querySelector('.ai-explanation-text, .demo-ai-text');
+    if (alt) {
+      var fromAlt = normalize(alt);
+      if (fromAlt) return fromAlt;
+    }
+
+    var card = region.closest('.demo-question-card, .question-card');
+    if (card) {
+      var cardSpeech = normalize(card.querySelector('[data-speech-text]'));
+      if (cardSpeech) return cardSpeech;
+      var visible = card.querySelector('.demo-q-text, .question-rich-text, .question-text');
+      if (visible) {
+        var fromVisible = normalize(visible);
+        if (fromVisible) return fromVisible;
+      }
+    }
+
+    return '';
   }
 
   function insertTtsPauses(text) {
@@ -279,6 +305,19 @@
     return (root.textContent || '').replace(/\s+/g, ' ').trim();
   }
 
+  function observeSpeechTextChanges(region) {
+    var targets = region.querySelectorAll('[data-speech-text], .ai-explanation-text, .demo-ai-text');
+    if (!targets.length) return;
+    targets.forEach(function (el) {
+      if (el.dataset.somaSpeechObserve === '1') return;
+      el.dataset.somaSpeechObserve = '1';
+      var observer = new MutationObserver(function () {
+        updateRegion(region);
+      });
+      observer.observe(el, { childList: true, characterData: true, subtree: true });
+    });
+  }
+
   function pauseOtherAudioElements(exceptEl) {
     document.querySelectorAll('audio').forEach(function (el) {
       if (el !== exceptEl && !el.paused) {
@@ -424,10 +463,15 @@
     var speakButton = region.querySelector('[data-speech-speak]');
     var useRecording = willPlayRecording(region);
     var plainText = speechPlainText(region);
-    var hasTts = !!(plainText && (openaiEnabled || browserTtsSupported));
+    var hasReadableText = !!plainText;
+    var hasTts = hasReadableText && (openaiEnabled || browserTtsSupported);
     var canSpeak = useRecording || hasTts;
 
     setHidden(speakButton, !canSpeak);
+    if (speakButton) {
+      speakButton.disabled = false;
+      speakButton.setAttribute('aria-disabled', canSpeak ? 'false' : 'true');
+    }
 
     if (useRecording) {
       region.classList.add('speech-region--recording');
@@ -573,6 +617,7 @@
   }
 
   function bindRegion(region) {
+    observeSpeechTextChanges(region);
     updateRegion(region);
 
     var speakButton = region.querySelector('[data-speech-speak]');
@@ -588,7 +633,10 @@
 
   window.SomaSpeechRefresh = function (el) {
     var region = el && el.closest ? el.closest('[data-speech-region]') : null;
-    if (region) updateRegion(region);
+    if (region) {
+      observeSpeechTextChanges(region);
+      updateRegion(region);
+    }
     bindInlineAudioPlayers();
   };
 
