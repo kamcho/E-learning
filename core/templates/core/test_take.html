@@ -164,9 +164,9 @@
         {% if question.prompt_audio %}data-speech-audio-url="{{ question.prompt_audio.url }}"{% endif %}>
         <span class="sr-only" data-speech-text>{{ question.quiz|striptags }}</span>
         <div class="explanation-speech-controls" style="margin-top:0.5rem;">
-          <span data-speech-status role="status" aria-live="polite" style="font-size:0.8rem;color:var(--demo-muted);"></span>
           <button type="button" class="demo-btn demo-btn-outline" data-speech-speak hidden
-            data-default-label="Listen with AI" data-label-stop="Stop speaking"
+            data-default-label="Listen with AI" data-label-loading="Loading…"
+            data-label-stop="Stop speaking"
             data-label-recorded="Play recording">Listen with AI</button>
         </div>
       </div>
@@ -222,13 +222,9 @@
               <div class="demo-ai-text" id="demo-ai-text" data-speech-text data-math-content hidden></div>
               <div class="demo-ai-text demo-ai-error" id="demo-ai-error" hidden style="color:#f87171;"></div>
               <div class="explanation-speech-controls" style="margin-top:0.5rem;">
-                <label class="speech-voice-choice" hidden>
-                  Voice
-                  <select data-speech-voice aria-label="Choose explanation voice"></select>
-                </label>
-                <span data-speech-status role="status" aria-live="polite"></span>
                 <button type="button" class="demo-btn demo-btn-outline" data-speech-speak hidden
-                  data-default-label="Listen with AI" data-label-stop="Stop speaking"
+                  data-default-label="Listen with AI" data-label-loading="Loading…"
+                  data-label-stop="Stop speaking"
                   data-label-recorded="Play recording">Listen with AI</button>
               </div>
               <button type="button" class="demo-btn demo-btn-outline demo-ai-retry" id="demo-ai-retry" hidden style="margin-top:0.75rem;">Try again</button>

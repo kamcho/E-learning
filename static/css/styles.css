@@ -324,6 +324,11 @@ button {
   box-shadow: 0 0 0 1px rgba(193, 39, 45, 0.35);
 }
 
+.explanation-speech-controls [data-speech-speak].is-loading {
+  opacity: 0.88;
+  cursor: wait;
+}
+
 .explanation-speech-controls [data-speech-status] {
   color: var(--clr-text-muted);
   font-size: 0.8rem;
@@ -348,15 +353,14 @@ button {
   font: inherit;
 }
 
+.speech-mode-badge,
+.explanation-speech-controls .speech-voice-choice,
+.explanation-speech-controls [data-speech-status] {
+  display: none !important;
+}
+
 .speech-mode-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.2rem 0.55rem;
-  border-radius: var(--radius-full);
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  white-space: nowrap;
+  display: none !important;
 }
 
 .speech-mode-badge--recording {

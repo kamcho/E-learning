@@ -13,6 +13,7 @@ OPENAI_TTS_VOICES = (
     'coral',
     'echo',
     'fable',
+    'marin',
     'nova',
     'onyx',
     'sage',
