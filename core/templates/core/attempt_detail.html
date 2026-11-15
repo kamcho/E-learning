@@ -685,12 +685,14 @@
     display: none;
     margin-top: var(--space-md);
     padding: var(--space-md);
+    padding-bottom: 3.25rem;
     background: linear-gradient(135deg, rgba(13,138,78,0.06) 0%, rgba(13,138,78,0.02) 100%);
     border: 1px solid rgba(13, 138, 78, 0.15);
     border-radius: var(--radius-sm);
     font-size: 0.9rem;
     line-height: 1.55;
     color: var(--clr-text);
+    position: relative;
   }
 
   .ai-explanation-box.visible { display: block; }
@@ -699,12 +701,13 @@
     border-radius: var(--radius-sm);
   }
 
-  .explanation-speech-controls {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--space-sm);
-    margin-top: var(--space-sm);
+  .ai-explanation-box .explanation-speech-controls {
+    position: absolute;
+    right: var(--space-md);
+    bottom: var(--space-md);
+    margin-top: 0;
+    justify-content: flex-end;
+    max-width: calc(100% - var(--space-md) * 2);
   }
 
   .speech-voice-choice {
@@ -1014,19 +1017,19 @@
             <button type="button" class="btn-ai-explain" data-attempt-uuid="{{ attempt.uuid }}" data-question-uuid="{{ row.question_uuid }}">
               ✨ Explain answer
             </button>
-            <div class="ai-explanation-box" id="ai-explanation-{{ row.question_uuid }}" data-speech-region
+            <div class="ai-explanation-box speech-region-dock" id="ai-explanation-{{ row.question_uuid }}" data-speech-region
               {% if row.question.explanation_audio %}data-speech-audio-url="{{ row.question.explanation_audio.url }}"{% endif %}>
               <div class="ai-explanation-label">AI Tutor</div>
               <div class="ai-explanation-text" data-speech-text data-math-content></div>
               <div class="explanation-speech-controls">
-                <button type="button" class="btn btn-secondary" data-speech-speak hidden
-                  data-label-recorded="Play recording" data-default-label="Listen with AI voice">Listen with AI voice</button>
-                <button type="button" class="btn btn-secondary" data-speech-stop hidden>Stop speaking</button>
                 <label class="speech-voice-choice" hidden>
                   Voice
                   <select data-speech-voice aria-label="Choose explanation voice"></select>
                 </label>
                 <span data-speech-status role="status" aria-live="polite"></span>
+                <button type="button" class="btn btn-secondary" data-speech-speak hidden
+                  data-default-label="Listen with AI" data-label-stop="Stop speaking"
+                  data-label-recorded="Play recording">Listen with AI</button>
               </div>
             </div>
           </div>

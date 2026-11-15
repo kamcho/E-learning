@@ -300,8 +300,28 @@ button {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
+  justify-content: flex-end;
   gap: var(--space-sm);
   margin-top: var(--space-sm);
+  margin-left: auto;
+}
+
+.speech-region-dock {
+  position: relative;
+  padding-bottom: 3.1rem;
+}
+
+.speech-region-dock > .explanation-speech-controls,
+.speech-region-dock .explanation-speech-controls {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  margin-top: 0;
+  max-width: 100%;
+}
+
+.explanation-speech-controls [data-speech-speak].is-speaking {
+  box-shadow: 0 0 0 1px rgba(193, 39, 45, 0.35);
 }
 
 .explanation-speech-controls [data-speech-status] {

@@ -290,24 +290,52 @@
     });
   }
 
+  function restoreListenButtonLabel(region, speakButton) {
+    if (!speakButton || !region) return;
+    if (region.dataset.speechPlaying === '1') return;
+    if (!speakButton.getAttribute('data-default-label')) {
+      speakButton.setAttribute('data-default-label', (speakButton.textContent || '').trim());
+    }
+    var useRecording = willPlayRecording(region);
+    var labelRecorded = speakButton.getAttribute('data-label-recorded') || 'Play recording';
+    var labelTts = speakButton.getAttribute('data-default-label') || 'Listen with AI';
+    speakButton.textContent = useRecording ? labelRecorded : labelTts;
+    speakButton.setAttribute('aria-pressed', 'false');
+    speakButton.classList.remove('is-speaking');
+    speakButton.disabled = false;
+  }
+
+  function setTogglePlaybackUi(region, playing) {
+    if (!region) return;
+    region.dataset.speechPlaying = playing ? '1' : '';
+    var speakButton = region.querySelector('[data-speech-speak]');
+    if (!speakButton) return;
+    speakButton.disabled = false;
+    if (playing) {
+      speakButton.textContent = speakButton.getAttribute('data-label-stop') || 'Stop speaking';
+      speakButton.setAttribute('aria-pressed', 'true');
+      speakButton.classList.add('is-speaking');
+    } else {
+      restoreListenButtonLabel(region, speakButton);
+    }
+  }
+
+  function isRegionPlaying(region) {
+    return !!region && activeRegion === region && region.dataset.speechPlaying === '1';
+  }
+
   function finishPlayback(region, statusMessage) {
     clearSpeechHighlight();
     if (!region) return;
-    var speakButton = region.querySelector('[data-speech-speak]');
-    var stopButton = region.querySelector('[data-speech-stop]');
+    setTogglePlaybackUi(region, false);
     var status = region.querySelector('[data-speech-status]');
-    if (speakButton) speakButton.disabled = false;
-    setHidden(stopButton, true);
     if (status && statusMessage) status.textContent = statusMessage;
     if (activeRegion === region) activeRegion = null;
   }
 
   function setPlaybackState(region, playing) {
-    var speakButton = region.querySelector('[data-speech-speak]');
-    var stopButton = region.querySelector('[data-speech-stop]');
     var status = region.querySelector('[data-speech-status]');
-    if (speakButton) speakButton.disabled = !!playing;
-    setHidden(stopButton, !playing);
+    setTogglePlaybackUi(region, playing);
     if (status && playing) {
       status.textContent = willPlayRecording(region) ? 'Playing recording…' : 'Preparing AI voice…';
     }
@@ -370,7 +398,6 @@
   function updateRegion(region) {
     ensureSpeechModeUi(region);
     var speakButton = region.querySelector('[data-speech-speak]');
-    var stopButton = region.querySelector('[data-speech-stop]');
     var voiceSelect = region.querySelector('[data-speech-voice]');
     var voiceLabel = voiceSelect && voiceSelect.closest('.speech-voice-choice');
     var root = speechControlsRoot(region);
@@ -410,16 +437,11 @@
       if (voiceLabel) setHidden(voiceLabel, true);
     }
 
-    if (speakButton) {
-      if (!speakButton.getAttribute('data-default-label')) {
-        speakButton.setAttribute('data-default-label', (speakButton.textContent || '').trim());
-      }
-      var labelRecorded = speakButton.getAttribute('data-label-recorded') || 'Play recording';
-      var labelTts = speakButton.getAttribute('data-default-label') || 'Listen';
-      speakButton.textContent = useRecording ? labelRecorded : labelTts;
+    if (speakButton && region.dataset.speechPlaying !== '1') {
+      restoreListenButtonLabel(region, speakButton);
     }
 
-    if (!canSpeak) setHidden(stopButton, true);
+    if (speakButton) setHidden(speakButton, !canSpeak);
   }
 
   function speakWithBrowser(region, plainText) {
@@ -504,8 +526,13 @@
     finishPlayback(region, 'Text-to-speech is not available.');
   }
 
-  function handleSpeakClick(region) {
+  function handleToggleSpeechClick(region) {
     if (!region) return;
+    if (isRegionPlaying(region)) {
+      stopSpeech();
+      return;
+    }
+
     var fileUrl = willPlayRecording(region) ? prerecordedAudioUrl(region) : '';
     var plainText = speechPlainText(region);
     if (!fileUrl && !plainText) return;
@@ -557,19 +584,14 @@
     }
 
     var speakButton = region.querySelector('[data-speech-speak]');
-    var stopButton = region.querySelector('[data-speech-stop]');
     if (speakButton) {
       speakButton.addEventListener('click', function (event) {
         event.preventDefault();
-        handleSpeakClick(region);
+        handleToggleSpeechClick(region);
       });
     }
-    if (stopButton) {
-      stopButton.addEventListener('click', function (event) {
-        event.preventDefault();
-        stopSpeech();
-      });
-    }
+    var stopButton = region.querySelector('[data-speech-stop]');
+    if (stopButton) setHidden(stopButton, true);
   }
 
   window.SomaSpeechRefresh = function (el) {
