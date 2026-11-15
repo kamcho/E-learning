@@ -55,6 +55,46 @@
     return !!(prerecordedAudioUrl(region) || regionHasTts(region));
   }
 
+  function speechControlsRoot(region) {
+    return region.querySelector('.explanation-speech-controls') || region;
+  }
+
+  function willPlayRecording(region) {
+    return !!prerecordedAudioUrl(region) && region.getAttribute('data-speech-use-tts') !== '1';
+  }
+
+  function ensureSpeechModeUi(region) {
+    var root = speechControlsRoot(region);
+    var badge = root.querySelector('[data-speech-mode-badge]');
+    if (!badge) {
+      badge = document.createElement('span');
+      badge.setAttribute('data-speech-mode-badge', '');
+      badge.className = 'speech-mode-badge speech-mode-badge--recording';
+      badge.hidden = true;
+      var speak = root.querySelector('[data-speech-speak]');
+      if (speak) {
+        root.insertBefore(badge, speak);
+      } else {
+        root.prepend(badge);
+      }
+    }
+    var ttsHint = root.querySelector('[data-speech-tts-hint]');
+    if (!ttsHint) {
+      ttsHint = document.createElement('span');
+      ttsHint.setAttribute('data-speech-tts-hint', '');
+      ttsHint.className = 'speech-mode-badge speech-mode-badge--tts';
+      ttsHint.textContent = 'AI voice';
+      ttsHint.hidden = true;
+      var voiceLabel = root.querySelector('.speech-voice-choice');
+      if (voiceLabel) {
+        voiceLabel.insertBefore(ttsHint, voiceLabel.firstChild);
+      } else {
+        root.appendChild(ttsHint);
+      }
+    }
+    return { badge: badge, ttsHint: ttsHint };
+  }
+
   function labelOpenAIVoice(name) {
     return name.charAt(0).toUpperCase() + name.slice(1);
   }
@@ -131,7 +171,7 @@
     if (speakButton && speakButton.disabled !== playing) speakButton.disabled = playing;
     setHidden(stopButton, !playing);
     if (status && playing) {
-      var message = prerecordedAudioUrl(region) ? 'Playing recording…' : 'Preparing read-aloud…';
+      var message = willPlayRecording(region) ? 'Playing recording…' : 'Preparing AI voice…';
       if (status.textContent !== message) status.textContent = message;
     }
   }
@@ -200,15 +240,55 @@
     var voiceSelect = region.querySelector('[data-speech-voice]');
     var status = region.querySelector('[data-speech-status]');
     var hasFile = !!prerecordedAudioUrl(region);
+    var useRecording = willPlayRecording(region);
     var plainText = speechPlainText(region);
     var hasTts = !!(plainText && (openaiEnabled || browserTtsSupported));
-    var ready = hasFile || plainText;
-    var canSpeak = hasFile || hasTts;
+    var ready = useRecording || hasFile || plainText;
+    var canSpeak = useRecording || hasFile || hasTts;
+    var modeUi = ensureSpeechModeUi(region);
+    var voiceLabel = voiceSelect && voiceSelect.closest('.speech-voice-choice');
+    var voiceAvailable = hasTts && (openaiEnabled || browserTtsSupported);
 
     setHidden(speakButton, !ready || !canSpeak);
-    setHidden(voiceSelect, !hasTts || !(openaiEnabled || browserTtsSupported));
-    var voiceLabel = voiceSelect && voiceSelect.closest('.speech-voice-choice');
-    if (voiceLabel) setHidden(voiceLabel, voiceSelect.hidden);
+
+    if (useRecording) {
+      region.classList.add('speech-region--recording');
+      region.classList.remove('speech-region--tts');
+      region.setAttribute('data-speech-source', 'recording');
+      modeUi.badge.hidden = false;
+      modeUi.badge.textContent = 'Recorded audio';
+      modeUi.ttsHint.hidden = true;
+      setHidden(voiceSelect, true);
+      if (voiceLabel) setHidden(voiceLabel, true);
+    } else if (voiceAvailable) {
+      region.classList.remove('speech-region--recording');
+      region.classList.add('speech-region--tts');
+      region.setAttribute('data-speech-source', 'tts');
+      modeUi.badge.hidden = true;
+      modeUi.ttsHint.hidden = false;
+      setHidden(voiceSelect, false);
+      if (voiceLabel) setHidden(voiceLabel, false);
+    } else {
+      region.classList.remove('speech-region--recording', 'speech-region--tts');
+      region.removeAttribute('data-speech-source');
+      modeUi.badge.hidden = true;
+      modeUi.ttsHint.hidden = true;
+      setHidden(voiceSelect, true);
+      if (voiceLabel) setHidden(voiceLabel, true);
+    }
+
+    if (speakButton) {
+      if (!speakButton.getAttribute('data-default-label')) {
+        speakButton.setAttribute('data-default-label', (speakButton.textContent || '').trim());
+      }
+      var labelRecorded = speakButton.getAttribute('data-label-recorded') || 'Play recording';
+      var labelTts = speakButton.getAttribute('data-default-label') || 'Listen';
+      var nextLabel = useRecording ? labelRecorded : labelTts;
+      if (speakButton.textContent !== nextLabel) {
+        speakButton.textContent = nextLabel;
+      }
+    }
+
     if (!ready) setHidden(stopButton, true);
 
     if (!canSpeak && status && ready) {
@@ -216,6 +296,8 @@
         ? 'Read-aloud is not configured.'
         : 'Text-to-speech is not available in this browser.';
       if (status.textContent !== message) status.textContent = message;
+    } else if (status && useRecording && !status.textContent) {
+      status.textContent = '';
     }
   }
 
@@ -360,7 +442,7 @@
     var region = speakButton.closest('[data-speech-region]');
     if (!region || !regionCanSpeak(region)) return;
 
-    var fileUrl = prerecordedAudioUrl(region);
+    var fileUrl = willPlayRecording(region) ? prerecordedAudioUrl(region) : '';
     var plainText = speechPlainText(region);
     if (!fileUrl && !plainText) return;
 
@@ -372,8 +454,10 @@
       playRecordedUrl(region, fileUrl).catch(function () {
         if (activeRegion !== region) return;
         if (plainText) {
+          region.setAttribute('data-speech-use-tts', '1');
+          updateRegion(region);
           var status = region.querySelector('[data-speech-status]');
-          if (status) status.textContent = 'Recording unavailable. Using generated speech.';
+          if (status) status.textContent = 'Recording unavailable. Using AI voice instead.';
           playTtsForRegion(region, plainText);
           return;
         }

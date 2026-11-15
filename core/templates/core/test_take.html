@@ -411,7 +411,9 @@
       {% include 'core/partials/question_prompt.html' with question=question hide_inline_audio=True %}
       <div class="explanation-speech-controls" style="margin-bottom: var(--space-md);">
         <span class="sr-only" data-speech-text>{{ question.quiz|striptags }}</span>
-        <button type="button" class="btn btn-secondary" data-speech-speak hidden>Listen to question</button>
+        <button type="button" class="btn btn-secondary" data-speech-speak hidden
+          data-label-recorded="Play recording"
+          data-default-label="Listen with AI voice">Listen with AI voice</button>
         <button type="button" class="btn btn-secondary" data-speech-stop hidden>Stop speaking</button>
         <label class="speech-voice-choice" hidden>
           Voice

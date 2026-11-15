@@ -328,6 +328,38 @@ button {
   font: inherit;
 }
 
+.speech-mode-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.55rem;
+  border-radius: var(--radius-full);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.speech-mode-badge--recording {
+  background: rgba(59, 130, 246, 0.12);
+  color: #1d4ed8;
+  border: 1px solid rgba(59, 130, 246, 0.25);
+}
+
+.speech-mode-badge--tts {
+  background: rgba(139, 92, 246, 0.12);
+  color: #6d28d9;
+  border: 1px solid rgba(139, 92, 246, 0.22);
+  margin-right: 0.25rem;
+}
+
+.speech-region--recording .speech-voice-choice {
+  display: none !important;
+}
+
+.speech-region--recording [data-speech-tts-hint] {
+  display: none !important;
+}
+
 .btn-secondary {
   background: var(--clr-primary);
   color: #fff;
