@@ -12,6 +12,7 @@
   var activeRegion = null;
   var activeAudio = null;
   var activeObjectUrl = null;
+  var activeHighlight = null;
   var browserVoices = [];
   var browserVoicesReady = false;
 
@@ -148,6 +149,135 @@
     }, 250);
   }
 
+  function escapeHtml(value) {
+    return String(value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function speechHighlightRoot(region) {
+    if (!region) return null;
+    var marked = region.querySelector('[data-speech-highlight]');
+    if (marked) return marked;
+    var text = region.querySelector('[data-speech-text]');
+    if (text && !text.classList.contains('sr-only') && !text.hidden) return text;
+    var card = region.closest('.demo-question-card, .question-card');
+    if (card) {
+      var visible = card.querySelector('.demo-q-text, .question-rich-text, .question-text');
+      if (visible) return visible;
+    }
+    return null;
+  }
+
+  function canHighlightElement(el) {
+    if (!el || el.classList.contains('sr-only')) return false;
+    if (el.querySelector('.katex, .katex-display, img, table, figure')) return false;
+    return el.children.length === 0;
+  }
+
+  function buildWordOffsets(plainText) {
+    var offsets = [];
+    var re = /\S+/g;
+    var match;
+    while ((match = re.exec(plainText))) {
+      offsets.push({ start: match.index, index: offsets.length });
+    }
+    return offsets;
+  }
+
+  function clearSpeechHighlight() {
+    if (!activeHighlight) return;
+    if (activeHighlight.onTimeUpdate && activeHighlight.audio) {
+      activeHighlight.audio.removeEventListener('timeupdate', activeHighlight.onTimeUpdate);
+      activeHighlight.audio.removeEventListener('loadedmetadata', activeHighlight.onTimeUpdate);
+    }
+    if (activeHighlight.root) {
+      activeHighlight.root.classList.remove('speech-readalong');
+      if (activeHighlight.savedHtml !== null && activeHighlight.savedHtml !== undefined) {
+        activeHighlight.root.innerHTML = activeHighlight.savedHtml;
+      }
+    }
+    activeHighlight = null;
+  }
+
+  function setActiveHighlightWord(wordIndex) {
+    if (!activeHighlight || !activeHighlight.root) return;
+    var spans = activeHighlight.root.querySelectorAll('.speech-word');
+    for (var i = 0; i < spans.length; i++) {
+      spans[i].classList.toggle('speech-word--active', i === wordIndex);
+      spans[i].classList.toggle('speech-word--past', i < wordIndex);
+    }
+    var active = spans[wordIndex];
+    if (active && typeof active.scrollIntoView === 'function') {
+      active.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' });
+    }
+  }
+
+  function wordIndexForChar(offsets, charIndex) {
+    var found = 0;
+    for (var i = 0; i < offsets.length; i++) {
+      if (charIndex >= offsets[i].start) found = offsets[i].index;
+      else break;
+    }
+    return found;
+  }
+
+  function beginSpeechHighlight(region, plainText) {
+    clearSpeechHighlight();
+    if (!plainText) plainText = speechPlainText(region);
+    if (!plainText) return null;
+    var root = speechHighlightRoot(region);
+    if (!root || !canHighlightElement(root)) return null;
+
+    var savedHtml = root.innerHTML;
+    var words = plainText.match(/\S+/g) || [];
+    if (!words.length) return null;
+
+    root.innerHTML = words.map(function (word, index) {
+      return '<span class="speech-word" data-speech-word="' + index + '">' + escapeHtml(word) + '</span>';
+    }).join(' ');
+    root.classList.add('speech-readalong');
+
+    activeHighlight = {
+      root: root,
+      words: words,
+      offsets: buildWordOffsets(plainText),
+      savedHtml: savedHtml,
+      audio: null,
+      onTimeUpdate: null,
+    };
+    return activeHighlight;
+  }
+
+  function attachAudioHighlight(audioEl) {
+    if (!activeHighlight || !audioEl) return;
+    activeHighlight.audio = audioEl;
+    function syncFromTime() {
+      if (!activeHighlight) return;
+      if (!audioEl.duration || !isFinite(audioEl.duration)) return;
+      var ratio = Math.min(1, Math.max(0, audioEl.currentTime / audioEl.duration));
+      var idx = Math.min(
+        activeHighlight.words.length - 1,
+        Math.floor(ratio * activeHighlight.words.length)
+      );
+      setActiveHighlightWord(idx);
+    }
+    activeHighlight.onTimeUpdate = syncFromTime;
+    audioEl.addEventListener('timeupdate', syncFromTime);
+    audioEl.addEventListener('loadedmetadata', syncFromTime);
+    syncFromTime();
+  }
+
+  function speechPlainTextForHighlight(region) {
+    var text = speechPlainText(region);
+    if (text) return text;
+    var root = speechHighlightRoot(region);
+    if (!root) return '';
+    return (root.textContent || '').replace(/\s+/g, ' ').trim();
+  }
+
   function pauseOtherAudioElements(exceptEl) {
     document.querySelectorAll('audio').forEach(function (el) {
       if (el !== exceptEl && !el.paused) {
@@ -161,6 +291,7 @@
   }
 
   function finishPlayback(region, statusMessage) {
+    clearSpeechHighlight();
     if (!region) return;
     var speakButton = region.querySelector('[data-speech-speak]');
     var stopButton = region.querySelector('[data-speech-stop]');
@@ -205,6 +336,8 @@
     if (browserTtsSupported) window.speechSynthesis.cancel();
     if (activeRegion) {
       finishPlayback(activeRegion, silent ? '' : 'Speech stopped.');
+    } else if (!exceptAudio) {
+      clearSpeechHighlight();
     }
   }
 
@@ -223,6 +356,8 @@
     if (status) status.textContent = 'Speaking…';
     return audioEl.play().then(function () {
       pauseOtherAudioElements(audioEl);
+      beginSpeechHighlight(region, speechPlainTextForHighlight(region));
+      attachAudioHighlight(audioEl);
     });
   }
 
@@ -288,6 +423,7 @@
   }
 
   function speakWithBrowser(region, plainText) {
+    beginSpeechHighlight(region, plainText);
     var utterance = new SpeechSynthesisUtterance(plainText);
     var voiceSelect = region.querySelector('[data-speech-voice]');
     var selectedVoice = voiceSelect && browserVoices.find(function (voice) {
@@ -295,6 +431,11 @@
     });
     if (selectedVoice) utterance.voice = selectedVoice;
     utterance.lang = (selectedVoice && selectedVoice.lang) || document.documentElement.lang || 'en';
+    utterance.onboundary = function (ev) {
+      if (!activeHighlight || ev.charIndex === undefined) return;
+      if (ev.name && ev.name !== 'word') return;
+      setActiveHighlightWord(wordIndexForChar(activeHighlight.offsets, ev.charIndex));
+    };
     utterance.onend = function () {
       finishPlayback(region, 'Playback finished.');
     };
