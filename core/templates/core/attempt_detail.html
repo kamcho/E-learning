@@ -1003,6 +1003,9 @@
         if (window.refreshExplanationMath) {
           window.refreshExplanationMath(textEl);
         }
+        if (window.SomaSpeechRefresh) {
+          window.SomaSpeechRefresh(textEl);
+        }
         btn.textContent = '✨ Explain again';
       } catch (err) {
         var p = document.createElement('p');

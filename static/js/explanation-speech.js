@@ -10,6 +10,7 @@
   var activeAudio = null;
   var activeObjectUrl = null;
   var browserVoices = [];
+  var regionUpdating = typeof WeakMap !== 'undefined' ? new WeakMap() : null;
 
   function getStoredVoice(key) {
     try {
@@ -234,72 +235,93 @@
     return wireAudioElement(region, activeAudio);
   }
 
+  function getModeUi(region) {
+    var root = speechControlsRoot(region);
+    return {
+      badge: root.querySelector('[data-speech-mode-badge]'),
+      ttsHint: root.querySelector('[data-speech-tts-hint]'),
+    };
+  }
+
   function updateRegion(region) {
-    var speakButton = region.querySelector('[data-speech-speak]');
-    var stopButton = region.querySelector('[data-speech-stop]');
-    var voiceSelect = region.querySelector('[data-speech-voice]');
-    var status = region.querySelector('[data-speech-status]');
-    var hasFile = !!prerecordedAudioUrl(region);
-    var useRecording = willPlayRecording(region);
-    var plainText = speechPlainText(region);
-    var hasTts = !!(plainText && (openaiEnabled || browserTtsSupported));
-    var ready = useRecording || hasFile || plainText;
-    var canSpeak = useRecording || hasFile || hasTts;
-    var modeUi = ensureSpeechModeUi(region);
-    var voiceLabel = voiceSelect && voiceSelect.closest('.speech-voice-choice');
-    var voiceAvailable = hasTts && (openaiEnabled || browserTtsSupported);
+    if (regionUpdating && regionUpdating.get(region)) return;
+    if (regionUpdating) regionUpdating.set(region, true);
 
-    setHidden(speakButton, !ready || !canSpeak);
+    try {
+      var speakButton = region.querySelector('[data-speech-speak]');
+      var stopButton = region.querySelector('[data-speech-stop]');
+      var voiceSelect = region.querySelector('[data-speech-voice]');
+      var status = region.querySelector('[data-speech-status]');
+      var hasFile = !!prerecordedAudioUrl(region);
+      var useRecording = willPlayRecording(region);
+      var plainText = speechPlainText(region);
+      var hasTts = !!(plainText && (openaiEnabled || browserTtsSupported));
+      var ready = useRecording || hasFile || plainText;
+      var canSpeak = useRecording || hasFile || hasTts;
+      var modeUi = getModeUi(region);
+      var voiceLabel = voiceSelect && voiceSelect.closest('.speech-voice-choice');
+      var voiceAvailable = hasTts && (openaiEnabled || browserTtsSupported);
 
-    if (useRecording) {
-      region.classList.add('speech-region--recording');
-      region.classList.remove('speech-region--tts');
-      region.setAttribute('data-speech-source', 'recording');
-      modeUi.badge.hidden = false;
-      modeUi.badge.textContent = 'Recorded audio';
-      modeUi.ttsHint.hidden = true;
-      setHidden(voiceSelect, true);
-      if (voiceLabel) setHidden(voiceLabel, true);
-    } else if (voiceAvailable) {
-      region.classList.remove('speech-region--recording');
-      region.classList.add('speech-region--tts');
-      region.setAttribute('data-speech-source', 'tts');
-      modeUi.badge.hidden = true;
-      modeUi.ttsHint.hidden = false;
-      setHidden(voiceSelect, false);
-      if (voiceLabel) setHidden(voiceLabel, false);
-    } else {
-      region.classList.remove('speech-region--recording', 'speech-region--tts');
-      region.removeAttribute('data-speech-source');
-      modeUi.badge.hidden = true;
-      modeUi.ttsHint.hidden = true;
-      setHidden(voiceSelect, true);
-      if (voiceLabel) setHidden(voiceLabel, true);
-    }
+      setHidden(speakButton, !ready || !canSpeak);
 
-    if (speakButton) {
-      if (!speakButton.getAttribute('data-default-label')) {
-        speakButton.setAttribute('data-default-label', (speakButton.textContent || '').trim());
+      if (useRecording) {
+        region.classList.add('speech-region--recording');
+        region.classList.remove('speech-region--tts');
+        if (modeUi.badge) {
+          setHidden(modeUi.badge, false);
+          if (modeUi.badge.textContent !== 'Recorded audio') {
+            modeUi.badge.textContent = 'Recorded audio';
+          }
+        }
+        if (modeUi.ttsHint) setHidden(modeUi.ttsHint, true);
+        setHidden(voiceSelect, true);
+        if (voiceLabel) setHidden(voiceLabel, true);
+      } else if (voiceAvailable) {
+        region.classList.remove('speech-region--recording');
+        region.classList.add('speech-region--tts');
+        if (modeUi.badge) setHidden(modeUi.badge, true);
+        if (modeUi.ttsHint) setHidden(modeUi.ttsHint, false);
+        setHidden(voiceSelect, false);
+        if (voiceLabel) setHidden(voiceLabel, false);
+      } else {
+        region.classList.remove('speech-region--recording', 'speech-region--tts');
+        if (modeUi.badge) setHidden(modeUi.badge, true);
+        if (modeUi.ttsHint) setHidden(modeUi.ttsHint, true);
+        setHidden(voiceSelect, true);
+        if (voiceLabel) setHidden(voiceLabel, true);
       }
-      var labelRecorded = speakButton.getAttribute('data-label-recorded') || 'Play recording';
-      var labelTts = speakButton.getAttribute('data-default-label') || 'Listen';
-      var nextLabel = useRecording ? labelRecorded : labelTts;
-      if (speakButton.textContent !== nextLabel) {
-        speakButton.textContent = nextLabel;
+
+      if (speakButton) {
+        if (!speakButton.getAttribute('data-default-label')) {
+          speakButton.setAttribute('data-default-label', (speakButton.textContent || '').trim());
+        }
+        var labelRecorded = speakButton.getAttribute('data-label-recorded') || 'Play recording';
+        var labelTts = speakButton.getAttribute('data-default-label') || 'Listen';
+        var nextLabel = useRecording ? labelRecorded : labelTts;
+        if (speakButton.textContent !== nextLabel) {
+          speakButton.textContent = nextLabel;
+        }
       }
-    }
 
-    if (!ready) setHidden(stopButton, true);
+      if (!ready) setHidden(stopButton, true);
 
-    if (!canSpeak && status && ready) {
-      var message = openaiCfg === null
-        ? 'Read-aloud is not configured.'
-        : 'Text-to-speech is not available in this browser.';
-      if (status.textContent !== message) status.textContent = message;
-    } else if (status && useRecording && !status.textContent) {
-      status.textContent = '';
+      if (!canSpeak && status && ready) {
+        var message = openaiCfg === null
+          ? 'Read-aloud is not configured.'
+          : 'Text-to-speech is not available in this browser.';
+        if (status.textContent !== message) status.textContent = message;
+      }
+    } finally {
+      if (regionUpdating) regionUpdating.set(region, false);
     }
   }
+
+  function refreshSpeechRegion(el) {
+    var region = el && el.closest ? el.closest('[data-speech-region]') : null;
+    if (region) updateRegion(region);
+  }
+
+  window.SomaSpeechRefresh = refreshSpeechRegion;
 
   function speakWithBrowser(region, plainText) {
     var utterance = new SpeechSynthesisUtterance(plainText);
@@ -396,6 +418,7 @@
   }
 
   document.querySelectorAll('[data-speech-region]').forEach(function (region) {
+    ensureSpeechModeUi(region);
     updateRegion(region);
     var voiceSelect = region.querySelector('[data-speech-voice]');
     if (voiceSelect) {
@@ -414,11 +437,22 @@
     });
     observer.observe(region, {
       attributes: true,
-      childList: true,
-      characterData: true,
-      subtree: true,
-      attributeFilter: ['hidden', 'data-speech-audio-url'],
+      attributeFilter: ['data-speech-audio-url', 'data-speech-use-tts'],
     });
+
+    var speechText = region.querySelector('[data-speech-text]');
+    if (speechText) {
+      var textObserver = new MutationObserver(function (mutations) {
+        var hiddenToggled = mutations.some(function (m) {
+          return m.type === 'attributes' && m.attributeName === 'hidden';
+        });
+        if (hiddenToggled) updateRegion(region);
+      });
+      textObserver.observe(speechText, {
+        attributes: true,
+        attributeFilter: ['hidden'],
+      });
+    }
   });
 
   if (browserTtsSupported) {

@@ -130,6 +130,9 @@
           }
           textEl.textContent = result.data.explanation || '';
           textEl.hidden = false;
+          if (window.SomaSpeechRefresh) {
+            window.SomaSpeechRefresh(textEl);
+          }
           if (window.refreshExplanationMath) {
             window.refreshExplanationMath(textEl);
           } else if (window.whenQuestionMathReady) {
