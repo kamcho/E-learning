@@ -20,7 +20,7 @@
 
   {% if question.prompt_audio and not hide_inline_audio %}
   <div class="question-rich-audio">
-    <span class="sr-only" id="audio-label-{{ question.uuid }}">Listen to this question</span>
+    <span class="question-rich-audio-label" id="audio-label-{{ question.uuid }}">Question recording</span>
     <audio
       controls
       preload="metadata"

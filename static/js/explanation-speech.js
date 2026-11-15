@@ -148,6 +148,18 @@
     }, 250);
   }
 
+  function pauseOtherAudioElements(exceptEl) {
+    document.querySelectorAll('audio').forEach(function (el) {
+      if (el !== exceptEl && !el.paused) {
+        try {
+          el.pause();
+        } catch (error) {
+          // ignore
+        }
+      }
+    });
+  }
+
   function finishPlayback(region, statusMessage) {
     if (!region) return;
     var speakButton = region.querySelector('[data-speech-speak]');
@@ -177,8 +189,13 @@
     }
   }
 
-  function stopSpeech() {
-    if (activeAudio) {
+  function stopSpeech(options) {
+    var silent = options && options.silent;
+    var exceptAudio = options && options.exceptAudio;
+
+    pauseOtherAudioElements(exceptAudio);
+
+    if (activeAudio && activeAudio !== exceptAudio) {
       activeAudio.pause();
       activeAudio.onended = null;
       activeAudio.onerror = null;
@@ -186,7 +203,9 @@
     }
     revokeObjectUrl();
     if (browserTtsSupported) window.speechSynthesis.cancel();
-    if (activeRegion) finishPlayback(activeRegion, 'Speech stopped.');
+    if (activeRegion) {
+      finishPlayback(activeRegion, silent ? '' : 'Speech stopped.');
+    }
   }
 
   function wireAudioElement(region, audioEl) {
@@ -202,7 +221,9 @@
     };
     var status = region.querySelector('[data-speech-status]');
     if (status) status.textContent = 'Speaking…';
-    return audioEl.play();
+    return audioEl.play().then(function () {
+      pauseOtherAudioElements(audioEl);
+    });
   }
 
   function playRecordedUrl(region, url) {
@@ -348,7 +369,7 @@
     var plainText = speechPlainText(region);
     if (!fileUrl && !plainText) return;
 
-    stopSpeech();
+    stopSpeech({ silent: true });
     activeRegion = region;
     setPlaybackState(region, true);
 
@@ -368,6 +389,17 @@
     }
 
     playTtsForRegion(region, plainText);
+  }
+
+  function bindInlineAudioPlayers() {
+    document.querySelectorAll('audio').forEach(function (audioEl) {
+      if (audioEl.dataset.somaExclusiveAudio === '1') return;
+      audioEl.dataset.somaExclusiveAudio = '1';
+      audioEl.addEventListener('play', function () {
+        stopSpeech({ silent: true, exceptAudio: audioEl });
+        pauseOtherAudioElements(audioEl);
+      });
+    });
   }
 
   function bindRegion(region) {
@@ -402,10 +434,17 @@
   window.SomaSpeechRefresh = function (el) {
     var region = el && el.closest ? el.closest('[data-speech-region]') : null;
     if (region) updateRegion(region);
+    bindInlineAudioPlayers();
+  };
+
+  window.SomaStopAllAudio = function (options) {
+    stopSpeech(options || { silent: true });
+    pauseOtherAudioElements(options && options.exceptAudio);
   };
 
   function boot() {
     document.querySelectorAll('[data-speech-region]').forEach(bindRegion);
+    bindInlineAudioPlayers();
     initBrowserVoicesOnce();
   }
 

@@ -4,6 +4,9 @@
 
 {% block extra_head %}
 {% include 'accounts/partials/admin_list_styles.html' %}
+{% include 'core/partials/question_rich_styles.html' %}
+{% load static %}
+<script src="{% static 'js/soma-exclusive-audio.js' %}" defer></script>
 <style>
   .qm-back {
     display: inline-flex;
@@ -71,6 +74,10 @@
     margin-top: 0.35rem;
   }
 
+  .qm-current .question-audio-player {
+    max-width: 100%;
+  }
+
   .qm-option-row {
     border-top: 1px solid var(--clr-border);
     padding-top: var(--space-md);
@@ -117,7 +124,7 @@
       {% if question.prompt_audio %}
       <div class="qm-current">
         Current prompt audio
-        <audio controls preload="metadata" src="{{ question.prompt_audio.url }}"></audio>
+        <audio controls preload="metadata" class="question-audio-player" src="{{ question.prompt_audio.url }}"></audio>
       </div>
       {% endif %}
       {{ question_form.prompt_audio }}
@@ -132,7 +139,7 @@
       {% if question.explanation_audio %}
       <div class="qm-current">
         Current explanation audio
-        <audio controls preload="metadata" src="{{ question.explanation_audio.url }}"></audio>
+        <audio controls preload="metadata" class="question-audio-player" src="{{ question.explanation_audio.url }}"></audio>
       </div>
       {% endif %}
       {{ question_form.explanation_audio }}
@@ -149,7 +156,7 @@
       <div class="qm-option-label">Choice {{ forloop.counter }}: {{ opt.option|truncatechars:120 }}</div>
       {% if opt.option_audio %}
       <div class="qm-current">
-        <audio controls preload="metadata" src="{{ opt.option_audio.url }}"></audio>
+        <audio controls preload="metadata" class="question-audio-player" src="{{ opt.option_audio.url }}"></audio>
       </div>
       {% endif %}
       {{ opt_form.option_audio }}

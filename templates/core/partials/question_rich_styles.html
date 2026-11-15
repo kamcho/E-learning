@@ -44,12 +44,58 @@
 
   .question-rich-audio {
     margin-top: var(--space-md);
+    max-width: min(100%, 440px);
+  }
+
+  .question-rich-audio-label {
+    display: block;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--clr-text-muted);
+    margin-bottom: 0.35rem;
   }
 
   .question-audio-player {
+    display: block;
     width: 100%;
-    max-width: 420px;
-    height: 40px;
+    height: 38px;
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-sm);
+    background: var(--clr-surface-alt);
+    accent-color: var(--clr-primary);
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+    outline: none;
+  }
+
+  .question-audio-player:focus-visible {
+    border-color: var(--clr-primary);
+    box-shadow: 0 0 0 2px rgba(13, 138, 78, 0.2);
+  }
+
+  .question-audio-player::-webkit-media-controls-enclosure {
+    border-radius: var(--radius-sm) !important;
+    background-color: var(--clr-surface-alt) !important;
+  }
+
+  .question-audio-player::-webkit-media-controls-panel {
+    background: transparent;
+    border-radius: var(--radius-sm);
+  }
+
+  .question-audio-player::-webkit-media-controls-timeline {
+    border-radius: 3px;
+    margin-left: 8px;
+    margin-right: 8px;
+  }
+
+  .question-audio-player::-webkit-media-controls-current-time-display,
+  .question-audio-player::-webkit-media-controls-time-remaining-display {
+    font-family: var(--font-body);
+    font-size: 0.72rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--clr-text-muted);
   }
 
   .option-rich-content {
