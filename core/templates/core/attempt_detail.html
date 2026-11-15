@@ -207,6 +207,27 @@
     transition: transform var(--transition-base);
   }
 
+  .score-ring-svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+    border-radius: 50%;
+  }
+
+  .score-ring-track {
+    fill: none;
+    stroke: var(--clr-border);
+    stroke-width: 12;
+  }
+
+  .score-ring-arc {
+    fill: none;
+    stroke-width: 12;
+    stroke-linecap: round;
+  }
+
   .score-ring:hover {
     transform: scale(1.03);
   }
@@ -712,58 +733,58 @@
       </div>
 
       {% if attempt.is_complete %}
-      <div class="peer-stats-row">
-        <div class="grid-stat-item">
-          <span class="grid-stat-label">Class Average (others)</span>
-          <span class="grid-stat-value">
-            {% if peer_stats.peer_avg_score is not None %}
-              {{ peer_stats.peer_avg_score }}%
-            {% else %}
-              —
-            {% endif %}
-          </span>
-          <span class="grid-stat-hint">
+        {% if peer_stats.peer_avg_score is not None or peer_stats.percentile is not None %}
+        <div class="peer-stats-row">
+          {% if peer_stats.peer_avg_score is not None %}
+          <div class="grid-stat-item">
+            <span class="grid-stat-label">Class Average (others)</span>
+            <span class="grid-stat-value">{{ peer_stats.peer_avg_score }}%</span>
             {% if peer_stats.peer_count %}
+            <span class="grid-stat-hint">
               Based on {{ peer_stats.peer_count }} other student{{ peer_stats.peer_count|pluralize }}
-            {% else %}
-              No other completed attempts yet
+            </span>
             {% endif %}
-          </span>
-        </div>
-        <div class="grid-stat-item">
-          <span class="grid-stat-label">Percentile</span>
-          <span class="grid-stat-value percentile-value">
-            {% if peer_stats.percentile is not None %}
-              {{ peer_stats.percentile|floatformat:0 }}th
-            {% else %}
-              —
-            {% endif %}
-          </span>
-          <span class="grid-stat-hint">
-            {% if peer_stats.percentile is not None %}
+          </div>
+          {% endif %}
+          {% if peer_stats.percentile is not None %}
+          <div class="grid-stat-item">
+            <span class="grid-stat-label">Percentile</span>
+            <span class="grid-stat-value percentile-value">{{ peer_stats.percentile|floatformat:0 }}th</span>
+            <span class="grid-stat-hint">
               Among {{ peer_stats.total_completed }} completed attempt{{ peer_stats.total_completed|pluralize }}
-            {% else %}
-              Need at least 2 completions to rank
-            {% endif %}
-          </span>
+            </span>
+          </div>
+          {% endif %}
         </div>
-      </div>
+        {% endif %}
       {% endif %}
     </div>
 
     <!-- Score Ring Widget -->
     <div class="score-ring-wrap">
       {% if attempt.is_complete %}
-        <div class="score-ring" style="background: conic-gradient({% if attempt.score >= 70 %}var(--clr-primary){% elif attempt.score >= 40 %}var(--clr-accent){% else %}var(--clr-danger){% endif %} 0%, {% if attempt.score >= 70 %}var(--clr-primary){% elif attempt.score >= 40 %}var(--clr-accent){% else %}var(--clr-danger){% endif %} {{ attempt.score }}%, var(--clr-border) {{ attempt.score }}%, var(--clr-border) 100%);">
+        <div class="score-ring" style="--score-ring-color: {% if attempt.score >= 70 %}var(--clr-primary){% elif attempt.score >= 40 %}var(--clr-accent){% else %}var(--clr-danger){% endif %};">
+          <svg class="score-ring-svg" viewBox="0 0 120 120" aria-hidden="true">
+            <circle class="score-ring-track" cx="60" cy="60" r="50" />
+            <circle class="score-ring-arc" cx="60" cy="60" r="50"
+              stroke="var(--score-ring-color)"
+              stroke-dasharray="{% widthratio 314 attempt.score 100 %} 314.16" />
+          </svg>
           <div class="score-ring-inner">
-            <span class="score-ring-pct" style="color: {% if attempt.score >= 70 %}var(--clr-primary){% elif attempt.score >= 40 %}var(--clr-accent){% else %}var(--clr-danger){% endif %};">
+            <span class="score-ring-pct" style="color: var(--score-ring-color);">
               {{ attempt.score }}%
             </span>
             <span class="score-ring-label">Score</span>
           </div>
         </div>
       {% else %}
-        <div class="score-ring" style="background: conic-gradient(var(--clr-accent) 0%, var(--clr-accent) {% widthratio answered_count question_count 100 %}%, var(--clr-border) {% widthratio answered_count question_count 100 %}%, var(--clr-border) 100%);">
+        <div class="score-ring">
+          <svg class="score-ring-svg" viewBox="0 0 120 120" aria-hidden="true">
+            <circle class="score-ring-track" cx="60" cy="60" r="50" />
+            <circle class="score-ring-arc" cx="60" cy="60" r="50"
+              stroke="var(--clr-accent)"
+              stroke-dasharray="{% widthratio 314 answered_count question_count %} 314.16" />
+          </svg>
           <div class="score-ring-inner">
             <span class="score-ring-pct" style="color: var(--clr-accent); font-size: 1.8rem;">
               {% widthratio answered_count question_count 100 %}%
