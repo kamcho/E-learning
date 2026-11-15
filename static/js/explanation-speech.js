@@ -460,6 +460,13 @@
     return wireAudioElement(region, activeAudio);
   }
 
+  function tutorPanelRequiresCompletion(region) {
+    if (!region) return false;
+    if (region.getAttribute('data-speech-wait-complete') === '1') return true;
+    return region.classList.contains('ai-explanation-box')
+      || region.classList.contains('demo-ai-box');
+  }
+
   function updateRegion(region) {
     var speakButton = region.querySelector('[data-speech-speak]');
     var useRecording = willPlayRecording(region);
@@ -469,8 +476,19 @@
     var canUseTts = hasReadableText && hasTtsEngine;
     var contentReady = region.dataset.speechContentReady === '1';
     var autoShow = region.getAttribute('data-speech-auto-show') === '1';
-    var showButton = useRecording || (canUseTts && (contentReady || autoShow));
-    var canSpeak = useRecording || canUseTts;
+    var waitForExplain = tutorPanelRequiresCompletion(region);
+    var canSpeak = waitForExplain
+      ? (contentReady && hasReadableText && (useRecording || canUseTts))
+      : (useRecording || canUseTts);
+    var showButton;
+    if (waitForExplain) {
+      showButton = contentReady && hasReadableText && (useRecording || canUseTts);
+    } else {
+      showButton = useRecording || (canUseTts && (contentReady || autoShow));
+      if (useRecording && !hasReadableText && !autoShow) {
+        showButton = true;
+      }
+    }
 
     setHidden(speakButton, !showButton);
     if (speakButton) {
@@ -662,6 +680,13 @@
   }
 
   window.SomaSpeechRevealListen = revealSpeechListen;
+
+  window.SomaSpeechHideListen = function (el) {
+    var region = el && el.closest ? el.closest('[data-speech-region]') : null;
+    if (!region) return;
+    region.dataset.speechContentReady = '';
+    updateRegion(region);
+  };
 
   window.SomaSpeechRefresh = function (el) {
     revealSpeechListen(el);

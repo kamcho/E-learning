@@ -74,7 +74,7 @@
           <p style="margin:0;color:var(--demo-muted);font-size:0.88rem;">
             Correct answer: <strong style="color:var(--demo-accent);" data-math-content>{{ feedback.correct_text }}</strong>
           </p>
-          <div class="demo-ai-box" id="demo-ai-box" data-question-uuid="{{ question_uuid }}" data-speech-region
+          <div class="demo-ai-box" id="demo-ai-box" data-question-uuid="{{ question_uuid }}" data-speech-region data-speech-wait-complete="1"
             {% if question.explanation_audio %}data-speech-audio-url="{{ question.explanation_audio.url }}"{% endif %}>
             <div class="demo-ai-loading" id="demo-ai-loading" role="status" aria-live="polite">
               <span class="demo-ai-spinner" aria-hidden="true"></span>
@@ -189,6 +189,7 @@
   var csrfToken = '{{ csrf_token }}';
 
   function loadExplanation() {
+    if (window.SomaSpeechHideListen) window.SomaSpeechHideListen(box);
     loading.hidden = false;
     textEl.hidden = true;
     errEl.hidden = true;
