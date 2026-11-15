@@ -261,6 +261,8 @@ OPENAI_MAX_TOKENS = int(os.environ.get('OPENAI_MAX_TOKENS', '300'))
 OPENAI_MAX_RETRIES = int(os.environ.get('OPENAI_MAX_RETRIES', '1'))
 OPENAI_TTS_MODEL = os.environ.get('OPENAI_TTS_MODEL', 'tts-1')
 OPENAI_TTS_VOICE = os.environ.get('OPENAI_TTS_VOICE', 'nova')
+# TTS pacing after punctuation: short | medium | long (default)
+OPENAI_TTS_PAUSE_LEVEL = os.environ.get('OPENAI_TTS_PAUSE_LEVEL', 'long')
 
 # M-Pesa Daraja (Lipa na M-Pesa STK Push)
 MPESA_ENVIRONMENT = os.environ.get('MPESA_ENVIRONMENT', 'sandbox')

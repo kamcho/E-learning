@@ -1120,6 +1120,17 @@ class OpenAITtsTests(TestCase):
         out = prepare_text_for_tts('<p>Hello&nbsp;<strong>world</strong></p>')
         self.assertEqual(out, 'Hello world')
 
+    def test_prepare_text_inserts_punctuation_pauses(self):
+        from core.ai.tts_text import insert_tts_pauses, prepare_text_for_tts
+
+        paused = insert_tts_pauses('First idea. Second part, and more.')
+        self.assertIn('.\n\n', paused)
+        self.assertIn(',\n', paused)
+
+        full = prepare_text_for_tts('<p>Done. Next, go on.</p>')
+        self.assertIn('.\n\n', full)
+        self.assertIn(',\n', full)
+
     @override_settings(OPENAI_API_KEY='')
     def test_tts_endpoint_requires_configuration(self):
         res = self.client.post(

@@ -53,6 +53,18 @@
     return (text.textContent || '').replace(/\s+/g, ' ').trim();
   }
 
+  function insertTtsPauses(text) {
+    if (!text) return text;
+    return text
+      .replace(/([.!?])(?!\d)\s+/g, '$1\n\n\n')
+      .replace(/,\s*/g, ',\n\n')
+      .replace(/[;:]\s*/g, function (match) {
+        return match.trim() + '\n';
+      })
+      .replace(/\n{4,}/g, '\n\n\n')
+      .trim();
+  }
+
   function speechControlsRoot(region) {
     return region.querySelector('.explanation-speech-controls') || region;
   }
@@ -434,7 +446,7 @@
 
   function speakWithBrowser(region, plainText) {
     beginSpeechHighlight(region, plainText);
-    var utterance = new SpeechSynthesisUtterance(plainText);
+    var utterance = new SpeechSynthesisUtterance(insertTtsPauses(plainText));
     var voiceSelect = region.querySelector('[data-speech-voice]');
     var selectedVoice = voiceSelect && browserVoices.find(function (voice) {
       return voice.voiceURI === voiceSelect.value;
