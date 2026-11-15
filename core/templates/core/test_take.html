@@ -2,509 +2,345 @@
 
 {% block title %}{{ quiz.title }}{% endblock %}
 
-{% block body_class %} exam-take-page{% endblock %}
-{% block app_layout_class %} app-layout--standalone{% endblock %}
+{% block body_class %}demo-page exam-take-page{% endblock %}
+{% block app_layout_class %}app-layout--standalone{% endblock %}
 {% block app_sidebar_overlay %}{% endblock %}
 {% block app_sidebar %}{% endblock %}
 {% block app_nav_toggle %}{% endblock %}
-
-{% block main_extra_class %}test-take-main{% endblock %}
+{% block main_extra_class %}demo-main demo-quiz-page{% endblock %}
 
 {% block extra_head %}
+{% include 'core/partials/demo_styles.html' %}
 {% include 'core/partials/question_rich_styles.html' %}
 {% include 'core/partials/question_math_assets.html' %}
 <style>
-  body.exam-take-page.app-body {
-    background: var(--clr-bg);
+  body.exam-take-page .demo-exam-timer {
+    font-variant-numeric: tabular-nums;
+    font-weight: 800;
+    color: var(--demo-accent);
   }
 
-  .test-take-main {
-    padding: var(--space-lg) var(--space-md);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: flex-start;
-    min-width: 0;
-    box-sizing: border-box;
-    padding-bottom: calc(var(--space-xl) + env(safe-area-inset-bottom, 0px));
+  body.exam-take-page .demo-exam-timer.is-warning {
+    color: var(--demo-warm);
   }
 
-  body.exam-take-page .test-take-main .messages-container {
-    width: 100%;
-    max-width: 480px;
-    margin-bottom: var(--space-md);
-    box-sizing: border-box;
+  body.exam-take-page .demo-exam-timer.is-critical {
+    color: #f87171;
+    animation: exam-timer-pulse 1s ease-in-out infinite;
   }
 
-  body.exam-take-page .test-take-main .alert {
+  @keyframes exam-timer-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+  }
+
+  .exam-matching-hint {
     font-size: 0.88rem;
-    line-height: 1.45;
-    word-break: break-word;
-  }
-
-  .test-take-wrap {
-    width: 100%;
-    max-width: 480px;
-    min-width: 0;
-    box-sizing: border-box;
-  }
-
-  .test-progress-meta {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.35rem 0.5rem;
-    line-height: 1.35;
-  }
-
-  .test-progress-meta__saved {
-    font-size: 0.68rem;
-    color: var(--clr-primary);
-    font-weight: 600;
-    display: inline-flex;
-    align-items: center;
-    gap: 3px;
-    white-space: nowrap;
-  }
-
-  .test-take-wrap .katex-display {
-    overflow-x: auto;
-    overflow-y: hidden;
-    max-width: 100%;
-    -webkit-overflow-scrolling: touch;
-    padding-bottom: 0.15rem;
-  }
-
-  .test-take-wrap .question-rich-image,
-  .test-take-wrap .option-rich-image {
-    max-width: 100%;
-  }
-
-  .test-progress {
-    height: 6px;
-    background: var(--clr-surface-alt);
-    border-radius: var(--radius-full);
-    overflow: hidden;
-    margin-bottom: var(--space-md);
-  }
-
-  .test-progress-fill {
-    height: 100%;
-    background: var(--clr-primary);
-    border-radius: var(--radius-full);
-    transition: width 0.25s ease;
-  }
-
-  .test-progress-label {
-    font-size: 0.75rem;
-    font-weight: 700;
-    color: var(--clr-text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    margin-bottom: var(--space-sm);
-  }
-
-  .question-card {
-    background: var(--clr-surface);
-    border: 1px solid var(--clr-border);
-    border-radius: var(--radius-xl);
-    padding: var(--space-xl) var(--space-lg);
-    box-shadow: var(--shadow-md);
-  }
-
-  .option-list {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-sm);
-    margin-bottom: var(--space-xl);
-  }
-
-  .option-label {
-    display: flex;
-    align-items: flex-start;
-    gap: var(--space-md);
-    padding: var(--space-md) var(--space-lg);
-    min-height: 52px;
-    background: var(--clr-surface-alt);
-    border: 1.5px solid var(--clr-border);
-    border-radius: var(--radius-lg);
-    cursor: pointer;
-    font-size: 0.95rem;
-    transition: border-color var(--transition-fast), background var(--transition-fast);
-  }
-
-  .option-label:has(input:checked) {
-    border-color: var(--clr-primary);
-    background: rgba(13, 138, 78, 0.08);
-  }
-
-  .option-label input {
-    width: 18px;
-    height: 18px;
-    flex-shrink: 0;
-    accent-color: var(--clr-primary);
-  }
-
-  .text-answer {
-    width: 100%;
-    padding: var(--space-md) var(--space-lg);
-    min-height: 52px;
-    border: 1.5px solid var(--clr-border);
-    border-radius: var(--radius-lg);
-    font-family: var(--font-body);
-    font-size: 1rem;
-    margin-bottom: var(--space-xl);
-  }
-
-  .btn-next {
-    width: 100%;
-    justify-content: center;
-    padding: 0.95rem;
-    font-size: 1rem;
-    font-weight: 700;
-  }
-
-  .matching-hint {
-    font-size: 0.88rem;
-    color: var(--clr-text-muted);
-    margin: 0 0 var(--space-md);
+    color: var(--demo-muted);
+    margin: 0 0 0.85rem;
     line-height: 1.45;
   }
 
-  .matching-rows {
+  .exam-matching-rows {
     display: flex;
     flex-direction: column;
-    gap: var(--space-sm);
-    margin-bottom: var(--space-xl);
+    gap: 0.55rem;
+    margin-bottom: 1rem;
   }
 
-  .matching-row {
+  .exam-matching-row {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
-    gap: var(--space-sm);
+    gap: 0.55rem;
     align-items: center;
-    padding: var(--space-sm) var(--space-md);
-    background: var(--clr-surface-alt);
-    border: 1px solid var(--clr-border);
-    border-radius: var(--radius-md);
+    padding: 0.55rem 0.75rem;
+    background: var(--demo-surface-alt);
+    border: 1px solid var(--demo-border);
+    border-radius: 12px;
   }
 
-  .matching-row-label {
+  .exam-matching-row-label {
     font-size: 0.9rem;
     font-weight: 600;
     line-height: 1.4;
     word-break: break-word;
+    color: var(--demo-text);
   }
 
-  .matching-row select {
+  .exam-matching-row select {
     width: 100%;
     padding: 0.5rem 0.6rem;
-    border: 1.5px solid var(--clr-border);
-    border-radius: var(--radius-md);
+    border: 1px solid var(--demo-border);
+    border-radius: 10px;
     font-size: 0.9rem;
     font-family: var(--font-body);
-    background: var(--clr-surface);
-    color: var(--clr-text);
+    background: var(--demo-surface);
+    color: var(--demo-text);
   }
 
-  @media (max-width: 520px) {
-    .matching-row {
-      grid-template-columns: 1fr;
-    }
-  }
-
-  .result-card {
-    background: var(--clr-surface);
-    border: 1px solid var(--clr-border);
-    border-radius: var(--radius-xl);
-    padding: var(--space-2xl) var(--space-lg);
-    text-align: center;
-    box-shadow: var(--shadow-md);
-  }
-
-  .result-score {
-    font-family: var(--font-heading);
-    font-size: 3rem;
-    font-weight: 900;
-    color: var(--clr-primary);
-    line-height: 1;
-  }
-
-  .result-label {
-    font-size: 0.9rem;
-    color: var(--clr-text-muted);
-    margin-top: var(--space-sm);
-  }
-
-  .result-actions {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-sm);
-    margin-top: var(--space-xl);
-  }
-
-  .test-quit {
-    display: block;
-    text-align: center;
-    margin-top: var(--space-lg);
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: var(--clr-text-muted);
-    text-decoration: none;
-  }
-
-  .test-timer {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--space-md);
-    background: var(--clr-surface);
-    border: 1px solid var(--clr-border);
-    border-radius: var(--radius-lg);
-    padding: 0.65rem 0.9rem;
-    margin-bottom: var(--space-md);
-    box-shadow: var(--shadow-sm);
-  }
-
-  .test-timer-label {
-    font-size: 0.72rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    color: var(--clr-text-muted);
-  }
-
-  .test-timer-value {
-    font-family: var(--font-heading);
-    font-size: 1.15rem;
-    font-weight: 800;
-    color: var(--clr-primary);
-    font-variant-numeric: tabular-nums;
-  }
-
-  .test-timer.is-warning {
-    border-color: #fbbf24;
-    background: #fffbeb;
-  }
-
-  .test-timer.is-warning .test-timer-value {
-    color: #b45309;
-  }
-
-  .test-timer.is-critical {
-    border-color: #f87171;
-    background: #fef2f2;
-    animation: timer-pulse 1s ease-in-out infinite;
-  }
-
-  .test-timer.is-critical .test-timer-value {
-    color: #b91c1c;
-  }
-
-  @keyframes timer-pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.75; }
-  }
-
-  @media (max-width: 992px) {
-    body.exam-take-page .app-search-wrap {
-      display: none;
-    }
-
-    body.exam-take-page .app-header-brand {
-      display: flex;
-    }
-
-    .test-take-main {
-      padding: var(--space-md) var(--space-sm);
-    }
+  .exam-text-answer {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0.75rem 0.85rem;
+    min-height: 52px;
+    border: 1px solid var(--demo-border);
+    border-radius: 12px;
+    font-family: var(--font-body);
+    font-size: 1rem;
+    background: var(--demo-surface-alt);
+    color: var(--demo-text);
+    margin-bottom: 1rem;
   }
 
   @media (max-width: 640px) {
-    .test-take-main {
-      padding: var(--space-sm) 0.65rem;
-      padding-bottom: calc(var(--space-lg) + env(safe-area-inset-bottom, 0px));
+    .exam-matching-row {
+      grid-template-columns: 1fr;
     }
 
-    .question-card {
-      padding: var(--space-md) var(--space-sm);
-      border-radius: var(--radius-lg);
-      box-shadow: var(--shadow-sm);
-    }
-
-    .test-progress-label {
-      font-size: 0.7rem;
-    }
-
-    .test-progress-meta > span:first-child {
-      font-size: 0.78rem;
-      font-weight: 600;
-      flex: 1 1 100%;
-    }
-
-    .option-label {
-      padding: 0.65rem 0.75rem;
-      gap: var(--space-sm);
-      font-size: 0.9rem;
-      min-height: 48px;
-    }
-
-    .question-rich-text {
-      font-size: 1rem;
-    }
-
-    .text-answer {
+    .exam-text-answer {
       font-size: 16px;
-      padding: 0.65rem 0.75rem;
     }
+  }
 
-    .btn-next {
-      padding: 0.85rem;
-      font-size: 0.95rem;
-    }
-
-    .test-timer {
-      padding: 0.55rem 0.75rem;
-    }
-
-    .test-timer-value {
-      font-size: 1rem;
-    }
+  .exam-no-questions {
+    max-width: 28rem;
+    margin: 2rem auto;
+    text-align: center;
+    padding: 2rem 1.25rem;
+    background: var(--demo-surface);
+    border: 1px solid var(--demo-border);
+    border-radius: 16px;
   }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="test-take-wrap">
-  {% if no_questions %}
-    <div class="result-card">
-      <p class="result-label">This exam has no questions yet.</p>
-      <a href="{% url 'core:exams_list' %}" class="btn btn-secondary btn-next" style="margin-top: var(--space-lg);">Back to exams</a>
-    </div>
+{% if no_questions %}
+  <div class="exam-no-questions">
+    <p style="margin:0 0 1rem;color:var(--demo-muted);">This exam has no questions yet.</p>
+    <a href="{% url 'core:exams_list' %}" class="demo-btn demo-btn-primary">Back to exams</a>
+  </div>
+{% else %}
+  {% if has_time_limit %}
+  <form method="post" id="timeout-form" style="display:none;">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="time_up">
+  </form>
+  {% endif %}
 
-  {% else %}
-    {% if has_time_limit %}
-    <div class="test-timer" id="exam-timer" role="timer" aria-live="polite">
-      <span class="test-timer-label">Time remaining</span>
-      <span class="test-timer-value" id="exam-timer-value">--:--</span>
+  <header class="demo-quiz-header">
+    <div class="demo-quiz-header-inner">
+      <div>
+        <h1 class="demo-quiz-title">{{ quiz.title }}</h1>
+        <p class="demo-quiz-meta">
+          Question {{ question_number }} of {{ question_count }}
+          · {{ student.first_name }}
+        </p>
+      </div>
+      <div class="demo-quiz-header-stats">
+        {% if has_time_limit %}
+        <span class="demo-quiz-pill demo-exam-timer" id="exam-timer" role="timer" aria-live="polite">
+          <span style="font-weight:600;color:var(--demo-muted);margin-right:0.35rem;">Time</span>
+          <span id="exam-timer-value">--:--</span>
+        </span>
+        {% endif %}
+        <span class="demo-quiz-pill">{{ answered_count }}/{{ question_count }} answered</span>
+      </div>
     </div>
-    <form method="post" id="timeout-form" style="display:none;">
-      {% csrf_token %}
-      <input type="hidden" name="action" value="time_up">
-    </form>
-    {% endif %}
+    <div class="demo-quiz-progress" aria-hidden="true">
+      <div class="demo-quiz-progress-fill" style="width: {{ progress_pct }}%;"></div>
+    </div>
+  </header>
 
-    <div class="test-progress-label test-progress-meta">
-      <span>Question {{ question_number }} of {{ question_count }} · {{ student.first_name }}</span>
-      <span class="test-progress-meta__saved">
-        <span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:var(--clr-primary);"></span>
-        Saved
-      </span>
-    </div>
-    <div class="test-progress" aria-hidden="true">
-      <div class="test-progress-fill" style="width: {{ progress_pct }}%;"></div>
-    </div>
-
-    <div class="question-card">
-      {% include 'core/partials/question_prompt.html' with question=question hide_inline_audio=True %}
-      <div class="explanation-speech-controls" style="margin-bottom: var(--space-md);"
-        data-speech-region
-        {% if question.prompt_audio %}data-speech-audio-url="{{ question.prompt_audio.url }}"{% endif %}>
-        <span class="sr-only" data-speech-text>{{ question.quiz|striptags }}</span>
-        <button type="button" class="btn btn-secondary" data-speech-speak hidden
-          data-label-recorded="Play recording"
-          data-default-label="Listen with AI voice">Listen with AI voice</button>
-        <button type="button" class="btn btn-secondary" data-speech-stop hidden>Stop speaking</button>
-        <label class="speech-voice-choice" hidden>
-          Voice
-          <select data-speech-voice aria-label="Choose read-aloud voice"></select>
-        </label>
-        <span data-speech-status role="status" aria-live="polite"></span>
+  <div class="demo-quiz-layout">
+    <section class="demo-question-card">
+      <div class="demo-q-badges">
+        <span class="demo-q-badge demo-q-badge--num">Question {{ question_number }}</span>
+        <span class="demo-q-badge demo-q-badge--type">{{ question.quiz_type }}</span>
+        <span class="demo-q-badge demo-q-badge--mark">{{ question.max_marks }} mark{{ question.max_marks|pluralize }}</span>
       </div>
 
-      <form method="post">
-        {% csrf_token %}
+      <div data-speech-region class="demo-q-listen" style="margin-bottom:0.75rem;"
+        {% if question.prompt_audio %}data-speech-audio-url="{{ question.prompt_audio.url }}"{% endif %}>
+        <span class="sr-only" data-speech-text>{{ question.quiz|striptags }}</span>
+        <div class="explanation-speech-controls" style="display:flex;flex-wrap:wrap;align-items:center;gap:0.5rem;">
+          <button type="button" class="demo-btn demo-btn-outline" data-speech-speak hidden
+            data-label-recorded="Play recording" data-default-label="Listen with AI voice">Listen with AI voice</button>
+          <button type="button" class="demo-btn demo-btn-outline" data-speech-stop hidden>Stop</button>
+          <span data-speech-status role="status" aria-live="polite" style="font-size:0.8rem;color:var(--demo-muted);"></span>
+        </div>
+      </div>
 
-        {% if question.quiz_type == 'Matching' and matching_ui_mode == 'rows' %}
-          <p class="matching-hint">Match each item on the left to the correct option on the right.</p>
-          <div class="matching-rows">
-            {% for row in matching_rows %}
-            <div class="matching-row">
-              <span class="matching-row-label">{{ row.left }}</span>
-              <select name="matching_{{ forloop.counter0 }}" aria-label="Match for {{ row.left }}" required>
-                <option value="">Choose…</option>
-                {% for choice in matching_choices %}
-                <option value="{{ choice }}"
-                  {% if row.saved_right == choice %}selected{% endif %}>{{ choice }}</option>
-                {% endfor %}
-              </select>
-              <input type="hidden" name="matching_left_{{ forloop.counter0 }}" value="{{ row.left }}">
-            </div>
-            {% endfor %}
-          </div>
-        {% elif question.quiz_type == 'Matching' and matching_ui_mode == 'pick_option' %}
-          <p class="matching-hint">Choose the correct matching pair.</p>
-          <div class="option-list">
-            {% for option in matching_options %}
-            <label class="option-label">
-              <input type="radio" name="answer" value="{{ option.uuid }}"
-                {% if saved_answer == option.uuid|stringformat:"s" %}checked{% endif %} required>
-              {% include 'core/partials/option_content.html' with text=option.option image_url=option.option_image.url|default:'' %}
+      <div class="demo-q-text question-rich-body" data-math-content>{{ question.quiz|linebreaksbr }}</div>
+
+      {% if showing_feedback and feedback %}
+        {% if question.quiz_type == 'Multiple Choice' or question.quiz_type == 'True or False' %}
+          <div class="demo-options">
+            {% for opt in choice_options %}
+            <label class="demo-option
+              {% if allows_multiple_answers %}
+                {% if opt.uuid|stringformat:'s' in feedback.selected_option_uuids %}{% if opt.is_correct %} is-correct{% else %} is-wrong{% endif %}{% elif not feedback.is_correct and opt.is_correct %} is-correct{% endif %}
+              {% else %}
+                {% if feedback.selected_option_uuid == opt.uuid|stringformat:'s' %}{% if feedback.is_correct %}is-correct{% else %}is-wrong{% endif %}{% elif not feedback.is_correct and opt.is_correct %} is-correct{% endif %}
+              {% endif %}">
+              <span class="demo-option-letter">{{ forloop.counter0|add:65|stringformat:"c" }}</span>
+              <span class="demo-option-text" data-math-content>{% include 'core/partials/option_content.html' with text=opt.option image_url=opt.option_image.url|default:'' %}</span>
             </label>
             {% endfor %}
           </div>
-        {% elif question.quiz_type == 'Matching' and matching_ui_mode == 'text' %}
-          <p class="matching-hint">Type your matches (e.g. <code>1=A, 2=C</code>) or one answer per line.</p>
-          <textarea name="answer" class="text-answer" rows="4" placeholder="Your matches" required>{{ saved_answer }}</textarea>
-        {% elif question.quiz_type == 'Multiple Choice' or question.quiz_type == 'True or False' %}
-          {% if allows_multiple_answers %}
-          <p style="font-size: 0.88rem; color: var(--clr-text-muted); margin-bottom: var(--space-md);">
-            Select all answers that apply.
-          </p>
-          <div class="option-list">
-            {% for option in choice_options %}
-                <label class="option-label">
-                  <input type="checkbox" name="answer" value="{{ option.uuid }}"
-                    {% if option.uuid|stringformat:"s" in saved_answer_ids %}checked{% endif %}>
-                  {% if option.option_image %}
-                    {% include 'core/partials/option_content.html' with text=option.option image_url=option.option_image.url %}
-                  {% else %}
-                    {% include 'core/partials/option_content.html' with text=option.option image_url='' %}
-                  {% endif %}
-                </label>
-            {% endfor %}
-          </div>
-          {% else %}
-          <div class="option-list">
-            {% for option in choice_options %}
-                <label class="option-label">
-                  <input type="radio" name="answer" value="{{ option.uuid }}"
-                    {% if saved_answer == option.uuid|stringformat:"s" %}checked{% endif %} required>
-                  {% if option.option_image %}
-                    {% include 'core/partials/option_content.html' with text=option.option image_url=option.option_image.url %}
-                  {% else %}
-                    {% include 'core/partials/option_content.html' with text=option.option image_url='' %}
-                  {% endif %}
-                </label>
-            {% endfor %}
-          </div>
-          {% endif %}
-        {% else %}
-          <input type="text" name="answer" class="text-answer" placeholder="Your answer"
-            value="{{ saved_answer }}" required>
         {% endif %}
 
-        <button type="submit" class="btn btn-primary btn-next">
-          {% if is_last_question %}Finish{% else %}Next{% endif %}
-        </button>
-      </form>
-    </div>
+        <div class="demo-feedback {% if feedback.is_correct %}is-correct{% else %}is-wrong{% endif %}" id="demo-feedback-panel">
+          {% if feedback.is_correct %}
+            <div class="demo-feedback-title">Correct — well done!</div>
+            <p style="margin:0;color:var(--demo-muted);font-size:0.88rem;">You earned {{ feedback.marks_awarded }}/{{ feedback.max_marks }} mark{{ feedback.max_marks|pluralize }}.</p>
+          {% else %}
+            <div class="demo-feedback-title">Not quite — let's learn from this</div>
+            <p style="margin:0 0 0.35rem;color:var(--demo-muted);font-size:0.88rem;">
+              Your answer: <strong style="color:var(--demo-text);" data-math-content>{{ feedback.selected_text|default:"—" }}</strong>
+            </p>
+            {% if feedback.correct_text %}
+            <p style="margin:0;color:var(--demo-muted);font-size:0.88rem;">
+              Correct answer: <strong style="color:var(--demo-accent);" data-math-content>{{ feedback.correct_text }}</strong>
+            </p>
+            {% endif %}
+            {% if feedback.marks_awarded is not None %}
+            <p style="margin:0.5rem 0 0;color:var(--demo-muted);font-size:0.85rem;">Marks: {{ feedback.marks_awarded }}/{{ feedback.max_marks }}</p>
+            {% endif %}
+            <div class="demo-ai-box" id="demo-ai-box" data-question-uuid="{{ question_uuid }}" data-speech-region
+              {% if question.explanation_audio %}data-speech-audio-url="{{ question.explanation_audio.url }}"{% endif %}>
+              <div class="demo-ai-loading" id="demo-ai-loading" role="status" aria-live="polite">
+                <span class="demo-ai-spinner" aria-hidden="true"></span>
+                <span class="demo-ai-loading-copy">
+                  <span class="demo-ai-loading-title">
+                    AI tutor is thinking
+                    <span class="demo-ai-dots" aria-hidden="true"><span></span><span></span><span></span></span>
+                  </span>
+                  <span class="demo-ai-loading-sub">Preparing a short explanation for this answer</span>
+                </span>
+              </div>
+              <div class="demo-ai-text" id="demo-ai-text" data-speech-text data-math-content hidden></div>
+              <div class="demo-ai-text demo-ai-error" id="demo-ai-error" hidden style="color:#f87171;"></div>
+              <div class="explanation-speech-controls" style="display:flex;flex-wrap:wrap;align-items:center;gap:0.5rem;margin-top:0.5rem;">
+                <button type="button" class="demo-btn demo-btn-outline" data-speech-speak hidden
+                  data-label-recorded="Play recording" data-default-label="Listen with AI voice">Listen with AI voice</button>
+                <button type="button" class="demo-btn demo-btn-outline" data-speech-stop hidden>Stop speaking</button>
+                <label class="speech-voice-choice" hidden>
+                  Voice
+                  <select data-speech-voice aria-label="Choose explanation voice"></select>
+                </label>
+                <span data-speech-status role="status" aria-live="polite"></span>
+              </div>
+              <button type="button" class="demo-btn demo-btn-outline demo-ai-retry" id="demo-ai-retry" hidden style="margin-top:0.75rem;">Try again</button>
+            </div>
+          {% endif %}
+        </div>
 
-    <a href="{% url 'core:exams_list' %}" class="test-quit">Quit exam</a>
-  {% endif %}
-</div>
+        <form method="post" class="demo-q-actions" style="margin-top:1rem;">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="continue">
+          <a href="{% url 'core:exams_list' %}" class="demo-btn demo-btn-outline demo-q-quit">Quit</a>
+          <button type="submit" class="demo-btn demo-btn-primary">
+            {% if is_last_question %}Finish exam →{% else %}Next question →{% endif %}
+          </button>
+        </form>
 
+      {% else %}
+        <form method="post">
+          {% csrf_token %}
+
+          {% if question.quiz_type == 'Matching' and matching_ui_mode == 'rows' %}
+            <p class="exam-matching-hint">Match each item on the left to the correct option on the right.</p>
+            <div class="exam-matching-rows">
+              {% for row in matching_rows %}
+              <div class="exam-matching-row">
+                <span class="exam-matching-row-label">{{ row.left }}</span>
+                <select name="matching_{{ forloop.counter0 }}" aria-label="Match for {{ row.left }}" required>
+                  <option value="">Choose…</option>
+                  {% for choice in matching_choices %}
+                  <option value="{{ choice }}"
+                    {% if row.saved_right == choice %}selected{% endif %}>{{ choice }}</option>
+                  {% endfor %}
+                </select>
+                <input type="hidden" name="matching_left_{{ forloop.counter0 }}" value="{{ row.left }}">
+              </div>
+              {% endfor %}
+            </div>
+          {% elif question.quiz_type == 'Matching' and matching_ui_mode == 'pick_option' %}
+            <p class="exam-matching-hint">Choose the correct matching pair.</p>
+            <div class="demo-options">
+              {% for option in matching_options %}
+              <label class="demo-option">
+                <input type="radio" name="answer" value="{{ option.uuid }}"
+                  {% if saved_answer == option.uuid|stringformat:"s" %}checked{% endif %} required>
+                <span class="demo-option-letter">{{ forloop.counter0|add:65|stringformat:"c" }}</span>
+                <span class="demo-option-text">{% include 'core/partials/option_content.html' with text=option.option image_url=option.option_image.url|default:'' %}</span>
+              </label>
+              {% endfor %}
+            </div>
+          {% elif question.quiz_type == 'Matching' and matching_ui_mode == 'text' %}
+            <p class="exam-matching-hint">Type your matches (e.g. <code>1=A, 2=C</code>) or one answer per line.</p>
+            <textarea name="answer" class="exam-text-answer" rows="4" placeholder="Your matches" required>{{ saved_answer }}</textarea>
+          {% elif question.quiz_type == 'Multiple Choice' or question.quiz_type == 'True or False' %}
+            {% if allows_multiple_answers %}
+            <p class="exam-matching-hint">Select all answers that apply.</p>
+            <div class="demo-options">
+              {% for option in choice_options %}
+              <label class="demo-option">
+                <input type="checkbox" name="answer" value="{{ option.uuid }}"
+                  {% if option.uuid|stringformat:"s" in saved_answer_ids %}checked{% endif %}>
+                <span class="demo-option-letter">{{ forloop.counter0|add:65|stringformat:"c" }}</span>
+                <span class="demo-option-text">{% include 'core/partials/option_content.html' with text=option.option image_url=option.option_image.url|default:'' %}</span>
+              </label>
+              {% endfor %}
+            </div>
+            {% else %}
+            <div class="demo-options">
+              {% for option in choice_options %}
+              <label class="demo-option">
+                <input type="radio" name="answer" value="{{ option.uuid }}"
+                  {% if saved_answer == option.uuid|stringformat:"s" %}checked{% endif %} required>
+                <span class="demo-option-letter">{{ forloop.counter0|add:65|stringformat:"c" }}</span>
+                <span class="demo-option-text">{% include 'core/partials/option_content.html' with text=option.option image_url=option.option_image.url|default:'' %}</span>
+              </label>
+              {% endfor %}
+            </div>
+            {% endif %}
+          {% else %}
+            <input type="text" name="answer" class="exam-text-answer" placeholder="Your answer"
+              value="{{ saved_answer }}" required>
+          {% endif %}
+
+          <div class="demo-q-actions">
+            <a href="{% url 'core:exams_list' %}" class="demo-btn demo-btn-outline demo-q-quit">Quit</a>
+            <button type="submit" class="demo-btn demo-btn-primary">
+              {% if is_last_question %}Submit &amp; finish{% else %}Submit answer ✓{% endif %}
+            </button>
+          </div>
+        </form>
+      {% endif %}
+    </section>
+
+    <aside>
+      <div class="demo-sidebar-card">
+        <div class="demo-sidebar-title">Question Navigator</div>
+        <div class="demo-nav-grid">
+          {% for state in nav_states %}
+            <div class="demo-nav-btn is-{{ state }}">{{ forloop.counter }}</div>
+          {% endfor %}
+        </div>
+        <div class="demo-stat-row">
+          <div class="is-green"><strong>{{ correct_count }}</strong><span>Correct</span></div>
+          <div class="is-red"><strong>{{ incorrect_count }}</strong><span>Incorrect</span></div>
+          <div class="is-muted"><strong>{{ unanswered_count }}</strong><span>Left</span></div>
+        </div>
+      </div>
+    </aside>
+  </div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
 {% load static %}
 {% include 'core/partials/openai_tts_config.html' %}
 <script src="{% static 'js/explanation-speech.js' %}" defer></script>
@@ -528,6 +364,7 @@
 
   function updateTimer() {
     display.textContent = formatTime(Math.max(0, remaining));
+    if (!timerBox) return;
     timerBox.classList.remove('is-warning', 'is-critical');
     if (remaining <= 60) timerBox.classList.add('is-critical');
     else if (remaining <= 300) timerBox.classList.add('is-warning');
@@ -547,6 +384,87 @@
       timeoutForm.submit();
     }
   }, 1000);
+})();
+</script>
+{% endif %}
+
+{% if showing_feedback and feedback and feedback.is_correct %}
+<script src="{% static 'js/celebration-confetti.js' %}"></script>
+<script>
+(function () {
+  if (!window.SomaConfetti) return;
+  var anchor = document.getElementById('demo-feedback-panel');
+  requestAnimationFrame(function () {
+    window.SomaConfetti.celebrate({ anchor: anchor, particles: 160 });
+  });
+})();
+</script>
+{% endif %}
+
+{% if showing_feedback and feedback and not feedback.is_correct %}
+<script>
+(function () {
+  var box = document.getElementById('demo-ai-box');
+  if (!box) return;
+  var loading = document.getElementById('demo-ai-loading');
+  var textEl = document.getElementById('demo-ai-text');
+  var errEl = document.getElementById('demo-ai-error');
+  var retryBtn = document.getElementById('demo-ai-retry');
+  var qid = box.dataset.questionUuid;
+  var attemptId = '{{ attempt.uuid }}';
+  var explainUrl = '{% url "core:ai_explain_answer" %}';
+  var csrfToken = '{{ csrf_token }}';
+
+  function loadExplanation() {
+    loading.hidden = false;
+    textEl.hidden = true;
+    errEl.hidden = true;
+    if (retryBtn) retryBtn.hidden = true;
+
+    fetch(explainUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': csrfToken
+      },
+      body: JSON.stringify({ attempt_uuid: attemptId, question_uuid: qid })
+    })
+      .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
+      .then(function (result) {
+        loading.hidden = true;
+        if (!result.ok) {
+          errEl.textContent = result.data.error || 'Could not load AI explanation.';
+          errEl.hidden = false;
+          if (retryBtn) retryBtn.hidden = false;
+          return;
+        }
+        textEl.textContent = result.data.explanation || 'No explanation returned.';
+        textEl.hidden = false;
+        if (window.SomaSpeechRefresh) {
+          window.SomaSpeechRefresh(textEl);
+        }
+        if (window.refreshExplanationMath) {
+          window.refreshExplanationMath(textEl);
+        } else if (window.whenQuestionMathReady) {
+          window.whenQuestionMathReady(function () {
+            if (window.refreshExplanationMath) {
+              window.refreshExplanationMath(textEl);
+            }
+          });
+        }
+      })
+      .catch(function () {
+        loading.hidden = true;
+        errEl.textContent = 'Could not reach the tutor. Please try again.';
+        errEl.hidden = false;
+        if (retryBtn) retryBtn.hidden = false;
+      });
+  }
+
+  if (retryBtn) {
+    retryBtn.addEventListener('click', loadExplanation);
+  }
+  loadExplanation();
 })();
 </script>
 {% endif %}

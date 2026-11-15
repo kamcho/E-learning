@@ -322,6 +322,70 @@ def _sync_attempt_answers(attempt, request):
     attempt.save(update_fields=['answers', 'updated_at'])
 
 
+def _exam_take_feedback_key(attempt_uuid):
+    return f'exam_take_feedback_{attempt_uuid}'
+
+
+def _build_take_answer_feedback(question, response):
+    """Session-serializable feedback snapshot after each answer submission."""
+    from core.scoring import parse_selected_option_ids, question_max_marks
+
+    feedback = {
+        'question_uuid': str(question.uuid),
+        'is_correct': response.is_correct,
+        'marks_awarded': response.marks_awarded if response.marks_awarded is not None else 0,
+        'max_marks': response.max_marks or question_max_marks(question),
+        'selected_option_uuid': '',
+        'selected_option_uuids': [],
+        'selected_text': '—',
+        'correct_text': '',
+    }
+    if response.selected_option_id:
+        option = response.selected_option
+        feedback['selected_option_uuid'] = str(option.uuid)
+        feedback['selected_text'] = option.option or ''
+    elif response.text_answer and question.quiz_type in ('Multiple Choice', 'True or False'):
+        selected_ids = parse_selected_option_ids(response.text_answer)
+        feedback['selected_option_uuids'] = selected_ids
+        if selected_ids:
+            options = list(
+                question.options.filter(uuid__in=selected_ids, is_active=True).order_by('created_at')
+            )
+            feedback['selected_text'] = (
+                ', '.join(o.option for o in options if o.option) or response.text_answer
+            )
+        else:
+            feedback['selected_text'] = response.text_answer
+    elif response.text_answer:
+        feedback['selected_text'] = response.text_answer
+
+    correct_options = question.options.filter(is_active=True, is_correct=True).order_by('created_at')
+    if correct_options.exists():
+        feedback['correct_text'] = ', '.join(o.option for o in correct_options if o.option)
+
+    return feedback
+
+
+def _build_exam_take_nav_states(questions, attempt, display_index, showing_feedback):
+    responses = {str(r.question_id): r for r in attempt.responses.all()}
+    states = []
+    for index, question in enumerate(questions):
+        q_uuid = str(question.uuid)
+        response = responses.get(q_uuid)
+        if response is not None and response.is_correct is True:
+            state = 'correct'
+        elif response is not None and response.is_correct is False:
+            state = 'incorrect'
+        elif response is not None:
+            state = 'answered'
+        elif index == display_index and not showing_feedback:
+            state = 'current'
+        else:
+            state = 'unanswered'
+        states.append(state)
+    return states
+
+
 def _load_attempt_answers(request, attempt):
     """
     Load in-progress answers for the current session.
@@ -528,11 +592,23 @@ def test_take_view(request, quiz_uuid, student_uuid):
             request, attempt, student, quiz, saved_answers, take_url_kwargs, timed_out=True,
         )
 
+    feedback_key = _exam_take_feedback_key(attempt.uuid)
+
     if request.method == 'POST':
         if request.POST.get('action') == 'time_up':
             return _complete_attempt(
                 request, attempt, student, quiz, saved_answers, take_url_kwargs, timed_out=True,
             )
+
+        if request.POST.get('action') == 'continue':
+            request.session.pop(feedback_key, None)
+            request.session.modified = True
+            if get_answered_count(attempt) >= question_count:
+                saved_answers = _get_attempt_answers(request, attempt.uuid)
+                return _complete_attempt(
+                    request, attempt, student, quiz, saved_answers, take_url_kwargs,
+                )
+            return redirect('core:test_take', **take_url_kwargs)
 
         if current_index >= question_count:
             return redirect('core:test_take', **take_url_kwargs)
@@ -564,15 +640,11 @@ def test_take_view(request, quiz_uuid, student_uuid):
                 return redirect('core:test_take', **take_url_kwargs)
 
         _save_attempt_answer(request, attempt.uuid, question.uuid, answer)
-        upsert_response(attempt, question, answer)
-        saved_answers = _get_attempt_answers(request, attempt.uuid)
+        response = upsert_response(attempt, question, answer)
         _sync_attempt_answers(attempt, request)
 
-        if get_answered_count(attempt) >= question_count:
-            return _complete_attempt(
-                request, attempt, student, quiz, saved_answers, take_url_kwargs,
-            )
-
+        request.session[feedback_key] = _build_take_answer_feedback(question, response)
+        request.session.modified = True
         return redirect('core:test_take', **take_url_kwargs)
 
     if not questions:
@@ -588,19 +660,35 @@ def test_take_view(request, quiz_uuid, student_uuid):
             },
         )
 
-    if current_index >= question_count:
+    feedback = request.session.get(feedback_key)
+    showing_feedback = bool(feedback)
+    display_index = current_index
+    if showing_feedback:
+        try:
+            display_index = next(
+                i for i, q in enumerate(questions)
+                if str(q.uuid) == str(feedback.get('question_uuid', ''))
+            )
+        except StopIteration:
+            request.session.pop(feedback_key, None)
+            request.session.modified = True
+            showing_feedback = False
+            feedback = None
+
+    if not showing_feedback and current_index >= question_count:
         return _complete_attempt(
             request, attempt, student, quiz, saved_answers, take_url_kwargs,
         )
 
-    current_question = questions[current_index]
+    current_question = questions[display_index]
     saved_answer = saved_answers.get(str(current_question.uuid), '')
     allows_multiple_answers = question_has_multiple_correct_answers(current_question)
     saved_answer_ids = (
         parse_selected_option_ids(saved_answer)
         if allows_multiple_answers else set()
     )
-    progress_pct = int(((current_index + 1) / question_count) * 100)
+    answered_count = get_answered_count(attempt)
+    progress_pct = int(((display_index + 1) / question_count) * 100)
 
     matching_rows = []
     matching_choices = []
@@ -636,6 +724,13 @@ def test_take_view(request, quiz_uuid, student_uuid):
 
     choice_options = options_for_attempt(attempt, current_question)
 
+    nav_states = _build_exam_take_nav_states(
+        questions, attempt, display_index, showing_feedback,
+    )
+    correct_count = attempt.responses.filter(is_correct=True).count()
+    incorrect_count = attempt.responses.filter(is_correct=False).count()
+    unanswered_count = max(0, question_count - answered_count)
+
     return render(
         request,
         'core/test_take.html',
@@ -645,13 +740,13 @@ def test_take_view(request, quiz_uuid, student_uuid):
             'student': student,
             'question': current_question,
             'choice_options': choice_options,
-            'question_number': current_index + 1,
+            'question_number': display_index + 1,
             'question_count': question_count,
             'saved_answer': saved_answer,
             'saved_answer_ids': saved_answer_ids,
             'allows_multiple_answers': allows_multiple_answers,
             'progress_pct': progress_pct,
-            'is_last_question': current_index + 1 == question_count,
+            'is_last_question': display_index + 1 == question_count,
             'has_time_limit': has_time_limit,
             'time_remaining_seconds': time_remaining_seconds,
             'time_limit_minutes': quiz.time_limit_minutes,
@@ -660,6 +755,14 @@ def test_take_view(request, quiz_uuid, student_uuid):
             'matching_choices': matching_choices,
             'saved_matching': saved_matching,
             'matching_options': matching_options,
+            'showing_feedback': showing_feedback,
+            'feedback': feedback if showing_feedback else None,
+            'nav_states': nav_states,
+            'answered_count': answered_count,
+            'correct_count': correct_count,
+            'incorrect_count': incorrect_count,
+            'unanswered_count': unanswered_count,
+            'question_uuid': str(current_question.uuid),
         },
     )
 
