@@ -226,6 +226,8 @@
     fill: none;
     stroke-width: 12;
     stroke-linecap: round;
+    stroke-dasharray: 100;
+    stroke-dashoffset: var(--score-ring-offset, 0);
   }
 
   .score-ring:hover {
@@ -295,7 +297,7 @@
     align-items: center;
     justify-content: center;
     padding: 0.8rem var(--space-lg);
-    border-radius: var(--radius-full);
+    border-radius: var(--radius-sm);
     font-family: var(--font-heading);
     font-weight: 700;
     font-size: 0.9rem;
@@ -593,7 +595,7 @@
     gap: 0.4rem;
     padding: 0.5rem 1rem;
     border: 1px solid rgba(13, 138, 78, 0.25);
-    border-radius: var(--radius-full);
+    border-radius: var(--radius-sm);
     background: rgba(13, 138, 78, 0.06);
     color: var(--clr-primary);
     font-size: 0.82rem;
@@ -626,6 +628,10 @@
   }
 
   .ai-explanation-box.visible { display: block; }
+
+  body.exam-result-page .explanation-speech-controls .btn {
+    border-radius: var(--radius-sm);
+  }
 
   .explanation-speech-controls {
     display: flex;
@@ -763,12 +769,11 @@
     <!-- Score Ring Widget -->
     <div class="score-ring-wrap">
       {% if attempt.is_complete %}
-        <div class="score-ring" style="--score-ring-color: {% if attempt.score >= 70 %}var(--clr-primary){% elif attempt.score >= 40 %}var(--clr-accent){% else %}var(--clr-danger){% endif %};">
+        <div class="score-ring" style="--score-ring-color: {% if attempt.score >= 70 %}var(--clr-primary){% elif attempt.score >= 40 %}var(--clr-accent){% else %}var(--clr-danger){% endif %}; --score-ring-offset: calc(100 - {{ attempt.score }});">
           <svg class="score-ring-svg" viewBox="0 0 120 120" aria-hidden="true">
-            <circle class="score-ring-track" cx="60" cy="60" r="50" />
-            <circle class="score-ring-arc" cx="60" cy="60" r="50"
-              stroke="var(--score-ring-color)"
-              stroke-dasharray="{% widthratio 314 attempt.score 100 %} 314.16" />
+            <circle class="score-ring-track" cx="60" cy="60" r="50" pathLength="100" />
+            <circle class="score-ring-arc" cx="60" cy="60" r="50" pathLength="100"
+              stroke="var(--score-ring-color)" />
           </svg>
           <div class="score-ring-inner">
             <span class="score-ring-pct" style="color: var(--score-ring-color);">
@@ -778,12 +783,11 @@
           </div>
         </div>
       {% else %}
-        <div class="score-ring">
+        <div class="score-ring" style="--score-ring-offset: calc(100 - {% widthratio answered_count question_count 100 %});">
           <svg class="score-ring-svg" viewBox="0 0 120 120" aria-hidden="true">
-            <circle class="score-ring-track" cx="60" cy="60" r="50" />
-            <circle class="score-ring-arc" cx="60" cy="60" r="50"
-              stroke="var(--clr-accent)"
-              stroke-dasharray="{% widthratio 314 answered_count question_count %} 314.16" />
+            <circle class="score-ring-track" cx="60" cy="60" r="50" pathLength="100" />
+            <circle class="score-ring-arc" cx="60" cy="60" r="50" pathLength="100"
+              stroke="var(--clr-accent)" />
           </svg>
           <div class="score-ring-inner">
             <span class="score-ring-pct" style="color: var(--clr-accent); font-size: 1.8rem;">
