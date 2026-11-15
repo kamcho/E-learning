@@ -367,9 +367,47 @@
     }
   }
 
-  .question-card:hover {
+  .question-card:not(.is-correct):not(.is-wrong):hover {
     border-color: rgba(13, 138, 78, 0.2);
     box-shadow: var(--shadow-md);
+  }
+
+  .question-card.is-correct {
+    border-color: rgba(13, 138, 78, 0.55);
+    background: linear-gradient(145deg, rgba(13, 138, 78, 0.09) 0%, var(--clr-surface) 58%);
+    box-shadow:
+      var(--shadow-sm),
+      0 0 0 1px rgba(13, 138, 78, 0.3),
+      0 0 24px rgba(13, 138, 78, 0.26),
+      0 0 48px rgba(13, 138, 78, 0.1);
+  }
+
+  .question-card.is-correct:hover {
+    border-color: rgba(13, 138, 78, 0.7);
+    box-shadow:
+      var(--shadow-md),
+      0 0 0 1px rgba(13, 138, 78, 0.38),
+      0 0 28px rgba(13, 138, 78, 0.32),
+      0 0 52px rgba(13, 138, 78, 0.14);
+  }
+
+  .question-card.is-wrong {
+    border-color: rgba(193, 39, 45, 0.62);
+    background: linear-gradient(145deg, rgba(193, 39, 45, 0.08) 0%, var(--clr-surface) 58%);
+    box-shadow:
+      var(--shadow-sm),
+      0 0 0 1px rgba(193, 39, 45, 0.35),
+      0 0 24px rgba(239, 68, 68, 0.3),
+      0 0 48px rgba(220, 38, 38, 0.12);
+  }
+
+  .question-card.is-wrong:hover {
+    border-color: rgba(193, 39, 45, 0.78);
+    box-shadow:
+      var(--shadow-md),
+      0 0 0 1px rgba(193, 39, 45, 0.45),
+      0 0 28px rgba(239, 68, 68, 0.38),
+      0 0 52px rgba(220, 38, 38, 0.16);
   }
 
   .question-header {
@@ -849,7 +887,7 @@
     </div>
 
     {% for row in breakdown %}
-      <div class="question-card">
+      <div class="question-card{% if row.answered and row.is_correct %} is-correct{% elif row.answered and row.is_correct == False %} is-wrong{% endif %}">
         <div class="question-header">
           <span class="question-number-badge">Question {{ row.number }}</span>
           {% if row.answered %}
