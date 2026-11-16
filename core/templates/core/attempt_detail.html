@@ -1092,6 +1092,10 @@
         if (!res.ok) {
           throw new Error(data.error || 'Could not get explanation.');
         }
+        if (data.explanation_uuid) {
+          box.dataset.speechExplanationUuid = data.explanation_uuid;
+          box.setAttribute('data-speech-use-tts', '1');
+        }
         textEl.textContent = data.explanation;
         if (window.refreshExplanationMath) {
           window.refreshExplanationMath(textEl);

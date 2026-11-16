@@ -32,6 +32,13 @@ class Question(models.Model):
         null=True,
         help_text='Optional audio narration (MP3, WAV, OGG).',
     )
+    tts_prompt_audio = models.FileField(
+        upload_to='questions/tts/%Y/%m/',
+        blank=True,
+        help_text='Generated read-aloud audio stored for reuse when no prompt recording is uploaded.',
+    )
+    tts_prompt_voice = models.CharField(max_length=16, blank=True)
+    tts_prompt_text_hash = models.CharField(max_length=64, blank=True)
     explanation_audio=models.FileField(
         upload_to='questions/explanations/%Y/%m/',
         blank=True,
@@ -218,6 +225,12 @@ class AIExplanation(models.Model):
     correct_answer = models.TextField(blank=True)
     prompt_snapshot = models.JSONField(default=dict, blank=True)
     model = models.CharField(max_length=80, blank=True)
+    tts_audio = models.FileField(
+        upload_to='ai/explanations/audio/%Y/%m/',
+        blank=True,
+        help_text='Generated speech file saved in media storage and linked to this shared explanation.',
+    )
+    tts_voice = models.CharField(max_length=16, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

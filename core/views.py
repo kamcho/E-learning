@@ -1,5 +1,8 @@
+import hashlib
 import json
 import logging
+import random
+from uuid import UUID
 from urllib.parse import quote
 
 logger = logging.getLogger(__name__)
@@ -1075,22 +1078,62 @@ def ai_explain_answer_view(request):
     json_error='Read-aloud limit reached for your account. Please try again later.',
 )
 def openai_tts_view(request):
-    """Stream OpenAI speech for exam explanations and questions (not persisted)."""
+    """Serve saved explanation audio or synthesize speech for a new explanation."""
     from core.ai.exceptions import AIConfigurationError, AIServiceError, AITaskError
     from core.ai.tts import synthesize_speech
+    from django.core.files.base import ContentFile
+    from django.utils.html import strip_tags
+    from .models import AIExplanation, Question
 
     try:
         payload = json.loads(request.body.decode('utf-8'))
     except (json.JSONDecodeError, UnicodeDecodeError):
         return JsonResponse({'error': 'Invalid JSON body.'}, status=400)
 
-    text = str(payload.get('text', '')).strip()
+    explanation = None
+    question = None
+    explanation_id = str(payload.get('explanation_uuid', '')).strip()
+    question_id = str(payload.get('question_uuid', '')).strip()
+    if explanation_id:
+        try:
+            explanation_uuid = UUID(explanation_id)
+        except (ValueError, TypeError, AttributeError):
+            return JsonResponse({'error': 'Invalid explanation ID.'}, status=400)
+        explanation = get_object_or_404(AIExplanation, uuid=explanation_uuid)
+        if explanation.tts_audio and explanation.tts_audio.storage.exists(explanation.tts_audio.name):
+            with explanation.tts_audio.open('rb') as saved_audio:
+                return HttpResponse(saved_audio.read(), content_type='audio/mpeg')
+        if explanation.tts_audio:
+            explanation.tts_audio = ''
+            explanation.save(update_fields=['tts_audio'])
+        text = explanation.explanation.strip()
+    elif question_id:
+        try:
+            question_uuid = UUID(question_id)
+        except (ValueError, TypeError, AttributeError):
+            return JsonResponse({'error': 'Invalid question ID.'}, status=400)
+        question = get_object_or_404(Question, uuid=question_uuid)
+        text = strip_tags(question.quiz or '').strip()
+        text_hash = hashlib.sha256(text.encode('utf-8')).hexdigest()
+        if (
+            question.tts_prompt_audio
+            and question.tts_prompt_text_hash == text_hash
+            and question.tts_prompt_audio.storage.exists(question.tts_prompt_audio.name)
+        ):
+            with question.tts_prompt_audio.open('rb') as saved_audio:
+                return HttpResponse(saved_audio.read(), content_type='audio/mpeg')
+    else:
+        text = str(payload.get('text', '')).strip()
+        if not text:
+            return JsonResponse({'error': 'text is required.'}, status=400)
     if not text:
-        return JsonResponse({'error': 'text is required.'}, status=400)
+        return JsonResponse({'error': 'There is no question or explanation text to read aloud.'}, status=400)
 
     voice = payload.get('voice')
     if voice is not None:
         voice = str(voice).strip().lower() or None
+    if explanation or question:
+        voice = voice if voice in ('marin', 'sage') else random.choice(('marin', 'sage'))
 
     try:
         audio = synthesize_speech(text, voice=voice)
@@ -1106,6 +1149,29 @@ def openai_tts_view(request):
             {'error': 'Could not generate speech right now. Please try again.'},
             status=500,
         )
+
+    if explanation:
+        explanation.tts_audio.save(
+            f'{explanation.uuid}.mp3',
+            ContentFile(audio),
+            save=False,
+        )
+        explanation.tts_voice = voice
+        explanation.save(update_fields=['tts_audio', 'tts_voice'])
+    elif question:
+        previous_audio_name = question.tts_prompt_audio.name if question.tts_prompt_audio else ''
+        question.tts_prompt_audio.save(
+            f'{question.uuid}_{text_hash[:12]}.mp3',
+            ContentFile(audio),
+            save=False,
+        )
+        question.tts_prompt_voice = voice
+        question.tts_prompt_text_hash = text_hash
+        question.save(update_fields=[
+            'tts_prompt_audio', 'tts_prompt_voice', 'tts_prompt_text_hash',
+        ])
+        if previous_audio_name and previous_audio_name != question.tts_prompt_audio.name:
+            question.tts_prompt_audio.storage.delete(previous_audio_name)
 
     return HttpResponse(audio, content_type='audio/mpeg')
 

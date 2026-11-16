@@ -125,6 +125,10 @@
             btn.textContent = 'Try again';
             return;
           }
+          if (result.data.explanation_uuid) {
+            wrap.dataset.speechExplanationUuid = result.data.explanation_uuid;
+            wrap.setAttribute('data-speech-use-tts', '1');
+          }
           textEl.textContent = result.data.explanation || '';
           textEl.hidden = false;
           if (window.SomaSpeechRevealListen) {

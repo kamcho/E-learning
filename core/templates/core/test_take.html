@@ -161,6 +161,7 @@
       </div>
 
       <div data-speech-region data-speech-auto-show="1" class="demo-q-listen" style="margin-bottom:0.75rem;"
+        data-speech-question-uuid="{{ question.uuid }}"
         {% if question.prompt_audio %}data-speech-audio-url="{{ question.prompt_audio.url }}"{% endif %}>
         <span class="sr-only" data-speech-text>{{ question.quiz|striptags }}</span>
         <div class="explanation-speech-controls" style="margin-top:0.5rem;">
@@ -434,6 +435,10 @@
           errEl.hidden = false;
           if (retryBtn) retryBtn.hidden = false;
           return;
+        }
+        if (result.data.explanation_uuid) {
+          box.dataset.speechExplanationUuid = result.data.explanation_uuid;
+          box.setAttribute('data-speech-use-tts', '1');
         }
         textEl.textContent = result.data.explanation || 'No explanation returned.';
         textEl.hidden = false;

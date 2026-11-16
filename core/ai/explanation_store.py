@@ -40,6 +40,8 @@ def explanation_response(record):
         'explanation': record.explanation,
         'correct_answer': record.correct_answer,
         'learner_was_correct': learner_was_correct,
+        'explanation_uuid': str(record.uuid),
+        'audio_available': bool(record.tts_audio),
         'from_database': True,
     }
 
@@ -60,4 +62,7 @@ def save_shared_explanation(
             'model': getattr(settings, 'OPENAI_MODEL', ''),
         },
     )
-    return result if created else explanation_response(record)
+    response = result.copy() if created else explanation_response(record)
+    response['explanation_uuid'] = str(record.uuid)
+    response['audio_available'] = bool(record.tts_audio)
+    return response

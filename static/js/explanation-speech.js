@@ -542,7 +542,14 @@
     return wireAudioElement(region, activeAudio);
   }
 
-  function requestOpenAISpeech(plainText, voiceName, signal) {
+  function requestOpenAISpeech(region, plainText, voiceName, signal) {
+    var explanationUuid = region && region.dataset.speechExplanationUuid;
+    var questionUuid = region && region.dataset.speechQuestionUuid;
+    var payload = explanationUuid
+      ? { explanation_uuid: explanationUuid, voice: voiceName || undefined }
+      : questionUuid
+        ? { question_uuid: questionUuid, voice: voiceName || undefined }
+        : { text: plainText, voice: voiceName || undefined };
     return fetch(openaiCfg.url, {
       method: 'POST',
       headers: {
@@ -551,7 +558,7 @@
       },
       credentials: 'same-origin',
       signal: signal,
-      body: JSON.stringify({ text: plainText, voice: voiceName || undefined }),
+      body: JSON.stringify(payload),
     }).then(function (res) {
       if (!res.ok) {
         return res.json().catch(function () { return {}; }).then(function (data) {
@@ -568,7 +575,7 @@
       activeFetchAbort = new AbortController();
       var signal = activeFetchAbort.signal;
       var voiceName = pickRandomOpenAIVoice();
-      return requestOpenAISpeech(plainText, voiceName, signal)
+      return requestOpenAISpeech(region, plainText, voiceName, signal)
         .then(function (blob) {
           activeFetchAbort = null;
           if (activeRegion !== region) return;

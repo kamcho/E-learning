@@ -9,14 +9,22 @@ class OptionInline(admin.TabularInline):
 
 @admin.register(Question)
 class QuestionAdmin(admin.ModelAdmin):
-    list_display = ('quiz', 'sub_strand', 'difficulty', 'quiz_type', 'created_by', 'has_prompt_image', 'is_active')
+    list_display = (
+        'quiz', 'sub_strand', 'difficulty', 'quiz_type', 'created_by',
+        'has_prompt_image', 'has_tts_prompt_audio', 'is_active',
+    )
     list_filter = ('difficulty', 'quiz_type', 'is_active', 'sub_strand', 'created_by')
     search_fields = ('quiz', 'image_alt_text')
+    readonly_fields = ('tts_prompt_audio', 'tts_prompt_voice', 'tts_prompt_text_hash')
     inlines = [OptionInline]
 
     @admin.display(boolean=True, description='Image')
     def has_prompt_image(self, obj):
         return bool(obj.prompt_image)
+
+    @admin.display(boolean=True, description='Generated read-aloud')
+    def has_tts_prompt_audio(self, obj):
+        return bool(obj.tts_prompt_audio)
 
 
 @admin.register(Option)
@@ -66,12 +74,12 @@ class AttemptResponseAdmin(admin.ModelAdmin):
 
 @admin.register(AIExplanation)
 class AIExplanationAdmin(admin.ModelAdmin):
-    list_display = ('created_at', 'question', 'selected_option', 'selected_answer', 'model')
-    list_filter = ('model', 'created_at')
+    list_display = ('created_at', 'question', 'selected_option', 'selected_answer', 'tts_voice', 'model')
+    list_filter = ('model', 'tts_voice', 'created_at')
     search_fields = ('explanation', 'selected_answer', 'lookup_key', 'question__quiz')
     readonly_fields = (
         'uuid', 'question', 'lookup_key', 'selected_option', 'selected_answer',
-        'explanation', 'correct_answer',
+        'explanation', 'correct_answer', 'tts_audio', 'tts_voice',
         'prompt_snapshot', 'model', 'created_at',
     )
     def has_add_permission(self, request):
