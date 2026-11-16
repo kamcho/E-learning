@@ -43,6 +43,7 @@
     <div data-speech-region data-speech-auto-show="1" class="demo-q-listen" style="margin-bottom:0.75rem;"
       data-speech-question-uuid="{{ question.uuid }}"
       data-speech-audio-available="{{ question.tts_prompt_audio|yesno:'true,false' }}"
+      {% if question.current_tts_prompt_audio_url %}data-speech-tts-audio-url="{{ question.current_tts_prompt_audio_url }}"{% endif %}
       {% if question.prompt_audio %}data-speech-audio-url="{{ question.prompt_audio.url }}"{% endif %}>
       <span class="sr-only" data-speech-text>{{ question.quiz|striptags }}</span>
       <div class="explanation-speech-controls" style="margin-top:0.5rem;">
@@ -217,6 +218,7 @@
         if (result.data.explanation_uuid) {
           box.dataset.speechExplanationUuid = result.data.explanation_uuid;
           box.dataset.speechAudioAvailable = String(result.data.audio_available === true);
+          if (result.data.tts_audio_url) box.dataset.speechTtsAudioUrl = result.data.tts_audio_url;
           box.setAttribute('data-speech-use-tts', '1');
         }
         textEl.textContent = result.data.explanation || 'No explanation returned.';

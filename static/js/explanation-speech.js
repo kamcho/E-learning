@@ -451,33 +451,39 @@
     }
   }
 
-  function wireAudioElement(region, audioEl) {
+  function wireAudioElement(region, audioEl, onFailure) {
+    var failed = false;
+    function handleFailure() {
+      if (failed) return;
+      failed = true;
+      finishPlayback(region, 'Could not play audio.');
+      activeAudio = null;
+      revokeObjectUrl();
+      if (onFailure) {
+        activeRegion = region;
+        setButtonLoading(region, true);
+        onFailure();
+      }
+    }
+
     audioEl.onended = function () {
       finishPlayback(region, 'Playback finished.');
       activeAudio = null;
       revokeObjectUrl();
     };
-    audioEl.onerror = function () {
-      finishPlayback(region, 'Could not play audio.');
-      activeAudio = null;
-      revokeObjectUrl();
-    };
+    audioEl.onerror = handleFailure;
     return audioEl.play().then(function () {
       pauseOtherAudioElements(audioEl);
       markPlaybackStarted(region);
       beginSpeechHighlight(region, speechPlainTextForHighlight(region));
       attachAudioHighlight(audioEl);
-    }).catch(function () {
-      finishPlayback(region, 'Could not play audio.');
-      activeAudio = null;
-      revokeObjectUrl();
-    });
+    }).catch(handleFailure);
   }
 
-  function playRecordedUrl(region, url) {
+  function playRecordedUrl(region, url, onFailure) {
     revokeObjectUrl();
     activeAudio = new Audio(url);
-    return wireAudioElement(region, activeAudio);
+    return wireAudioElement(region, activeAudio, onFailure);
   }
 
   function tutorPanelRequiresCompletion(region) {
@@ -595,6 +601,7 @@
         return {
           blob: blob,
           source: res.headers.get('X-Speech-Audio-Source') || 'generated',
+          audioUrl: res.headers.get('X-Speech-Audio-Url') || '',
         };
       });
     });
@@ -622,6 +629,7 @@
           activeFetchAbort = null;
           if (activeRegion !== region) return;
           if (hasSavedItemAudio) region.dataset.speechAudioAvailable = 'true';
+          if (audioResult.audioUrl) region.dataset.speechTtsAudioUrl = audioResult.audioUrl;
           if (audioResult.source === 'stored') {
             setSpeechSourceStatus(region, 'Playing saved audio.');
           } else if (hasSavedItemAudio) {
@@ -661,7 +669,9 @@
       return;
     }
 
-    var fileUrl = willPlayRecording(region) ? prerecordedAudioUrl(region) : '';
+    var uploadedAudioUrl = willPlayRecording(region) ? prerecordedAudioUrl(region) : '';
+    var storedTtsAudioUrl = (region.dataset.speechTtsAudioUrl || '').trim();
+    var fileUrl = uploadedAudioUrl || storedTtsAudioUrl;
     var plainText = speechPlainText(region);
     if (!fileUrl && !plainText) return;
 
@@ -670,12 +680,15 @@
     setButtonLoading(region, true);
 
     if (fileUrl) {
-      setSpeechSourceStatus(region, 'Using uploaded recording.');
-      playRecordedUrl(region, fileUrl).catch(function () {
+      setSpeechSourceStatus(
+        region,
+        uploadedAudioUrl ? 'Using uploaded recording.' : 'Playing saved audio.',
+      );
+      playRecordedUrl(region, fileUrl, function () {
+        if (storedTtsAudioUrl) region.dataset.speechTtsAudioUrl = '';
         if (plainText) {
-          region.setAttribute('data-speech-use-tts', '1');
+          if (uploadedAudioUrl) region.setAttribute('data-speech-use-tts', '1');
           updateRegion(region);
-          setButtonLoading(region, true);
           playTtsForRegion(region, plainText);
         } else {
           finishPlayback(region, 'Recording unavailable.');

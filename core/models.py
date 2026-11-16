@@ -1,8 +1,12 @@
+import hashlib
+import uuid
+
+from django.conf import settings
+from django.db import models
+from django.utils.html import strip_tags
+
 from subjects.models import Strand
 from subjects.models import Subject
-import uuid
-from django.db import models
-from django.conf import settings
 from subjects.models import SubStrand
 # Create your models here.
 class Question(models.Model):
@@ -74,6 +78,20 @@ class Question(models.Model):
 
     def __str__(self):
         return f"{self.quiz} ({self.sub_strand.name})"
+
+    @property
+    def current_tts_prompt_audio_url(self):
+        """Return generated audio only while it still matches the current prompt."""
+        if not self.tts_prompt_audio or not self.tts_prompt_text_hash:
+            return ''
+        text = strip_tags(self.quiz or '').strip()
+        text_hash = hashlib.sha256(text.encode('utf-8')).hexdigest()
+        if text_hash != self.tts_prompt_text_hash:
+            return ''
+        url = self.tts_prompt_audio.url
+        if not url.startswith(('/', 'http://', 'https://')):
+            url = f'/{url.lstrip("/")}'
+        return url
 
 class Option(models.Model):
     uuid=models.UUIDField(primary_key=True,default=uuid.uuid4,editable=False)

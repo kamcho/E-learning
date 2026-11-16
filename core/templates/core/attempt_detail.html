@@ -1095,6 +1095,7 @@
         if (data.explanation_uuid) {
           box.dataset.speechExplanationUuid = data.explanation_uuid;
           box.dataset.speechAudioAvailable = String(data.audio_available === true);
+          if (data.tts_audio_url) box.dataset.speechTtsAudioUrl = data.tts_audio_url;
           box.setAttribute('data-speech-use-tts', '1');
         }
         textEl.textContent = data.explanation;

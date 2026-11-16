@@ -8,6 +8,15 @@ from django.conf import settings
 from core.models import AIExplanation
 
 
+def _audio_url(audio_field):
+    if not audio_field:
+        return ''
+    url = audio_field.url
+    if not url.startswith(('/', 'http://', 'https://')):
+        url = f'/{url.lstrip("/")}'
+    return url
+
+
 def explanation_context(question, choices, selected_answer, *, grade_level='', subject=''):
     """Build the stable question/answer context used to share explanations globally."""
     snapshot = {
@@ -42,6 +51,7 @@ def explanation_response(record):
         'learner_was_correct': learner_was_correct,
         'explanation_uuid': str(record.uuid),
         'audio_available': bool(record.tts_audio),
+        'tts_audio_url': _audio_url(record.tts_audio),
         'from_database': True,
     }
 
@@ -65,4 +75,5 @@ def save_shared_explanation(
     response = result.copy() if created else explanation_response(record)
     response['explanation_uuid'] = str(record.uuid)
     response['audio_available'] = bool(record.tts_audio)
+    response['tts_audio_url'] = _audio_url(record.tts_audio)
     return response

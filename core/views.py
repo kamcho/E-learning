@@ -1080,6 +1080,7 @@ def ai_explain_answer_view(request):
 def openai_tts_view(request):
     """Serve saved explanation audio or synthesize speech for a new explanation."""
     from core.ai.exceptions import AIConfigurationError, AIServiceError, AITaskError
+    from core.ai.explanation_store import _audio_url
     from core.ai.tts import synthesize_speech
     from django.core.files.base import ContentFile
     from django.utils.html import strip_tags
@@ -1104,6 +1105,7 @@ def openai_tts_view(request):
             with explanation.tts_audio.open('rb') as saved_audio:
                 response = HttpResponse(saved_audio.read(), content_type='audio/mpeg')
                 response['X-Speech-Audio-Source'] = 'stored'
+                response['X-Speech-Audio-Url'] = _audio_url(explanation.tts_audio)
                 return response
         if explanation.tts_audio:
             explanation.tts_audio = ''
@@ -1125,6 +1127,7 @@ def openai_tts_view(request):
             with question.tts_prompt_audio.open('rb') as saved_audio:
                 response = HttpResponse(saved_audio.read(), content_type='audio/mpeg')
                 response['X-Speech-Audio-Source'] = 'stored'
+                response['X-Speech-Audio-Url'] = _audio_url(question.tts_prompt_audio)
                 return response
     else:
         text = str(payload.get('text', '')).strip()
@@ -1179,6 +1182,10 @@ def openai_tts_view(request):
 
     response = HttpResponse(audio, content_type='audio/mpeg')
     response['X-Speech-Audio-Source'] = 'generated'
+    if explanation and explanation.tts_audio:
+        response['X-Speech-Audio-Url'] = _audio_url(explanation.tts_audio)
+    elif question and question.tts_prompt_audio:
+        response['X-Speech-Audio-Url'] = _audio_url(question.tts_prompt_audio)
     return response
 
 
