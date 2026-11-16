@@ -564,7 +564,7 @@ def _guest_demo_payment_succeeded(request, demo):
 def demo_explain_view(request):
     from core.ai import EXPLAIN_ANSWER_TASK, ai_service
     from core.ai.exceptions import AIServiceError
-    from core.models import Question
+    from core.models import AIExplanation, Question
 
     demo = get_demo_session(request)
     if not demo:
@@ -595,18 +595,47 @@ def demo_explain_view(request):
     if not choices:
         return JsonResponse({'error': 'This question has no choices to explain.'}, status=400)
 
+    grade_level = demo.get('grade_name', '')
+    subject = demo.get('subject_name', '')
+    selected_answer = feedback.get('selected_text', '')
+    selected_option_uuid = feedback.get('selected_option_uuid', '')
+    selected_option = (
+        question.options.filter(uuid=selected_option_uuid).first()
+        if selected_option_uuid else None
+    )
+    from core.ai.explanation_store import explanation_context, explanation_response, save_shared_explanation
+    lookup_key, snapshot = explanation_context(
+        question, choices, selected_answer, grade_level=grade_level, subject=subject,
+    )
+    saved_explanation = (
+        AIExplanation.objects
+        .select_related('selected_option')
+        .filter(lookup_key=lookup_key)
+        .first()
+    )
+    if saved_explanation:
+        return JsonResponse(explanation_response(saved_explanation))
+
     try:
         result = ai_service.run(
             EXPLAIN_ANSWER_TASK,
             question=question.quiz,
             choices=choices,
-            selected_choice=feedback.get('selected_text', ''),
-            grade_level=demo.get('grade_name', ''),
-            subject=demo.get('subject_name', ''),
+            selected_choice=selected_answer,
+            grade_level=grade_level,
+            subject=subject,
         )
     except AIServiceError as exc:
         return JsonResponse({'error': str(exc)}, status=503)
     except ValueError as exc:
         return JsonResponse({'error': str(exc)}, status=400)
 
+    result = save_shared_explanation(
+        question=question,
+        lookup_key=lookup_key,
+        snapshot=snapshot,
+        selected_answer=selected_answer,
+        selected_option=selected_option,
+        result=result,
+    )
     return JsonResponse(result)

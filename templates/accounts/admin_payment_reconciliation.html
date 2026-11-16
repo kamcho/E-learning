@@ -1,0 +1,61 @@
+{% extends 'accounts/admin_base.html' %}
+
+{% block title %}Payment Reconciliation — Admin — Soma Smart{% endblock %}
+
+{% block extra_head %}
+<style>
+  .reconcile-wrap { max-width: 920px; margin: 0 auto; padding: var(--space-xl); }
+  .reconcile-card { background: var(--clr-surface); border: 1px solid var(--clr-border); border-radius: var(--radius-lg); padding: var(--space-xl); margin-bottom: var(--space-lg); }
+  .reconcile-card h1, .reconcile-card h2 { margin-top: 0; }
+  .reconcile-form { display: flex; gap: .65rem; flex-wrap: wrap; }
+  .reconcile-form input { flex: 1 1 300px; min-width: 0; padding: .75rem; border: 1px solid var(--clr-border); border-radius: var(--radius-md); }
+  .reconcile-result { border-top: 1px solid var(--clr-border); padding: var(--space-lg) 0; }
+  .reconcile-result:first-of-type { border-top: 0; }
+  .reconcile-result dl { display: grid; grid-template-columns: minmax(130px, 190px) 1fr; gap: .5rem 1rem; margin: 1rem 0 0; }
+  .reconcile-result dt { color: var(--clr-text-muted); }
+  .reconcile-result dd { margin: 0; overflow-wrap: anywhere; }
+  .reconcile-empty { color: var(--clr-text-muted); }
+</style>
+{% endblock %}
+
+{% block admin_content %}
+<div class="reconcile-wrap">
+  <div class="reconcile-card">
+    <a href="{% url 'subscriptions:admin_payments_list' %}">&larr; Back to payments</a>
+    <h1>Payment reconciliation</h1>
+    <p>Enter an M-Pesa receipt or transaction code, checkout request ID, merchant request ID, or payment ID.</p>
+    <form class="reconcile-form" method="get">
+      <input name="transaction_id" value="{{ transaction_id }}" required autocomplete="off" aria-label="Transaction ID" placeholder="e.g. QWE123ABC or checkout request ID">
+      <button class="btn btn-primary" type="submit">Check payment</button>
+    </form>
+  </div>
+
+  {% if transaction_id %}
+  <div class="reconcile-card">
+    <h2>Lookup result</h2>
+    {% for row in matches %}
+      {% with payment=row.payment %}
+      <section class="reconcile-result">
+        <strong>{{ payment.get_status_display }} · {% if row.kind == 'guest_exam' %}Guest exam{% else %}Subscription{% endif %}</strong>
+        <dl>
+          <dt>Payment ID</dt><dd>{{ payment.uuid }}</dd>
+          <dt>Plan</dt><dd>{{ payment.plan.name }}</dd>
+          <dt>Amount</dt><dd>KES {{ payment.amount_kes|floatformat:2 }}</dd>
+          <dt>Phone</dt><dd>{{ payment.phone_number }}</dd>
+          <dt>M-Pesa receipt / transaction ID</dt><dd>{{ payment.mpesa_receipt_number|default:'Not received' }}</dd>
+          <dt>Checkout request ID</dt><dd>{{ payment.checkout_request_id|default:'—' }}</dd>
+          <dt>Merchant request ID</dt><dd>{{ payment.merchant_request_id|default:'—' }}</dd>
+          <dt>Result code</dt><dd>{{ payment.result_code|default:'—' }}</dd>
+          <dt>Result details</dt><dd>{{ payment.result_description|default:'—' }}</dd>
+          <dt>Recorded</dt><dd>{{ payment.created_at|date:'d M Y H:i' }}</dd>
+          {% if row.kind == 'subscription' %}<dt>Customer</dt><dd>{{ payment.user.get_full_name|default:payment.user.phone }}</dd>{% else %}<dt>Demo ID</dt><dd>{{ payment.demo_id }}</dd>{% endif %}
+        </dl>
+      </section>
+      {% endwith %}
+    {% empty %}
+      <p class="reconcile-empty">No payment matched “{{ transaction_id }}”. Check the code and try again.</p>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -3,9 +3,10 @@
 import random
 import uuid as uuid_lib
 
+from django.db.models import Count, Prefetch, Q
 from django.utils import timezone
 
-from core.models import Question
+from core.models import Option, Question
 from core.scoring import _grade_choice, question_max_marks
 
 DEMO_SESSION_KEY = 'practice_demo'
@@ -30,13 +31,6 @@ def clear_demo_session(request):
         request.session.modified = True
 
 
-def _valid_mc_question(question):
-    options = list(question.options.filter(is_active=True))
-    if len(options) < 2:
-        return False
-    return any(opt.is_correct for opt in options)
-
-
 def select_demo_questions(
     *,
     subject,
@@ -59,8 +53,17 @@ def select_demo_questions(
             'sub_strand__strand__subject',
             'sub_strand__strand__subject__grade_level',
         )
-        .prefetch_related('options')
-        .order_by('?')
+        .annotate(
+            active_option_count=Count(
+                'options', filter=Q(options__is_active=True), distinct=True,
+            ),
+            correct_option_count=Count(
+                'options',
+                filter=Q(options__is_active=True, options__is_correct=True),
+                distinct=True,
+            ),
+        )
+        .filter(active_option_count__gte=2, correct_option_count__gte=1)
     )
 
     if scope == 'strand' and strand:
@@ -68,13 +71,19 @@ def select_demo_questions(
     elif scope == 'sub_strand' and sub_strand:
         qs = qs.filter(sub_strand=sub_strand)
 
-    pool = [question for question in qs if _valid_mc_question(question)]
-    if len(pool) < min_count:
+    pool_count = qs.count()
+    if pool_count < min_count:
         return []
 
-    upper = min(max_count, len(pool))
+    upper = min(max_count, pool_count)
     sample_size = random.randint(min_count, upper)
-    return random.sample(pool, sample_size)
+    return list(
+        qs.order_by('?')[:sample_size].prefetch_related(Prefetch(
+            'options',
+            queryset=Option.objects.filter(is_active=True).order_by('created_at'),
+            to_attr='active_options',
+        ))
+    )
 
 
 def start_demo_session(
@@ -133,7 +142,12 @@ def load_demo_questions(demo):
     ids = demo['question_ids']
     questions = list(
         Question.objects.filter(uuid__in=ids, is_active=True)
-        .prefetch_related('options')
+        .select_related('sub_strand__strand__subject__grade_level')
+        .prefetch_related(Prefetch(
+            'options',
+            queryset=Option.objects.filter(is_active=True).order_by('created_at'),
+            to_attr='active_options',
+        ))
     )
     order = {qid: index for index, qid in enumerate(ids)}
     questions.sort(key=lambda q: order.get(str(q.uuid), 999))
@@ -141,10 +155,13 @@ def load_demo_questions(demo):
 
 
 def grade_demo_answer(question, option_uuid):
-    selected = question.options.filter(uuid=option_uuid, is_active=True).first()
+    from core.presentation import active_options_for_question
+
+    options = active_options_for_question(question)
+    selected = next((option for option in options if str(option.uuid) == str(option_uuid)), None)
     marks_awarded, is_correct = _grade_choice(question, selected)
     max_marks = question_max_marks(question)
-    correct_option = question.options.filter(is_active=True, is_correct=True).first()
+    correct_option = next((option for option in options if option.is_correct), None)
     return {
         'selected_option_uuid': str(option_uuid) if selected else '',
         'selected_text': selected.option if selected else '',

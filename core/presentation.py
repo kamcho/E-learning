@@ -3,6 +3,10 @@
 import hashlib
 import random
 
+from django.db.models import Prefetch, prefetch_related_objects
+
+from core.models import Option
+
 
 def _stable_seed(*parts):
     raw = '|'.join(str(part) for part in parts).encode('utf-8')
@@ -21,24 +25,43 @@ def stable_shuffle(items, *seed_parts):
 def questions_for_attempt(attempt, quiz):
     """Active quiz questions in shuffled order (fixed for this attempt)."""
     questions = list(
-        quiz.questions.filter(is_active=True).prefetch_related('options')
+        quiz.questions.filter(is_active=True).select_related(
+            'sub_strand__strand__subject__grade_level',
+        )
     )
     questions = stable_shuffle(questions, attempt.uuid, 'questions')
     limit = quiz.test_size or 0
     if limit > 0 and len(questions) > limit:
         questions = questions[:limit]
+    if questions:
+        prefetch_related_objects(
+            questions,
+            Prefetch(
+                'options',
+                queryset=Option.objects.filter(is_active=True).order_by('created_at'),
+                to_attr='active_options',
+            ),
+        )
     return questions
+
+
+def active_options_for_question(question):
+    """Use prefetched active options when available, otherwise load them once."""
+    options = getattr(question, 'active_options', None)
+    if options is not None:
+        return options
+    return list(question.options.filter(is_active=True).order_by('created_at'))
 
 
 def options_for_attempt(attempt, question):
     """Active options shuffled for display (fixed for this attempt + question)."""
-    options = list(question.options.filter(is_active=True))
+    options = active_options_for_question(question)
     return stable_shuffle(options, attempt.uuid, question.uuid, 'options')
 
 
 def options_for_demo(demo_id, question):
     """Shuffled options for guest demo sessions."""
-    options = list(question.options.filter(is_active=True))
+    options = active_options_for_question(question)
     return stable_shuffle(options, demo_id, question.uuid, 'options')
 
 

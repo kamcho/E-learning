@@ -6,6 +6,7 @@ import uuid
 from fractions import Fraction
 
 from core.models import AttemptResponse
+from core.presentation import active_options_for_question
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +34,7 @@ def question_has_multiple_correct_answers(question):
     """True when a multiple-choice question expects more than one selection."""
     if question.quiz_type != 'Multiple Choice':
         return False
-    return question.options.filter(is_active=True, is_correct=True).count() > 1
+    return sum(1 for option in active_options_for_question(question) if option.is_correct) > 1
 
 
 def question_max_marks(question):
@@ -72,9 +73,9 @@ def _question_context(question):
 
 def _reference_answers(question):
     return [
-        str(text).strip()
-        for text in question.options.filter(is_active=True, is_correct=True).values_list('option', flat=True)
-        if text and str(text).strip()
+        str(option.option).strip()
+        for option in active_options_for_question(question)
+        if option.is_correct and option.option and str(option.option).strip()
     ]
 
 
@@ -246,11 +247,9 @@ def _grade_multiple_choice(question, selected_ids):
     """Grade select-all-that-apply questions with exact-set matching."""
     max_marks = question_max_marks(question)
     correct_ids = {
-        str(option_id)
-        for option_id in question.options.filter(
-            is_active=True,
-            is_correct=True,
-        ).values_list('uuid', flat=True)
+        str(option.uuid)
+        for option in active_options_for_question(question)
+        if option.is_correct
     }
     if not selected_ids or not correct_ids:
         return 0, False
@@ -276,12 +275,18 @@ def upsert_response(attempt, question, answer_str):
     elif question.quiz_type in ('Multiple Choice', 'True or False'):
         option_uuid = parse_option_uuid(answer_str)
         if option_uuid is not None:
-            selected_option = question.options.filter(uuid=option_uuid, is_active=True).first()
+            selected_option = next(
+                (option for option in active_options_for_question(question) if option.uuid == option_uuid),
+                None,
+            )
         marks_awarded, is_correct = _grade_choice(question, selected_option)
     elif question.quiz_type == 'Matching':
         option_uuid = parse_option_uuid(answer_str)
         if option_uuid is not None:
-            selected_option = question.options.filter(uuid=option_uuid, is_active=True).first()
+            selected_option = next(
+                (option for option in active_options_for_question(question) if option.uuid == option_uuid),
+                None,
+            )
             if selected_option:
                 marks_awarded, is_correct = _grade_choice(question, selected_option)
             else:
@@ -313,10 +318,12 @@ def upsert_response(attempt, question, answer_str):
     return response
 
 
-def responses_to_answers_dict(attempt):
+def responses_to_answers_dict(attempt, *, responses=None):
     """Build the legacy answers JSON shape from stored responses."""
     answers = {}
-    for resp in attempt.responses.select_related('selected_option').order_by('answered_at'):
+    if responses is None:
+        responses = attempt.responses.select_related('selected_option').order_by('answered_at')
+    for resp in responses:
         if resp.selected_option_id:
             answers[str(resp.question_id)] = str(resp.selected_option_id)
         elif resp.text_answer:
@@ -405,11 +412,20 @@ def build_quiz_peer_stats(quiz, attempt):
     }
 
 
-def sync_responses_from_answers(attempt, answers, questions):
+def sync_responses_from_answers(attempt, answers, questions, *, existing_question_ids=None):
     """Backfill AttemptResponse rows from legacy session/JSON answers."""
     if not answers:
-        return
+        return []
+    if existing_question_ids is None:
+        existing_question_ids = set(
+            attempt.responses.values_list('question_id', flat=True)
+        )
+    else:
+        existing_question_ids = set(existing_question_ids)
+    added_responses = []
     for question in questions:
         answer = str(answers.get(str(question.uuid), '')).strip()
-        if answer and not attempt.responses.filter(question=question).exists():
-            upsert_response(attempt, question, answer)
+        if answer and question.uuid not in existing_question_ids:
+            added_responses.append(upsert_response(attempt, question, answer))
+            existing_question_ids.add(question.uuid)
+    return added_responses

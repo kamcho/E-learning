@@ -74,7 +74,9 @@ def parse_matching_pairs(question):
     if pairs:
         return pairs
 
-    options = list(question.options.filter(is_active=True).order_by('created_at'))
+    from core.presentation import active_options_for_question
+
+    options = active_options_for_question(question)
     for opt in options:
         left, right = split_matching_pair(opt.option or '')
         if left and right:
@@ -94,7 +96,7 @@ def parse_matching_pairs(question):
 
 def matching_choice_pool(question, *, presentation_seed=None):
     """Unique right-column labels for dropdowns."""
-    from core.presentation import stable_shuffle
+    from core.presentation import active_options_for_question, stable_shuffle
 
     labels = []
     seen = set()
@@ -108,7 +110,7 @@ def matching_choice_pool(question, *, presentation_seed=None):
         if presentation_seed is not None:
             return stable_shuffle(labels, presentation_seed, question.uuid, 'matching_choices')
         return labels
-    for opt in question.options.filter(is_active=True).order_by('created_at'):
+    for opt in active_options_for_question(question):
         text = (opt.option or '').strip()
         if not text:
             continue

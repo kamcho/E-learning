@@ -945,6 +945,39 @@ def admin_payments_list_view(request):
 
 
 @login_required(login_url='accounts:signin')
+def admin_payment_reconciliation_view(request):
+    """Admin: locate a payment by its M-Pesa transaction or request ID."""
+    denied = _admin_access_or_redirect(request)
+    if denied:
+        return denied
+
+    transaction_id = request.GET.get('transaction_id', '').strip()
+    matches = []
+    if transaction_id:
+        payment_query = (
+            Q(mpesa_receipt_number__iexact=transaction_id)
+            | Q(checkout_request_id__iexact=transaction_id)
+            | Q(merchant_request_id__iexact=transaction_id)
+        )
+        try:
+            payment_uuid = UUID(transaction_id)
+        except (ValueError, TypeError, AttributeError):
+            pass
+        else:
+            payment_query |= Q(uuid=payment_uuid)
+
+        for payment in Payment.objects.filter(payment_query).select_related('user', 'plan')[:20]:
+            matches.append({'kind': 'subscription', 'payment': payment})
+        for payment in GuestDemoPayment.objects.filter(payment_query).select_related('plan')[:20]:
+            matches.append({'kind': 'guest_exam', 'payment': payment})
+
+    return render(request, 'accounts/admin_payment_reconciliation.html', {
+        'transaction_id': transaction_id,
+        'matches': matches,
+    })
+
+
+@login_required(login_url='accounts:signin')
 def admin_subscriptions_list_view(request):
     """Admin: paginated list of user subscriptions and test credits."""
     denied = _admin_access_or_redirect(request)

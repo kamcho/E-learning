@@ -45,6 +45,10 @@ def synthesize_speech(text: str, *, voice: str | None = None) -> bytes:
     voice_name = (voice or default_tts_voice()).strip().lower()
     if voice_name not in OPENAI_TTS_VOICES:
         voice_name = default_tts_voice()
+    model_name = default_tts_model()
+    # `marin` is supported by gpt-4o-mini-tts, not legacy tts-1 models.
+    if voice_name == 'marin' and model_name in ('tts-1', 'tts-1-hd'):
+        model_name = 'gpt-4o-mini-tts'
 
     try:
         from openai import APIConnectionError, APITimeoutError, OpenAI, RateLimitError
@@ -60,7 +64,7 @@ def synthesize_speech(text: str, *, voice: str | None = None) -> bytes:
 
     try:
         response = client.audio.speech.create(
-            model=default_tts_model(),
+            model=model_name,
             voice=voice_name,
             input=prepared,
             response_format='mp3',

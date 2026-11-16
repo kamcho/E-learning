@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import AttemptResponse, Question, Option, Quiz, UserAttempts
+from .models import AIExplanation, AttemptResponse, Question, Option, Quiz, UserAttempts
 
 
 class OptionInline(admin.TabularInline):
@@ -62,3 +62,17 @@ class AttemptResponseAdmin(admin.ModelAdmin):
         'attempt', 'question', 'marks_awarded', 'max_marks', 'is_correct', 'graded_by',
     )
     list_filter = ('is_correct', 'graded_by')
+
+
+@admin.register(AIExplanation)
+class AIExplanationAdmin(admin.ModelAdmin):
+    list_display = ('created_at', 'question', 'selected_option', 'selected_answer', 'model')
+    list_filter = ('model', 'created_at')
+    search_fields = ('explanation', 'selected_answer', 'lookup_key', 'question__quiz')
+    readonly_fields = (
+        'uuid', 'question', 'lookup_key', 'selected_option', 'selected_answer',
+        'explanation', 'correct_answer',
+        'prompt_snapshot', 'model', 'created_at',
+    )
+    def has_add_permission(self, request):
+        return False

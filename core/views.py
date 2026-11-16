@@ -16,12 +16,11 @@ from django.views.decorators.http import require_POST
 
 from accounts.ratelimit import rate_limit
 
-from .models import Quiz, Question
+from .models import AIExplanation, Quiz, Question
 from .scoring import (
     build_quiz_peer_stats,
     clear_attempt_responses,
     finalize_attempt,
-    get_answered_count,
     parse_selected_option_ids,
     question_has_multiple_correct_answers,
     question_max_marks,
@@ -329,6 +328,7 @@ def _exam_take_feedback_key(attempt_uuid):
 def _build_take_answer_feedback(question, response):
     """Session-serializable feedback snapshot after each answer submission."""
     from core.scoring import parse_selected_option_ids, question_max_marks
+    from core.presentation import active_options_for_question
 
     feedback = {
         'question_uuid': str(question.uuid),
@@ -348,9 +348,10 @@ def _build_take_answer_feedback(question, response):
         selected_ids = parse_selected_option_ids(response.text_answer)
         feedback['selected_option_uuids'] = selected_ids
         if selected_ids:
-            options = list(
-                question.options.filter(uuid__in=selected_ids, is_active=True).order_by('created_at')
-            )
+            options = [
+                option for option in active_options_for_question(question)
+                if str(option.uuid) in selected_ids
+            ]
             feedback['selected_text'] = (
                 ', '.join(o.option for o in options if o.option) or response.text_answer
             )
@@ -359,15 +360,17 @@ def _build_take_answer_feedback(question, response):
     elif response.text_answer:
         feedback['selected_text'] = response.text_answer
 
-    correct_options = question.options.filter(is_active=True, is_correct=True).order_by('created_at')
-    if correct_options.exists():
+    correct_options = [
+        option for option in active_options_for_question(question) if option.is_correct
+    ]
+    if correct_options:
         feedback['correct_text'] = ', '.join(o.option for o in correct_options if o.option)
 
     return feedback
 
 
-def _build_exam_take_nav_states(questions, attempt, display_index, showing_feedback):
-    responses = {str(r.question_id): r for r in attempt.responses.all()}
+def _build_exam_take_nav_states(questions, responses, display_index, showing_feedback):
+    responses = {str(r.question_id): r for r in responses}
     states = []
     for index, question in enumerate(questions):
         q_uuid = str(question.uuid)
@@ -395,28 +398,33 @@ def _load_attempt_answers(request, attempt):
     picks up answers that were submitted from Device B.
     """
     session_answers = _get_attempt_answers(request, attempt.uuid)
+    response_rows = list(
+        attempt.responses.only(
+            'question_id', 'selected_option_id', 'text_answer', 'is_correct', 'answered_at',
+        )
+    )
 
-    if attempt.responses.exists():
+    if response_rows:
         # DB responses are the ground truth — they were written on every POST.
-        db_answers = responses_to_answers_dict(attempt)
+        db_answers = responses_to_answers_dict(attempt, responses=response_rows)
         # Merge: session extras (typed but not yet saved) + DB (authoritative).
         # DB wins on overlap so cross-device progress is never lost.
         merged = {**session_answers, **db_answers}
         if merged != session_answers:
             request.session[_answers_session_key(attempt.uuid)] = merged
             request.session.modified = True
-        return merged
+        return merged, response_rows
 
     if session_answers:
-        return session_answers
+        return session_answers, response_rows
 
     # Last-resort fallback: legacy answers JSON field.
     if attempt.answers:
         request.session[_answers_session_key(attempt.uuid)] = dict(attempt.answers)
         request.session.modified = True
-        return attempt.answers
+        return attempt.answers, response_rows
 
-    return {}
+    return {}, response_rows
 
 
 def _complete_attempt(request, attempt, student, quiz, saved_answers, take_url_kwargs, *, timed_out=False):
@@ -579,9 +587,14 @@ def test_take_view(request, quiz_uuid, student_uuid):
             student_uuid=student.uuid,
         )
 
-    saved_answers = _load_attempt_answers(request, attempt)
-    sync_responses_from_answers(attempt, saved_answers, questions)
-    current_index = get_answered_count(attempt)
+    saved_answers, response_rows = _load_attempt_answers(request, attempt)
+    response_rows.extend(sync_responses_from_answers(
+        attempt,
+        saved_answers,
+        questions,
+        existing_question_ids={response.question_id for response in response_rows},
+    ))
+    current_index = len(response_rows)
 
     take_url_kwargs = {'quiz_uuid': quiz.uuid, 'student_uuid': student.uuid}
     time_remaining_seconds = attempt_seconds_remaining(attempt, quiz)
@@ -603,7 +616,7 @@ def test_take_view(request, quiz_uuid, student_uuid):
         if request.POST.get('action') == 'continue':
             request.session.pop(feedback_key, None)
             request.session.modified = True
-            if get_answered_count(attempt) >= question_count:
+            if current_index >= question_count:
                 saved_answers = _get_attempt_answers(request, attempt.uuid)
                 return _complete_attempt(
                     request, attempt, student, quiz, saved_answers, take_url_kwargs,
@@ -687,7 +700,7 @@ def test_take_view(request, quiz_uuid, student_uuid):
         parse_selected_option_ids(saved_answer)
         if allows_multiple_answers else set()
     )
-    answered_count = get_answered_count(attempt)
+    answered_count = current_index
     progress_pct = int(((display_index + 1) / question_count) * 100)
 
     matching_rows = []
@@ -696,6 +709,7 @@ def test_take_view(request, quiz_uuid, student_uuid):
     matching_ui_mode = ''
     matching_options = []
     if current_question.quiz_type == 'Matching':
+        from core.presentation import active_options_for_question
         from core.matching import (
             matching_choice_pool,
             matching_rows_for_display,
@@ -716,7 +730,7 @@ def test_take_view(request, quiz_uuid, student_uuid):
             row['saved_right'] = saved_matching.get(row['left'], '')
         if matching_rows and matching_choices:
             matching_ui_mode = 'rows'
-        elif current_question.options.filter(is_active=True).exists():
+        elif active_options_for_question(current_question):
             matching_ui_mode = 'pick_option'
             matching_options = options_for_attempt(attempt, current_question)
         else:
@@ -725,10 +739,10 @@ def test_take_view(request, quiz_uuid, student_uuid):
     choice_options = options_for_attempt(attempt, current_question)
 
     nav_states = _build_exam_take_nav_states(
-        questions, attempt, display_index, showing_feedback,
+        questions, response_rows, display_index, showing_feedback,
     )
-    correct_count = attempt.responses.filter(is_correct=True).count()
-    incorrect_count = attempt.responses.filter(is_correct=False).count()
+    correct_count = sum(1 for response in response_rows if response.is_correct is True)
+    incorrect_count = sum(1 for response in response_rows if response.is_correct is False)
     unanswered_count = max(0, question_count - answered_count)
 
     return render(
@@ -930,6 +944,7 @@ def ai_explain_answer_view(request):
 
     response = attempt.responses.filter(question=question).select_related('selected_option').first()
     selected_choice = ''
+    selected_option = None
 
     if question.quiz_type == 'Matching':
         from core.matching import (
@@ -946,8 +961,8 @@ def ai_explain_answer_view(request):
                 for p in pairs
             ]
         elif response and response.selected_option_id:
-            selected_opt = response.selected_option
-            selected_choice = selected_opt.option if selected_opt else ''
+            selected_option = response.selected_option
+            selected_choice = selected_option.option if selected_option else ''
             choices = [
                 {'text': opt.option, 'is_correct': opt.is_correct}
                 for opt in question.options.filter(is_active=True).order_by('created_at')
@@ -961,14 +976,14 @@ def ai_explain_answer_view(request):
             ]
     else:
         if response and response.selected_option_id:
-            selected_opt = response.selected_option
+            selected_option = response.selected_option
         else:
             answers = attempt.answers or {}
             selected_uuid = str(answers.get(str(question.uuid), '')).strip()
-            selected_opt = (
+            selected_option = (
                 question.options.filter(uuid=selected_uuid).first() if selected_uuid else None
             )
-        selected_choice = selected_opt.option if selected_opt else ''
+        selected_choice = selected_option.option if selected_option else ''
         if response and response.text_answer and not selected_choice:
             selected_choice = response.text_answer
 
@@ -990,6 +1005,19 @@ def ai_explain_answer_view(request):
         if attempt.quiz.subject.grade_level:
             grade_level = attempt.quiz.subject.grade_level.name
 
+    from core.ai.explanation_store import explanation_context, explanation_response, save_shared_explanation
+    lookup_key, snapshot = explanation_context(
+        question, choices, selected_choice, grade_level=grade_level, subject=subject,
+    )
+    saved_explanation = (
+        AIExplanation.objects
+        .select_related('selected_option')
+        .filter(lookup_key=lookup_key)
+        .first()
+    )
+    if saved_explanation:
+        return JsonResponse(explanation_response(saved_explanation))
+
     try:
         result = ai_service.run(
             EXPLAIN_ANSWER_TASK,
@@ -1010,6 +1038,14 @@ def ai_explain_answer_view(request):
             status=500,
         )
 
+    result = save_shared_explanation(
+        question=question,
+        lookup_key=lookup_key,
+        snapshot=snapshot,
+        selected_answer=selected_choice,
+        selected_option=selected_option,
+        result=result,
+    )
     return JsonResponse(result)
 
 

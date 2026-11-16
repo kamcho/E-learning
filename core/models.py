@@ -197,3 +197,31 @@ class AttemptResponse(models.Model):
 
     def __str__(self):
         return f'{self.attempt_id} — {self.question_id}'
+
+
+class AIExplanation(models.Model):
+    """Shared, reusable tutor explanation for one question and answer context."""
+
+    uuid = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    question = models.ForeignKey(
+        Question, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='ai_explanations',
+    )
+    selected_option = models.ForeignKey(
+        Option, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='ai_explanations',
+        help_text='Selected multiple-choice or true/false option, when applicable.',
+    )
+    lookup_key = models.CharField(max_length=64, unique=True)
+    selected_answer = models.TextField(blank=True)
+    explanation = models.TextField()
+    correct_answer = models.TextField(blank=True)
+    prompt_snapshot = models.JSONField(default=dict, blank=True)
+    model = models.CharField(max_length=80, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ('-created_at',)
+
+    def __str__(self):
+        return f'AI explanation {self.uuid}'
