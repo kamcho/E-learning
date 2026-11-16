@@ -127,6 +127,7 @@
           }
           if (result.data.explanation_uuid) {
             wrap.dataset.speechExplanationUuid = result.data.explanation_uuid;
+            wrap.dataset.speechAudioAvailable = String(result.data.audio_available === true);
             wrap.setAttribute('data-speech-use-tts', '1');
           }
           textEl.textContent = result.data.explanation || '';

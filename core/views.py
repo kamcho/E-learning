@@ -1102,7 +1102,9 @@ def openai_tts_view(request):
         explanation = get_object_or_404(AIExplanation, uuid=explanation_uuid)
         if explanation.tts_audio and explanation.tts_audio.storage.exists(explanation.tts_audio.name):
             with explanation.tts_audio.open('rb') as saved_audio:
-                return HttpResponse(saved_audio.read(), content_type='audio/mpeg')
+                response = HttpResponse(saved_audio.read(), content_type='audio/mpeg')
+                response['X-Speech-Audio-Source'] = 'stored'
+                return response
         if explanation.tts_audio:
             explanation.tts_audio = ''
             explanation.save(update_fields=['tts_audio'])
@@ -1121,7 +1123,9 @@ def openai_tts_view(request):
             and question.tts_prompt_audio.storage.exists(question.tts_prompt_audio.name)
         ):
             with question.tts_prompt_audio.open('rb') as saved_audio:
-                return HttpResponse(saved_audio.read(), content_type='audio/mpeg')
+                response = HttpResponse(saved_audio.read(), content_type='audio/mpeg')
+                response['X-Speech-Audio-Source'] = 'stored'
+                return response
     else:
         text = str(payload.get('text', '')).strip()
         if not text:
@@ -1173,7 +1177,9 @@ def openai_tts_view(request):
         if previous_audio_name and previous_audio_name != question.tts_prompt_audio.name:
             question.tts_prompt_audio.storage.delete(previous_audio_name)
 
-    return HttpResponse(audio, content_type='audio/mpeg')
+    response = HttpResponse(audio, content_type='audio/mpeg')
+    response['X-Speech-Audio-Source'] = 'generated'
+    return response
 
 
 @login_required(login_url='accounts:signin')
