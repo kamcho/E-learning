@@ -1758,6 +1758,72 @@ def admin_guest_attempts_view(request):
 
 
 @login_required(login_url='accounts:signin')
+def admin_guest_attempt_detail_view(request, attempt_uuid):
+    """Readable question-by-question review of a guest practice exam."""
+    denied = _admin_access_or_redirect(request)
+    if denied:
+        return denied
+
+    from core.models import GuestDemoAttempt, Option, Question
+    from subscriptions.models import GuestDemoPayment
+
+    attempt = get_object_or_404(GuestDemoAttempt, uuid=attempt_uuid)
+    question_ids = attempt.question_ids or []
+    questions_by_id = {
+        str(question.uuid): question
+        for question in Question.objects.filter(uuid__in=question_ids)
+    }
+    selected_ids = [
+        option_id
+        for option_id in (attempt.answers or {}).values()
+        if option_id
+    ]
+    options_by_id = {
+        str(option.uuid): option
+        for option in Option.objects.filter(uuid__in=selected_ids)
+    }
+    correct_options_by_question = {
+        str(question_id): option_text
+        for question_id, option_text in Option.objects.filter(
+            question_id__in=question_ids,
+            is_active=True,
+            is_correct=True,
+        ).values_list('question_id', 'option')
+    }
+
+    answer_rows = []
+    for index, question_id in enumerate(question_ids, start=1):
+        question_id = str(question_id)
+        feedback = (attempt.feedback or {}).get(question_id, {})
+        selected_id = (attempt.answers or {}).get(question_id, '')
+        selected_option = options_by_id.get(str(selected_id))
+        answer_rows.append({
+            'number': index,
+            'question_id': question_id,
+            'question': questions_by_id.get(question_id),
+            'selected_text': feedback.get('selected_text') or (
+                selected_option.option if selected_option else ''
+            ),
+            'correct_text': feedback.get('correct_text') or (
+                correct_options_by_question.get(question_id, '')
+            ),
+            'is_correct': feedback.get('is_correct'),
+            'marks_awarded': feedback.get('marks_awarded', 0),
+            'max_marks': feedback.get('max_marks', 1),
+            'answered': bool(selected_id),
+        })
+
+    payment = GuestDemoPayment.objects.filter(demo_id=attempt.demo_id).select_related(
+        'plan',
+    ).order_by('-created_at').first()
+    return render(request, 'accounts/admin_guest_attempt_detail.html', {
+        'attempt': attempt,
+        'answer_rows': answer_rows,
+        'payment': payment,
+    })
+
+
+@login_required(login_url='accounts:signin')
 def admin_user_detail_view(request, user_id):
     """Admin view of a single platform user."""
     from core.models import UserAttempts

@@ -7,9 +7,6 @@
 <style>
   .guest-attempt-filters { display:flex; gap:.65rem; align-items:center; flex-wrap:wrap; padding:1rem var(--space-xl); }
   .guest-attempt-filters input, .guest-attempt-filters select { min-height:40px; padding:.5rem .75rem; border:1px solid var(--clr-border); border-radius:var(--radius-md); background:var(--clr-surface); color:var(--clr-text); }
-  .guest-attempt-details { max-width:420px; }
-  .guest-attempt-details summary { color:var(--clr-primary); cursor:pointer; font-weight:700; }
-  .guest-attempt-json { max-height:300px; overflow:auto; padding:.7rem; border-radius:8px; background:var(--clr-surface-alt); white-space:pre-wrap; overflow-wrap:anywhere; font:.76rem/1.45 ui-monospace,monospace; }
   .guest-attempt-status { display:inline-block; padding:.25rem .55rem; border-radius:999px; background:var(--clr-surface-alt); font-size:.78rem; font-weight:700; }
 </style>
 {% endblock %}
@@ -58,14 +55,7 @@
         <td>{{ attempt.answered_count }} / {{ attempt.question_count }}</td>
         <td>{% if attempt.status == 'completed' %}{{ attempt.score }}%{% else %}—{% endif %}</td>
         <td><span class="guest-attempt-status">{{ attempt.get_status_display }}</span></td>
-        <td>
-          <details class="guest-attempt-details">
-            <summary>View answers</summary>
-            <div class="list-row-meta" style="margin-top:.6rem;">Attempt ID: {{ attempt.demo_id }}</div>
-            <h4>Selected answers</h4><pre class="guest-attempt-json">{{ attempt.answers|pprint }}</pre>
-            <h4>Answer feedback</h4><pre class="guest-attempt-json">{{ attempt.feedback|pprint }}</pre>
-          </details>
-        </td>
+        <td><a class="admin-page-btn" href="{% url 'accounts:admin_guest_attempt_detail' attempt.uuid %}">View answers</a></td>
       </tr>
       {% endfor %}
     </tbody>

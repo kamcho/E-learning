@@ -1,0 +1,106 @@
+{% extends 'accounts/admin_base.html' %}
+
+{% block title %}Guest Attempt Review — Admin — Soma Smart{% endblock %}
+
+{% block extra_head %}
+<style>
+  .guest-review-wrap { max-width:1100px; margin:0 auto; }
+  .guest-review-banner { display:flex; justify-content:space-between; align-items:flex-start; gap:1rem; flex-wrap:wrap; margin-bottom:1.25rem; }
+  .guest-review-banner h1 { margin:.55rem 0 .35rem; font-family:var(--font-heading); }
+  .guest-review-banner p { color:var(--clr-text-muted); margin:0; }
+  .guest-review-actions { display:flex; gap:.55rem; flex-wrap:wrap; }
+  .guest-review-btn { display:inline-flex; align-items:center; justify-content:center; padding:.62rem .9rem; border:1px solid var(--clr-border); border-radius:var(--radius-md); color:var(--clr-text); background:var(--clr-surface); text-decoration:none; font-weight:700; }
+  .guest-review-btn--primary { color:#fff; background:var(--clr-primary); border-color:var(--clr-primary); }
+  .guest-review-overview { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:.8rem; margin-bottom:1.25rem; }
+  .guest-review-stat,.guest-review-card { border:1px solid var(--clr-border); border-radius:var(--radius-lg,16px); background:var(--clr-surface); }
+  .guest-review-stat { padding:1rem; }
+  .guest-review-stat-label { color:var(--clr-text-muted); font-size:.78rem; margin-bottom:.35rem; }
+  .guest-review-stat-value { font-size:1.05rem; font-weight:800; overflow-wrap:anywhere; }
+  .guest-review-card { margin-bottom:1rem; overflow:hidden; }
+  .guest-review-card-head { padding:1rem 1.25rem; border-bottom:1px solid var(--clr-border); }
+  .guest-review-card-head h2 { margin:0; font-size:1.1rem; }
+  .guest-review-card-head p { margin:.25rem 0 0; color:var(--clr-text-muted); font-size:.88rem; }
+  .guest-review-question { padding:1.1rem 1.25rem; border-bottom:1px solid var(--clr-border); }
+  .guest-review-question:last-child { border-bottom:0; }
+  .guest-review-question-top { display:flex; justify-content:space-between; gap:.8rem; align-items:center; margin-bottom:.65rem; }
+  .guest-review-question-number { color:var(--clr-text-muted); font-size:.83rem; font-weight:700; }
+  .guest-review-result { display:inline-flex; border-radius:999px; padding:.25rem .6rem; font-size:.76rem; font-weight:800; background:var(--clr-surface-alt); }
+  .guest-review-result--correct { color:#116b43; background:#e5f7ed; }
+  .guest-review-result--incorrect { color:#a73535; background:#fff0ef; }
+  .guest-review-prompt { white-space:pre-wrap; line-height:1.6; font-weight:650; }
+  .guest-review-answers { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:.7rem; margin-top:.85rem; }
+  .guest-review-answer { border:1px solid var(--clr-border); border-radius:10px; padding:.7rem .8rem; min-width:0; }
+  .guest-review-answer-label { color:var(--clr-text-muted); font-size:.74rem; margin-bottom:.25rem; }
+  .guest-review-answer-value { white-space:pre-wrap; overflow-wrap:anywhere; }
+  .guest-review-marks { margin-top:.7rem; color:var(--clr-text-muted); font-size:.82rem; }
+  .guest-review-payment { padding:1rem 1.25rem; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:.85rem; }
+  .guest-review-payment-label { color:var(--clr-text-muted); font-size:.75rem; margin-bottom:.25rem; }
+  .guest-review-payment-value { font-weight:700; overflow-wrap:anywhere; }
+  @media(max-width:760px) { .guest-review-overview { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+  @media(max-width:520px) { .guest-review-overview,.guest-review-answers,.guest-review-payment { grid-template-columns:1fr; } .guest-review-question,.guest-review-card-head { padding:1rem; } }
+</style>
+{% endblock %}
+
+{% block admin_content %}
+<main class="guest-review-wrap">
+  <header class="guest-review-banner">
+    <div>
+      <a href="{% url 'accounts:admin_guest_attempts' %}" class="admin-list-back">&larr; Back to guest attempts</a>
+      <h1>Guest attempt review</h1>
+      <p>{{ attempt.topic_label|default:attempt.subject_name }} · Attempt {{ attempt.demo_id }}</p>
+    </div>
+    <div class="guest-review-actions">
+      {% if attempt.phone_number %}<a class="guest-review-btn guest-review-btn--primary" href="tel:{{ attempt.phone_number }}">Call {{ attempt.phone_number }}</a>{% endif %}
+      <a class="guest-review-btn" href="{% url 'accounts:admin_guest_attempts' %}">All attempts</a>
+    </div>
+  </header>
+
+  <section class="guest-review-overview" aria-label="Attempt summary">
+    <div class="guest-review-stat"><div class="guest-review-stat-label">Status</div><div class="guest-review-stat-value">{{ attempt.get_status_display }}</div></div>
+    <div class="guest-review-stat"><div class="guest-review-stat-label">Score</div><div class="guest-review-stat-value">{% if attempt.status == 'completed' %}{{ attempt.score }}%{% else %}In progress{% endif %}</div></div>
+    <div class="guest-review-stat"><div class="guest-review-stat-label">Correct answers</div><div class="guest-review-stat-value">{{ attempt.correct_count }} / {{ attempt.question_count }}</div></div>
+    <div class="guest-review-stat"><div class="guest-review-stat-label">Started</div><div class="guest-review-stat-value">{{ attempt.started_at|date:'d M Y, H:i' }}</div></div>
+  </section>
+
+  <section class="guest-review-card">
+    <div class="guest-review-card-head"><h2>Attempt information</h2><p>{{ attempt.grade_name|default:'—' }} · {{ attempt.subject_name|default:'—' }} · {{ attempt.scope_label|default:'Practice' }}</p></div>
+    <div class="guest-review-payment">
+      <div><div class="guest-review-payment-label">Follow-up number</div><div class="guest-review-payment-value">{{ attempt.phone_number|default:'Not provided' }}</div></div>
+      <div><div class="guest-review-payment-label">Progress</div><div class="guest-review-payment-value">{{ attempt.answered_count }} of {{ attempt.question_count }} answered</div></div>
+      <div><div class="guest-review-payment-label">Marks</div><div class="guest-review-payment-value">{{ attempt.marks_earned }} / {{ attempt.marks_possible }}</div></div>
+    </div>
+  </section>
+
+  {% if payment %}
+  <section class="guest-review-card">
+    <div class="guest-review-card-head"><h2>Guest payment</h2><p>Matched using this attempt’s demo ID.</p></div>
+    <div class="guest-review-payment">
+      <div><div class="guest-review-payment-label">Status</div><div class="guest-review-payment-value">{{ payment.get_status_display }}</div></div>
+      <div><div class="guest-review-payment-label">Amount</div><div class="guest-review-payment-value">KES {{ payment.amount_kes|floatformat:2 }}</div></div>
+      <div><div class="guest-review-payment-label">M-Pesa receipt</div><div class="guest-review-payment-value">{{ payment.mpesa_receipt_number|default:'—' }}</div></div>
+    </div>
+  </section>
+  {% endif %}
+
+  <section class="guest-review-card">
+    <div class="guest-review-card-head"><h2>Question-by-question answers</h2><p>Selected responses, correct answers, and marks for this attempt.</p></div>
+    {% for row in answer_rows %}
+    <article class="guest-review-question">
+      <div class="guest-review-question-top">
+        <span class="guest-review-question-number">Question {{ row.number }}</span>
+        {% if not row.answered %}<span class="guest-review-result">Not answered</span>
+        {% elif row.is_correct %}<span class="guest-review-result guest-review-result--correct">Correct</span>
+        {% else %}<span class="guest-review-result guest-review-result--incorrect">Incorrect</span>{% endif %}
+      </div>
+      {% if row.question %}<div class="guest-review-prompt">{{ row.question.quiz|default:'Question text is no longer available.' }}</div>
+      {% else %}<div class="guest-review-prompt">Question text is no longer available <span class="guest-review-question-number">({{ row.question_id }})</span></div>{% endif %}
+      <div class="guest-review-answers">
+        <div class="guest-review-answer"><div class="guest-review-answer-label">Guest selected</div><div class="guest-review-answer-value">{{ row.selected_text|default:'No answer' }}</div></div>
+        <div class="guest-review-answer"><div class="guest-review-answer-label">Correct answer</div><div class="guest-review-answer-value">{{ row.correct_text|default:'—' }}</div></div>
+      </div>
+      {% if row.answered %}<div class="guest-review-marks">Marks: {{ row.marks_awarded }} / {{ row.max_marks }}</div>{% endif %}
+    </article>
+    {% empty %}<p style="padding:1rem 1.25rem;color:var(--clr-text-muted);">No questions were saved for this attempt.</p>{% endfor %}
+  </section>
+</main>
+{% endblock %}
