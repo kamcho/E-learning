@@ -1,7 +1,7 @@
 from urllib.parse import urlencode
 
 from django.shortcuts import redirect
-from django.urls import reverse
+from django.urls import Resolver404, resolve, reverse
 
 from .audit import clear_current_request, set_current_request
 from .auth_utils import user_needs_phone_link
@@ -83,14 +83,22 @@ class TwoFactorMiddleware:
             from .totp import is_2fa_verified_for_user, user_has_totp_enabled
 
             if user_has_totp_enabled(user) and not is_2fa_verified_for_user(request, user):
-                resolver = request.resolver_match
+                # __call__ runs before Django resolves the URL, so
+                # request.resolver_match is normally still None here.
+                try:
+                    resolver = resolve(request.path_info)
+                except Resolver404:
+                    resolver = None
                 if resolver and resolver.app_name == 'accounts':
                     if resolver.url_name in _TWO_FACTOR_EXEMPT_URL_NAMES:
                         return self.get_response(request)
                     if resolver.url_name == 'account_security':
                         return self.get_response(request)
                 return redirect(
-                    f"{reverse('accounts:totp_verify')}?{urlencode({'reason': 'required'})}"
+                    f"{reverse('accounts:totp_verify')}?{urlencode({
+                        'reason': 'required',
+                        'next': request.get_full_path(),
+                    })}"
                 )
 
         return self.get_response(request)

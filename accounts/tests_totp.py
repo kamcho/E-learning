@@ -43,6 +43,30 @@ class TotpAuthTests(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertIn('auth_2fa_user_id', self.client.session)
 
+    def test_authenticated_unverified_user_can_open_verification_page(self):
+        self.client.force_login(self.user)
+
+        response = self.client.get(reverse('accounts:totp_verify'))
+
+        self.assertEqual(response.status_code, 200)
+
+    def test_two_factor_redirect_preserves_requested_page(self):
+        self.client.force_login(self.user)
+
+        response = self.client.get('/admin/')
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(reverse('accounts:totp_verify'), response.url)
+        self.assertIn('next=%2Fadmin%2F', response.url)
+
+        verify_page = self.client.get(response.url)
+        self.assertEqual(verify_page.status_code, 200)
+        code = pyotp.TOTP(self.secret).now()
+        verified = self.client.post(response.url, {'code': code, 'next': '/admin/'})
+
+        self.assertEqual(verified.status_code, 302)
+        self.assertEqual(verified.url, '/admin/')
+        self.assertIn('auth_2fa_user_id', self.client.session)
+
     def test_enable_totp_from_security_page(self):
         user = self.user
         user.totp_enabled = False

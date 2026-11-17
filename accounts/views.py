@@ -348,12 +348,16 @@ def totp_verify_view(request):
     if request.method == 'POST':
         code = (request.POST.get('code') or '').strip()
         if verify_user_totp(user, code):
-            next_url = pending_2fa_next(request) or request.GET.get('next', '')
+            next_url = (
+                pending_2fa_next(request)
+                or request.POST.get('next', '')
+                or request.GET.get('next', '')
+            )
             return _finish_login_after_2fa(request, user, next_url)
         messages.error(request, 'Invalid or expired code. Try again.')
 
     return render(request, 'accounts/totp_verify.html', {
-        'next': pending_2fa_next(request),
+        'next': pending_2fa_next(request) or request.GET.get('next', ''),
     })
 
 
