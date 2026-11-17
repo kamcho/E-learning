@@ -14,8 +14,8 @@ from django.http import FileResponse, Http404, JsonResponse
 from django.views.decorators.http import require_http_methods, require_POST
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.db import connections
-from django.db.models import Avg, Count, Max, Prefetch, Q
-from django.db.models.functions import TruncDate
+from django.db.models import Avg, Count, Max, Prefetch, Q, Sum
+from django.db.models.functions import TruncDate, TruncMonth
 from django.urls import reverse
 from django.core.paginator import Paginator
 from django.utils import timezone
@@ -1766,6 +1766,186 @@ def admin_site_visits_view(request):
         'pagination_extra': _pagination_extra_params(request, ['page']),
         'ip_pagination_extra': _pagination_extra_params(request, ['ip_page']),
         'django_admin_url': reverse('admin:accounts_sitevisit_changelist'),
+    })
+
+
+@login_required(login_url='accounts:signin')
+def admin_finance_view(request):
+    """Financial overview restricted to Django staff superusers."""
+    if not (request.user.is_authenticated and request.user.is_staff and request.user.is_superuser):
+        messages.error(request, "You don't have permission to view the finance dashboard.")
+        return redirect('core:landing')
+
+    from decimal import Decimal
+    from subscriptions.models import GuestDemoPayment, Payment
+
+    period = request.GET.get('period', '12m').strip().lower()
+    if period not in {'30d', '90d', '12m', 'all'}:
+        period = '12m'
+
+    now = timezone.now()
+    if period == '30d':
+        start = now - timedelta(days=29)
+    elif period == '90d':
+        start = now - timedelta(days=89)
+    elif period == '12m':
+        start = now - timedelta(days=365)
+    else:
+        start = None
+
+    subscription_qs = Payment.objects.all()
+    guest_qs = GuestDemoPayment.objects.all()
+    if start:
+        subscription_qs = subscription_qs.filter(created_at__gte=start)
+        guest_qs = guest_qs.filter(created_at__gte=start)
+
+    success = Payment.Status.SUCCESS
+    pending = Payment.Status.PENDING
+    failed_statuses = [Payment.Status.FAILED, Payment.Status.CANCELLED]
+
+    def summarize(queryset):
+        data = queryset.aggregate(
+            total=Count('pk'),
+            successful=Count('pk', filter=Q(status=success)),
+            pending=Count('pk', filter=Q(status=pending)),
+            failed=Count('pk', filter=Q(status__in=failed_statuses)),
+            revenue=Sum('amount_kes', filter=Q(status=success)),
+            average=Avg('amount_kes', filter=Q(status=success)),
+        )
+        data['revenue'] = data['revenue'] or Decimal('0.00')
+        data['average'] = data['average'] or Decimal('0.00')
+        return data
+
+    subscription_stats = summarize(subscription_qs)
+    guest_stats = summarize(guest_qs)
+    stats = {
+        key: subscription_stats[key] + guest_stats[key]
+        for key in ('total', 'successful', 'pending', 'failed', 'revenue')
+    }
+    stats['average'] = (
+        stats['revenue'] / stats['successful'] if stats['successful'] else Decimal('0.00')
+    )
+    stats['success_rate'] = round(stats['successful'] / stats['total'] * 100, 1) if stats['total'] else 0
+
+    source_total_revenue = stats['revenue'] or Decimal('0.00')
+    source_rows = [
+        {
+            'label': 'Subscriptions',
+            'count': subscription_stats['successful'],
+            'revenue': subscription_stats['revenue'],
+            'share': round(float(subscription_stats['revenue'] / source_total_revenue * 100), 1)
+            if source_total_revenue else 0,
+            'tone': 'blue',
+        },
+        {
+            'label': 'Guest exams',
+            'count': guest_stats['successful'],
+            'revenue': guest_stats['revenue'],
+            'share': round(float(guest_stats['revenue'] / source_total_revenue * 100), 1)
+            if source_total_revenue else 0,
+            'tone': 'green',
+        },
+    ]
+
+    plan_totals = {}
+    for queryset in (subscription_qs, guest_qs):
+        rows = queryset.values('plan_id', 'plan__name').annotate(
+            attempts=Count('pk'),
+            successful=Count('pk', filter=Q(status=success)),
+            pending_count=Count('pk', filter=Q(status=pending)),
+            failed_count=Count('pk', filter=Q(status__in=failed_statuses)),
+            revenue=Sum('amount_kes', filter=Q(status=success)),
+        )
+        for row in rows:
+            item = plan_totals.setdefault(row['plan_id'], {
+                'name': row['plan__name'], 'attempts': 0, 'successful': 0,
+                'pending': 0, 'failed': 0, 'revenue': Decimal('0.00'),
+            })
+            item['attempts'] += row['attempts']
+            item['successful'] += row['successful']
+            item['pending'] += row['pending_count']
+            item['failed'] += row['failed_count']
+            item['revenue'] += row['revenue'] or Decimal('0.00')
+    plan_rows = sorted(plan_totals.values(), key=lambda item: item['revenue'], reverse=True)[:8]
+    top_plan_revenue = max((row['revenue'] for row in plan_rows), default=Decimal('0.00'))
+    for row in plan_rows:
+        row['bar_pct'] = round(float(row['revenue'] / top_plan_revenue * 100), 1) if top_plan_revenue else 0
+
+    daily = period in {'30d', '90d'}
+    bucket_start = start or (now - timedelta(days=365))
+    truncation = TruncDate('created_at') if daily else TruncMonth('created_at')
+    trend_totals = {}
+    for queryset in (subscription_qs, guest_qs):
+        trend_qs = queryset.filter(
+            created_at__gte=bucket_start,
+            status=success,
+        ).annotate(bucket=truncation).values('bucket').annotate(
+            revenue=Sum('amount_kes'), count=Count('pk'),
+        )
+        for row in trend_qs:
+            bucket = row['bucket']
+            if hasattr(bucket, 'date'):
+                bucket = bucket.date()
+            item = trend_totals.setdefault(bucket, {'revenue': Decimal('0.00'), 'count': 0})
+            item['revenue'] += row['revenue'] or Decimal('0.00')
+            item['count'] += row['count']
+
+    if daily:
+        start_date = timezone.localtime(bucket_start).date()
+        date_keys = [start_date + timedelta(days=index) for index in range((timezone.localdate() - start_date).days + 1)]
+    else:
+        local_today = timezone.localdate()
+        current_month = local_today.replace(day=1)
+        first_month = timezone.localtime(bucket_start).date().replace(day=1)
+        month_keys = []
+        cursor = first_month
+        while cursor <= current_month:
+            month_keys.append(cursor)
+            cursor = cursor.replace(year=cursor.year + (cursor.month == 12), month=(cursor.month % 12) + 1)
+        date_keys = month_keys
+
+    max_revenue = max((trend_totals.get(key, {}).get('revenue', Decimal('0.00')) for key in date_keys), default=Decimal('0.00'))
+    max_count = max((trend_totals.get(key, {}).get('count', 0) for key in date_keys), default=0)
+    trend = []
+    for index, key in enumerate(date_keys):
+        item = trend_totals.get(key, {'revenue': Decimal('0.00'), 'count': 0})
+        x = 48 + (index * (704 / max(len(date_keys) - 1, 1)))
+        revenue = item['revenue']
+        bar_height = (item['count'] / max_count * 125) if max_count else 0
+        revenue_y = 160 - (float(revenue / max_revenue) * 125) if max_revenue else 160
+        trend.append({
+            'label': key.strftime('%d %b' if daily else '%b %y'),
+            'revenue': revenue,
+            'count': item['count'],
+            'x': round(x, 1),
+            'bar_x': round(x - 7, 1),
+            'bar_y': round(160 - bar_height, 1),
+            'bar_height': round(bar_height, 1),
+            'revenue_y': round(revenue_y, 1),
+        })
+    trend_points = ' '.join(f"{point['x']},{point['revenue_y']}" for point in trend)
+
+    recent = []
+    for payment in subscription_qs.select_related('user', 'plan').order_by('-created_at')[:8]:
+        recent.append({'kind': 'Subscription', 'payment': payment, 'payer': payment.user.get_full_name() or payment.user.phone})
+    for payment in guest_qs.select_related('plan').order_by('-created_at')[:8]:
+        recent.append({'kind': 'Guest exam', 'payment': payment, 'payer': f'Guest · {payment.phone_number}'})
+    recent.sort(key=lambda row: row['payment'].created_at, reverse=True)
+
+    return render(request, 'accounts/admin_finance.html', {
+        'period': period,
+        'stats': stats,
+        'subscription_stats': subscription_stats,
+        'guest_stats': guest_stats,
+        'source_rows': source_rows,
+        'plan_rows': plan_rows,
+        'trend': trend,
+        'trend_points': trend_points,
+        'trend_max_count': max_count,
+        'trend_max_revenue': max_revenue,
+        'recent_payments': recent[:10],
+        'trend_label': 'Daily' if daily else ('Monthly · last 12 months' if period == 'all' else 'Monthly'),
+        'payments_url': reverse('subscriptions:admin_payments_list'),
     })
 
 

@@ -96,6 +96,7 @@ urlpatterns = [
     path('admin/database-backup/', views.admin_database_backup_view, name='admin_database_backup'),
     path('admin/action-logs/', views.admin_action_logs_view, name='admin_action_logs'),
     path('admin/site-visits/', views.admin_site_visits_view, name='admin_site_visits'),
+    path('admin/finance/', views.admin_finance_view, name='admin_finance'),
     path(
         'admin/action-logs/batch/',
         views.admin_action_log_detail_view,

@@ -1,0 +1,181 @@
+{% extends 'accounts/admin_base.html' %}
+
+{% block title %}Finance — Admin — Soma Smart{% endblock %}
+
+{% block extra_head %}
+<style>
+  .finance-page { max-width:1440px; margin:0 auto; }
+  .finance-hero { display:flex; justify-content:space-between; align-items:flex-start; gap:1.2rem; flex-wrap:wrap; margin-bottom:1.25rem; }
+  .finance-hero h1 { margin:.5rem 0 .35rem; font-family:var(--font-heading); letter-spacing:-.025em; }
+  .finance-hero p { margin:0; color:var(--clr-text-muted); max-width:680px; }
+  .finance-hero-actions { display:flex; gap:.6rem; align-items:center; flex-wrap:wrap; }
+  .finance-select,.finance-link { min-height:40px; border:1px solid var(--clr-border); border-radius:10px; background:var(--clr-surface); color:var(--clr-text); padding:.55rem .8rem; font:inherit; text-decoration:none; }
+  .finance-link { background:var(--clr-primary); color:white; border-color:var(--clr-primary); font-weight:700; display:inline-flex; align-items:center; }
+  .finance-period-form { display:flex; gap:.5rem; align-items:center; }
+  .finance-period-form button { border:0; border-radius:10px; background:#142b4a; color:#fff; padding:.65rem .9rem; font-weight:700; cursor:pointer; }
+  .finance-kpis { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:1rem; margin:1.25rem 0; }
+  .finance-kpi,.finance-panel { background:var(--clr-surface); border:1px solid var(--clr-border); border-radius:16px; box-shadow:0 6px 22px #12223a08; }
+  .finance-kpi { padding:1.15rem 1.2rem; }
+  .finance-kpi-label { color:var(--clr-text-muted); font-size:.82rem; }
+  .finance-kpi-value { font-family:var(--font-heading); font-weight:850; font-size:clamp(1.35rem,2.2vw,1.9rem); margin:.45rem 0 .25rem; letter-spacing:-.03em; }
+  .finance-kpi-note { font-size:.78rem; color:var(--clr-text-muted); }
+  .finance-layout { display:grid; grid-template-columns:minmax(0,1.65fr) minmax(300px,.9fr); gap:1rem; align-items:stretch; }
+  .finance-panel { overflow:hidden; }
+  .finance-panel-head { padding:1.1rem 1.25rem .9rem; border-bottom:1px solid var(--clr-border); display:flex; justify-content:space-between; gap:1rem; align-items:flex-start; }
+  .finance-panel-head h2 { margin:0; font-size:1.05rem; }
+  .finance-panel-head p { margin:.28rem 0 0; color:var(--clr-text-muted); font-size:.82rem; }
+  .finance-chart-wrap { padding:.8rem 1rem .5rem; }
+  .finance-chart { width:100%; height:auto; display:block; overflow:visible; }
+  .finance-chart .grid-line { stroke:var(--clr-border); stroke-width:1; stroke-dasharray:3 5; }
+  .finance-chart .count-bar { fill:#dbeafe; }
+  .finance-chart .revenue-line { fill:none; stroke:#2878d0; stroke-width:3; stroke-linecap:round; stroke-linejoin:round; }
+  .finance-chart .revenue-point { fill:#fff; stroke:#2878d0; stroke-width:2.5; }
+  .finance-chart .axis-label { fill:var(--clr-text-muted); font-size:10px; }
+  .finance-legend { display:flex; gap:1.1rem; align-items:center; padding:.3rem 1.3rem 1rem; color:var(--clr-text-muted); font-size:.78rem; }
+  .finance-legend span { display:inline-flex; align-items:center; gap:.4rem; }
+  .legend-square { width:10px; height:10px; border-radius:3px; background:#dbeafe; }
+  .legend-line { width:15px; height:3px; background:#2878d0; border-radius:3px; }
+  .finance-source-content { display:grid; grid-template-columns:145px 1fr; gap:1.1rem; align-items:center; padding:1.25rem; }
+  .finance-donut { width:135px; aspect-ratio:1; border-radius:50%; display:grid; place-items:center; position:relative; }
+  .finance-donut::before { content:""; width:78px; aspect-ratio:1; border-radius:50%; background:var(--clr-surface); position:absolute; }
+  .finance-donut-center { z-index:1; text-align:center; line-height:1.2; }
+  .finance-donut-center strong { display:block; font-size:1.1rem; }
+  .finance-donut-center span { display:block; font-size:.68rem; color:var(--clr-text-muted); }
+  .finance-source-list { display:grid; gap:.9rem; }
+  .finance-source-row { display:grid; grid-template-columns:1fr auto; gap:.2rem .5rem; font-size:.82rem; }
+  .finance-source-name { display:flex; gap:.45rem; align-items:center; font-weight:700; }
+  .finance-dot { width:9px; height:9px; border-radius:50%; background:#2878d0; }
+  .finance-dot--green { background:#48bd9a; }
+  .finance-source-meta { color:var(--clr-text-muted); font-size:.75rem; grid-column:1/-1; }
+  .finance-lower { display:grid; grid-template-columns:1.1fr .9fr; gap:1rem; margin-top:1rem; }
+  .finance-table-wrap { overflow:auto; }
+  .finance-table { width:100%; border-collapse:collapse; min-width:520px; }
+  .finance-table th,.finance-table td { padding:.75rem 1rem; text-align:left; border-bottom:1px solid var(--clr-border); font-size:.82rem; }
+  .finance-table th { color:var(--clr-text-muted); font-size:.72rem; text-transform:uppercase; letter-spacing:.04em; }
+  .finance-table tr:last-child td { border-bottom:0; }
+  .finance-plan-name { font-weight:750; }
+  .finance-plan-meta { font-size:.72rem; color:var(--clr-text-muted); margin-top:.25rem; }
+  .finance-mini-bar { width:120px; max-width:100%; height:5px; background:var(--clr-surface-alt); border-radius:9px; overflow:hidden; margin-top:.4rem; }
+  .finance-mini-bar i { display:block; height:100%; border-radius:inherit; background:#2878d0; }
+  .finance-status-body { padding:1.2rem 1.25rem; }
+  .finance-status-total { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:.9rem; }
+  .finance-status-total strong { font-size:1.55rem; }
+  .finance-status-stack { display:flex; height:11px; border-radius:20px; overflow:hidden; background:var(--clr-surface-alt); margin-bottom:1rem; }
+  .finance-status-stack i { display:block; height:100%; }
+  .finance-status-stack .ok { background:#48bd9a; }.finance-status-stack .wait { background:#f3ba56; }.finance-status-stack .bad { background:#ed806f; }
+  .finance-status-row { display:flex; align-items:center; justify-content:space-between; padding:.42rem 0; color:var(--clr-text-muted); font-size:.82rem; }
+  .finance-status-row strong { color:var(--clr-text); }
+  .finance-status-key { display:flex; align-items:center; gap:.45rem; }
+  .finance-status-dot { width:8px; height:8px; border-radius:50%; background:#48bd9a; }.finance-status-dot.wait { background:#f3ba56; }.finance-status-dot.bad { background:#ed806f; }
+  .finance-empty { padding:2rem 1.25rem; text-align:center; color:var(--clr-text-muted); }
+  .finance-status-pill { display:inline-block; border-radius:99px; padding:.24rem .55rem; background:var(--clr-surface-alt); font-weight:750; font-size:.72rem; }
+  .finance-status-pill.success { color:#11734c; background:#e5f7ed; }.finance-status-pill.pending { color:#91600b; background:#fff5da; }.finance-status-pill.failed,.finance-status-pill.cancelled { color:#a73535; background:#fff0ef; }
+  @media(max-width:1050px) { .finance-layout,.finance-lower { grid-template-columns:1fr; } }
+  @media(max-width:760px) { .finance-kpis { grid-template-columns:repeat(2,minmax(0,1fr)); gap:.65rem; } .finance-kpi { padding:.9rem; } .finance-source-content { grid-template-columns:115px 1fr; gap:.6rem; padding:1rem; }.finance-donut { width:108px; }.finance-donut::before { width:64px; } }
+  @media(max-width:480px) { .finance-kpis { grid-template-columns:1fr 1fr; }.finance-kpi-value { font-size:1.25rem; }.finance-source-content { grid-template-columns:1fr; justify-items:center; }.finance-source-list { width:100%; } }
+</style>
+{% endblock %}
+
+{% block admin_content %}
+<main class="finance-page">
+  <header class="finance-hero">
+    <div>
+      <a href="{% url 'accounts:admin_dashboard' %}" class="admin-list-back">&larr; Admin dashboard</a>
+      <h1>Finance overview</h1>
+      <p>Revenue and payment activity across guardian subscriptions and guest exam purchases.</p>
+    </div>
+    <div class="finance-hero-actions">
+      <form method="get" class="finance-period-form">
+        <select class="finance-select" name="period" aria-label="Finance date range">
+          <option value="30d" {% if period == '30d' %}selected{% endif %}>Last 30 days</option>
+          <option value="90d" {% if period == '90d' %}selected{% endif %}>Last 90 days</option>
+          <option value="12m" {% if period == '12m' %}selected{% endif %}>Last 12 months</option>
+          <option value="all" {% if period == 'all' %}selected{% endif %}>All time</option>
+        </select>
+        <button type="submit">Apply</button>
+      </form>
+      <a class="finance-link" href="{{ payments_url }}">Payment ledger &rarr;</a>
+    </div>
+  </header>
+
+  <section class="finance-kpis" aria-label="Finance key figures">
+    <article class="finance-kpi"><div class="finance-kpi-label">Successful revenue</div><div class="finance-kpi-value">KES {{ stats.revenue|floatformat:0 }}</div><div class="finance-kpi-note">{{ stats.successful }} completed payments</div></article>
+    <article class="finance-kpi"><div class="finance-kpi-label">Payment attempts</div><div class="finance-kpi-value">{{ stats.total }}</div><div class="finance-kpi-note">Across all payment statuses</div></article>
+    <article class="finance-kpi"><div class="finance-kpi-label">Average payment</div><div class="finance-kpi-value">KES {{ stats.average|floatformat:0 }}</div><div class="finance-kpi-note">Successful payments only</div></article>
+    <article class="finance-kpi"><div class="finance-kpi-label">Success rate</div><div class="finance-kpi-value">{{ stats.success_rate }}%</div><div class="finance-kpi-note">{{ stats.pending }} pending · {{ stats.failed }} failed or cancelled</div></article>
+  </section>
+
+  <section class="finance-layout">
+    <article class="finance-panel">
+      <div class="finance-panel-head"><div><h2>Revenue trend</h2><p>{{ trend_label }} · successful revenue and payment count</p></div></div>
+      {% if trend %}
+      <div class="finance-chart-wrap">
+        <svg class="finance-chart" viewBox="0 0 800 205" role="img" aria-label="Revenue trend chart">
+          <line class="grid-line" x1="45" y1="35" x2="760" y2="35"/><line class="grid-line" x1="45" y1="97" x2="760" y2="97"/><line class="grid-line" x1="45" y1="160" x2="760" y2="160"/>
+          <text class="axis-label" x="5" y="39">{{ trend_max_count }}</text><text class="axis-label" x="20" y="164">0</text>
+          <text class="axis-label" text-anchor="end" x="760" y="26">KES {{ trend_max_revenue|floatformat:0 }}</text>
+          {% for point in trend %}
+          <rect class="count-bar" x="{{ point.bar_x }}" y="{{ point.bar_y }}" width="14" height="{{ point.bar_height }}" rx="3"><title>{{ point.label }}: {{ point.count }} successful payments</title></rect>
+          {% endfor %}
+          <polyline class="revenue-line" points="{{ trend_points }}"/>
+          {% for point in trend %}<circle class="revenue-point" cx="{{ point.x }}" cy="{{ point.revenue_y }}" r="3.5"><title>{{ point.label }}: KES {{ point.revenue|floatformat:0 }}</title></circle>{% endfor %}
+          {% for point in trend %}{% if forloop.first or forloop.last or forloop.counter0|divisibleby:3 %}<text class="axis-label" text-anchor="middle" x="{{ point.x }}" y="184">{{ point.label }}</text>{% endif %}{% endfor %}
+        </svg>
+      </div>
+      <div class="finance-legend"><span><i class="legend-square"></i>Successful payments</span><span><i class="legend-line"></i>Revenue</span></div>
+      {% else %}<div class="finance-empty">No successful payments in this period.</div>{% endif %}
+    </article>
+
+    <article class="finance-panel">
+      <div class="finance-panel-head"><div><h2>Revenue by payment type</h2><p>Successful transactions only</p></div></div>
+      {% with subscription_share=source_rows.0.share %}
+      <div class="finance-source-content">
+        <div class="finance-donut" style="background:conic-gradient(#2878d0 0 {{ subscription_share }}%, #48bd9a {{ subscription_share }}% 100%);">
+          <div class="finance-donut-center"><strong>{{ stats.successful }}</strong><span>payments</span></div>
+        </div>
+        <div class="finance-source-list">
+          {% for row in source_rows %}
+          <div class="finance-source-row">
+            <div class="finance-source-name"><i class="finance-dot{% if row.tone == 'green' %} finance-dot--green{% endif %}"></i>{{ row.label }}</div>
+            <strong>{{ row.share }}%</strong>
+            <div class="finance-source-meta">KES {{ row.revenue|floatformat:0 }} · {{ row.count }} payments</div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endwith %}
+    </article>
+  </section>
+
+  <section class="finance-lower">
+    <article class="finance-panel">
+      <div class="finance-panel-head"><div><h2>Plan performance</h2><p>Revenue ranked by plan · KES</p></div></div>
+      {% if plan_rows %}
+      <div class="finance-table-wrap"><table class="finance-table"><thead><tr><th>Plan</th><th>Attempts</th><th>Successful</th><th>Revenue</th></tr></thead><tbody>
+        {% for row in plan_rows %}<tr><td><div class="finance-plan-name">{{ row.name }}</div><div class="finance-mini-bar"><i style="width:{{ row.bar_pct }}%"></i></div></td><td>{{ row.attempts }}</td><td>{{ row.successful }}</td><td><strong>KES {{ row.revenue|floatformat:0 }}</strong></td></tr>{% endfor %}
+      </tbody></table></div>
+      {% else %}<div class="finance-empty">No payment activity in this period.</div>{% endif %}
+    </article>
+
+    <article class="finance-panel">
+      <div class="finance-panel-head"><div><h2>Payment status</h2><p>All attempts in selected period</p></div></div>
+      <div class="finance-status-body">
+        <div class="finance-status-total"><span>Total attempts</span><strong>{{ stats.total }}</strong></div>
+        {% if stats.total %}
+        <div class="finance-status-stack" aria-hidden="true"><i class="ok" style="width:{% widthratio stats.successful stats.total 100 %}%"></i><i class="wait" style="width:{% widthratio stats.pending stats.total 100 %}%"></i><i class="bad" style="width:{% widthratio stats.failed stats.total 100 %}%"></i></div>
+        {% else %}<div class="finance-status-stack" aria-hidden="true"></div>{% endif %}
+        <div class="finance-status-row"><span class="finance-status-key"><i class="finance-status-dot"></i>Successful</span><strong>{{ stats.successful }}</strong></div>
+        <div class="finance-status-row"><span class="finance-status-key"><i class="finance-status-dot wait"></i>Pending</span><strong>{{ stats.pending }}</strong></div>
+        <div class="finance-status-row"><span class="finance-status-key"><i class="finance-status-dot bad"></i>Failed / cancelled</span><strong>{{ stats.failed }}</strong></div>
+      </div>
+    </article>
+  </section>
+
+  <section class="finance-panel" style="margin-top:1rem;">
+    <div class="finance-panel-head"><div><h2>Recent payments</h2><p>Latest activity in selected period</p></div><a href="{{ payments_url }}" class="admin-page-btn">Open full ledger &rarr;</a></div>
+    {% if recent_payments %}<div class="finance-table-wrap"><table class="finance-table"><thead><tr><th>Date</th><th>Payer</th><th>Type</th><th>Plan</th><th>Amount</th><th>Status</th></tr></thead><tbody>
+      {% for row in recent_payments %}<tr><td>{{ row.payment.created_at|date:'d M Y, H:i' }}</td><td>{{ row.payer }}</td><td>{{ row.kind }}</td><td>{{ row.payment.plan.name }}</td><td>KES {{ row.payment.amount_kes|floatformat:0 }}</td><td><span class="finance-status-pill {{ row.payment.status }}">{{ row.payment.get_status_display }}</span></td></tr>{% endfor %}
+    </tbody></table></div>{% else %}<div class="finance-empty">No payments recorded in this period.</div>{% endif %}
+  </section>
+</main>
+{% endblock %}
