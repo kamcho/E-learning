@@ -7,6 +7,9 @@
 {% include 'accounts/partials/admin_list_styles.html' %}
 <style>
   .payment-amount { font-family: var(--font-heading); font-weight: 800; color: var(--clr-text); }
+  .payments-ledger tbody tr[data-payment-details] { cursor: pointer; }
+  .payments-ledger tbody tr[data-payment-details]:hover { background: var(--clr-surface-alt); }
+  .payments-ledger tbody tr[data-payment-details]:focus-visible { outline: 2px solid var(--clr-primary); outline-offset: -2px; }
   .admin-filter-select {
     padding: 0.55rem 0.85rem;
     border: 1px solid var(--clr-border);
@@ -37,17 +40,10 @@
     color: var(--clr-text-muted);
     margin-top: 0.35rem;
   }
-  .payment-detail-button {
-    border: 0;
-    background: none;
-    color: var(--clr-primary);
-    font: inherit;
-    font-weight: 700;
-    cursor: pointer;
-    padding: 0.35rem 0;
-  }
-  .payment-detail-button:hover { text-decoration: underline; }
   .payment-details-dialog {
+    position: fixed;
+    inset: 0;
+    margin: auto;
     width: min(680px, calc(100vw - 2rem));
     max-height: min(85vh, 760px);
     overflow: auto;
@@ -222,7 +218,7 @@
   </form>
 
   {% if page_obj.object_list %}
-  <table class="data-table">
+  <table class="data-table payments-ledger">
     <thead>
       <tr>
         <th>Date</th>
@@ -233,13 +229,12 @@
         <th>M-Pesa phone</th>
         <th>Receipt</th>
         <th>Status</th>
-        <th></th>
       </tr>
     </thead>
     <tbody>
       {% for row in page_obj %}
       {% with payment=row.payment %}
-      <tr>
+      <tr data-payment-details="payment-details-{{ payment.uuid }}" tabindex="0" role="button" aria-label="View payment details for {{ payment.uuid }}">
         <td>
           <div class="list-row-name">{{ payment.created_at|date:"d M Y" }}</div>
           <div class="list-row-meta">{{ payment.created_at|date:"H:i" }}</div>
@@ -255,20 +250,17 @@
           </div>
           {% else %}
           <div class="list-row-name">Guest</div>
-          <div class="list-row-meta">{{ payment.phone_number }}</div>
           {% endif %}
         </td>
         <td>
           {% if row.kind == 'guest_exam' %}
           <span class="badge badge-gold" style="font-size:0.72rem;">Guest exam</span>
-          <div class="list-row-meta" title="Demo session">Demo {{ payment.demo_id|truncatechars:8 }}</div>
           {% else %}
           <span class="badge badge-primary" style="font-size:0.72rem;">Subscription</span>
           {% endif %}
         </td>
         <td>
           <div class="list-row-name">{{ payment.plan.name }}</div>
-          <div class="list-row-meta">{{ payment.plan.tests_label }}</div>
         </td>
         <td><span class="payment-amount">KES {{ payment.amount_kes|floatformat:0 }}</span></td>
         <td>{{ payment.phone_number }}</td>
@@ -281,17 +273,9 @@
         </td>
         <td>
           <span class="payment-status-pill {{ payment.status }}">{{ payment.get_status_display }}</span>
-          {% if payment.result_description and payment.status != 'success' %}
-            <div class="list-row-meta" style="max-width: 140px; margin-top: 2px;" title="{{ payment.result_description }}">
-              {{ payment.result_description|truncatechars:28 }}
-            </div>
-          {% endif %}
-        </td>
-        <td>
-          <button type="button" class="payment-detail-button" aria-haspopup="dialog" data-payment-details="payment-details-{{ payment.uuid }}">View details</button>
           <template id="payment-details-{{ payment.uuid }}">
             <div class="payment-details-head">
-              <div><h2>Payment details</h2><div class="list-row-meta">{{ payment.uuid }}</div></div>
+              <div><h2 id="payment-details-title">Payment details</h2><div class="list-row-meta">{{ payment.uuid }}</div></div>
               <button type="button" class="payment-details-close" data-close-payment-details>Close</button>
             </div>
             <div class="payment-details-body">
@@ -344,11 +328,21 @@
   if (!dialog || !content) return;
 
   document.querySelectorAll('[data-payment-details]').forEach(function (button) {
-    button.addEventListener('click', function () {
+    function openDetails() {
       var template = document.getElementById(button.dataset.paymentDetails);
       if (!template) return;
       content.replaceChildren(template.content.cloneNode(true));
       dialog.showModal();
+    }
+    button.addEventListener('click', function (event) {
+      if (event.target.closest('a, button, input, select, textarea')) return;
+      openDetails();
+    });
+    button.addEventListener('keydown', function (event) {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        openDetails();
+      }
     });
   });
   dialog.addEventListener('click', function (event) {
