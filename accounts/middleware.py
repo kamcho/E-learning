@@ -103,3 +103,20 @@ class TwoFactorMiddleware:
 
         return self.get_response(request)
 
+
+class SiteVisitMiddleware:
+    """Record site visits, paths, IP addresses, and detect crawlers/bots."""
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        response = self.get_response(request)
+        try:
+            from .visit_tracking import record_site_visit
+            record_site_visit(request, response)
+        except Exception:
+            pass
+        return response
+
+

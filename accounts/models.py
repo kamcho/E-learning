@@ -328,3 +328,41 @@ class ReferralPointLog(models.Model):
 
     def __str__(self):
         return f'{self.referrer} +{self.points} from {self.referred_user}'
+
+
+class SiteVisit(models.Model):
+    """Tracks page visits, IP addresses, paths, and detects crawlers/bots."""
+
+    ip_address = models.GenericIPAddressField(null=True, blank=True, db_index=True)
+    path = models.CharField(max_length=512, db_index=True)
+    method = models.CharField(max_length=10, default='GET')
+    user = models.ForeignKey(
+        MyUser,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='site_visits',
+    )
+    user_agent = models.TextField(blank=True)
+    referrer = models.CharField(max_length=512, blank=True)
+    status_code = models.PositiveSmallIntegerField(null=True, blank=True)
+    is_bot = models.BooleanField(default=False, db_index=True)
+    bot_name = models.CharField(max_length=64, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ('-created_at',)
+        verbose_name = 'Site visit'
+        verbose_name_plural = 'Site visits'
+        indexes = [
+            models.Index(fields=['is_bot', 'created_at']),
+            models.Index(fields=['is_bot', 'path']),
+            models.Index(fields=['is_bot', 'ip_address']),
+            models.Index(fields=['ip_address', 'created_at']),
+        ]
+
+    def __str__(self):
+        who = self.user.phone if self.user else (self.ip_address or 'anonymous')
+        bot_label = f' [{self.bot_name or "Bot"}]' if self.is_bot else ''
+        return f'{who}{bot_label} -> {self.path} ({self.created_at:%Y-%m-%d %H:%M})'
+

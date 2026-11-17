@@ -92,6 +92,7 @@ MIDDLEWARE = [
     'accounts.middleware.TwoFactorMiddleware',
     'accounts.middleware.CurrentRequestMiddleware',
     'accounts.middleware.GooglePhoneLinkMiddleware',
+    'accounts.middleware.SiteVisitMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]

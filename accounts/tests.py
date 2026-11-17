@@ -877,3 +877,185 @@ class MemberLifecycleTests(TestCase):
         self.assertEqual(response.status_code, 302)
         self.admin.refresh_from_db()
         self.assertTrue(self.admin.is_active)
+
+
+class SiteVisitTrackingTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.admin = get_user_model().objects.create_superuser(
+            phone='0777000999',
+            password='1234',
+            first_name='Platform',
+            last_name='Admin',
+        )
+        self.guardian = get_user_model().objects.create_user(
+            phone='0777000888',
+            password='1234',
+            role=Role.GUARDIAN,
+            first_name='Jane',
+            last_name='Doe',
+        )
+
+    def test_detect_crawler_or_bot(self):
+        from accounts.visit_tracking import detect_crawler_or_bot
+
+        # Googlebot
+        is_bot, name = detect_crawler_or_bot('Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)')
+        self.assertTrue(is_bot)
+        self.assertEqual(name, 'Googlebot')
+
+        # Bingbot
+        is_bot, name = detect_crawler_or_bot('Mozilla/5.0 (compatible; bingbot/2.0; +http://www.bing.com/bingbot.htm)')
+        self.assertTrue(is_bot)
+        self.assertEqual(name, 'Bingbot')
+
+        # Python-requests
+        is_bot, name = detect_crawler_or_bot('python-requests/2.28.1')
+        self.assertTrue(is_bot)
+        self.assertEqual(name, 'Python Requests')
+
+        # cURL
+        is_bot, name = detect_crawler_or_bot('curl/7.88.1')
+        self.assertTrue(is_bot)
+        self.assertEqual(name, 'cURL')
+
+        # Missing UA
+        is_bot, name = detect_crawler_or_bot('')
+        self.assertTrue(is_bot)
+
+        # Generic crawler
+        is_bot, name = detect_crawler_or_bot('MyCustomSpider/1.0')
+        self.assertTrue(is_bot)
+
+        # Real Human Browser
+        is_bot, name = detect_crawler_or_bot(
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36'
+        )
+        self.assertFalse(is_bot)
+        self.assertEqual(name, '')
+
+    def test_parse_browser_os(self):
+        from accounts.visit_tracking import parse_browser_os
+
+        ua = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36'
+        self.assertEqual(parse_browser_os(ua), 'Chrome on Windows')
+
+        ua_iphone = 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1'
+        self.assertEqual(parse_browser_os(ua_iphone), 'Safari on iPhone')
+
+    def test_site_visit_middleware_records_visit(self):
+        from accounts.models import SiteVisit
+
+        SiteVisit.objects.all().delete()
+        response = self.client.get(reverse('core:landing'), HTTP_USER_AGENT='Mozilla/5.0 (Windows NT 10.0) Chrome/120.0')
+        self.assertEqual(response.status_code, 200)
+
+        visits = SiteVisit.objects.all()
+        self.assertEqual(visits.count(), 1)
+        visit = visits.first()
+        self.assertEqual(visit.path, '/')
+        self.assertFalse(visit.is_bot)
+
+    def test_site_visit_middleware_flags_bots(self):
+        from accounts.models import SiteVisit
+
+        SiteVisit.objects.all().delete()
+        self.client.get(reverse('core:landing'), HTTP_USER_AGENT='Googlebot/2.1 (+http://www.google.com/bot.html)')
+
+        visit = SiteVisit.objects.first()
+        self.assertIsNotNone(visit)
+        self.assertTrue(visit.is_bot)
+        self.assertEqual(visit.bot_name, 'Googlebot')
+
+    def test_site_visit_ignores_static_assets(self):
+        from accounts.models import SiteVisit
+
+        SiteVisit.objects.all().delete()
+        self.client.get('/static/css/styles.css')
+        self.client.get('/favicon.ico')
+
+        self.assertEqual(SiteVisit.objects.count(), 0)
+
+    def test_admin_site_visits_view_requires_admin(self):
+        # Anonymous redirect
+        response = self.client.get(reverse('accounts:admin_site_visits'))
+        self.assertEqual(response.status_code, 302)
+
+        # Guardian redirect
+        self.client.force_login(self.guardian)
+        response = self.client.get(reverse('accounts:admin_site_visits'))
+        self.assertEqual(response.status_code, 302)
+
+        # Platform admin access
+        self.client.force_login(self.admin)
+        response = self.client.get(reverse('accounts:admin_site_visits'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Site Visits & Traffic Analytics')
+
+    def test_admin_site_visits_aggregates_and_filters_bots(self):
+        from accounts.models import SiteVisit
+
+        SiteVisit.objects.all().delete()
+
+        # Create sample visits
+        # 3 visits from 192.168.1.1 to /page-a (human)
+        for _ in range(3):
+            SiteVisit.objects.create(
+                ip_address='192.168.1.1',
+                path='/page-a',
+                method='GET',
+                status_code=200,
+                is_bot=False,
+                user_agent='Mozilla/5.0 Chrome',
+            )
+
+        # 2 visits from 192.168.1.2 to /page-b (human)
+        for _ in range(2):
+            SiteVisit.objects.create(
+                ip_address='192.168.1.2',
+                path='/page-b',
+                method='GET',
+                status_code=200,
+                is_bot=False,
+                user_agent='Mozilla/5.0 Safari',
+            )
+
+        # 5 visits from 66.249.66.1 (Googlebot) to /page-a
+        for _ in range(5):
+            SiteVisit.objects.create(
+                ip_address='66.249.66.1',
+                path='/page-a',
+                method='GET',
+                status_code=200,
+                is_bot=True,
+                bot_name='Googlebot',
+                user_agent='Googlebot/2.1',
+            )
+
+        self.client.force_login(self.admin)
+
+        # By default, bots are excluded:
+        # Total visits should be 5 (3 + 2 humans)
+        response = self.client.get(reverse('accounts:admin_site_visits'))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['filtered_total_visits'], 5)
+        self.assertEqual(response.context['unique_ips_count'], 2)
+        self.assertEqual(response.context['total_bot_visits'], 5)
+
+        # Most visited pages: /page-a (3), /page-b (2)
+        pages = response.context['pages_list']
+        self.assertEqual(pages[0]['path'], '/page-a')
+        self.assertEqual(pages[0]['visits'], 3)
+        self.assertEqual(pages[1]['path'], '/page-b')
+        self.assertEqual(pages[1]['visits'], 2)
+
+        # When bot=all, total should be 10
+        response_all = self.client.get(reverse('accounts:admin_site_visits') + '?bot=all')
+        self.assertEqual(response_all.context['filtered_total_visits'], 10)
+
+        # Group by IP tab
+        response_ips = self.client.get(reverse('accounts:admin_site_visits') + '?tab=ips')
+        self.assertEqual(response_ips.status_code, 200)
+        self.assertContains(response_ips, '192.168.1.1')
+        self.assertContains(response_ips, '192.168.1.2')
+

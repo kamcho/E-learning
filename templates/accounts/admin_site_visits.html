@@ -1,0 +1,632 @@
+{% extends 'accounts/admin_base.html' %}
+
+{% block title %}Site Visits & Traffic — Admin — Soma Smart{% endblock %}
+
+{% block extra_head %}
+{% include 'accounts/partials/gd_metric_cards_styles.html' %}
+{% include 'accounts/partials/admin_list_styles.html' %}
+<style>
+  .traffic-bar-wrap {
+    margin-top: 0.35rem;
+    height: 6px;
+    border-radius: 999px;
+    background: var(--clr-surface-alt, #e2e8f0);
+    overflow: hidden;
+  }
+  .traffic-bar {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, var(--clr-primary, #2563eb), color-mix(in srgb, var(--clr-primary, #2563eb) 70%, #10b981));
+    min-width: 2px;
+  }
+  .analytics-tabs {
+    display: flex;
+    gap: 0.4rem;
+    border-bottom: 2px solid var(--clr-border, #e2e8f0);
+    margin-bottom: var(--space-xl, 1.5rem);
+    overflow-x: auto;
+    padding-bottom: 1px;
+  }
+  .analytics-tab-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.65rem 1.15rem;
+    border: none;
+    background: none;
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--clr-text-muted, #64748b);
+    cursor: pointer;
+    border-radius: 6px 6px 0 0;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    text-decoration: none;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+  }
+  .analytics-tab-btn:hover {
+    color: var(--clr-primary, #2563eb);
+    background: color-mix(in srgb, var(--clr-primary, #2563eb) 6%, transparent);
+  }
+  .analytics-tab-btn.is-active {
+    color: var(--clr-primary, #2563eb);
+    border-bottom-color: var(--clr-primary, #2563eb);
+    background: var(--clr-surface, #fff);
+    font-weight: 700;
+  }
+  .badge-bot {
+    background: #fef2f2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+    font-size: 0.72rem;
+    padding: 0.15rem 0.45rem;
+    border-radius: 4px;
+    font-weight: 600;
+    display: inline-block;
+  }
+  .badge-human {
+    background: #f0fdf4;
+    color: #166534;
+    border: 1px solid #bbf7d0;
+    font-size: 0.72rem;
+    padding: 0.15rem 0.45rem;
+    border-radius: 4px;
+    font-weight: 600;
+    display: inline-block;
+  }
+  .badge-status {
+    display: inline-block;
+    padding: 0.15rem 0.45rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-family: ui-monospace, monospace;
+    font-weight: 700;
+  }
+  .status-2xx { background: #e8f8ef; color: #166534; border: 1px solid #bbf7d0; }
+  .status-3xx { background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; }
+  .status-4xx { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+  .status-5xx { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+  .ip-tag {
+    font-family: ui-monospace, monospace;
+    font-weight: 600;
+    font-size: 0.85rem;
+    background: var(--clr-surface-alt, #f1f5f9);
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    border: 1px solid var(--clr-border, #cbd5e1);
+    color: var(--clr-text, #0f172a);
+    display: inline-block;
+  }
+  .filter-bar-grid {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+    padding: var(--space-md, 1rem) var(--space-xl, 1.5rem);
+    background: var(--clr-surface, #fff);
+    border-bottom: 1px solid var(--clr-border, #e2e8f0);
+  }
+  .filter-pill-label {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--clr-text-muted, #64748b);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .ip-filter-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: color-mix(in srgb, var(--clr-primary, #2563eb) 10%, var(--clr-surface, #fff));
+    border: 1px solid color-mix(in srgb, var(--clr-primary, #2563eb) 35%, transparent);
+    padding: 0.75rem 1.25rem;
+    border-radius: 8px;
+    margin-bottom: var(--space-lg, 1rem);
+    font-size: 0.88rem;
+  }
+  .ip-filter-banner code { font-weight: 700; }
+  .path-cell {
+    max-width: 380px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-family: ui-monospace, monospace;
+    font-size: 0.84rem;
+  }
+</style>
+{% endblock %}
+
+{% block admin_content %}
+<div class="admin-list-banner">
+  <div>
+    <a href="{% url 'accounts:admin_dashboard' %}" class="admin-list-back admin-list-back--light">&larr; Back to dashboard</a>
+    <h1>Site Visits & Traffic Analytics</h1>
+    <p>Track page impressions, visitor frequency, group by IP address, and filter crawlers &amp; bots.</p>
+  </div>
+  <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
+    <a href="{% url 'accounts:admin_site_visits' %}?bot={{ bot_filter }}&period={{ period }}" class="btn-list-banner" title="Refresh data">
+      <span aria-hidden="true">&#8635;</span> Refresh
+    </a>
+    <a href="{{ django_admin_url }}" class="btn-list-banner" target="_blank" rel="noopener">Django Admin</a>
+  </div>
+</div>
+
+{% if ip_filter %}
+<div class="ip-filter-banner">
+  <div>
+    Filtering visits for IP: <code>{{ ip_filter }}</code>
+  </div>
+  <a href="{% url 'accounts:admin_site_visits' %}?bot={{ bot_filter }}&period={{ period }}&tab={{ active_tab }}" class="admin-page-btn" style="text-decoration:none;">
+    &times; Clear IP filter
+  </a>
+</div>
+{% endif %}
+
+<!-- TOP METRIC CARDS -->
+<div class="gd-metrics-grid admin-list-metrics">
+  <div class="gd-metric-card gd-metric-card--blue">
+    <div class="gd-metric-top">
+      <div class="gd-metric-icon" aria-hidden="true">&#128065;</div>
+      <div class="gd-metric-value">{{ filtered_total_visits }}</div>
+    </div>
+    <div class="gd-metric-label">
+      {% if bot_filter == 'exclude' %}Human Page Visits{% elif bot_filter == 'only' %}Bot Visits{% else %}Total Visits{% endif %}
+    </div>
+    <div class="gd-metric-footer">
+      <span class="gd-metric-footer-icon" aria-hidden="true">&#128200;</span>
+      <span>
+        {% if period == 'today' %}Recorded today{% elif period == '7d' %}Past 7 days{% elif period == '30d' %}Past 30 days{% else %}All time recorded{% endif %}
+      </span>
+    </div>
+  </div>
+
+  <div class="gd-metric-card gd-metric-card--green">
+    <div class="gd-metric-top">
+      <div class="gd-metric-icon" aria-hidden="true">&#127760;</div>
+      <div class="gd-metric-value">{{ unique_ips_count }}</div>
+    </div>
+    <div class="gd-metric-label">Unique IP Addresses</div>
+    <div class="gd-metric-footer">
+      <span class="gd-metric-footer-icon" aria-hidden="true">&#128101;</span>
+      <span>Distinct visitor addresses</span>
+    </div>
+  </div>
+
+  <div class="gd-metric-card gd-metric-card--purple">
+    <div class="gd-metric-top">
+      <div class="gd-metric-icon" aria-hidden="true">&#128196;</div>
+      <div class="gd-metric-value">{{ unique_pages_count }}</div>
+    </div>
+    <div class="gd-metric-label">Unique Pages Visited</div>
+    <div class="gd-metric-footer">
+      <span class="gd-metric-footer-icon" aria-hidden="true">&#128269;</span>
+      <span>Active URLs explored</span>
+    </div>
+  </div>
+
+  <div class="gd-metric-card gd-metric-card--orange">
+    <div class="gd-metric-top">
+      <div class="gd-metric-icon" aria-hidden="true">&#129302;</div>
+      <div class="gd-metric-value">{{ total_bot_visits }}</div>
+    </div>
+    <div class="gd-metric-label">Crawlers &amp; Bots</div>
+    <div class="gd-metric-footer">
+      <span class="gd-metric-footer-icon" aria-hidden="true">{% if bot_filter == 'exclude' %}&#9989;{% else %}&#9888;{% endif %}</span>
+      <span>
+        {% if bot_filter == 'exclude' %}
+          <strong>Excluded</strong> ({{ bot_pct }}% of all hits)
+        {% elif bot_filter == 'only' %}
+          Displaying bots only ({{ bot_pct }}%)
+        {% else %}
+          Included in counts ({{ bot_pct }}%)
+        {% endif %}
+      </span>
+    </div>
+  </div>
+</div>
+
+<!-- NAVIGATION TABS -->
+<div class="analytics-tabs">
+  <a href="?tab=overview&bot={{ bot_filter }}&period={{ period }}{% if search %}&q={{ search }}{% endif %}{% if ip_filter %}&ip={{ ip_filter }}{% endif %}"
+     class="analytics-tab-btn {% if active_tab == 'overview' %}is-active{% endif %}">
+    &#128202; Overview &amp; Top Lists
+  </a>
+  <a href="?tab=pages&bot={{ bot_filter }}&period={{ period }}{% if search %}&q={{ search }}{% endif %}{% if ip_filter %}&ip={{ ip_filter }}{% endif %}"
+     class="analytics-tab-btn {% if active_tab == 'pages' %}is-active{% endif %}">
+    &#128196; Most Visited Pages ({{ pages_list|length }})
+  </a>
+  <a href="?tab=ips&bot={{ bot_filter }}&period={{ period }}{% if search %}&q={{ search }}{% endif %}{% if ip_filter %}&ip={{ ip_filter }}{% endif %}"
+     class="analytics-tab-btn {% if active_tab == 'ips' %}is-active{% endif %}">
+    &#127760; Group by IP ({{ unique_ips_count }})
+  </a>
+  <a href="?tab=ledger&bot={{ bot_filter }}&period={{ period }}{% if search %}&q={{ search }}{% endif %}{% if ip_filter %}&ip={{ ip_filter }}{% endif %}"
+     class="analytics-tab-btn {% if active_tab == 'ledger' %}is-active{% endif %}">
+    &#128220; Live Visits Log
+  </a>
+</div>
+
+<!-- MAIN PANEL -->
+<div class="admin-panel" style="margin-bottom: var(--space-xl, 1.5rem);">
+
+  <!-- FILTERS BAR -->
+  <form method="get" class="filter-bar-grid">
+    <input type="hidden" name="tab" value="{{ active_tab }}">
+    {% if ip_filter %}<input type="hidden" name="ip" value="{{ ip_filter }}">{% endif %}
+
+    <!-- SEARCH -->
+    <label class="table-search" style="flex: 1; min-width: 220px; margin: 0;">
+      <span class="table-search-icon" aria-hidden="true">&#128269;</span>
+      <input type="search" name="q" value="{{ search }}" placeholder="Search path, IP address, user…" autocomplete="off">
+    </label>
+
+    <!-- BOT FILTER SELECT -->
+    <div style="display: flex; align-items: center; gap: 0.35rem;">
+      <span class="filter-pill-label">Bots:</span>
+      <select name="bot" class="admin-filter-select" aria-label="Filter bots and crawlers">
+        <option value="exclude" {% if bot_filter == 'exclude' %}selected{% endif %}>Exclude bots (Humans only)</option>
+        <option value="all" {% if bot_filter == 'all' %}selected{% endif %}>All traffic (Include bots)</option>
+        <option value="only" {% if bot_filter == 'only' %}selected{% endif %}>Bots &amp; crawlers only</option>
+      </select>
+    </div>
+
+    <!-- PERIOD SELECT -->
+    <div style="display: flex; align-items: center; gap: 0.35rem;">
+      <span class="filter-pill-label">Period:</span>
+      <select name="period" class="admin-filter-select" aria-label="Filter time period">
+        <option value="all" {% if period == 'all' %}selected{% endif %}>All time</option>
+        <option value="today" {% if period == 'today' %}selected{% endif %}>Today</option>
+        <option value="7d" {% if period == '7d' %}selected{% endif %}>Last 7 days</option>
+        <option value="30d" {% if period == '30d' %}selected{% endif %}>Last 30 days</option>
+      </select>
+    </div>
+
+    <button type="submit" class="admin-page-btn" style="background:var(--clr-primary, #2563eb); color:#fff; border:none; padding:0.55rem 1.1rem; border-radius:6px; font-weight:600; cursor:pointer;">
+      Apply Filter
+    </button>
+    {% if search or ip_filter or bot_filter != 'exclude' or period != 'all' %}
+      <a href="{% url 'accounts:admin_site_visits' %}?tab={{ active_tab }}" class="admin-page-btn">Clear</a>
+    {% endif %}
+  </form>
+
+  {% if active_tab == 'overview' %}
+  <!-- OVERVIEW TAB -->
+  <div style="padding: var(--space-xl, 1.5rem);">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 1.5rem;">
+
+      <!-- MOST VISITED PAGES PREVIEW -->
+      <div style="border: 1px solid var(--clr-border, #e2e8f0); border-radius: 8px; overflow: hidden; background: var(--clr-surface, #fff);">
+        <div class="admin-panel-head-flex" style="padding: 1rem 1.25rem;">
+          <div>
+            <h2 style="font-size: 1rem;">&#128196; Most Visited Pages</h2>
+            <p class="admin-panel-sub">Top URL routes by visit volume</p>
+          </div>
+          <a href="?tab=pages&bot={{ bot_filter }}&period={{ period }}" class="admin-page-btn" style="font-size: 0.78rem;">View all &rarr;</a>
+        </div>
+        {% if top_pages_preview %}
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th style="width: 40px;">#</th>
+              <th>Page Path</th>
+              <th style="text-align: right;">Visits</th>
+              <th style="text-align: right;">Unique IPs</th>
+              <th style="width: 100px;">Share</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for p in top_pages_preview %}
+            <tr>
+              <td><strong>{{ p.rank }}</strong></td>
+              <td class="path-cell" title="{{ p.path }}">
+                <a href="{{ p.path }}" target="_blank" rel="noopener" style="color:var(--clr-primary, #2563eb); text-decoration:none; font-weight:600;">
+                  {{ p.path }}
+                </a>
+              </td>
+              <td style="text-align: right; font-weight: 700;">{{ p.visits }}</td>
+              <td style="text-align: right; color: var(--clr-text-muted);">{{ p.unique_ips }}</td>
+              <td>
+                <span style="font-size: 0.78rem; font-weight: 600;">{{ p.share_pct }}%</span>
+                <div class="traffic-bar-wrap">
+                  <span class="traffic-bar" style="width: {{ p.share_pct }}%;"></span>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+        <p style="padding: 2rem; text-align: center; color: var(--clr-text-muted);">No visits recorded yet for this selection.</p>
+        {% endif %}
+      </div>
+
+      <!-- GROUP BY IP PREVIEW -->
+      <div style="border: 1px solid var(--clr-border, #e2e8f0); border-radius: 8px; overflow: hidden; background: var(--clr-surface, #fff);">
+        <div class="admin-panel-head-flex" style="padding: 1rem 1.25rem;">
+          <div>
+            <h2 style="font-size: 1rem;">&#127760; Top Visitors by IP</h2>
+            <p class="admin-panel-sub">Grouped traffic by client address</p>
+          </div>
+          <a href="?tab=ips&bot={{ bot_filter }}&period={{ period }}" class="admin-page-btn" style="font-size: 0.78rem;">View all &rarr;</a>
+        </div>
+        {% if top_ips_preview %}
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>IP Address</th>
+              <th>Visitor</th>
+              <th style="text-align: right;">Visits</th>
+              <th style="text-align: right;">Pages</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in top_ips_preview %}
+            <tr>
+              <td>
+                <span class="ip-tag">{{ item.ip_address }}</span>
+                {% if item.bot_label %}<span class="badge-bot" style="margin-left: 0.35rem;">{{ item.bot_label }}</span>{% endif %}
+              </td>
+              <td>
+                <div class="list-row-name">{{ item.user_label }}</div>
+                <div class="list-row-meta">{{ item.device_label }}</div>
+              </td>
+              <td style="text-align: right; font-weight: 700;">{{ item.visits }}</td>
+              <td style="text-align: right; color: var(--clr-text-muted);">{{ item.unique_pages }}</td>
+              <td>
+                <a href="?tab=ledger&ip={{ item.ip_address }}&bot={{ bot_filter }}&period={{ period }}"
+                   class="admin-page-btn" style="font-size: 0.75rem; padding: 0.25rem 0.55rem; text-decoration:none;">
+                  Filter IP
+                </a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+        <p style="padding: 2rem; text-align: center; color: var(--clr-text-muted);">No IP activity recorded yet.</p>
+        {% endif %}
+      </div>
+
+    </div>
+  </div>
+
+  {% elif active_tab == 'pages' %}
+  <!-- MOST VISITED PAGES FULL TAB -->
+  <div class="admin-panel-head-flex">
+    <div>
+      <h2>Most Visited Pages</h2>
+      <p class="admin-panel-sub">Ranked breakdown of all paths visited on the site</p>
+    </div>
+    <span class="table-count">{{ pages_list|length }} unique route{{ pages_list|length|pluralize }}</span>
+  </div>
+
+  {% if pages_list %}
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th style="width: 50px;">Rank</th>
+        <th>Page Path</th>
+        <th style="text-align: right;">Total Visits</th>
+        <th style="text-align: right;">Unique Visitors (IPs)</th>
+        <th style="width: 160px;">Share of Traffic</th>
+        <th>Last Visited</th>
+        <th>Quick Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p in pages_list %}
+      <tr>
+        <td><strong>#{{ p.rank }}</strong></td>
+        <td>
+          <a href="{{ p.path }}" target="_blank" rel="noopener" style="color:var(--clr-primary, #2563eb); font-weight:600; text-decoration:none; font-family:ui-monospace,monospace;">
+            {{ p.path }}
+          </a>
+        </td>
+        <td style="text-align: right; font-size: 0.95rem; font-weight: 700;">{{ p.visits }}</td>
+        <td style="text-align: right; color: var(--clr-text-muted);">{{ p.unique_ips }}</td>
+        <td>
+          <span style="font-size: 0.8rem; font-weight: 700;">{{ p.share_pct }}%</span>
+          <div class="traffic-bar-wrap">
+            <span class="traffic-bar" style="width: {{ p.share_pct }}%;"></span>
+          </div>
+        </td>
+        <td style="white-space: nowrap; font-size: 0.8rem; color: var(--clr-text-muted);">
+          {{ p.last_visited|date:"d M Y, H:i" }}
+        </td>
+        <td>
+          <a href="?tab=ledger&q={{ p.path }}&bot={{ bot_filter }}&period={{ period }}" class="admin-page-btn" style="font-size:0.75rem; text-decoration:none;">
+            View logs &rarr;
+          </a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="admin-list-empty">
+    <div class="admin-list-empty-icon" aria-hidden="true">&#128196;</div>
+    <p>No page visits matching current filters.</p>
+  </div>
+  {% endif %}
+
+  {% elif active_tab == 'ips' %}
+  <!-- GROUP BY IP FULL TAB -->
+  <div class="admin-panel-head-flex">
+    <div>
+      <h2>Visitors Grouped by IP Address</h2>
+      <p class="admin-panel-sub">Identify unique client devices, visit counts, and associated accounts</p>
+    </div>
+    <span class="table-count">
+      {% if ip_page_obj.paginator.num_pages > 1 %}
+        Page {{ ip_page_obj.number }}/{{ ip_page_obj.paginator.num_pages }} &middot;
+      {% endif %}
+      {{ unique_ips_count }} total IP{{ unique_ips_count|pluralize }}
+    </span>
+  </div>
+
+  {% if ip_list_enriched %}
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>IP Address</th>
+        <th>Identified User</th>
+        <th>Client / Device</th>
+        <th style="text-align: right;">Total Visits</th>
+        <th style="text-align: right;">Pages Visited</th>
+        <th style="width: 140px;">Traffic Share</th>
+        <th>First Seen</th>
+        <th>Last Seen</th>
+        <th>Filter</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in ip_list_enriched %}
+      <tr>
+        <td>
+          <span class="ip-tag">{{ item.ip_address }}</span>
+          {% if item.bot_label %}<br><span class="badge-bot" style="margin-top:0.25rem;">{{ item.bot_label }}</span>{% endif %}
+        </td>
+        <td>
+          {% if item.user_obj %}
+            <a href="{% url 'accounts:admin_user_detail' item.user_obj.pk %}" style="font-weight:600; color:var(--clr-primary, #2563eb); text-decoration:none;">
+              {{ item.user_label }}
+            </a>
+          {% else %}
+            <span style="color:var(--clr-text-muted);">{{ item.user_label }}</span>
+          {% endif %}
+        </td>
+        <td>
+          <div class="list-row-meta">{{ item.device_label }}</div>
+        </td>
+        <td style="text-align: right; font-weight: 700; font-size: 0.95rem;">{{ item.visits }}</td>
+        <td style="text-align: right; color: var(--clr-text-muted);">{{ item.unique_pages }}</td>
+        <td>
+          <span style="font-size: 0.8rem; font-weight: 700;">{{ item.share_pct }}%</span>
+          <div class="traffic-bar-wrap">
+            <span class="traffic-bar" style="width: {{ item.share_pct }}%;"></span>
+          </div>
+        </td>
+        <td style="white-space: nowrap; font-size: 0.8rem; color: var(--clr-text-muted);">
+          {{ item.first_seen|date:"d M Y, H:i" }}
+        </td>
+        <td style="white-space: nowrap; font-size: 0.8rem; color: var(--clr-text-muted);">
+          {{ item.last_seen|date:"d M Y, H:i" }}
+        </td>
+        <td>
+          <a href="?tab=ledger&ip={{ item.ip_address }}&bot={{ bot_filter }}&period={{ period }}" class="admin-page-btn" style="font-size:0.75rem; text-decoration:none; white-space:nowrap;">
+            Logs &rarr;
+          </a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% include 'accounts/partials/admin_pagination.html' with page_obj=ip_page_obj page_param='ip_page' pagination_extra=ip_pagination_extra %}
+  {% else %}
+  <div class="admin-list-empty">
+    <div class="admin-list-empty-icon" aria-hidden="true">&#127760;</div>
+    <p>No IP records matching current filters.</p>
+  </div>
+  {% endif %}
+
+  {% elif active_tab == 'ledger' %}
+  <!-- LIVE VISITS LOG TAB -->
+  <div class="admin-panel-head-flex">
+    <div>
+      <h2>Live Visits Log</h2>
+      <p class="admin-panel-sub">Stream of individual page impressions with request details</p>
+    </div>
+    <span class="table-count">
+      {% if ledger_page_obj.paginator.num_pages > 1 %}
+        Page {{ ledger_page_obj.number }}/{{ ledger_page_obj.paginator.num_pages }} &middot;
+      {% endif %}
+      {{ filtered_total_visits }} total visit{{ filtered_total_visits|pluralize }}
+    </span>
+  </div>
+
+  {% if ledger_page_obj.object_list %}
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Date &amp; Time</th>
+        <th>IP Address</th>
+        <th>Path</th>
+        <th>Method &amp; Status</th>
+        <th>Visitor</th>
+        <th>Device / User-Agent</th>
+        <th>Referrer</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for v in ledger_page_obj %}
+      <tr>
+        <td style="white-space: nowrap;">
+          <div class="list-row-name">{{ v.created_at|date:"d M Y" }}</div>
+          <div class="list-row-meta">{{ v.created_at|date:"H:i:s" }}</div>
+        </td>
+        <td>
+          <a href="?tab=ledger&ip={{ v.ip_address }}&bot={{ bot_filter }}&period={{ period }}" style="text-decoration:none;" title="Filter by this IP">
+            <span class="ip-tag">{{ v.ip_address|default:"—" }}</span>
+          </a>
+          {% if v.is_bot %}
+            <br><span class="badge-bot" style="margin-top:0.25rem;">{{ v.bot_name|default:"Bot" }}</span>
+          {% endif %}
+        </td>
+        <td class="path-cell" title="{{ v.path }}">
+          <a href="{{ v.path }}" target="_blank" rel="noopener" style="color:var(--clr-primary, #2563eb); font-weight:600; text-decoration:none;">
+            {{ v.path }}
+          </a>
+        </td>
+        <td>
+          <span style="font-size:0.75rem; font-weight:700; color:var(--clr-text-muted); margin-right:0.25rem;">{{ v.method }}</span>
+          {% if v.status_code %}
+            <span class="badge-status {% if v.status_code < 300 %}status-2xx{% elif v.status_code < 400 %}status-3xx{% elif v.status_code < 500 %}status-4xx{% else %}status-5xx{% endif %}">
+              {{ v.status_code }}
+            </span>
+          {% else %}
+            <span class="list-row-meta">—</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if v.user %}
+            <a href="{% url 'accounts:admin_user_detail' v.user.pk %}" style="font-weight:600; color:var(--clr-primary, #2563eb); text-decoration:none;">
+              {{ v.user.get_full_name|default:v.user.phone }}
+            </a>
+            <div class="list-row-meta">{{ v.user.phone }}</div>
+          {% else %}
+            <span style="color:var(--clr-text-muted);">Guest</span>
+          {% endif %}
+        </td>
+        <td style="max-width: 250px;">
+          <div class="list-row-name">{{ v.device_display }}</div>
+          <div class="list-row-meta" title="{{ v.user_agent }}" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+            {{ v.user_agent|truncatechars:35 }}
+          </div>
+        </td>
+        <td style="max-width: 200px;">
+          {% if v.referrer %}
+            <span class="list-row-meta" title="{{ v.referrer }}" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:block;">
+              {{ v.referrer|truncatechars:30 }}
+            </span>
+          {% else %}
+            <span class="list-row-meta">—</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% include 'accounts/partials/admin_pagination.html' with page_obj=ledger_page_obj page_param='page' pagination_extra=pagination_extra %}
+  {% else %}
+  <div class="admin-list-empty">
+    <div class="admin-list-empty-icon" aria-hidden="true">&#128220;</div>
+    <p>No individual visits match your filters.</p>
+  </div>
+  {% endif %}
+
+  {% endif %}
+
+</div>
+{% endblock %}

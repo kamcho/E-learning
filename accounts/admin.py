@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
-from .models import MyUser, Student, LinkedStudents, ReferralPointLog, UserActionLog
+from .models import MyUser, Student, LinkedStudents, ReferralPointLog, UserActionLog, SiteVisit
 
 
 @admin.register(Student)
@@ -80,3 +80,22 @@ class ReferralPointLogAdmin(admin.ModelAdmin):
         'referred_user__first_name', 'referred_user__last_name',
     )
     readonly_fields = ('created_at',)
+
+
+@admin.register(SiteVisit)
+class SiteVisitAdmin(admin.ModelAdmin):
+    list_display = ('created_at', 'ip_address', 'path', 'method', 'status_code', 'is_bot', 'bot_name', 'user')
+    list_filter = ('is_bot', 'method', 'status_code', 'created_at')
+    search_fields = ('ip_address', 'path', 'user__phone', 'user_agent', 'bot_name')
+    readonly_fields = (
+        'ip_address', 'path', 'method', 'user', 'user_agent',
+        'referrer', 'status_code', 'is_bot', 'bot_name', 'created_at',
+    )
+    date_hierarchy = 'created_at'
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+

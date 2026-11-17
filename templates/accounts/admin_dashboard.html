@@ -246,6 +246,7 @@
     <p>Good day, {{ admin_user.first_name }}! Here's your Soma Smart platform overview.</p>
   </div>
   <div class="admin-page-header-actions">
+    <a href="{% url 'accounts:admin_site_visits' %}" class="btn-admin-outline">&#128065; Site Visits</a>
     <a href="{{ django_admin_url }}" class="btn-admin-primary" target="_blank" rel="noopener">Django Admin</a>
     <a href="{% url 'achievements:achievement_list' %}" class="btn-admin-outline">Achievements</a>
     <a href="{{ curriculum_urls.subjects }}" class="btn-admin-outline">Browse Subjects</a>

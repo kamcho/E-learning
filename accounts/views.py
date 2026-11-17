@@ -1587,6 +1587,180 @@ def admin_action_logs_view(request):
 
 
 @login_required(login_url='accounts:signin')
+def admin_site_visits_view(request):
+    """Platform admin view for site analytics: page visits, most visited pages, IP grouping, and bot exclusion."""
+    denied = _admin_access_or_redirect(request)
+    if denied:
+        return denied
+
+    from datetime import datetime, time
+    from django.db.models import Min
+    from django.utils.dateparse import parse_date
+
+    from accounts.models import SiteVisit
+    from accounts.visit_tracking import parse_browser_os
+
+    search = request.GET.get('q', '').strip()
+    ip_filter = request.GET.get('ip', '').strip()
+    bot_filter = request.GET.get('bot', 'exclude').strip().lower()
+    if bot_filter not in ('exclude', 'all', 'only'):
+        bot_filter = 'exclude'
+
+    period = request.GET.get('period', 'all').strip().lower()
+    date_from_str = request.GET.get('date_from', '').strip()
+    date_to_str = request.GET.get('date_to', '').strip()
+    active_tab = request.GET.get('tab', 'overview').strip().lower()
+    if active_tab not in ('overview', 'pages', 'ips', 'ledger'):
+        active_tab = 'overview'
+
+    base_qs = SiteVisit.objects.all()
+
+    now = timezone.now()
+    date_from = parse_date(date_from_str) if date_from_str else None
+    date_to = parse_date(date_to_str) if date_to_str else None
+
+    if date_from and date_to:
+        period_qs = base_qs.filter(
+            created_at__gte=datetime.combine(date_from, time.min, tzinfo=timezone.get_current_timezone()),
+            created_at__lte=datetime.combine(date_to, time.max, tzinfo=timezone.get_current_timezone()),
+        )
+    elif period == 'today':
+        today_date = timezone.localdate()
+        period_qs = base_qs.filter(created_at__date=today_date)
+    elif period == '7d':
+        period_qs = base_qs.filter(created_at__gte=now - timedelta(days=7))
+    elif period == '30d':
+        period_qs = base_qs.filter(created_at__gte=now - timedelta(days=30))
+    else:
+        period = 'all'
+        period_qs = base_qs
+
+    total_period_visits = period_qs.count()
+    total_bot_visits = period_qs.filter(is_bot=True).count()
+    total_human_visits = total_period_visits - total_bot_visits
+    bot_pct = round((total_bot_visits / total_period_visits * 100), 1) if total_period_visits else 0
+
+    if bot_filter == 'only':
+        filtered_qs = period_qs.filter(is_bot=True)
+    elif bot_filter == 'all':
+        filtered_qs = period_qs
+    else:
+        filtered_qs = period_qs.filter(is_bot=False)
+
+    if search:
+        filtered_qs = filtered_qs.filter(
+            Q(path__icontains=search)
+            | Q(ip_address__icontains=search)
+            | Q(bot_name__icontains=search)
+            | Q(user__phone__icontains=search)
+            | Q(user__first_name__icontains=search)
+            | Q(user__last_name__icontains=search)
+        )
+
+    if ip_filter:
+        filtered_qs = filtered_qs.filter(ip_address=ip_filter)
+
+    filtered_total_visits = filtered_qs.count()
+    unique_ips_count = filtered_qs.values('ip_address').distinct().count()
+    unique_pages_count = filtered_qs.values('path').distinct().count()
+
+    pages_agg = (
+        filtered_qs.values('path')
+        .annotate(
+            visits=Count('id'),
+            unique_ips=Count('ip_address', distinct=True),
+            last_visited=Max('created_at'),
+        )
+        .order_by('-visits')
+    )
+    pages_list = []
+    for rank, p in enumerate(pages_agg[:100], start=1):
+        share_pct = round((p['visits'] / filtered_total_visits * 100), 1) if filtered_total_visits else 0
+        pages_list.append({
+            'rank': rank,
+            'path': p['path'],
+            'visits': p['visits'],
+            'unique_ips': p['unique_ips'],
+            'share_pct': share_pct,
+            'last_visited': p['last_visited'],
+        })
+
+    ip_agg = (
+        filtered_qs.values('ip_address')
+        .annotate(
+            visits=Count('id'),
+            unique_pages=Count('path', distinct=True),
+            first_seen=Min('created_at'),
+            last_seen=Max('created_at'),
+        )
+        .order_by('-visits')
+    )
+    ip_page_obj = Paginator(ip_agg, 25).get_page(request.GET.get('ip_page') or 1)
+
+    ip_list_enriched = []
+    for row in ip_page_obj.object_list:
+        ip_addr = row['ip_address']
+        latest_visit = (
+            filtered_qs.filter(ip_address=ip_addr)
+            .select_related('user')
+            .order_by('-created_at')
+            .first()
+        )
+        user_label = (
+            (getattr(latest_visit.user, 'full_name', '') or getattr(latest_visit.user, 'phone', ''))
+            if (latest_visit and latest_visit.user)
+            else 'Guest'
+        )
+        device_label = parse_browser_os(latest_visit.user_agent) if latest_visit else 'Unknown'
+        bot_label = latest_visit.bot_name if (latest_visit and latest_visit.is_bot) else ''
+
+        ip_list_enriched.append({
+            'ip_address': ip_addr or 'Unknown',
+            'visits': row['visits'],
+            'unique_pages': row['unique_pages'],
+            'first_seen': row['first_seen'],
+            'last_seen': row['last_seen'],
+            'user_label': user_label,
+            'user_obj': latest_visit.user if latest_visit else None,
+            'device_label': device_label,
+            'bot_label': bot_label,
+            'share_pct': round((row['visits'] / filtered_total_visits * 100), 1) if filtered_total_visits else 0,
+        })
+
+    ledger_qs = filtered_qs.select_related('user').order_by('-created_at')
+    ledger_page_obj = Paginator(ledger_qs, 30).get_page(request.GET.get('page') or 1)
+
+    for item in ledger_page_obj.object_list:
+        item.device_display = parse_browser_os(item.user_agent)
+
+    return render(request, 'accounts/admin_site_visits.html', {
+        'filtered_total_visits': filtered_total_visits,
+        'unique_ips_count': unique_ips_count,
+        'unique_pages_count': unique_pages_count,
+        'total_period_visits': total_period_visits,
+        'total_bot_visits': total_bot_visits,
+        'total_human_visits': total_human_visits,
+        'bot_pct': bot_pct,
+        'search': search,
+        'ip_filter': ip_filter,
+        'bot_filter': bot_filter,
+        'period': period,
+        'date_from': date_from_str,
+        'date_to': date_to_str,
+        'active_tab': active_tab,
+        'pages_list': pages_list,
+        'top_pages_preview': pages_list[:8],
+        'ip_page_obj': ip_page_obj,
+        'ip_list_enriched': ip_list_enriched,
+        'top_ips_preview': ip_list_enriched[:8],
+        'ledger_page_obj': ledger_page_obj,
+        'pagination_extra': _pagination_extra_params(request, ['page']),
+        'ip_pagination_extra': _pagination_extra_params(request, ['ip_page']),
+        'django_admin_url': reverse('admin:accounts_sitevisit_changelist'),
+    })
+
+
+@login_required(login_url='accounts:signin')
 def admin_action_log_detail_view(request, log_id=None):
     """Single audit entry or grouped batch (same DB rows, one screen)."""
     denied = _admin_access_or_redirect(request)
