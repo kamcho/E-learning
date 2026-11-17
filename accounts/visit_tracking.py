@@ -163,6 +163,8 @@ EXCLUDED_PATH_PREFIXES = (
     '/sitemap.xml',
     '/apple-touch-icon',
     '/.well-known/',
+    '/accounts/admin/site-visits/',
+    '/accounts/admin/database-backup/',
 )
 
 STATIC_EXTENSIONS = (

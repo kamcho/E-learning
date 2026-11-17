@@ -143,10 +143,10 @@
   <div>
     <a href="{% url 'accounts:admin_dashboard' %}" class="admin-list-back admin-list-back--light">&larr; Back to dashboard</a>
     <h1>Site Visits & Traffic Analytics</h1>
-    <p>Track page impressions, visitor frequency, group by IP address, and filter crawlers &amp; bots.</p>
+    <p>Track page impressions, visitor frequency, group by IP address, and filter crawlers, bots, and staff traffic.</p>
   </div>
   <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
-    <a href="{% url 'accounts:admin_site_visits' %}?bot={{ bot_filter }}&period={{ period }}" class="btn-list-banner" title="Refresh data">
+    <a href="{% url 'accounts:admin_site_visits' %}?bot={{ bot_filter }}&period={{ period }}&staff={{ staff_filter }}" class="btn-list-banner" title="Refresh data">
       <span aria-hidden="true">&#8635;</span> Refresh
     </a>
     <a href="{{ django_admin_url }}" class="btn-list-banner" target="_blank" rel="noopener">Django Admin</a>
@@ -158,7 +158,7 @@
   <div>
     Filtering visits for IP: <code>{{ ip_filter }}</code>
   </div>
-  <a href="{% url 'accounts:admin_site_visits' %}?bot={{ bot_filter }}&period={{ period }}&tab={{ active_tab }}" class="admin-page-btn" style="text-decoration:none;">
+  <a href="{% url 'accounts:admin_site_visits' %}?bot={{ bot_filter }}&period={{ period }}&staff={{ staff_filter }}&tab={{ active_tab }}" class="admin-page-btn" style="text-decoration:none;">
     &times; Clear IP filter
   </a>
 </div>
@@ -229,19 +229,19 @@
 
 <!-- NAVIGATION TABS -->
 <div class="analytics-tabs">
-  <a href="?tab=overview&bot={{ bot_filter }}&period={{ period }}{% if search %}&q={{ search }}{% endif %}{% if ip_filter %}&ip={{ ip_filter }}{% endif %}"
+  <a href="?tab=overview&bot={{ bot_filter }}&period={{ period }}&staff={{ staff_filter }}{% if search %}&q={{ search }}{% endif %}{% if ip_filter %}&ip={{ ip_filter }}{% endif %}"
      class="analytics-tab-btn {% if active_tab == 'overview' %}is-active{% endif %}">
     &#128202; Overview &amp; Top Lists
   </a>
-  <a href="?tab=pages&bot={{ bot_filter }}&period={{ period }}{% if search %}&q={{ search }}{% endif %}{% if ip_filter %}&ip={{ ip_filter }}{% endif %}"
+  <a href="?tab=pages&bot={{ bot_filter }}&period={{ period }}&staff={{ staff_filter }}{% if search %}&q={{ search }}{% endif %}{% if ip_filter %}&ip={{ ip_filter }}{% endif %}"
      class="analytics-tab-btn {% if active_tab == 'pages' %}is-active{% endif %}">
     &#128196; Most Visited Pages ({{ pages_list|length }})
   </a>
-  <a href="?tab=ips&bot={{ bot_filter }}&period={{ period }}{% if search %}&q={{ search }}{% endif %}{% if ip_filter %}&ip={{ ip_filter }}{% endif %}"
+  <a href="?tab=ips&bot={{ bot_filter }}&period={{ period }}&staff={{ staff_filter }}{% if search %}&q={{ search }}{% endif %}{% if ip_filter %}&ip={{ ip_filter }}{% endif %}"
      class="analytics-tab-btn {% if active_tab == 'ips' %}is-active{% endif %}">
     &#127760; Group by IP ({{ unique_ips_count }})
   </a>
-  <a href="?tab=ledger&bot={{ bot_filter }}&period={{ period }}{% if search %}&q={{ search }}{% endif %}{% if ip_filter %}&ip={{ ip_filter }}{% endif %}"
+  <a href="?tab=ledger&bot={{ bot_filter }}&period={{ period }}&staff={{ staff_filter }}{% if search %}&q={{ search }}{% endif %}{% if ip_filter %}&ip={{ ip_filter }}{% endif %}"
      class="analytics-tab-btn {% if active_tab == 'ledger' %}is-active{% endif %}">
     &#128220; Live Visits Log
   </a>
@@ -271,6 +271,15 @@
       </select>
     </div>
 
+    <!-- STAFF FILTER -->
+    <div style="display: flex; align-items: center; gap: 0.35rem;">
+      <span class="filter-pill-label">Staff:</span>
+      <select name="staff" class="admin-filter-select" aria-label="Filter staff and superuser visits">
+        <option value="exclude" {% if staff_filter == 'exclude' %}selected{% endif %}>Exclude staff &amp; superusers</option>
+        <option value="all" {% if staff_filter == 'all' %}selected{% endif %}>Include staff &amp; superusers</option>
+      </select>
+    </div>
+
     <!-- PERIOD SELECT -->
     <div style="display: flex; align-items: center; gap: 0.35rem;">
       <span class="filter-pill-label">Period:</span>
@@ -285,7 +294,7 @@
     <button type="submit" class="admin-page-btn" style="background:var(--clr-primary, #2563eb); color:#fff; border:none; padding:0.55rem 1.1rem; border-radius:6px; font-weight:600; cursor:pointer;">
       Apply Filter
     </button>
-    {% if search or ip_filter or bot_filter != 'exclude' or period != 'all' %}
+    {% if search or ip_filter or bot_filter != 'exclude' or period != 'all' or staff_filter != 'exclude' %}
       <a href="{% url 'accounts:admin_site_visits' %}?tab={{ active_tab }}" class="admin-page-btn">Clear</a>
     {% endif %}
   </form>
@@ -302,7 +311,7 @@
             <h2 style="font-size: 1rem;">&#128196; Most Visited Pages</h2>
             <p class="admin-panel-sub">Top URL routes by visit volume</p>
           </div>
-          <a href="?tab=pages&bot={{ bot_filter }}&period={{ period }}" class="admin-page-btn" style="font-size: 0.78rem;">View all &rarr;</a>
+          <a href="?tab=pages&bot={{ bot_filter }}&period={{ period }}&staff={{ staff_filter }}" class="admin-page-btn" style="font-size: 0.78rem;">View all &rarr;</a>
         </div>
         {% if top_pages_preview %}
         <table class="data-table">
@@ -348,7 +357,7 @@
             <h2 style="font-size: 1rem;">&#127760; Top Visitors by IP</h2>
             <p class="admin-panel-sub">Grouped traffic by client address</p>
           </div>
-          <a href="?tab=ips&bot={{ bot_filter }}&period={{ period }}" class="admin-page-btn" style="font-size: 0.78rem;">View all &rarr;</a>
+          <a href="?tab=ips&bot={{ bot_filter }}&period={{ period }}&staff={{ staff_filter }}" class="admin-page-btn" style="font-size: 0.78rem;">View all &rarr;</a>
         </div>
         {% if top_ips_preview %}
         <table class="data-table">
@@ -375,7 +384,7 @@
               <td style="text-align: right; font-weight: 700;">{{ item.visits }}</td>
               <td style="text-align: right; color: var(--clr-text-muted);">{{ item.unique_pages }}</td>
               <td>
-                <a href="?tab=ledger&ip={{ item.ip_address }}&bot={{ bot_filter }}&period={{ period }}"
+                <a href="?tab=ledger&ip={{ item.ip_address }}&bot={{ bot_filter }}&period={{ period }}&staff={{ staff_filter }}"
                    class="admin-page-btn" style="font-size: 0.75rem; padding: 0.25rem 0.55rem; text-decoration:none;">
                   Filter IP
                 </a>
@@ -436,7 +445,7 @@
           {{ p.last_visited|date:"d M Y, H:i" }}
         </td>
         <td>
-          <a href="?tab=ledger&q={{ p.path }}&bot={{ bot_filter }}&period={{ period }}" class="admin-page-btn" style="font-size:0.75rem; text-decoration:none;">
+          <a href="?tab=ledger&q={{ p.path }}&bot={{ bot_filter }}&period={{ period }}&staff={{ staff_filter }}" class="admin-page-btn" style="font-size:0.75rem; text-decoration:none;">
             View logs &rarr;
           </a>
         </td>
@@ -515,7 +524,7 @@
           {{ item.last_seen|date:"d M Y, H:i" }}
         </td>
         <td>
-          <a href="?tab=ledger&ip={{ item.ip_address }}&bot={{ bot_filter }}&period={{ period }}" class="admin-page-btn" style="font-size:0.75rem; text-decoration:none; white-space:nowrap;">
+          <a href="?tab=ledger&ip={{ item.ip_address }}&bot={{ bot_filter }}&period={{ period }}&staff={{ staff_filter }}" class="admin-page-btn" style="font-size:0.75rem; text-decoration:none; white-space:nowrap;">
             Logs &rarr;
           </a>
         </td>
@@ -567,7 +576,7 @@
           <div class="list-row-meta">{{ v.created_at|date:"H:i:s" }}</div>
         </td>
         <td>
-          <a href="?tab=ledger&ip={{ v.ip_address }}&bot={{ bot_filter }}&period={{ period }}" style="text-decoration:none;" title="Filter by this IP">
+          <a href="?tab=ledger&ip={{ v.ip_address }}&bot={{ bot_filter }}&period={{ period }}&staff={{ staff_filter }}" style="text-decoration:none;" title="Filter by this IP">
             <span class="ip-tag">{{ v.ip_address|default:"—" }}</span>
           </a>
           {% if v.is_bot %}
@@ -592,7 +601,7 @@
         <td>
           {% if v.user %}
             <a href="{% url 'accounts:admin_user_detail' v.user.pk %}" style="font-weight:600; color:var(--clr-primary, #2563eb); text-decoration:none;">
-              {{ v.user.get_full_name|default:v.user.phone }}
+              {{ v.user.full_name|default:v.user.phone }}
             </a>
             <div class="list-row-meta">{{ v.user.phone }}</div>
           {% else %}

@@ -16,6 +16,7 @@ from core.demo import (
     clear_demo_session,
     finalize_demo,
     get_demo_session,
+    guest_demo_requires_payment,
     grade_demo_answer,
     load_demo_questions,
     save_demo_session,
@@ -173,14 +174,14 @@ def _build_demo_wizard_trail(*, phase, grade, subject, scope, strand, sub_strand
 
     labels = {
         'grade': ('Choose a grade', "Select the learner's grade to see matching subjects."),
-        'subject': ('Choose a subject', 'Pick a subject for your free practice exam (at least 7 questions).'),
+        'subject': ('Choose a subject', 'Pick a subject for your practice exam.'),
         'scope': ('Choose a strand', 'Pick a strand below, or start with the whole subject.'),
         'strand': ('Choose a strand', 'Pick a strand below, or start with the whole subject.'),
         'sub_strand': ('Choose a sub-strand', 'Pick a focused sub-strand topic.'),
         'ready': (
             'Ready to start',
-            f'We will build a practice exam with {DEMO_QUESTION_COUNT_MIN}–{DEMO_QUESTION_COUNT_MAX} '
-            'questions (as many as available in the bank).',
+            f'We will include up to {DEMO_QUESTION_COUNT_MAX} questions. '
+            'If fewer are available, we will include all of them.',
         ),
     }
     current_label, current_hint = labels.get(phase, ('Continue', ''))
@@ -391,7 +392,7 @@ def demo_take_view(request):
             demo['feedback_index'] = None
             save_demo_session(request, demo)
             if (
-                answered_count >= 3
+                guest_demo_requires_payment(demo)
                 and not request.user.is_authenticated
                 and not _guest_demo_payment_succeeded(request, demo)
             ):
@@ -403,7 +404,7 @@ def demo_take_view(request):
             return redirect('core:exam_take')
 
         if (
-            answered_count >= 3
+            guest_demo_requires_payment(demo)
             and not request.user.is_authenticated
             and not _guest_demo_payment_succeeded(request, demo)
         ):
@@ -441,7 +442,7 @@ def demo_take_view(request):
         display_index = answered_count
 
     if (
-        display_index >= 3
+        guest_demo_requires_payment(demo, answered_count=display_index)
         and not request.user.is_authenticated
         and not _guest_demo_payment_succeeded(request, demo)
     ):
@@ -509,7 +510,7 @@ def demo_results_view(request):
     questions = load_demo_questions(demo)
     if not request.user.is_authenticated and not demo.get('completed'):
         if (
-            len(demo.get('answers', {})) >= 3
+            guest_demo_requires_payment(demo)
             and not _guest_demo_payment_succeeded(request, demo)
         ):
             return redirect('subscriptions:guest_demo_checkout')

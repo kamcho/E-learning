@@ -511,14 +511,14 @@ def subscribe_view(request, plan_slug):
     json_error='Too many payment attempts. Please wait and try again.',
 )
 def guest_demo_checkout_view(request):
-    from core.demo import get_demo_session
+    from core.demo import get_demo_session, guest_demo_requires_payment
 
     demo = get_demo_session(request)
     if not demo or demo.get('completed'):
         return redirect('core:exam_wizard')
     if request.user.is_authenticated:
         return redirect('core:exam_take')
-    if len(demo.get('answers', {})) < 3:
+    if not guest_demo_requires_payment(demo):
         return redirect('core:exam_take')
     from core.demo_views import _guest_demo_payment_succeeded
 

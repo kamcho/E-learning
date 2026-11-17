@@ -1,6 +1,5 @@
-"""Session-based practice demo for unregistered users (7–10 MC questions)."""
+"""Session-based practice exam for anonymous visitors."""
 
-import random
 import uuid as uuid_lib
 
 from django.db.models import Count, Prefetch, Q
@@ -11,8 +10,9 @@ from core.models import Option, Question
 from core.scoring import _grade_choice, question_max_marks
 
 DEMO_SESSION_KEY = 'practice_demo'
-DEMO_QUESTION_COUNT_MIN = 7
-DEMO_QUESTION_COUNT_MAX = 10
+DEMO_QUESTION_COUNT_MIN = 1
+DEMO_QUESTION_COUNT_MAX = 30
+GUEST_FREE_QUESTION_COUNT = 10
 # Backward-compatible label for templates that expect a single number (upper bound).
 DEMO_QUESTION_COUNT = DEMO_QUESTION_COUNT_MAX
 
@@ -90,7 +90,7 @@ def select_demo_questions(
     min_count=DEMO_QUESTION_COUNT_MIN,
     max_count=DEMO_QUESTION_COUNT_MAX,
 ):
-    """Pick random multiple-choice questions for the demo test (7–10 when available)."""
+    """Pick up to 30 multiple-choice questions, or all when fewer are available."""
     qs = (
         Question.objects.filter(
             is_active=True,
@@ -125,14 +125,24 @@ def select_demo_questions(
     if pool_count < min_count:
         return []
 
-    upper = min(max_count, pool_count)
-    sample_size = random.randint(min_count, upper)
+    sample_size = min(max_count, pool_count)
     return list(
         qs.order_by('?')[:sample_size].prefetch_related(Prefetch(
             'options',
             queryset=Option.objects.filter(is_active=True).order_by('created_at'),
             to_attr='active_options',
         ))
+    )
+
+
+def guest_demo_requires_payment(demo, *, answered_count=None):
+    """Require payment only to continue beyond the first 10 guest questions."""
+    total_questions = len(demo.get('question_ids') or [])
+    if answered_count is None:
+        answered_count = len(demo.get('answers') or {})
+    return (
+        total_questions > GUEST_FREE_QUESTION_COUNT
+        and answered_count >= GUEST_FREE_QUESTION_COUNT
     )
 
 

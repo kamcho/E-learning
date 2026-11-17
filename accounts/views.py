@@ -1606,6 +1606,10 @@ def admin_site_visits_view(request):
     if bot_filter not in ('exclude', 'all', 'only'):
         bot_filter = 'exclude'
 
+    staff_filter = request.GET.get('staff', 'exclude').strip().lower()
+    if staff_filter not in ('exclude', 'all'):
+        staff_filter = 'exclude'
+
     period = request.GET.get('period', 'all').strip().lower()
     date_from_str = request.GET.get('date_from', '').strip()
     date_to_str = request.GET.get('date_to', '').strip()
@@ -1613,7 +1617,11 @@ def admin_site_visits_view(request):
     if active_tab not in ('overview', 'pages', 'ips', 'ledger'):
         active_tab = 'overview'
 
-    base_qs = SiteVisit.objects.all()
+    base_qs = SiteVisit.objects.all().select_related('user')
+    if staff_filter == 'exclude':
+        base_qs = base_qs.exclude(
+            Q(user__is_staff=True) | Q(user__is_superuser=True)
+        )
 
     now = timezone.now()
     date_from = parse_date(date_from_str) if date_from_str else None
@@ -1744,6 +1752,7 @@ def admin_site_visits_view(request):
         'search': search,
         'ip_filter': ip_filter,
         'bot_filter': bot_filter,
+        'staff_filter': staff_filter,
         'period': period,
         'date_from': date_from_str,
         'date_to': date_to_str,
