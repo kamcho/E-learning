@@ -37,6 +37,38 @@
     color: var(--clr-text-muted);
     margin-top: 0.35rem;
   }
+  .payment-detail-button {
+    border: 0;
+    background: none;
+    color: var(--clr-primary);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+    padding: 0.35rem 0;
+  }
+  .payment-detail-button:hover { text-decoration: underline; }
+  .payment-details-dialog {
+    width: min(680px, calc(100vw - 2rem));
+    max-height: min(85vh, 760px);
+    overflow: auto;
+    padding: 0;
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-lg, 16px);
+    background: var(--clr-surface);
+    color: var(--clr-text);
+    box-shadow: 0 24px 80px #0005;
+  }
+  .payment-details-dialog::backdrop { background: #10182799; }
+  .payment-details-head { display:flex; justify-content:space-between; gap:1rem; align-items:flex-start; padding:1.25rem 1.5rem; border-bottom:1px solid var(--clr-border); }
+  .payment-details-head h2 { margin:0; font-size:1.2rem; }
+  .payment-details-close { border:1px solid var(--clr-border); border-radius:8px; background:var(--clr-surface); color:inherit; padding:.35rem .65rem; cursor:pointer; }
+  .payment-details-body { padding:1.25rem 1.5rem 1.5rem; }
+  .payment-details-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:.9rem 1.25rem; margin:0; }
+  .payment-details-grid div { min-width:0; }
+  .payment-details-grid dt { color:var(--clr-text-muted); font-size:.77rem; margin-bottom:.2rem; }
+  .payment-details-grid dd { margin:0; overflow-wrap:anywhere; font-weight:600; }
+  .payment-payload { margin:.45rem 0 0; padding:.75rem; border-radius:8px; background:var(--clr-surface-alt); white-space:pre-wrap; overflow-wrap:anywhere; font: .78rem/1.45 ui-monospace,monospace; }
+  @media(max-width:560px) { .payment-details-grid { grid-template-columns:1fr; } .payment-details-head,.payment-details-body { padding:1rem; } }
 </style>
 {% endblock %}
 
@@ -207,10 +239,7 @@
     <tbody>
       {% for row in page_obj %}
       {% with payment=row.payment %}
-      <tr
-        class="{% if row.kind == 'subscription' %}clickable-row{% endif %}"
-        {% if row.kind == 'subscription' %}data-href="{% url 'accounts:admin_user_detail' payment.user.pk %}" tabindex="0" role="link"{% endif %}
-      >
+      <tr>
         <td>
           <div class="list-row-name">{{ payment.created_at|date:"d M Y" }}</div>
           <div class="list-row-meta">{{ payment.created_at|date:"H:i" }}</div>
@@ -259,11 +288,34 @@
           {% endif %}
         </td>
         <td>
-          {% if row.kind == 'subscription' %}
-          <span class="list-row-action">User &rarr;</span>
-          {% else %}
-          <span class="list-row-meta">—</span>
-          {% endif %}
+          <button type="button" class="payment-detail-button" aria-haspopup="dialog" data-payment-details="payment-details-{{ payment.uuid }}">View details</button>
+          <template id="payment-details-{{ payment.uuid }}">
+            <div class="payment-details-head">
+              <div><h2>Payment details</h2><div class="list-row-meta">{{ payment.uuid }}</div></div>
+              <button type="button" class="payment-details-close" data-close-payment-details>Close</button>
+            </div>
+            <div class="payment-details-body">
+              <dl class="payment-details-grid">
+                <div><dt>Payment type</dt><dd>{% if row.kind == 'guest_exam' %}Guest exam{% else %}Subscription{% endif %}</dd></div>
+                <div><dt>Status</dt><dd>{{ payment.get_status_display }}</dd></div>
+                <div><dt>Amount</dt><dd>KES {{ payment.amount_kes|floatformat:2 }}</dd></div>
+                <div><dt>Plan</dt><dd>{{ payment.plan.name }} · {{ payment.plan.tests_label }}</dd></div>
+                <div><dt>Payer</dt><dd>{% if row.kind == 'guest_exam' %}Guest{% else %}{{ payment.user.get_full_name|default:payment.user.phone }}{% endif %}</dd></div>
+                {% if row.kind == 'subscription' %}<div><dt>Account phone</dt><dd>{{ payment.user.phone|default:'—' }}</dd></div>{% endif %}
+                <div><dt>M-Pesa phone</dt><dd>{{ payment.phone_number|default:'—' }}</dd></div>
+                <div><dt>M-Pesa receipt</dt><dd>{{ payment.mpesa_receipt_number|default:'—' }}</dd></div>
+                <div><dt>Created</dt><dd>{{ payment.created_at|date:'d M Y, H:i:s' }}</dd></div>
+                <div><dt>Last updated</dt><dd>{{ payment.updated_at|date:'d M Y, H:i:s' }}</dd></div>
+                <div><dt>Merchant request ID</dt><dd>{{ payment.merchant_request_id|default:'—' }}</dd></div>
+                <div><dt>Checkout request ID</dt><dd>{{ payment.checkout_request_id|default:'—' }}</dd></div>
+                <div><dt>Result code</dt><dd>{{ payment.result_code|default:'—' }}</dd></div>
+                <div><dt>Demo ID</dt><dd>{% if row.kind == 'guest_exam' %}{{ payment.demo_id }}{% else %}—{% endif %}</dd></div>
+                <div style="grid-column:1/-1"><dt>Result description</dt><dd>{{ payment.result_description|default:'—' }}</dd></div>
+                <div style="grid-column:1/-1"><dt>Callback data</dt><dd><pre class="payment-payload">{{ payment.callback_payload|pprint }}</pre></dd></div>
+                {% if row.kind == 'subscription' %}<div style="grid-column:1/-1"><dt>Guardian account</dt><dd><a href="{% url 'accounts:admin_user_detail' payment.user.pk %}">Open account details &rarr;</a></dd></div>{% endif %}
+              </dl>
+            </div>
+          </template>
         </td>
       </tr>
       {% endwith %}
@@ -278,21 +330,32 @@
   </div>
   {% endif %}
 </div>
+
+<dialog class="payment-details-dialog" id="payment-details-dialog" aria-labelledby="payment-details-title">
+  <div id="payment-details-content"></div>
+</dialog>
 {% endblock %}
 
 {% block extra_js %}
 <script>
 (function () {
-  document.querySelectorAll('.data-table tbody tr.clickable-row[data-href]').forEach(function (row) {
-    row.addEventListener('click', function () {
-      window.location.href = row.dataset.href;
+  var dialog = document.getElementById('payment-details-dialog');
+  var content = document.getElementById('payment-details-content');
+  if (!dialog || !content) return;
+
+  document.querySelectorAll('[data-payment-details]').forEach(function (button) {
+    button.addEventListener('click', function () {
+      var template = document.getElementById(button.dataset.paymentDetails);
+      if (!template) return;
+      content.replaceChildren(template.content.cloneNode(true));
+      dialog.showModal();
     });
-    row.addEventListener('keydown', function (e) {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        window.location.href = row.dataset.href;
-      }
-    });
+  });
+  dialog.addEventListener('click', function (event) {
+    if (event.target === dialog || event.target.closest('[data-close-payment-details]')) dialog.close();
+  });
+  dialog.addEventListener('close', function () {
+    content.replaceChildren();
   });
 })();
 </script>
