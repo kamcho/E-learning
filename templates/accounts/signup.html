@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}Sign Up — Soma Smart{% endblock %}
 
@@ -79,6 +80,8 @@
     background: linear-gradient(145deg, #f0c040, #d4a017);
     box-shadow: 0 10px 28px rgba(0, 0, 0, 0.22);
   }
+
+  .auth-brand-mark-icon.brand-logo { width: 190px; height: auto; border-radius: 0; background: transparent; box-shadow: none; }
 
   .auth-brand-mark-name {
     font-family: var(--font-heading);
@@ -358,8 +361,7 @@
   <aside class="auth-brand">
     <div class="auth-brand-top">
       <a href="{% url 'core:landing' %}" class="auth-brand-mark">
-        <span class="auth-brand-mark-icon" aria-hidden="true">S</span>
-        <span class="auth-brand-mark-name">Soma Smart</span>
+        <img class="auth-brand-mark-icon brand-logo" src="{% static 'images/soma-smart-logo.png' %}" alt="Soma Smart Assessments">
       </a>
     </div>
 

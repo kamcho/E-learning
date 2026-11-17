@@ -1,13 +1,8 @@
+{% load static %}
 <aside class="admin-sidebar dashboard-sidebar" aria-label="Account navigation">
   <div class="dashboard-sidebar-brand">
     <a href="{% url 'core:landing' %}" class="logo">
-      <span class="logo-mark" aria-hidden="true">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-          <path d="M12 2L2 7l10 5 10-5-10-5z" fill="currentColor" opacity=".9"/>
-          <path d="M2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </span>
-      Soma Smart
+      <img class="logo-mark brand-logo" src="{% static 'images/soma-smart-logo.png' %}" alt="Soma Smart Assessments">
     </a>
     <p class="dashboard-sidebar-workspace">{% if request.user.is_platform_admin %}Admin console{% else %}My account{% endif %}</p>
   </div>

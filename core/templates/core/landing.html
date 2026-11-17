@@ -24,6 +24,7 @@
     })();
   </script>
   <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+  <link rel="preload" as="image" href="{% static 'images/hero-illustration.webp' %}" fetchpriority="high">
 </head>
 <body class="landing-ks">
 
@@ -31,8 +32,7 @@
   <nav class="navbar" id="navbar">
     <div class="container">
       <a href="#" class="navbar-brand">
-        <span class="logo-icon">S</span>
-        <span class="brand-text">Soma Smart</span>
+        <img class="brand-logo" src="{% static 'images/soma-smart-logo.png' %}" alt="Soma Smart Assessments">
       </a>
 
       <div class="navbar-links">
@@ -81,8 +81,7 @@
   <div class="navbar-overlay" id="navbar-overlay" aria-hidden="true"></div>
   <div class="navbar-drawer" id="navbar-drawer">
     <div class="navbar-drawer-brand">
-      <span class="logo-icon">S</span>
-      <span class="brand-text" style="color: var(--clr-text);">Soma Smart</span>
+      <img class="brand-logo" src="{% static 'images/soma-smart-logo.png' %}" alt="Soma Smart Assessments">
     </div>
     <div class="navbar-drawer-links">
       <a href="#exam">Practice exams</a>
@@ -160,13 +159,14 @@
               <span class="hero-split-btn__divider" aria-hidden="true"></span>
               <a href="{% url 'accounts:signin' %}" class="hero-split-btn__side">Log In</a>
             </div>
-            {% if google_client_id %}
-            <div class="hero-google" style="width:100%;max-width:360px;margin-top:0.35rem;">
-              {% include 'accounts/partials/google_signin.html' with google_button_id='landingGoogleSignIn' google_button_text='continue_with' google_divider_before='or continue with Google' %}
-            </div>
-            {% endif %}
           {% endif %}
         </div>
+
+        {% if not request.user.is_authenticated and google_client_id %}
+        <div class="hero-google">
+          {% include 'accounts/partials/google_signin.html' with google_button_id='landingGoogleSignIn' google_button_text='continue_with' google_divider_before='or continue with Google' %}
+        </div>
+        {% endif %}
 
         <div class="hero-stats">
           <div class="stat-item">
@@ -186,24 +186,7 @@
 
       <div class="hero-visual">
         <div class="hero-image-wrapper">
-          <img src="{% static 'images/hero-illustration.png' %}" alt="Kenyan students learning with tablets and books in a vibrant classroom setting" width="600" height="400">
-        </div>
-
-        <!-- Floating accent cards -->
-        <div class="floating-card card-top">
-          <div class="card-icon green">📊</div>
-          <div class="card-info">
-            <div class="card-title">Progress Tracking</div>
-            <div class="card-subtitle">Real-time analytics</div>
-          </div>
-        </div>
-
-        <div class="floating-card card-bottom">
-          <div class="card-icon gold">🏆</div>
-          <div class="card-info">
-            <div class="card-title">CBE Aligned</div>
-            <div class="card-subtitle">KICD Approved Content</div>
-          </div>
+          <img src="{% static 'images/hero-illustration.webp' %}" alt="Kenyan students learning with tablets and books in a vibrant classroom setting" width="1024" height="1024" loading="eager" fetchpriority="high" decoding="async">
         </div>
       </div>
     </div>
@@ -722,8 +705,7 @@
       <div class="footer-grid">
         <div class="footer-brand">
           <div class="brand-name">
-            <span class="logo-icon">S</span>
-            Soma Smart
+            <img class="brand-logo" src="{% static 'images/soma-smart-logo.png' %}" alt="Soma Smart Assessments">
           </div>
           <p>
             A trusted CBE e-learning platform. Empowering every
