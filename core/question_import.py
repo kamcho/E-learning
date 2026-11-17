@@ -4,6 +4,7 @@ from django.db import IntegrityError, transaction
 
 from core.models import Option, Question
 from core.question_math_normalize import normalize_question_item_math, normalize_question_math_text
+from core.svg_sanitizer import sanitize_question_svg
 from subjects.models import SubStrand
 
 VALID_DIFFICULTIES = {choice[0] for choice in Question.DIFFICULTY_CHOICES}
@@ -89,6 +90,10 @@ def validate_question_item(data, index=0):
     quiz = normalize_question_math_text((data.get('quiz') or '').strip())
     if not quiz:
         raise ValueError(f'questions[{index}].quiz is required.')
+    try:
+        prompt_svg = sanitize_question_svg(data.get('prompt_svg') or '')
+    except ValueError as exc:
+        raise ValueError(f'questions[{index}].prompt_svg: {exc}') from exc
 
     difficulty = (data.get('difficulty') or '').strip()
     if difficulty not in VALID_DIFFICULTIES:
@@ -124,6 +129,7 @@ def validate_question_item(data, index=0):
 
     return {
         'quiz': quiz,
+        'prompt_svg': prompt_svg,
         'difficulty': difficulty,
         'quiz_type': quiz_type,
         'sub_strand': sub_strand,
@@ -140,6 +146,7 @@ def _question_dict_for_client(*, cleaned=None, raw=None):
     if cleaned:
         return {
             'quiz': cleaned['quiz'],
+            'prompt_svg': cleaned['prompt_svg'],
             'difficulty': cleaned['difficulty'],
             'quiz_type': cleaned['quiz_type'],
             'sub_strand_id': cleaned['sub_strand'].pk,
@@ -165,6 +172,7 @@ def _question_dict_for_client(*, cleaned=None, raw=None):
             is_active = True
         return {
             'quiz': (raw.get('quiz') or '').strip(),
+            'prompt_svg': raw.get('prompt_svg') or '',
             'difficulty': (raw.get('difficulty') or 'Easy').strip() or 'Easy',
             'quiz_type': (raw.get('quiz_type') or 'Multiple Choice').strip() or 'Multiple Choice',
             'sub_strand_id': raw.get('sub_strand_id'),
@@ -177,6 +185,7 @@ def _question_dict_for_client(*, cleaned=None, raw=None):
         }
     return {
         'quiz': '',
+        'prompt_svg': '',
         'difficulty': 'Easy',
         'quiz_type': 'Multiple Choice',
         'sub_strand_id': None,
@@ -242,6 +251,7 @@ def create_question_from_item(cleaned, created_by):
     with transaction.atomic():
         question = Question.objects.create(
             quiz=cleaned['quiz'],
+            prompt_svg=cleaned['prompt_svg'],
             difficulty=cleaned['difficulty'],
             quiz_type=cleaned['quiz_type'],
             sub_strand=cleaned['sub_strand'],

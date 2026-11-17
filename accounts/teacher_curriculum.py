@@ -298,6 +298,19 @@ def build_ai_question_prompt(sub_strand, *, total_count=8, type_counts=None):
         'For OpenEnded items, include one or more correct reference answers in choices with is_correct true '
         '(for auto-marking), even though learners type free text.',
     ]
+    if grade.level == 'Lower Primary':
+        task_lines.extend([
+            '',
+            '### Visuals for lower-primary learners',
+            'Do not request, link to, or describe raster images or image files. When a question needs a visual '
+            '(for example, objects to count, shapes, a number line, or a simple pattern), put a small, self-contained '
+            'inline SVG illustration in that question\'s optional prompt_svg string field; keep quiz as readable '
+            'plain-text question wording.',
+            'Use simple child-friendly shapes, clear thick strokes, a small viewBox, and explicit width and height. '
+            'Include xmlns="http://www.w3.org/2000/svg" and an accessible role="img" with a short aria-label. '
+            'Do not use scripts, external resources, foreignObject, animation, or embedded raster images. '
+            'Keep the SVG concise and ensure the question can still be understood without it.',
+        ])
     if objectives:
         task_lines.append(
             'Every question must assess at least one learning objective listed above. '
@@ -313,6 +326,7 @@ def build_ai_question_prompt(sub_strand, *, total_count=8, type_counts=None):
         '',
         'Each question object MUST include:',
         '- quiz (string): the question stem/prompt',
+        '- prompt_svg (string, optional): inline SVG markup for an illustration; use only when a visual helps',
         '- difficulty: one of Easy, Medium, Hard',
         f'- quiz_type: one of {", ".join(QUESTION_QUIZ_TYPES)}',
         f'- sub_strand_id: {sub_strand.pk} (or sub_strand_slug: "{sub_strand.slug}")',

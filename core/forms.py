@@ -3,6 +3,7 @@ from django.core.exceptions import ValidationError
 
 from core.models import Option, Question, Quiz
 from core.validators import validate_option_image, validate_question_audio, validate_question_image
+from core.svg_sanitizer import sanitize_question_svg
 from subjects.models import SubStrand, Subject, Strand
 
 
@@ -37,6 +38,17 @@ class QuestionCreateForm(forms.Form):
         validators=[validate_question_image],
         widget=forms.ClearableFileInput(attrs={"class": "form-input", "accept": "image/*"}),
     )
+    prompt_svg = forms.CharField(
+        label='SVG illustration (optional)',
+        required=False,
+        widget=forms.Textarea(attrs={
+            'class': 'form-textarea',
+            'rows': 5,
+            'spellcheck': 'false',
+            'placeholder': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 120">...</svg>',
+        }),
+        help_text='Inline SVG only. Scripts, links, and unsupported elements are rejected.',
+    )
     prompt_audio = forms.FileField(
         label="Question audio (optional)",
         required=False,
@@ -55,6 +67,12 @@ class QuestionCreateForm(forms.Form):
         queryset=SubStrand.objects.none(),
         widget=forms.Select(attrs={"class": "form-select"}),
     )
+
+    def clean_prompt_svg(self):
+        try:
+            return sanitize_question_svg(self.cleaned_data.get('prompt_svg', ''))
+        except ValueError as exc:
+            raise ValidationError(str(exc)) from exc
 
     # Fixed option inputs (used for Multiple Choice / True-False)
     option_1 = forms.CharField(required=False, widget=forms.TextInput(attrs={"class": "form-input"}))

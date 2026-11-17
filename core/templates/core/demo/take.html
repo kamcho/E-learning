@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load question_svg %}
 
 {% block title %}Practice Exam — Soma Smart{% endblock %}
 
@@ -54,6 +55,7 @@
       </div>
     </div>
     <div class="demo-q-text question-rich-body" data-math-content>{{ question.quiz|linebreaksbr }}</div>
+    {% if question.prompt_svg %}<div class="question-svg-illustration">{{ question.prompt_svg|safe_question_svg }}</div>{% endif %}
 
     {% if showing_feedback %}
       <div class="demo-options">

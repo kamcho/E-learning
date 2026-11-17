@@ -786,6 +786,7 @@ def create_question_for_subject(request, subject_id):
                     is_active=True,
                     created_by=user,
                     prompt_image=form.cleaned_data.get('prompt_image'),
+                    prompt_svg=form.cleaned_data.get('prompt_svg', ''),
                     prompt_audio=form.cleaned_data.get('prompt_audio'),
                     image_alt_text=(form.cleaned_data.get('image_alt_text') or '').strip(),
                 )

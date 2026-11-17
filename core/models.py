@@ -31,6 +31,10 @@ class Question(models.Model):
         null=True,
         help_text='Optional illustration or diagram for the question.',
     )
+    prompt_svg = models.TextField(
+        blank=True,
+        help_text='Optional sanitized inline SVG illustration for the question.',
+    )
     prompt_audio=models.FileField(
         upload_to='questions/audio/%Y/%m/',
         blank=True,

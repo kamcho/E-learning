@@ -1,7 +1,12 @@
+{% load question_svg %}
 {% if question %}
 <div class="question-rich-prompt" data-math-content>
   {% if question.quiz %}
   <div class="question-rich-text">{{ question.quiz }}</div>
+  {% endif %}
+
+  {% if question.prompt_svg %}
+  <div class="question-svg-illustration">{{ question.prompt_svg|safe_question_svg }}</div>
   {% endif %}
 
   {% if question.prompt_image %}

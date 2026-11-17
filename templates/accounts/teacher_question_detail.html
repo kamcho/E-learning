@@ -1,4 +1,5 @@
 {% extends 'accounts/admin_base.html' %}
+{% load question_svg %}
 
 {% block title %}Question Detail — Soma Smart{% endblock %}
 
@@ -170,6 +171,7 @@
 
   <h1 style="font-family:var(--font-heading);font-size:1.2rem;font-weight:800;margin:0 0 1rem;">Question</h1>
   <div class="question-prompt">{{ question.quiz }}</div>
+  {% if question.prompt_svg %}<div class="question-svg-illustration">{{ question.prompt_svg|safe_question_svg }}</div>{% endif %}
 
   {% if can_manage_media %}
   <p style="margin:0 0 1rem;">

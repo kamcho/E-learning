@@ -159,6 +159,7 @@
   function readEditForm(card, item) {
     var q = Object.assign({}, item.question);
     q.quiz = card.querySelector('[data-field="quiz"]').value.trim();
+    q.prompt_svg = card.querySelector('[data-field="prompt_svg"]').value.trim();
     q.difficulty = card.querySelector('[data-field="difficulty"]').value;
     q.quiz_type = card.querySelector('[data-field="quiz_type"]').value;
     q.score = parseInt(card.querySelector('[data-field="score"]').value, 10) || 1;
@@ -201,6 +202,8 @@
     var html = '<div class="tc-q-edit-form">';
     html += '<label>Question</label>';
     html += '<textarea data-field="quiz" rows="3">' + esc(q.quiz) + '</textarea>';
+    html += '<label style="margin-top:var(--space-sm);">SVG illustration (optional)</label>';
+    html += '<textarea data-field="prompt_svg" rows="5" spellcheck="false" placeholder="&lt;svg xmlns=&quot;http://www.w3.org/2000/svg&quot; viewBox=&quot;0 0 200 120&quot;&gt;...&lt;/svg&gt;">' + esc(q.prompt_svg || '') + '</textarea>';
     html += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:var(--space-sm);">';
     html += '<div><label>Difficulty</label><select data-field="difficulty">';
     difficulties.forEach(function (d) {
@@ -320,6 +323,7 @@
         html += renderEditForm(item);
       } else {
         html += '<div class="tc-q-prompt question-rich-text" data-math-content data-q-quiz-preview></div>';
+        html += '<div class="question-svg-illustration" data-q-svg-preview></div>';
         html += renderChoicesList(item.question.choices);
       }
       html += '</div>';
@@ -327,6 +331,8 @@
       if (!item.editing) {
         var promptEl = card.querySelector('[data-q-quiz-preview]');
         if (promptEl) promptEl.textContent = item.question.quiz || '';
+        var svgEl = card.querySelector('[data-q-svg-preview]');
+        if (svgEl && item.status === 'valid') svgEl.innerHTML = item.question.prompt_svg || '';
         card.querySelectorAll('[data-choice-preview]').forEach(function (el, choiceIndex) {
           var choice = (item.question.choices || [])[choiceIndex];
           if (choice) el.textContent = choice.option || '';
