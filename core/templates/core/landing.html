@@ -36,32 +36,11 @@
       </a>
 
       <div class="navbar-links">
-        <details class="nav-dropdown">
-          <summary>Explore</summary>
-          <div class="nav-dropdown-menu">
-            <a href="#exam">Practice exam</a>
-            <a href="#features">Why Soma Smart</a>
-            <a href="#how-it-works">How it works</a>
-            <a href="#about">About</a>
-            <a href="#levels">CBE levels</a>
-          </div>
-        </details>
-        <details class="nav-dropdown">
-          <summary>Pricing</summary>
-          <div class="nav-dropdown-menu">
-            <a href="#pricing">Plans</a>
-            <a href="{% url 'subscriptions:plans' %}">Subscriptions</a>
-          </div>
-        </details>
+        <a href="#exam">Practice</a>
+        <a href="#how-it-works">How it works</a>
+        <a href="#pricing">Pricing</a>
         {% if request.user.is_authenticated %}
-        <details class="nav-dropdown">
-          <summary>Account</summary>
-          <div class="nav-dropdown-menu">
-            <a href="{{ request.user.dashboard_url }}">Dashboard</a>
-            <a href="{% url 'core:exams_list' %}">Exam Center</a>
-            <a href="{% url 'subscriptions:plans' %}">Subscriptions</a>
-          </div>
-        </details>
+        <a href="{{ request.user.dashboard_url }}">Dashboard</a>
         {% endif %}
       </div>
 
@@ -79,15 +58,15 @@
           <span class="navbar-greeting">Hi, {{ request.user.first_name }}!</span>
           <a href="{% url 'accounts:signout' %}" class="btn-signup">Log Out</a>
         {% else %}
+          <a href="{% url 'accounts:signin' %}" class="btn-login">Log In</a>
           <details class="nav-signup">
-            <summary>Sign Up</summary>
+            <summary>Get started</summary>
             <div class="nav-signup-menu">
               <a href="{% url 'accounts:signup' %}?role=guardian">Parent</a>
               <a href="{% url 'accounts:signup' %}?role=teacher">Teacher</a>
               <a href="{% url 'accounts:signup' %}?role=partner">School</a>
             </div>
           </details>
-          <a href="{% url 'accounts:signin' %}" class="btn-login">Log In</a>
         {% endif %}
       </div>
 
@@ -106,33 +85,20 @@
       <span class="brand-text" style="color: var(--clr-text);">Soma Smart</span>
     </div>
     <div class="navbar-drawer-links">
-      <details class="nav-drawer-group" open>
-        <summary>Explore</summary>
-        <a href="#exam">Practice exam</a>
-        <a href="#features">Why Soma Smart</a>
-        <a href="#how-it-works">How it works</a>
-        <a href="#about">About</a>
-        <a href="#levels">CBE levels</a>
-      </details>
-      <details class="nav-drawer-group">
-        <summary>Pricing</summary>
-        <a href="#pricing">Plans</a>
-        <a href="{% url 'subscriptions:plans' %}">Subscriptions</a>
-      </details>
+      <a href="#exam">Practice exams</a>
+      <a href="#features">Why Soma Smart</a>
+      <a href="#how-it-works">How it works</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#about">About Soma Smart</a>
+      <a href="#levels">CBE levels</a>
       {% if request.user.is_authenticated %}
-      <details class="nav-drawer-group">
-        <summary>Account</summary>
-        <a href="{{ request.user.dashboard_url }}">Dashboard</a>
-        <a href="{% url 'core:exams_list' %}">Exam Center</a>
-        <a href="{% url 'subscriptions:plans' %}">Subscriptions</a>
-      </details>
+      <a href="{{ request.user.dashboard_url }}">Dashboard</a>
+      <a href="{% url 'core:exams_list' %}">Exam center</a>
+      <a href="{% url 'subscriptions:plans' %}">Subscriptions</a>
       {% else %}
-      <details class="nav-drawer-group">
-        <summary>Sign up</summary>
-        <a href="{% url 'accounts:signup' %}?role=guardian">Parent</a>
-        <a href="{% url 'accounts:signup' %}?role=teacher">Teacher</a>
-        <a href="{% url 'accounts:signup' %}?role=partner">School</a>
-      </details>
+      <a href="{% url 'accounts:signup' %}?role=guardian">Create a parent account</a>
+      <a href="{% url 'accounts:signup' %}?role=teacher">Create a teacher account</a>
+      <a href="{% url 'accounts:signup' %}?role=partner">Create a school account</a>
       {% endif %}
     </div>
     <div class="navbar-drawer-actions">

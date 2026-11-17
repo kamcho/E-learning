@@ -274,6 +274,20 @@
     text-decoration: underline;
   }
 
+  .auth-switch-link {
+    display: block;
+    margin-top: 0.75rem;
+    text-align: center;
+    color: var(--clr-text-muted);
+    font-size: 0.88rem;
+  }
+
+  .auth-switch-link a {
+    color: var(--auth-leaf);
+    font-weight: 700;
+    text-decoration: none;
+  }
+
   html[data-theme="dark"] .auth-panel {
     background:
       radial-gradient(ellipse 60% 40% at 100% 0%, rgba(13, 138, 78, 0.12), transparent 55%),
@@ -293,15 +307,11 @@
 
     .auth-brand {
       min-height: auto;
-      padding: 1.5rem 1.35rem 1.75rem;
+      padding: 0.8rem 1.15rem;
     }
 
     .auth-brand-copy {
-      margin: 1.5rem 0 1rem;
-    }
-
-    .auth-brand-title {
-      font-size: 1.7rem;
+      display: none;
     }
 
     .auth-brand-points {
@@ -313,7 +323,33 @@
     }
 
     .auth-panel {
-      padding: 1.5rem 1.25rem 2.5rem;
+      align-items: flex-start;
+      padding: 0.9rem 1.15rem 1.5rem;
+    }
+
+    .auth-panel-inner {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .auth-panel-header { order: 0; margin-bottom: 0.8rem; }
+    .auth-referral-banner { order: 1; margin-bottom: 0.75rem; }
+    .auth-form { order: 2; }
+    .auth-options { order: 3; }
+    .auth-footer { order: 4; margin-top: 1rem; padding-top: 0.8rem; }
+    .auth-panel-title { font-size: 1.55rem; }
+    .auth-panel-sub { font-size: 0.86rem; line-height: 1.35; }
+    .auth-panel .auth-divider { margin: 0.85rem 0; }
+    .auth-form .form-group { margin-bottom: 0.75rem; }
+    .auth-form .form-input,
+    .auth-form .form-select { padding: 0.75rem 0.9rem; }
+    .auth-submit { padding: 0.82rem 1rem; }
+    .auth-footer { margin-top: 0.95rem; }
+    .auth-switch-link { margin-top: 0.6rem; }
+
+    .auth-panel-inner > .auth-options {
+      display: flex;
+      flex-direction: column;
     }
   }
 </style>
@@ -348,7 +384,7 @@
     <div class="auth-panel-inner">
       <header class="auth-panel-header">
         <h2 class="auth-panel-title">Create account</h2>
-        <p class="auth-panel-sub">Sign up with your phone and 4-digit PIN, or continue with Google.</p>
+        <p class="auth-panel-sub">Create an account with your phone and PIN, or Google.</p>
       </header>
 
       {% if referral_agent %}
@@ -357,9 +393,10 @@
       </div>
       {% endif %}
 
-      {% include 'accounts/partials/google_signin.html' with google_button_id='signupGoogleButton' google_button_text='signup_with' %}
-
-      <div class="auth-divider">or sign up with phone</div>
+      <div class="auth-options">
+        {% include 'accounts/partials/google_signin.html' with google_button_id='signupGoogleButton' google_button_text='signup_with' %}
+        <div class="auth-divider">or sign up with phone</div>
+      </div>
 
       <form method="post" class="auth-form" novalidate>
         {% csrf_token %}
@@ -378,12 +415,10 @@
         {% endfor %}
 
         <button type="submit" class="btn auth-submit">Create account</button>
+        <div class="auth-switch-link">Already have an account? <a href="{% url 'accounts:signin' %}">Sign in instead</a></div>
       </form>
 
       <div class="auth-footer">
-        Already have an account?
-        <a href="{% url 'accounts:signin' %}">Sign in instead</a>
-        <br>
         <a href="{% url 'core:privacy_policy' %}" style="font-weight:600;">Privacy Policy</a>
       </div>
     </div>

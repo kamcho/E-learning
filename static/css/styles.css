@@ -46,10 +46,11 @@
   --space-4xl: 6rem;
 
   /* Radii */
-  --radius-sm: 0.5rem;
-  --radius-md: 0.75rem;
-  --radius-lg: 1rem;
-  --radius-xl: 1.5rem;
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.625rem;
+  --radius-xl: 0.75rem;
+  --radius-card: 0.625rem;
   --radius-full: 9999px;
 
   /* Shadows */
@@ -1059,7 +1060,7 @@ body.nav-open .navbar-drawer {
 
 .audience-card {
   background: var(--clr-surface);
-  border-radius: 18px;
+  border-radius: var(--radius-card);
   padding: 2rem 1.6rem 1.75rem;
   text-align: center;
   border: 1.5px solid var(--clr-border);
@@ -1184,7 +1185,7 @@ html[data-theme="dark"] .audience-card--school {
   --feature-tint: rgba(13, 138, 78, 0.08);
   --feature-glow: rgba(13, 138, 78, 0.14);
   background: var(--clr-surface);
-  border-radius: 20px;
+  border-radius: var(--radius-card);
   padding: 1.65rem 1.5rem 1.55rem;
   border: 1.5px solid color-mix(in srgb, var(--feature-accent) 18%, var(--clr-border));
   box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
@@ -1430,7 +1431,7 @@ html[data-theme="dark"] .audience-card--junior {
 .pricing-card {
   background: var(--clr-surface);
   border: 1px solid var(--clr-border);
-  border-radius: var(--radius-xl);
+  border-radius: var(--radius-card);
   padding: var(--space-2xl);
   text-align: center;
   transition: all var(--transition-base);
@@ -1660,7 +1661,7 @@ html[data-theme="dark"] .audience-card--junior {
 .demo-preview-card {
   background: var(--clr-surface);
   border: 1px solid var(--clr-border);
-  border-radius: var(--radius-xl);
+  border-radius: var(--radius-card);
   padding: var(--space-xl);
   box-shadow: var(--shadow-md);
 }
@@ -1788,7 +1789,7 @@ html[data-theme="dark"] .audience-card--junior {
   --step-glow: rgba(13, 138, 78, 0.18);
   background: var(--clr-surface);
   border: 1.5px solid color-mix(in srgb, var(--step-accent) 18%, var(--clr-border));
-  border-radius: 20px;
+  border-radius: var(--radius-card);
   padding: 1.55rem 1.45rem 1.45rem;
   box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
   transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
@@ -2003,7 +2004,7 @@ html[data-theme="dark"] .how-step-icon {
 .about-aside-card {
   background: var(--clr-surface);
   border: 1px solid var(--clr-border);
-  border-radius: var(--radius-xl);
+  border-radius: var(--radius-card);
   padding: var(--space-xl);
   box-shadow: var(--shadow-sm);
 }
@@ -2354,22 +2355,30 @@ body.landing-ks {
 
 .landing-ks .navbar {
   background: #fff;
-  border-bottom: 1px solid #eee;
-  padding: 0.7rem 0;
-  box-shadow: none;
+  border-bottom: 1px solid #e9edf2;
+  padding: 0.55rem 0;
+  box-shadow: 0 2px 10px rgba(17, 34, 58, 0.025);
 }
 
 .landing-ks .navbar.scrolled {
   background: #fff;
-  box-shadow: 0 4px 18px rgba(16, 24, 40, 0.06);
-  padding: 0.7rem 0;
+  box-shadow: 0 5px 18px rgba(16, 24, 40, 0.07);
+  padding: 0.55rem 0;
+}
+
+.landing-ks .navbar .container {
+  min-height: 54px;
+  max-width: none;
 }
 
 .landing-ks .navbar-brand .logo-icon {
   background: var(--clr-primary);
   color: #fff;
-  box-shadow: none;
-  border-radius: 12px;
+  box-shadow: 0 2px 7px rgba(37, 99, 235, 0.16);
+  border-radius: 10px;
+  width: 38px;
+  height: 38px;
+  font-size: 1.2rem;
 }
 
 .landing-ks .navbar-brand .brand-text,
@@ -2378,28 +2387,32 @@ body.landing-ks {
 }
 
 .landing-ks .navbar-links {
-  gap: 0.55rem;
+  gap: clamp(1.15rem, 2.3vw, 2rem);
 }
 
 .landing-ks .navbar-links a {
-  color: #1a1a1a;
-  border: 1.5px solid #e5e7eb;
-  border-radius: 999px;
-  padding: 0.5rem 1.05rem;
+  color: #4b5563;
+  border: 0;
+  border-radius: 0;
+  padding: 0.55rem 0;
   font-weight: 600;
-  font-size: 0.88rem;
+  font-size: 0.9rem;
 }
 
 .landing-ks .navbar-links a::after {
-  display: none;
+  display: block;
+  bottom: -7px;
+  height: 2px;
+  background: var(--clr-primary);
 }
 
 .landing-ks .navbar-links a:hover,
 .landing-ks .navbar.scrolled .navbar-links a:hover {
-  color: #fff;
-  background: var(--clr-primary);
-  border-color: var(--clr-primary);
+  color: #172b4d;
+  background: transparent;
 }
+
+.landing-ks .navbar-actions .btn-login:hover { color: var(--clr-primary); }
 
 .landing-ks .navbar.scrolled .navbar-links a {
   color: #1a1a1a;
@@ -2408,8 +2421,10 @@ body.landing-ks {
 .landing-ks .navbar .theme-toggle,
 .landing-ks .navbar.scrolled .theme-toggle {
   background: #fff;
-  border-color: #e5e7eb;
-  color: #1a1a1a;
+  border-color: transparent;
+  color: #475569;
+  width: 38px;
+  height: 38px;
 }
 
 .landing-ks .navbar-greeting {
@@ -2419,10 +2434,11 @@ body.landing-ks {
 }
 
 .landing-ks .navbar-actions .btn-login {
-  color: #1a1a1a;
-  border: 1.5px solid #e5e7eb;
-  border-radius: 999px;
-  padding: 0.5rem 1.15rem;
+  color: #334155;
+  border: 0;
+  border-radius: 8px;
+  padding: 0.65rem 0.55rem;
+  font-weight: 650;
 }
 
 .landing-ks .navbar.scrolled .navbar-actions .btn-login {
@@ -2432,14 +2448,15 @@ body.landing-ks {
 .landing-ks .navbar-actions .btn-signup {
   background: var(--clr-primary);
   color: #fff;
-  box-shadow: none;
-  border-radius: 999px;
+  box-shadow: 0 2px 7px rgba(37, 99, 235, 0.15);
+  border-radius: 9px;
+  padding: 0.68rem 1rem;
 }
 
 .landing-ks .navbar-actions .btn-signup:hover {
-  transform: none;
-  box-shadow: none;
-  filter: brightness(1.05);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+  filter: brightness(1.02);
 }
 
 .landing-ks .nav-signup {
@@ -2449,22 +2466,36 @@ body.landing-ks {
 .landing-ks .nav-signup summary {
   list-style: none;
   cursor: pointer;
-  border: 1.5px solid #e5e7eb;
-  border-radius: 999px;
-  padding: 0.5rem 1.15rem;
-  font-size: 0.88rem;
+  border: 1px solid var(--clr-primary);
+  border-radius: 9px;
+  padding: 0.68rem 1rem;
+  font-size: 0.86rem;
   font-weight: 700;
-  color: #1a1a1a;
+  color: #fff;
+  background: var(--clr-primary);
+  box-shadow: 0 2px 7px rgba(37, 99, 235, 0.15);
+  transition: background .18s ease, box-shadow .18s ease;
 }
+
+.landing-ks .nav-signup summary:hover { background: color-mix(in srgb, var(--clr-primary) 90%, #000); }
 
 .landing-ks .nav-signup summary::-webkit-details-marker {
   display: none;
 }
 
 .landing-ks .nav-signup summary::after {
-  content: ' ▾';
-  font-size: 0.7em;
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin: 0 0 3px 8px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(45deg);
+  transition: transform .18s ease;
 }
+
+.landing-ks .nav-signup[open] summary::after { transform: translateY(3px) rotate(225deg); }
 
 .landing-ks .nav-signup-menu {
   position: absolute;
@@ -2473,16 +2504,16 @@ body.landing-ks {
   min-width: 11rem;
   background: #fff;
   border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  box-shadow: 0 12px 32px rgba(16, 24, 40, 0.12);
-  padding: 0.4rem;
+  border-radius: 10px;
+  box-shadow: 0 12px 28px rgba(16, 24, 40, 0.12);
+  padding: 0.35rem;
   z-index: 20;
 }
 
 .landing-ks .nav-signup-menu a {
   display: block;
-  padding: 0.55rem 0.75rem;
-  border-radius: 8px;
+  padding: 0.62rem 0.75rem;
+  border-radius: 7px;
   font-size: 0.88rem;
   font-weight: 600;
   color: #1a1a1a;
@@ -2490,90 +2521,6 @@ body.landing-ks {
 
 .landing-ks .nav-signup-menu a:hover {
   background: #f3f4f6;
-}
-
-.landing-ks .nav-dropdown {
-  position: relative;
-}
-
-.landing-ks .nav-dropdown summary {
-  list-style: none;
-  cursor: pointer;
-  border: 1.5px solid #e5e7eb;
-  border-radius: 999px;
-  padding: 0.5rem 1.05rem;
-  font-size: 0.88rem;
-  font-weight: 600;
-  color: #1a1a1a;
-  white-space: nowrap;
-}
-
-.landing-ks .nav-dropdown summary::-webkit-details-marker {
-  display: none;
-}
-
-.landing-ks .nav-dropdown summary::after {
-  content: ' ▾';
-  font-size: 0.7em;
-}
-
-.landing-ks .nav-dropdown[open] summary {
-  background: var(--clr-primary);
-  color: #fff;
-  border-color: var(--clr-primary);
-}
-
-.landing-ks .nav-dropdown-menu {
-  position: absolute;
-  left: 0;
-  top: calc(100% + 0.4rem);
-  min-width: 11.5rem;
-  background: #fff;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  box-shadow: 0 12px 32px rgba(16, 24, 40, 0.12);
-  padding: 0.4rem;
-  z-index: 25;
-}
-
-.landing-ks .nav-dropdown-menu a {
-  display: block;
-  padding: 0.55rem 0.75rem;
-  border-radius: 8px;
-  font-size: 0.88rem;
-  font-weight: 600;
-  color: #1a1a1a;
-  border: none;
-}
-
-.landing-ks .nav-dropdown-menu a:hover {
-  background: #f3f4f6;
-  color: #1a1a1a;
-}
-
-.landing-ks .navbar-drawer-links .nav-drawer-group {
-  border-bottom: 1px solid var(--clr-border);
-  padding-bottom: var(--space-sm);
-  margin-bottom: var(--space-sm);
-}
-
-.landing-ks .navbar-drawer-links .nav-drawer-group summary {
-  list-style: none;
-  cursor: pointer;
-  font-size: 0.78rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--clr-text-muted);
-  padding: 0.5rem 0.75rem;
-}
-
-.landing-ks .navbar-drawer-links .nav-drawer-group summary::-webkit-details-marker {
-  display: none;
-}
-
-.landing-ks .navbar-drawer-links .nav-drawer-group a {
-  padding-left: 1.25rem;
 }
 
 .landing-ks .menu-toggle {
@@ -2597,7 +2544,7 @@ body.landing-ks {
   grid-template-columns: 1fr 1fr;
   gap: var(--space-3xl);
   align-items: center;
-  max-width: var(--container-max, 75rem);
+  max-width: none;
   margin: 0 auto;
 }
 
@@ -2608,20 +2555,20 @@ body.landing-ks {
 @media (max-width: 1024px) {
   .landing-ks .hero .container {
     grid-template-columns: 1fr;
-    text-align: center;
+    text-align: left;
   }
 
   .landing-ks .hero-description {
-    margin-left: auto;
+    margin-left: 0;
     margin-right: auto;
   }
 
   .landing-ks .hero-cta {
-    justify-content: center;
+    justify-content: flex-start;
   }
 
   .landing-ks .hero-stats {
-    justify-content: center;
+    justify-content: flex-start;
   }
 
   .landing-ks .hero-visual {
@@ -2805,14 +2752,17 @@ html[data-theme="dark"] .landing-ks .navbar.scrolled {
 html[data-theme="dark"] .landing-ks .navbar-brand .brand-text,
 html[data-theme="dark"] .landing-ks .navbar-links a,
 html[data-theme="dark"] .landing-ks .navbar-actions .btn-login,
-html[data-theme="dark"] .landing-ks .nav-signup summary,
 html[data-theme="dark"] .landing-ks .navbar-greeting {
   color: var(--clr-text);
 }
 
-html[data-theme="dark"] .landing-ks .navbar-links a,
-html[data-theme="dark"] .landing-ks .navbar-actions .btn-login,
 html[data-theme="dark"] .landing-ks .nav-signup summary {
+  color: #fff;
+  border-color: var(--clr-primary);
+}
+
+html[data-theme="dark"] .landing-ks .navbar-links a,
+html[data-theme="dark"] .landing-ks .navbar-actions .btn-login {
   border-color: var(--clr-border);
 }
 
@@ -2825,16 +2775,15 @@ html[data-theme="dark"] .landing-ks .nav-signup-menu a {
   color: var(--clr-text);
 }
 
-html[data-theme="dark"] .landing-ks .nav-dropdown summary {
-  color: var(--clr-text);
-  border-color: var(--clr-border);
+html[data-theme="dark"] .landing-ks .nav-signup-menu a:hover {
+  background: var(--clr-surface-alt);
 }
 
-html[data-theme="dark"] .landing-ks .nav-dropdown-menu {
+html[data-theme="dark"] .landing-ks .menu-toggle {
   background: var(--clr-surface);
   border-color: var(--clr-border);
 }
 
-html[data-theme="dark"] .landing-ks .nav-dropdown-menu a {
-  color: var(--clr-text);
+html[data-theme="dark"] .landing-ks .menu-toggle span {
+  background: var(--clr-text);
 }
