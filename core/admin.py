@@ -1,5 +1,15 @@
 from django.contrib import admin
-from .models import AIExplanation, AttemptResponse, Question, Option, Quiz, UserAttempts
+from django.urls import reverse
+from django.utils.html import format_html
+from .models import (
+    AIExplanation,
+    AttemptResponse,
+    GuestDemoAttempt,
+    Question,
+    Option,
+    Quiz,
+    UserAttempts,
+)
 
 
 class OptionInline(admin.TabularInline):
@@ -70,6 +80,47 @@ class AttemptResponseAdmin(admin.ModelAdmin):
         'attempt', 'question', 'marks_awarded', 'max_marks', 'is_correct', 'graded_by',
     )
     list_filter = ('is_correct', 'graded_by')
+
+
+@admin.register(GuestDemoAttempt)
+class GuestDemoAttemptAdmin(admin.ModelAdmin):
+    list_display = (
+        'started_at', 'phone_number', 'grade_name', 'subject_name', 'topic_label', 'status',
+        'answered_count', 'question_count', 'score', 'linked_payment',
+    )
+    list_filter = ('status', 'grade_name', 'started_at')
+    search_fields = ('phone_number', 'demo_id', 'subject_name', 'topic_label')
+    readonly_fields = (
+        'uuid', 'demo_id', 'phone_number', 'grade_name', 'subject_name', 'scope_label',
+        'topic_label', 'question_ids', 'answers', 'feedback', 'question_count',
+        'correct_count', 'marks_earned', 'marks_possible', 'score', 'status',
+        'started_at', 'completed_at', 'updated_at',
+    )
+    fields = readonly_fields
+    ordering = ('-started_at',)
+
+    @admin.display(description='Guest payment')
+    def linked_payment(self, obj):
+        from subscriptions.models import GuestDemoPayment
+
+        payment = GuestDemoPayment.objects.filter(demo_id=obj.demo_id).only(
+            'uuid', 'status', 'amount_kes',
+        ).first()
+        if not payment:
+            return '—'
+        url = reverse('admin:subscriptions_guestdemopayment_change', args=[payment.pk])
+        return format_html(
+            '<a href="{}">{} · KES {}</a>',
+            url,
+            payment.get_status_display(),
+            payment.amount_kes,
+        )
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
 
 
 @admin.register(AIExplanation)

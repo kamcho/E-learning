@@ -3,6 +3,7 @@ import uuid
 
 from django.conf import settings
 from django.db import models
+from django.utils import timezone
 from django.utils.html import strip_tags
 
 from subjects.models import Strand
@@ -222,6 +223,52 @@ class AttemptResponse(models.Model):
 
     def __str__(self):
         return f'{self.attempt_id} — {self.question_id}'
+
+
+class GuestDemoAttempt(models.Model):
+    """Durable record of an anonymous practice exam session."""
+
+    class Status(models.TextChoices):
+        IN_PROGRESS = 'in_progress', 'In progress'
+        COMPLETED = 'completed', 'Completed'
+        ABANDONED = 'abandoned', 'Abandoned'
+
+    uuid = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    demo_id = models.CharField(max_length=36, unique=True, db_index=True)
+    phone_number = models.CharField(max_length=20, blank=True)
+    grade_name = models.CharField(max_length=80, blank=True)
+    subject_name = models.CharField(max_length=120, blank=True)
+    scope_label = models.CharField(max_length=80, blank=True)
+    topic_label = models.CharField(max_length=160, blank=True)
+    question_ids = models.JSONField(default=list, blank=True)
+    answers = models.JSONField(default=dict, blank=True)
+    feedback = models.JSONField(default=dict, blank=True)
+    question_count = models.PositiveSmallIntegerField(default=0)
+    correct_count = models.PositiveSmallIntegerField(default=0)
+    marks_earned = models.PositiveIntegerField(default=0)
+    marks_possible = models.PositiveIntegerField(default=0)
+    score = models.PositiveSmallIntegerField(default=0)
+    status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        default=Status.IN_PROGRESS,
+        db_index=True,
+    )
+    started_at = models.DateTimeField(default=timezone.now, db_index=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ('-started_at',)
+        verbose_name = 'Guest exam attempt'
+        verbose_name_plural = 'Guest exam attempts'
+
+    @property
+    def answered_count(self):
+        return len(self.answers or {})
+
+    def __str__(self):
+        return f'Guest attempt {self.demo_id} — {self.get_status_display()}'
 
 
 class AIExplanation(models.Model):

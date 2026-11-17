@@ -544,6 +544,11 @@ def guest_demo_checkout_view(request):
             status=GuestDemoPayment.Status.PENDING,
         ).exclude(checkout_request_id='').first()
         if pending_payment:
+            from core.models import GuestDemoAttempt
+
+            GuestDemoAttempt.objects.filter(demo_id=demo['demo_id']).update(
+                phone_number=pending_payment.phone_number,
+            )
             return redirect(
                 'subscriptions:guest_demo_payment_pending',
                 payment_uuid=pending_payment.uuid,
@@ -555,6 +560,11 @@ def guest_demo_checkout_view(request):
             amount_kes=plan.price_kes,
             phone_number=form.cleaned_data['phone_number'],
             status=GuestDemoPayment.Status.PENDING,
+        )
+        from core.models import GuestDemoAttempt
+
+        GuestDemoAttempt.objects.filter(demo_id=demo['demo_id']).update(
+            phone_number=payment.phone_number,
         )
         try:
             stk_response = initiate_stk_push(

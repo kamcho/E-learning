@@ -4,6 +4,7 @@ import random
 import uuid as uuid_lib
 
 from django.db.models import Count, Prefetch, Q
+from django.utils.dateparse import parse_datetime
 from django.utils import timezone
 
 from core.models import Option, Question
@@ -21,14 +22,63 @@ def get_demo_session(request):
 
 
 def save_demo_session(request, demo):
+    previous = request.session.get(DEMO_SESSION_KEY)
+    is_guest = not getattr(getattr(request, 'user', None), 'is_authenticated', False)
+    if (
+        previous
+        and previous.get('demo_id') != demo.get('demo_id')
+        and not previous.get('completed')
+    ):
+        persist_demo_attempt(previous, status='abandoned')
     request.session[DEMO_SESSION_KEY] = demo
     request.session.modified = True
+    if is_guest:
+        persist_demo_attempt(demo)
 
 
 def clear_demo_session(request):
+    demo = request.session.get(DEMO_SESSION_KEY)
+    is_guest = not getattr(getattr(request, 'user', None), 'is_authenticated', False)
+    if demo and is_guest:
+        if not demo.get('completed'):
+            persist_demo_attempt(demo, status='abandoned')
     if DEMO_SESSION_KEY in request.session:
         del request.session[DEMO_SESSION_KEY]
         request.session.modified = True
+
+
+def persist_demo_attempt(demo, *, status=None):
+    """Copy guest progress from the active session into its durable audit row."""
+    from core.models import GuestDemoAttempt
+
+    demo_id = demo.get('demo_id')
+    if not demo_id:
+        return
+    is_completed = bool(demo.get('completed'))
+    started_at = parse_datetime(demo.get('started_at', '')) or timezone.now()
+    defaults = {
+        'grade_name': demo.get('grade_name', ''),
+        'subject_name': demo.get('subject_name', ''),
+        'scope_label': demo.get('scope_label', ''),
+        'topic_label': demo.get('topic_label', ''),
+        'question_ids': demo.get('question_ids', []),
+        'answers': demo.get('answers', {}),
+        'feedback': demo.get('feedback', {}),
+        'question_count': len(demo.get('question_ids', [])),
+        'correct_count': demo.get('correct_count', 0),
+        'marks_earned': demo.get('marks_earned', 0),
+        'marks_possible': demo.get('marks_possible', 0),
+        'score': demo.get('score', 0),
+        'status': status or (
+            GuestDemoAttempt.Status.COMPLETED if is_completed
+            else GuestDemoAttempt.Status.IN_PROGRESS
+        ),
+        'completed_at': timezone.now() if is_completed else None,
+    }
+    GuestDemoAttempt.objects.update_or_create(
+        demo_id=demo_id,
+        defaults={**defaults, 'started_at': started_at},
+    )
 
 
 def select_demo_questions(
