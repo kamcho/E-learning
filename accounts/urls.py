@@ -107,6 +107,7 @@ urlpatterns = [
     ),
     path('admin/users/', views.admin_users_list_view, name='admin_users_list'),
     path('admin/students/', views.admin_students_list_view, name='admin_students_list'),
+    path('admin/guest-attempts/', views.admin_guest_attempts_view, name='admin_guest_attempts'),
     path('admin-profile/', views.admin_profile_view, name='admin_profile'),
     path('admin/users/<int:user_id>/', views.admin_user_detail_view, name='admin_user_detail'),
     path(

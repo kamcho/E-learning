@@ -1721,6 +1721,43 @@ def admin_students_list_view(request):
 
 
 @login_required(login_url='accounts:signin')
+def admin_guest_attempts_view(request):
+    """Paginated guest practice exam history for platform administrators."""
+    denied = _admin_access_or_redirect(request)
+    if denied:
+        return denied
+
+    from core.models import GuestDemoAttempt
+
+    search = request.GET.get('q', '').strip()
+    status = request.GET.get('status', '').strip()
+    valid_statuses = {choice[0] for choice in GuestDemoAttempt.Status.choices}
+    if status not in valid_statuses:
+        status = ''
+
+    attempts = GuestDemoAttempt.objects.all()
+    if search:
+        attempts = attempts.filter(
+            Q(phone_number__icontains=search)
+            | Q(demo_id__icontains=search)
+            | Q(grade_name__icontains=search)
+            | Q(subject_name__icontains=search)
+            | Q(topic_label__icontains=search)
+        )
+    if status:
+        attempts = attempts.filter(status=status)
+
+    page_obj = Paginator(attempts, 25).get_page(request.GET.get('page'))
+    return render(request, 'accounts/admin_guest_attempts.html', {
+        'page_obj': page_obj,
+        'search': search,
+        'status_filter': status,
+        'status_choices': GuestDemoAttempt.Status.choices,
+        'pagination_extra': _pagination_extra_params(request, ['page']),
+    })
+
+
+@login_required(login_url='accounts:signin')
 def admin_user_detail_view(request, user_id):
     """Admin view of a single platform user."""
     from core.models import UserAttempts

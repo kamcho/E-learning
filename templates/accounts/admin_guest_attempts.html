@@ -1,0 +1,78 @@
+{% extends 'accounts/admin_base.html' %}
+
+{% block title %}Guest Exam Attempts — Admin — Soma Smart{% endblock %}
+
+{% block extra_head %}
+{% include 'accounts/partials/admin_list_styles.html' %}
+<style>
+  .guest-attempt-filters { display:flex; gap:.65rem; align-items:center; flex-wrap:wrap; padding:1rem var(--space-xl); }
+  .guest-attempt-filters input, .guest-attempt-filters select { min-height:40px; padding:.5rem .75rem; border:1px solid var(--clr-border); border-radius:var(--radius-md); background:var(--clr-surface); color:var(--clr-text); }
+  .guest-attempt-details { max-width:420px; }
+  .guest-attempt-details summary { color:var(--clr-primary); cursor:pointer; font-weight:700; }
+  .guest-attempt-json { max-height:300px; overflow:auto; padding:.7rem; border-radius:8px; background:var(--clr-surface-alt); white-space:pre-wrap; overflow-wrap:anywhere; font:.76rem/1.45 ui-monospace,monospace; }
+  .guest-attempt-status { display:inline-block; padding:.25rem .55rem; border-radius:999px; background:var(--clr-surface-alt); font-size:.78rem; font-weight:700; }
+</style>
+{% endblock %}
+
+{% block admin_content %}
+<div class="admin-list-banner">
+  <div>
+    <a href="{% url 'accounts:admin_dashboard' %}" class="admin-list-back admin-list-back--light">&larr; Back to dashboard</a>
+    <h1>Guest exam attempts</h1>
+    <p>Anonymous practice exam progress, answers, and follow-up phone numbers</p>
+  </div>
+  <a href="{% url 'subscriptions:admin_payments_list' %}" class="btn-list-banner">View payments</a>
+</div>
+
+<div class="admin-panel">
+  <div class="admin-panel-head-flex">
+    <div>
+      <h2>Attempt history</h2>
+      <p class="admin-panel-sub">Search by phone, attempt ID, grade, subject, or topic.</p>
+    </div>
+    <span class="table-count">{{ page_obj.paginator.count }} attempt{{ page_obj.paginator.count|pluralize }}</span>
+  </div>
+
+  <form method="get" class="guest-attempt-filters">
+    <input type="search" name="q" value="{{ search }}" placeholder="Search attempts or phone number" aria-label="Search guest attempts">
+    <select name="status" aria-label="Filter by attempt status">
+      <option value="">All statuses</option>
+      {% for value, label in status_choices %}
+      <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit">Filter</button>
+    {% if search or status_filter %}<a href="{% url 'accounts:admin_guest_attempts' %}" class="admin-page-btn">Clear</a>{% endif %}
+  </form>
+
+  {% if page_obj.object_list %}
+  <table class="data-table">
+    <thead><tr><th>Started</th><th>Phone</th><th>Grade / subject</th><th>Topic</th><th>Progress</th><th>Score</th><th>Status</th><th>Answers</th></tr></thead>
+    <tbody>
+      {% for attempt in page_obj %}
+      <tr>
+        <td><div class="list-row-name">{{ attempt.started_at|date:'d M Y' }}</div><div class="list-row-meta">{{ attempt.started_at|date:'H:i' }}</div></td>
+        <td>{% if attempt.phone_number %}<a href="tel:{{ attempt.phone_number }}">{{ attempt.phone_number }}</a>{% else %}<span class="list-row-meta">Not provided</span>{% endif %}</td>
+        <td><div class="list-row-name">{{ attempt.grade_name|default:'—' }}</div><div class="list-row-meta">{{ attempt.subject_name|default:'—' }}</div></td>
+        <td>{{ attempt.topic_label|default:'—' }}</td>
+        <td>{{ attempt.answered_count }} / {{ attempt.question_count }}</td>
+        <td>{% if attempt.status == 'completed' %}{{ attempt.score }}%{% else %}—{% endif %}</td>
+        <td><span class="guest-attempt-status">{{ attempt.get_status_display }}</span></td>
+        <td>
+          <details class="guest-attempt-details">
+            <summary>View answers</summary>
+            <div class="list-row-meta" style="margin-top:.6rem;">Attempt ID: {{ attempt.demo_id }}</div>
+            <h4>Selected answers</h4><pre class="guest-attempt-json">{{ attempt.answers|pprint }}</pre>
+            <h4>Answer feedback</h4><pre class="guest-attempt-json">{{ attempt.feedback|pprint }}</pre>
+          </details>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% include 'accounts/partials/admin_pagination.html' with page_obj=page_obj page_param='page' pagination_extra=pagination_extra %}
+  {% else %}
+  <div class="admin-list-empty"><div class="admin-list-empty-icon" aria-hidden="true">&#128203;</div><p>{% if search or status_filter %}No guest attempts match those filters.{% else %}No guest attempts recorded yet.{% endif %}</p></div>
+  {% endif %}
+</div>
+{% endblock %}
