@@ -73,11 +73,18 @@
 
   {% if payment %}
   <section class="guest-review-card">
-    <div class="guest-review-card-head"><h2>Guest payment</h2><p>Matched using this attempt’s demo ID.</p></div>
+    <div class="guest-review-card-head">
+      {% if payment.status == 'success' %}<h2>Payment received</h2><p>Successful payment matched to this guest attempt.</p>
+      {% else %}<h2>Payment attempt</h2><p>Matched using this attempt’s demo ID.</p>{% endif %}
+    </div>
     <div class="guest-review-payment">
       <div><div class="guest-review-payment-label">Status</div><div class="guest-review-payment-value">{{ payment.get_status_display }}</div></div>
       <div><div class="guest-review-payment-label">Amount</div><div class="guest-review-payment-value">KES {{ payment.amount_kes|floatformat:2 }}</div></div>
       <div><div class="guest-review-payment-label">M-Pesa receipt</div><div class="guest-review-payment-value">{{ payment.mpesa_receipt_number|default:'—' }}</div></div>
+      <div><div class="guest-review-payment-label">Paid from</div><div class="guest-review-payment-value">{{ payment.phone_number|default:'—' }}</div></div>
+      <div><div class="guest-review-payment-label">Checkout request ID</div><div class="guest-review-payment-value">{{ payment.checkout_request_id|default:'—' }}</div></div>
+      <div><div class="guest-review-payment-label">Payment started</div><div class="guest-review-payment-value">{{ payment.created_at|date:'d M Y, H:i' }}</div></div>
+      {% if payment.result_description %}<div style="grid-column:1/-1"><div class="guest-review-payment-label">Result</div><div class="guest-review-payment-value">{{ payment.result_description }}</div></div>{% endif %}
     </div>
   </section>
   {% endif %}

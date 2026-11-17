@@ -41,29 +41,43 @@
     margin-top: 0.35rem;
   }
   .payment-details-dialog {
-    position: fixed;
-    inset: 0;
-    margin: auto;
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    margin: 0 !important;
     width: min(680px, calc(100vw - 2rem));
     max-height: min(85vh, 760px);
-    overflow: auto;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
     padding: 0;
     border: 1px solid var(--clr-border);
     border-radius: var(--radius-lg, 16px);
     background: var(--clr-surface);
     color: var(--clr-text);
-    box-shadow: 0 24px 80px #0005;
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
+    z-index: 1050;
   }
-  .payment-details-dialog::backdrop { background: #10182799; }
-  .payment-details-head { display:flex; justify-content:space-between; gap:1rem; align-items:flex-start; padding:1.25rem 1.5rem; border-bottom:1px solid var(--clr-border); }
+  .payment-details-dialog:not([open]) {
+    display: none;
+  }
+  .payment-details-dialog::backdrop {
+    background: rgba(16, 24, 39, 0.65);
+    backdrop-filter: blur(2px);
+  }
+  .payment-details-head { display:flex; justify-content:space-between; gap:1rem; align-items:flex-start; padding:1.25rem 1.5rem; border-bottom:1px solid var(--clr-border); flex-shrink: 0; }
   .payment-details-head h2 { margin:0; font-size:1.2rem; }
   .payment-details-close { border:1px solid var(--clr-border); border-radius:8px; background:var(--clr-surface); color:inherit; padding:.35rem .65rem; cursor:pointer; }
-  .payment-details-body { padding:1.25rem 1.5rem 1.5rem; }
+  .payment-details-body { padding:1.25rem 1.5rem 1.5rem; overflow-y: auto; }
   .payment-details-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:.9rem 1.25rem; margin:0; }
   .payment-details-grid div { min-width:0; }
   .payment-details-grid dt { color:var(--clr-text-muted); font-size:.77rem; margin-bottom:.2rem; }
   .payment-details-grid dd { margin:0; overflow-wrap:anywhere; font-weight:600; }
   .payment-payload { margin:.45rem 0 0; padding:.75rem; border-radius:8px; background:var(--clr-surface-alt); white-space:pre-wrap; overflow-wrap:anywhere; font: .78rem/1.45 ui-monospace,monospace; }
+  .payments-ledger tbody tr[data-payment-details] { cursor: pointer; }
+  .payments-ledger tbody tr[data-payment-details]:hover td { background: color-mix(in srgb, var(--clr-primary) 9%, var(--clr-surface)); }
+  .payments-ledger tbody tr[data-payment-details]:focus-visible { outline: 2px solid var(--clr-primary); outline-offset: -2px; }
   @media(max-width:560px) { .payment-details-grid { grid-template-columns:1fr; } .payment-details-head,.payment-details-body { padding:1rem; } }
 </style>
 {% endblock %}
@@ -254,7 +268,7 @@
         </td>
         <td>
           {% if row.kind == 'guest_exam' %}
-          <span class="badge badge-gold" style="font-size:0.72rem;">Guest exam</span>
+          <span class="badge badge-gold" style="font-size:0.72rem;">Guest</span>
           {% else %}
           <span class="badge badge-primary" style="font-size:0.72rem;">Subscription</span>
           {% endif %}
