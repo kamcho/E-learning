@@ -441,7 +441,11 @@
     grid-template-columns: minmax(0, 1fr) minmax(300px, 340px);
     gap: var(--space-lg);
     align-items: stretch;
-    margin-bottom: var(--space-lg);
+    margin-bottom: var(--space-xl);
+  }
+
+  .gd-section--kpis + .gd-overview-row {
+    margin-top: var(--space-xl);
   }
 
   .gd-overview-row .gd-section-block {
@@ -487,7 +491,7 @@
   }
 
   .gd-section--subjects {
-    margin-bottom: var(--space-lg);
+    margin-bottom: var(--space-xl);
   }
 
   .gd-section--subjects .analytics-breakdown,
@@ -2237,47 +2241,7 @@
       </div>
       {% endif %}
     </div>
-    <div class="gd-learner-header-body">
-      <div class="gd-learner-identity">
-        <div class="gd-learner-avatar" aria-hidden="true">
-          {{ active_student.first_name|first|upper }}{{ active_student.last_name|first|upper }}
-        </div>
-        <div>
-          <h1 class="gd-learner-name">{{ active_student.first_name }} {{ active_student.last_name }}</h1>
-          <ul class="gd-learner-chips">
-            <li class="gd-learner-chip">{{ active_student.grade_level.name|default:"No grade assigned" }}</li>
-            <li class="gd-learner-chip">{{ student_code }}</li>
-            <li class="gd-learner-chip gd-learner-chip--live">Active</li>
-            {% if dashboard.enrolled_on %}
-            <li class="gd-learner-chip">Enrolled {{ dashboard.enrolled_on|date:"M d, Y" }}</li>
-            {% endif %}
-          </ul>
-        </div>
-      </div>
-      <div class="gd-learner-toolbar">
-        {% if students|length > 1 %}
-        <button type="button" class="gd-btn gd-btn-outline" id="gd-change-learner-btn" hidden aria-hidden="true" tabindex="-1">Switch</button>
-        <select class="gd-select" id="student-switcher" aria-label="Select learner" hidden>
-          {% for student in students %}
-            <option value="{{ student.uuid }}" {% if active_student.uuid == student.uuid %}selected{% endif %}>
-              {{ student.first_name }} {{ student.last_name }}
-            </option>
-          {% endfor %}
-        </select>
-        {% endif %}
-        <span class="gd-learner-toolbar-label">Period</span>
-        <input type="month" class="gd-month-filter" id="dashboard-month-filter" value="{{ dashboard_filters.month|default:'' }}" aria-label="Filter by month" title="Filter by month">
-        {% if dashboard_filters.month %}
-        <button type="button" class="gd-month-clear" id="dashboard-month-clear">Clear</button>
-        {% endif %}
-        <a href="{% url 'accounts:student_analytics' active_student.uuid %}" class="gd-btn gd-btn-outline">Analytics</a>
-        <a href="#exam-attempts" class="gd-btn gd-btn-outline">History</a>
-        <a href="{% url 'core:exams_list' %}?student={{ active_student.uuid }}" class="gd-btn gd-btn-primary">Start exam</a>
-      </div>
-    </div>
   </header>
-
-  {% include 'accounts/partials/discipline_cluster_cards.html' with discipline_cluster_cards=discipline_cluster_cards %}
 
   <section class="gd-section-block gd-section--kpis" aria-label="Summary metrics">
     {% if analytics_period_label %}
@@ -2293,7 +2257,7 @@
 
   <section class="gd-overview-row" aria-label="Score trends and activity">
     <div class="gd-section-block">
-      {% include 'accounts/partials/attempt_score_chart.html' with attempt_chart=dashboard.attempt_chart chart_canvas_id='guardianAttemptScoreChart' chart_data_id='guardian-attempt-chart-data' show_chart_period_filter=True chart_period_choices=chart_period_choices dashboard_filters=dashboard_filters %}
+      {% include 'accounts/partials/subject_score_chart.html' with subject_score_chart=subject_score_chart chart_canvas_id='guardianSubjectScoreChart' chart_data_id='guardian-subject-chart-data' %}
     </div>
 
     <div class="gd-card gd-stat-card gd-overview-activity">
@@ -2342,8 +2306,14 @@
     </div>
   </section>
 
+  {% include 'accounts/partials/discipline_cluster_cards.html' with discipline_cluster_cards=discipline_cluster_cards %}
+
   <section class="gd-section-block gd-section--subjects" aria-label="Subject analytics">
-    {% include 'accounts/partials/student_analytics_sections.html' with hide_recent_attempts=True subject_chart_canvas_id='guardianSubjectScoreChart' subject_chart_data_id='guardian-subject-chart-data' show_analytics_period_filter=True analytics_period_choices=analytics_period_choices dashboard_filters=dashboard_filters dashboard_hidden_params=dashboard_hidden_params analytics_period_label=analytics_period_label %}
+    {% include 'accounts/partials/student_analytics_sections.html' with hide_recent_attempts=True hide_subject_score_chart=True show_analytics_period_filter=True analytics_period_choices=analytics_period_choices dashboard_filters=dashboard_filters dashboard_hidden_params=dashboard_hidden_params analytics_period_label=analytics_period_label %}
+  </section>
+
+  <section class="gd-section-block" aria-label="Attempt score analysis">
+    {% include 'accounts/partials/attempt_score_chart.html' with attempt_chart=dashboard.attempt_chart chart_canvas_id='guardianAttemptScoreChart' chart_data_id='guardian-attempt-chart-data' show_chart_period_filter=True chart_period_choices=chart_period_choices dashboard_filters=dashboard_filters %}
   </section>
 
   {% if active_student and achievements and exam_activity_calendar %}

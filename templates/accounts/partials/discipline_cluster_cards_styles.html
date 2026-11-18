@@ -1,5 +1,5 @@
 <style>
-  /* Course-style spotlight cards (dark, illustrated) — same layout on light/dark dashboard */
+  /* Learning area cards use the same clean surface as the rest of the dashboard. */
   .gd-discipline-clusters {
     margin-bottom: var(--space-2xl);
   }
@@ -19,116 +19,45 @@
   }
 
   .gd-discipline-cluster {
-    --cluster-accent: #5eead4;
-    --cluster-accent-soft: #14b8a6;
-    --cluster-surface: #0c1419;
-    --cluster-cover: linear-gradient(160deg, #134e4a 0%, #042f2e 45%, #0c1419 100%);
-    --cluster-track: rgba(94, 234, 212, 0.18);
-    --cluster-glow: rgba(45, 212, 191, 0.42);
-    --cluster-glow-soft: rgba(45, 212, 191, 0.16);
+    --cluster-accent: #0f766e;
+    --cluster-accent-soft: #0d9488;
+    --cluster-track: #e2e8f0;
     position: relative;
-    isolation: isolate;
     display: flex;
     flex-direction: column;
     min-height: 360px;
-    border-radius: 16px;
-    background: var(--cluster-surface);
-    border: 1px solid color-mix(in srgb, var(--cluster-accent-soft) 28%, transparent);
-    box-shadow:
-      0 0 0 1px color-mix(in srgb, var(--cluster-accent) 18%, transparent),
-      0 0 18px var(--cluster-glow-soft),
-      0 0 36px var(--cluster-glow),
-      0 1px 0 rgba(255, 255, 255, 0.06) inset,
-      0 24px 48px rgba(0, 0, 0, 0.42);
-    transition: box-shadow 0.35s ease, border-color 0.35s ease, transform 0.35s ease;
-  }
-
-  .gd-discipline-cluster::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border-radius: 16px;
-    padding: 1px;
-    background: linear-gradient(
-      145deg,
-      color-mix(in srgb, var(--cluster-accent) 75%, #ffffff) 0%,
-      color-mix(in srgb, var(--cluster-accent-soft) 35%, transparent) 35%,
-      transparent 52%,
-      color-mix(in srgb, var(--cluster-accent-soft) 55%, transparent) 78%,
-      color-mix(in srgb, var(--cluster-accent) 40%, #ffffff) 100%
-    );
-    -webkit-mask:
-      linear-gradient(#fff 0 0) content-box,
-      linear-gradient(#fff 0 0);
-    mask:
-      linear-gradient(#fff 0 0) content-box,
-      linear-gradient(#fff 0 0);
-    -webkit-mask-composite: xor;
-    mask-composite: exclude;
-    pointer-events: none;
-    z-index: 2;
-    opacity: 0.9;
-  }
-
-  .gd-discipline-cluster::after {
-    content: '';
-    position: absolute;
-    inset: -2px;
-    border-radius: 18px;
-    background: transparent;
-    box-shadow: 0 0 28px 4px var(--cluster-glow-soft);
-    pointer-events: none;
-    z-index: 0;
-    opacity: 0.85;
+    border-radius: 12px;
+    background: var(--cs-surface, #fff);
+    border: 1px solid var(--cs-border, #e2e8f0);
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+    transition: box-shadow 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
   }
 
   .gd-discipline-cluster:hover {
-    transform: translateY(-2px);
-    border-color: color-mix(in srgb, var(--cluster-accent-soft) 45%, transparent);
-    box-shadow:
-      0 0 0 1px color-mix(in srgb, var(--cluster-accent) 28%, transparent),
-      0 0 22px var(--cluster-glow-soft),
-      0 0 52px var(--cluster-glow),
-      0 0 72px color-mix(in srgb, var(--cluster-glow) 55%, transparent),
-      0 1px 0 rgba(255, 255, 255, 0.08) inset,
-      0 28px 56px rgba(0, 0, 0, 0.48);
+    border-color: var(--cs-border, #cbd5e1);
+    box-shadow: 0 5px 16px rgba(15, 23, 42, 0.1);
   }
 
   .gd-discipline-cluster--teal {
-    --cluster-accent: #5eead4;
-    --cluster-accent-soft: #2dd4bf;
-    --cluster-surface: #0a1518;
-    --cluster-cover: linear-gradient(165deg, #115e59 0%, #0f3d38 42%, #0a1216 100%);
-    --cluster-track: rgba(45, 212, 191, 0.22);
-    --cluster-glow: rgba(45, 212, 191, 0.5);
-    --cluster-glow-soft: rgba(94, 234, 212, 0.22);
+    --cluster-accent: #0f766e;
+    --cluster-accent-soft: #0d9488;
   }
 
   .gd-discipline-cluster--purple {
-    --cluster-accent: #c4b5fd;
-    --cluster-accent-soft: #a855f7;
-    --cluster-surface: #100d18;
-    --cluster-cover: linear-gradient(165deg, #5b21b6 0%, #3b0764 40%, #0d0a14 100%);
-    --cluster-track: rgba(168, 85, 247, 0.22);
-    --cluster-glow: rgba(168, 85, 247, 0.48);
-    --cluster-glow-soft: rgba(196, 181, 253, 0.2);
+    --cluster-accent: #6d28d9;
+    --cluster-accent-soft: #7c3aed;
   }
 
   .gd-discipline-cluster--amber {
-    --cluster-accent: #fcd34d;
-    --cluster-accent-soft: #f59e0b;
-    --cluster-surface: #14100a;
-    --cluster-cover: linear-gradient(165deg, #92400e 0%, #713f12 38%, #120e08 100%);
-    --cluster-track: rgba(245, 158, 11, 0.22);
-    --cluster-glow: rgba(245, 158, 11, 0.45);
-    --cluster-glow-soft: rgba(251, 191, 36, 0.18);
+    --cluster-accent: #b45309;
+    --cluster-accent-soft: #d97706;
   }
 
   .gd-discipline-cluster-cover {
     position: relative;
     z-index: 1;
     flex: 0 0 200px;
-    background: var(--cluster-cover);
+    background: var(--cs-surface, #fff);
     overflow: hidden;
     border-radius: 16px 16px 0 0;
     display: flex;
@@ -146,10 +75,9 @@
     font-weight: 800;
     letter-spacing: 0.02em;
     color: var(--cluster-accent);
-    background: rgba(8, 12, 18, 0.55);
-    backdrop-filter: blur(8px);
-    border: 1px solid color-mix(in srgb, var(--cluster-accent) 45%, transparent);
-    border-radius: 10px;
+    background: var(--cs-surface, #fff);
+    border: 1px solid var(--cs-border, #e2e8f0);
+    border-radius: 999px;
     padding: 0.35rem 0.65rem;
     font-variant-numeric: tabular-nums;
     line-height: 1;
@@ -170,13 +98,12 @@
 
   .gd-discipline-cluster-content {
     position: relative;
-    z-index: 1;
     flex: 1;
     display: flex;
     flex-direction: column;
     padding: 1.15rem 1.25rem 1.35rem;
-    background: var(--cluster-surface);
-    border-radius: 0 0 16px 16px;
+    background: var(--cs-surface, #fff);
+    border-radius: 0 0 12px 12px;
   }
 
   .gd-discipline-cluster-tag {
@@ -194,7 +121,7 @@
     font-weight: 800;
     line-height: 1.25;
     letter-spacing: -0.03em;
-    color: #f8fafc;
+    color: var(--cs-text, #0f172a);
     min-height: 2.6em;
     display: -webkit-box;
     -webkit-line-clamp: 2;
@@ -217,7 +144,7 @@
   .gd-discipline-cluster-progress-fill {
     height: 100%;
     border-radius: 999px;
-    background: linear-gradient(90deg, var(--cluster-accent-soft), var(--cluster-accent));
+    background: var(--cluster-accent-soft);
     min-width: 0;
     transition: width 0.4s ease;
   }
@@ -226,24 +153,19 @@
     margin: 0.55rem 0 0;
     font-size: 0.78rem;
     font-weight: 600;
-    color: rgba(248, 250, 252, 0.55);
+    color: var(--cs-text-muted, #64748b);
     font-variant-numeric: tabular-nums;
     line-height: 1.3;
   }
 
   .gd-discipline-cluster.is-empty .gd-discipline-cluster-progress-fill {
-    background: rgba(148, 163, 184, 0.35);
+    background: var(--cs-border, #e2e8f0);
     width: 0 !important;
   }
 
   .gd-discipline-cluster.is-empty .gd-discipline-cluster-badge {
-    color: rgba(248, 250, 252, 0.45);
-    border-color: rgba(255, 255, 255, 0.12);
-  }
-
-  .gd-discipline-cluster.is-empty {
-    --cluster-glow: rgba(148, 163, 184, 0.2);
-    --cluster-glow-soft: rgba(148, 163, 184, 0.08);
+    color: var(--cs-text-muted, #64748b);
+    border-color: var(--cs-border, #e2e8f0);
   }
 
   @media (prefers-reduced-motion: reduce) {

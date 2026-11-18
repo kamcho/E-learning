@@ -57,7 +57,9 @@
   </div>
 </div>
 
+{% if not hide_subject_score_chart %}
 {% include 'accounts/partials/subject_score_chart.html' with subject_score_chart=subject_score_chart chart_canvas_id=subject_chart_canvas_id|default:'subjectScoreChart' chart_data_id=subject_chart_data_id|default:'subject-score-chart-data' %}
+{% endif %}
 
 {% if not hide_recent_attempts %}
 <div class="card card--attempts">
