@@ -262,8 +262,9 @@
                 {% if opt.uuid|stringformat:'s' in feedback.selected_option_uuids %}{% if opt.is_correct %} is-correct{% else %} is-wrong{% endif %}{% elif not feedback.is_correct and opt.is_correct %} is-correct{% endif %}
               {% else %}
                 {% if feedback.selected_option_uuid == opt.uuid|stringformat:'s' %}{% if feedback.is_correct %}is-correct{% else %}is-wrong{% endif %}{% elif not feedback.is_correct and opt.is_correct %} is-correct{% endif %}
-              {% endif %}">
-              <span class="demo-option-letter">{{ forloop.counter0|add:65|stringformat:"c" }}</span>
+              {% endif %}"
+              style="display:flex;align-items:center;gap:.75rem;min-height:54px;padding:.75rem .9rem;border:1px solid {% if opt.is_correct %}#0d9488{% else %}#d8ccf5{% endif %};border-radius:10px;background:{% if opt.is_correct %}#e8f8f5{% else %}#f6f2ff{% endif %};color:#1e1b4b;">
+              <span class="demo-option-letter" style="width:30px;height:30px;flex:0 0 30px;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;background:{% if opt.is_correct %}#0d9488{% else %}#6d28d9{% endif %};color:#fff;font-weight:800;">{{ forloop.counter0|add:65|stringformat:"c" }}</span>
               <span class="demo-option-text" data-math-content>{% include 'core/partials/option_content.html' with text=opt.option image_url=opt.option_image_url %}</span>
             </label>
             {% endfor %}
@@ -316,7 +317,7 @@
           {% csrf_token %}
           <input type="hidden" name="action" value="continue">
           <a href="{% url 'core:exams_list' %}" class="demo-btn demo-btn-outline demo-q-quit">Quit</a>
-          <button type="submit" class="demo-btn demo-btn-primary">
+          <button type="submit" class="demo-btn demo-btn-primary" style="background:linear-gradient(135deg,#6d28d9,#9333ea);color:#fff;opacity:1;box-shadow:0 8px 24px rgba(124,58,237,.28);">
             {% if is_last_question %}Finish exam →{% else %}Next question →{% endif %}
           </button>
         </form>
@@ -346,10 +347,10 @@
             <p class="exam-matching-hint">Choose the correct matching pair.</p>
             <div class="demo-options">
               {% for option in matching_options %}
-              <label class="demo-option">
+              <label class="demo-option" style="display:flex;align-items:center;gap:.75rem;min-height:54px;padding:.75rem .9rem;border:1px solid #d8ccf5;border-radius:10px;background:#f6f2ff;color:#1e1b4b;cursor:pointer;">
                 <input type="radio" name="answer" value="{{ option.uuid }}"
                   {% if saved_answer == option.uuid|stringformat:"s" %}checked{% endif %} required>
-                <span class="demo-option-letter">{{ forloop.counter0|add:65|stringformat:"c" }}</span>
+                <span class="demo-option-letter" style="width:30px;height:30px;flex:0 0 30px;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;background:#6d28d9;color:#fff;font-weight:800;">{{ forloop.counter0|add:65|stringformat:"c" }}</span>
                 <span class="demo-option-text">{% include 'core/partials/option_content.html' with text=option.option image_url=option.option_image_url %}</span>
               </label>
               {% endfor %}
@@ -362,10 +363,10 @@
             <p class="exam-matching-hint">Select all answers that apply.</p>
             <div class="demo-options">
               {% for option in choice_options %}
-              <label class="demo-option">
+              <label class="demo-option" style="display:flex;align-items:center;gap:.75rem;min-height:54px;padding:.75rem .9rem;border:1px solid #d8ccf5;border-radius:10px;background:#f6f2ff;color:#1e1b4b;cursor:pointer;">
                 <input type="checkbox" name="answer" value="{{ option.uuid }}"
                   {% if option.uuid|stringformat:"s" in saved_answer_ids %}checked{% endif %}>
-                <span class="demo-option-letter">{{ forloop.counter0|add:65|stringformat:"c" }}</span>
+                <span class="demo-option-letter" style="width:30px;height:30px;flex:0 0 30px;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;background:#6d28d9;color:#fff;font-weight:800;">{{ forloop.counter0|add:65|stringformat:"c" }}</span>
                 <span class="demo-option-text">{% include 'core/partials/option_content.html' with text=option.option image_url=option.option_image_url %}</span>
               </label>
               {% endfor %}
@@ -373,10 +374,10 @@
             {% else %}
             <div class="demo-options">
               {% for option in choice_options %}
-              <label class="demo-option">
+              <label class="demo-option" style="display:flex;align-items:center;gap:.75rem;min-height:54px;padding:.75rem .9rem;border:1px solid #d8ccf5;border-radius:10px;background:#f6f2ff;color:#1e1b4b;cursor:pointer;">
                 <input type="radio" name="answer" value="{{ option.uuid }}"
                   {% if saved_answer == option.uuid|stringformat:"s" %}checked{% endif %} required>
-                <span class="demo-option-letter">{{ forloop.counter0|add:65|stringformat:"c" }}</span>
+                <span class="demo-option-letter" style="width:30px;height:30px;flex:0 0 30px;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;background:#6d28d9;color:#fff;font-weight:800;">{{ forloop.counter0|add:65|stringformat:"c" }}</span>
                 <span class="demo-option-text">{% include 'core/partials/option_content.html' with text=option.option image_url=option.option_image_url %}</span>
               </label>
               {% endfor %}
@@ -389,7 +390,7 @@
 
           <div class="demo-q-actions">
             <a href="{% url 'core:exams_list' %}" class="demo-btn demo-btn-outline demo-q-quit">Quit</a>
-            <button type="submit" class="demo-btn demo-btn-primary">
+            <button type="submit" class="demo-btn demo-btn-primary" style="background:linear-gradient(135deg,#6d28d9,#9333ea);color:#fff;opacity:1;box-shadow:0 8px 24px rgba(124,58,237,.28);">
               {% if is_last_question %}Submit &amp; finish{% else %}Submit answer ✓{% endif %}
             </button>
           </div>
