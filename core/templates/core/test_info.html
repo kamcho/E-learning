@@ -14,8 +14,14 @@
   .test-info-main {
     padding: var(--space-lg);
     display: flex;
-    align-items: flex-start;
-    justify-content: center;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: center;
+  }
+
+  .test-info-main > .messages-container {
+    width: 100%;
+    max-width: 480px;
   }
 
   .test-info-wrap {
