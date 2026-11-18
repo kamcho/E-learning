@@ -96,6 +96,7 @@ urlpatterns = [
     path('admin/database-backup/', views.admin_database_backup_view, name='admin_database_backup'),
     path('admin/action-logs/', views.admin_action_logs_view, name='admin_action_logs'),
     path('admin/site-visits/', views.admin_site_visits_view, name='admin_site_visits'),
+    path('admin/ssh-attempts/', views.admin_ssh_attempts_view, name='admin_ssh_attempts'),
     path('admin/errors/', views.admin_errors_view, name='admin_errors'),
     path(
         'admin/errors/<uuid:error_reference>/',

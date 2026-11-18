@@ -245,6 +245,10 @@
      class="analytics-tab-btn {% if active_tab == 'ledger' %}is-active{% endif %}">
     &#128220; Live Visits Log
   </a>
+  <a href="?tab=security&period={{ period }}&staff={{ staff_filter }}{% if search %}&q={{ search }}{% endif %}{% if ip_filter %}&ip={{ ip_filter }}{% endif %}"
+     class="analytics-tab-btn {% if active_tab == 'security' %}is-active{% endif %}">
+    &#128737; Hack attempts ({{ security_events_count }})
+  </a>
 </div>
 
 <!-- MAIN PANEL -->
@@ -458,8 +462,6 @@
     <div class="admin-list-empty-icon" aria-hidden="true">&#128196;</div>
     <p>No page visits matching current filters.</p>
   </div>
-  {% endif %}
-
   {% elif active_tab == 'ips' %}
   <!-- GROUP BY IP FULL TAB -->
   <div class="admin-panel-head-flex">
@@ -634,6 +636,21 @@
     <p>No individual visits match your filters.</p>
   </div>
   {% endif %}
+
+  {% elif active_tab == 'security' %}
+  <div class="admin-panel-head-flex"><div><h2>Suspicious Requests</h2><p class="admin-panel-sub">Likely scanner probes and access-denied requests. A flagged request does not mean the attempt succeeded.</p></div><span class="table-count">{{ security_events_count }} flagged request{{ security_events_count|pluralize }}</span></div>
+  {% if security_page_obj.object_list %}
+  <table class="data-table"><thead><tr><th>Date &amp; Time</th><th>IP Address</th><th>Requested path</th><th>Why flagged</th><th>Response</th><th>Bot / User-Agent</th></tr></thead><tbody>
+  {% for v in security_page_obj %}<tr>
+    <td style="white-space:nowrap"><div class="list-row-name">{{ v.created_at|date:"d M Y" }}</div><div class="list-row-meta">{{ v.created_at|date:"H:i:s" }}</div></td>
+    <td><a href="?tab=security&ip={{ v.ip_address }}&period={{ period }}" style="text-decoration:none"><span class="ip-tag">{{ v.ip_address|default:"—" }}</span></a></td>
+    <td class="path-cell" title="{{ v.path }}"><code>{{ v.method }}</code> {{ v.path }}</td>
+    <td><span class="badge-bot">{{ v.security_reason }}</span></td>
+    <td>{% if v.status_code %}<span class="badge-status {% if v.status_code < 300 %}status-2xx{% elif v.status_code < 400 %}status-3xx{% elif v.status_code < 500 %}status-4xx{% else %}status-5xx{% endif %}">{{ v.status_code }}</span>{% else %}—{% endif %}</td>
+    <td>{% if v.is_bot %}<div class="list-row-name">{{ v.bot_name|default:"Automated client" }}</div>{% else %}<div class="list-row-name">Unidentified</div>{% endif %}<div class="list-row-meta" title="{{ v.user_agent }}">{{ v.user_agent|truncatechars:45 }}</div></td>
+  </tr>{% endfor %}</tbody></table>
+  {% include 'accounts/partials/admin_pagination.html' with page_obj=security_page_obj page_param='security_page' pagination_extra=pagination_extra %}
+  {% else %}<div class="admin-list-empty"><div class="admin-list-empty-icon" aria-hidden="true">&#9989;</div><p>No likely probes or access-denied requests found for this period.</p></div>{% endif %}
 
   {% endif %}
 

@@ -172,6 +172,29 @@ STATIC_EXTENSIONS = (
     '.svg', '.ico', '.woff', '.woff2', '.ttf', '.map',
 )
 
+# Common paths requested by opportunistic vulnerability scanners. These are
+# indicators of probing, not proof that a request succeeded or caused harm.
+SUSPICIOUS_PATH_MARKERS = (
+    '/wp-admin', '/wp-login', '/wp-content', '/wp-includes', '/xmlrpc.php',
+    '/.env', '/.git', '/phpmyadmin', '/pma/', '/adminer', '/vendor/phpunit',
+    '/cgi-bin/', '/actuator/', '/server-status', '/config.php', '/backup',
+    '/.well-known/security.txt',
+)
+
+
+def suspicious_request_reason(path: str, method: str = 'GET', status_code=None) -> str:
+    """Return a short reason for likely automated probing, else an empty string."""
+    normalized = (path or '').lower()
+    if any(marker in normalized for marker in SUSPICIOUS_PATH_MARKERS):
+        return 'Known scanner target'
+    if any(token in normalized for token in ('../', '%2e%2e', '%00', '\x00')):
+        return 'Path traversal pattern'
+    if status_code in (401, 403):
+        return 'Access denied response'
+    if method.upper() in ('PUT', 'DELETE', 'TRACE', 'CONNECT'):
+        return 'Unusual HTTP method'
+    return ''
+
 
 def record_site_visit(request, response):
     """

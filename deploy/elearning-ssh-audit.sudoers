@@ -1,0 +1,4 @@
+# Permit the Django service account to read only SSH service journal records
+# from the last 30 days. Keep the command and arguments aligned with
+# accounts/ssh_audit.py.
+elearning ALL=(root) NOPASSWD: /usr/bin/journalctl -u ssh.service --since=-30d --lines=10000 --output=json --no-pager

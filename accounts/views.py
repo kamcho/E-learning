@@ -1598,7 +1598,7 @@ def admin_site_visits_view(request):
     from django.utils.dateparse import parse_date
 
     from accounts.models import SiteVisit
-    from accounts.visit_tracking import parse_browser_os
+    from accounts.visit_tracking import parse_browser_os, suspicious_request_reason
 
     search = request.GET.get('q', '').strip()
     ip_filter = request.GET.get('ip', '').strip()
@@ -1614,7 +1614,7 @@ def admin_site_visits_view(request):
     date_from_str = request.GET.get('date_from', '').strip()
     date_to_str = request.GET.get('date_to', '').strip()
     active_tab = request.GET.get('tab', 'overview').strip().lower()
-    if active_tab not in ('overview', 'pages', 'ips', 'ledger'):
+    if active_tab not in ('overview', 'pages', 'ips', 'ledger', 'security'):
         active_tab = 'overview'
 
     base_qs = SiteVisit.objects.all().select_related('user')
@@ -1741,6 +1741,20 @@ def admin_site_visits_view(request):
     for item in ledger_page_obj.object_list:
         item.device_display = parse_browser_os(item.user_agent)
 
+    # Surface likely scanner probes and access-denied requests. Include bots here
+    # by design; scanner user agents are usually bots. This is a heuristic view.
+    security_events = []
+    for visit in period_qs.select_related('user').order_by('-created_at')[:5000]:
+        reason = suspicious_request_reason(visit.path, visit.method, visit.status_code)
+        if reason and (not search or any(search.lower() in str(value or '').lower() for value in (
+            visit.path, visit.ip_address, visit.bot_name,
+            getattr(visit.user, 'phone', ''),
+        ))) and (not ip_filter or visit.ip_address == ip_filter):
+            visit.security_reason = reason
+            visit.device_display = parse_browser_os(visit.user_agent)
+            security_events.append(visit)
+    security_page_obj = Paginator(security_events, 30).get_page(request.GET.get('security_page') or 1)
+
     return render(request, 'accounts/admin_site_visits.html', {
         'filtered_total_visits': filtered_total_visits,
         'unique_ips_count': unique_ips_count,
@@ -1763,9 +1777,70 @@ def admin_site_visits_view(request):
         'ip_list_enriched': ip_list_enriched,
         'top_ips_preview': ip_list_enriched[:8],
         'ledger_page_obj': ledger_page_obj,
+        'security_page_obj': security_page_obj,
+        'security_events_count': len(security_events),
         'pagination_extra': _pagination_extra_params(request, ['page']),
         'ip_pagination_extra': _pagination_extra_params(request, ['ip_page']),
         'django_admin_url': reverse('admin:accounts_sitevisit_changelist'),
+    })
+
+
+@login_required(login_url='accounts:signin')
+def admin_ssh_attempts_view(request):
+    """Platform admin dashboard for SSH authentication attempts on this VPS."""
+    denied = _admin_access_or_redirect(request)
+    if denied:
+        return denied
+
+    from collections import Counter
+    from .ssh_audit import SSHAuditUnavailable, load_ssh_events
+
+    period = request.GET.get('period', '7d').strip().lower()
+    if period not in ('24h', '7d', '30d'):
+        period = '7d'
+    search = request.GET.get('q', '').strip()[:100]
+    outcome_filter = request.GET.get('outcome', 'all').strip().lower()
+    if outcome_filter not in ('all', 'failed', 'accepted'):
+        outcome_filter = 'all'
+
+    events = []
+    unavailable_message = ''
+    try:
+        all_events = load_ssh_events()
+    except SSHAuditUnavailable as exc:
+        all_events = []
+        unavailable_message = str(exc)
+
+    now = timezone.now()
+    cutoff = now - timedelta(hours=24) if period == '24h' else now - timedelta(days=int(period[:-1]))
+    for event in all_events:
+        if event['timestamp'] < cutoff:
+            continue
+        if outcome_filter != 'all' and event['outcome'] != outcome_filter:
+            continue
+        if search and not any(search.lower() in str(event[key]).lower() for key in (
+            'ip_address', 'username', 'method', 'outcome', 'message',
+        )):
+            continue
+        events.append(event)
+
+    failures = [event for event in events if event['outcome'] == 'failed']
+    accepted = [event for event in events if event['outcome'] == 'accepted']
+    top_ips = Counter(event['ip_address'] for event in failures).most_common(10)
+    top_users = Counter(event['username'] for event in failures).most_common(10)
+    return render(request, 'accounts/admin_ssh_attempts.html', {
+        'period': period,
+        'search': search,
+        'outcome_filter': outcome_filter,
+        'failed_count': len(failures),
+        'accepted_count': len(accepted),
+        'unique_failed_ips': len({event['ip_address'] for event in failures}),
+        'invalid_user_count': sum(1 for event in failures if event['invalid_user']),
+        'top_ips': top_ips,
+        'top_users': top_users,
+        'events': events[:200],
+        'total_events': len(events),
+        'unavailable_message': unavailable_message,
     })
 
 

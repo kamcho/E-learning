@@ -38,6 +38,14 @@
           </a>
         </li>
         <li>
+          <a href="{% url 'accounts:admin_ssh_attempts' %}" class="dashboard-nav-link{% if request.resolver_match.url_name == 'admin_ssh_attempts' %} is-active{% endif %}">
+            <span class="dashboard-nav-icon dashboard-nav-icon--orange" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9l3 3-3 3M13 15h4"/><path d="M12 2v2"/></svg>
+            </span>
+            <span class="dashboard-nav-label">SSH attempts</span>
+          </a>
+        </li>
+        <li>
           <a href="{% url 'accounts:admin_errors' %}" class="dashboard-nav-link{% if request.resolver_match.url_name == 'admin_errors' or request.resolver_match.url_name == 'admin_error_detail' %} is-active{% endif %}">
             <span class="dashboard-nav-icon dashboard-nav-icon--orange" aria-hidden="true">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.3 3.9 2.5 17.4A2 2 0 0 0 4.2 20h15.6a2 2 0 0 0 1.7-2.6L13.7 3.9a2 2 0 0 0-3.4 0Z"/><line x1="12" y1="9" x2="12" y2="13"/><circle cx="12" cy="16.5" r=".6"/></svg>

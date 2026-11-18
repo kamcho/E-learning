@@ -13,6 +13,26 @@ Throughout this guide:
 - Droplet IP: **185.170.196.219** (legacy doc references `159.223.143.29` may be outdated)
 - Domain: **somasmartassesments.com** (www + apex)
 
+### SSH attempt analytics
+
+The admin page at `/accounts/admin/ssh-attempts/` reads failed and accepted
+SSH authentication events from Ubuntu's `ssh.service` journal. The Django
+service user (`elearning`) receives permission to run one fixed `journalctl`
+command, restricted to that service and the latest 10,000 records from the
+past 30 days. It does not receive general root or journal access.
+
+After deploying the code, install and validate the sudoers rule as root:
+
+```bash
+install -o root -g root -m 0440 /srv/elearning/deploy/elearning-ssh-audit.sudoers /etc/sudoers.d/elearning-ssh-audit
+visudo -cf /etc/sudoers.d/elearning-ssh-audit
+sudo -u elearning sudo -n /usr/bin/journalctl -u ssh.service --since=-30d --lines=10000 --output=json --no-pager >/dev/null
+```
+
+If validation succeeds, restart the app and open **SSH attempts** in the admin
+sidebar. Ubuntu's journal retention determines how much history is available;
+the page can show up to 30 days, subject to the journal's retained records.
+
 ---
 
 ## 0. Local sanity check (on your Windows machine, before deploying)

@@ -1,0 +1,56 @@
+{% extends 'accounts/admin_base.html' %}
+{% block title %}SSH Attempts — Admin — Soma Smart{% endblock %}
+{% block extra_head %}
+{% include 'accounts/partials/gd_metric_cards_styles.html' %}
+{% include 'accounts/partials/admin_list_styles.html' %}
+<style>
+  .ssh-page{max-width:1440px;margin:0 auto;padding:1.5rem}.ssh-head{display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;margin-bottom:1.25rem}.ssh-head h1{margin:.15rem 0;font-size:1.65rem}.ssh-muted{color:var(--clr-text-muted,#64748b)}.ssh-filter,.ssh-panel{background:var(--clr-surface,#fff);border:1px solid var(--clr-border,#e2e8f0);border-radius:8px}.ssh-filter{padding:1rem;margin:1rem 0}.ssh-filter form{display:flex;gap:.65rem;align-items:end;flex-wrap:wrap}.ssh-filter label{display:block;font-size:.76rem;font-weight:650;margin-bottom:.3rem}.ssh-filter input,.ssh-filter select{min-height:40px;padding:.5rem .65rem;border:1px solid var(--clr-border,#cbd5e1);border-radius:5px;background:var(--clr-surface,#fff);color:inherit}.ssh-btn{min-height:40px;padding:.5rem .85rem;border:1px solid #cbd5e1;border-radius:5px;background:#fff;color:#0f172a;font-weight:650;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;cursor:pointer}.ssh-primary{background:#0f766e;border-color:#0f766e;color:#fff}.ssh-panel{overflow:hidden;margin:1rem 0}.ssh-panel h2{font-size:1rem;margin:0}.ssh-panel-head{padding:1rem 1.25rem;border-bottom:1px solid var(--clr-border,#e2e8f0)}.ssh-columns{display:grid;grid-template-columns:1fr 1fr;gap:1rem}.ssh-table{width:100%;border-collapse:collapse;min-width:780px}.ssh-table th,.ssh-table td{padding:.75rem;text-align:left;border-bottom:1px solid #e8edf2;vertical-align:top}.ssh-table th{font-size:.72rem;color:#64748b;text-transform:uppercase;background:#f8fafc}.ssh-table tr:last-child td{border-bottom:0}.ssh-mono{font:.8rem ui-monospace,SFMono-Regular,Consolas,monospace;overflow-wrap:anywhere}.ssh-badge{display:inline-flex;padding:.2rem .48rem;border-radius:4px;font-size:.74rem;font-weight:700}.ssh-failed{color:#991b1b;background:#fee2e2}.ssh-accepted{color:#166534;background:#dcfce7}.ssh-alert{padding:1rem;border:1px solid #fbbf24;background:#fffbeb;color:#78350f;border-radius:7px;margin:1rem 0}.ssh-scroll{overflow:auto}.ssh-empty{padding:2rem;text-align:center;color:#64748b}@media(max-width:760px){.ssh-page{padding:1rem}.ssh-head{display:block}.ssh-columns{grid-template-columns:1fr}}
+</style>
+{% endblock %}
+{% block admin_content %}
+<main class="ssh-page">
+  <header class="ssh-head">
+    <div><div class="ssh-muted" style="font-size:.75rem;text-transform:uppercase;letter-spacing:.09em;font-weight:700">Server security</div><h1>SSH login attempts</h1><p class="ssh-muted">Authentication attempts recorded by Ubuntu's SSH service. Failed attempts indicate probing; accepted logins are shown for review.</p></div>
+    <a class="ssh-btn" href="{% url 'accounts:admin_dashboard' %}">Back to dashboard</a>
+  </header>
+
+  {% if unavailable_message %}<div class="ssh-alert"><strong>SSH log access is not configured.</strong> {{ unavailable_message }} Follow the setup instructions in <code>DEPLOYMENT.md</code>, then refresh this page.</div>{% endif %}
+
+  <section class="gd-metrics-grid" aria-label="SSH authentication summary">
+    <article class="gd-metric-card"><div class="gd-metric-label">Failed attempts</div><div class="gd-metric-value">{{ failed_count }}</div></article>
+    <article class="gd-metric-card"><div class="gd-metric-label">Unique source IPs</div><div class="gd-metric-value">{{ unique_failed_ips }}</div></article>
+    <article class="gd-metric-card"><div class="gd-metric-label">Invalid username attempts</div><div class="gd-metric-value">{{ invalid_user_count }}</div></article>
+    <article class="gd-metric-card"><div class="gd-metric-label">Accepted logins</div><div class="gd-metric-value">{{ accepted_count }}</div></article>
+  </section>
+
+  <section class="ssh-filter"><form method="get">
+    <div><label for="ssh-period">Period</label><select id="ssh-period" name="period"><option value="24h"{% if period == '24h' %} selected{% endif %}>Past 24 hours</option><option value="7d"{% if period == '7d' %} selected{% endif %}>Past 7 days</option><option value="30d"{% if period == '30d' %} selected{% endif %}>Past 30 days</option></select></div>
+    <div><label for="ssh-outcome">Result</label><select id="ssh-outcome" name="outcome"><option value="all"{% if outcome_filter == 'all' %} selected{% endif %}>All attempts</option><option value="failed"{% if outcome_filter == 'failed' %} selected{% endif %}>Failed only</option><option value="accepted"{% if outcome_filter == 'accepted' %} selected{% endif %}>Accepted only</option></select></div>
+    <div style="flex:1;min-width:200px"><label for="ssh-q">Search IP or username</label><input id="ssh-q" name="q" value="{{ search }}" placeholder="IP address, username, method"></div>
+    <button class="ssh-btn ssh-primary" type="submit">Apply</button>
+  </form></section>
+
+  <div class="ssh-columns">
+    <section class="ssh-panel"><div class="ssh-panel-head"><h2>Top source IPs · failed attempts</h2></div>
+      {% if top_ips %}<div class="ssh-scroll"><table class="ssh-table" style="min-width:0"><thead><tr><th>Source IP</th><th>Attempts</th></tr></thead><tbody>{% for ip,count in top_ips %}<tr><td class="ssh-mono">{{ ip }}</td><td>{{ count }}</td></tr>{% endfor %}</tbody></table></div>{% else %}<div class="ssh-empty">No failed attempts in this period.</div>{% endif %}
+    </section>
+    <section class="ssh-panel"><div class="ssh-panel-head"><h2>Most targeted usernames</h2></div>
+      {% if top_users %}<div class="ssh-scroll"><table class="ssh-table" style="min-width:0"><thead><tr><th>Username</th><th>Attempts</th></tr></thead><tbody>{% for username,count in top_users %}<tr><td class="ssh-mono">{{ username }}</td><td>{{ count }}</td></tr>{% endfor %}</tbody></table></div>{% else %}<div class="ssh-empty">No failed attempts in this period.</div>{% endif %}
+    </section>
+  </div>
+
+  <section class="ssh-panel"><div class="ssh-panel-head"><h2>Recent SSH authentication events <span class="ssh-muted">({{ total_events }} matching)</span></h2></div>
+    {% if events %}<div class="ssh-scroll"><table class="ssh-table"><thead><tr><th>Date &amp; time</th><th>Result</th><th>Source IP</th><th>Username</th><th>Method</th><th>Details</th></tr></thead><tbody>
+      {% for event in events %}<tr>
+        <td style="white-space:nowrap">{{ event.timestamp|date:'d M Y, H:i:s' }}</td>
+        <td><span class="ssh-badge {% if event.outcome == 'failed' %}ssh-failed{% else %}ssh-accepted{% endif %}">{{ event.outcome|title }}</span></td>
+        <td class="ssh-mono">{{ event.ip_address }}<div class="ssh-muted">port {{ event.port }}</div></td>
+        <td class="ssh-mono">{{ event.username }}{% if event.invalid_user %}<div class="ssh-badge ssh-failed">Invalid user</div>{% endif %}</td>
+        <td>{{ event.method }}</td>
+        <td class="ssh-muted">{{ event.message|truncatechars:180 }}</td>
+      </tr>{% endfor %}</tbody></table></div>
+      {% if total_events > 200 %}<p class="ssh-muted" style="padding:.75rem 1rem">Showing the latest 200 of {{ total_events }} matching events. Refine the filters to narrow the list.</p>{% endif %}
+    {% else %}<div class="ssh-empty">{% if not unavailable_message %}No SSH authentication events found for these filters.{% endif %}</div>{% endif %}
+  </section>
+</main>
+{% endblock %}
