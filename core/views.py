@@ -666,7 +666,7 @@ def test_take_view(request, quiz_uuid, student_uuid):
     if not questions:
         return render(
             request,
-            'core/test_take.html',
+            'core/demo/take.html',
             {
                 'attempt': attempt,
                 'quiz': quiz,
@@ -750,7 +750,7 @@ def test_take_view(request, quiz_uuid, student_uuid):
 
     return render(
         request,
-        'core/test_take.html',
+        'core/demo/take.html',
         {
             'attempt': attempt,
             'quiz': quiz,

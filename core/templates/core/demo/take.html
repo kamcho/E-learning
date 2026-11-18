@@ -1,31 +1,74 @@
 {% extends "base.html" %}
 {% load question_svg %}
 
-{% block title %}Practice Exam — Soma Smart{% endblock %}
+{% block title %}{% if attempt %}{{ quiz.title }}{% else %}Practice Exam — Soma Smart{% endif %}{% endblock %}
 
-{% block body_class %} demo-page{% endblock %}
+{% block body_class %} demo-page exam-take-page{% endblock %}
 {% block main_extra_class %}demo-main demo-quiz-page{% endblock %}
 
 {% block extra_head %}
 {% include 'core/partials/demo_styles.html' %}
 {% include 'core/partials/question_rich_styles.html' %}
 {% include 'core/partials/question_math_assets.html' %}
+<style>
+  body.exam-take-page .demo-exam-timer { font-variant-numeric: tabular-nums; font-weight: 800; color: var(--demo-accent); }
+  body.exam-take-page .demo-exam-timer.is-warning { color: var(--demo-warm); }
+  body.exam-take-page .demo-exam-timer.is-critical { color: #f87171; animation: exam-timer-pulse 1s ease-in-out infinite; }
+  @keyframes exam-timer-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .7; } }
+  .exam-matching-hint { font-size: .88rem; color: var(--demo-muted); margin: 0 0 .85rem; line-height: 1.45; }
+  .exam-matching-rows { display: flex; flex-direction: column; gap: .55rem; margin-bottom: 1rem; }
+  .exam-matching-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: .55rem; align-items: center; padding: .55rem .75rem; background: var(--demo-surface-alt); border: 1px solid var(--demo-border); border-radius: 12px; }
+  .exam-matching-row-label { font-size: .9rem; font-weight: 600; line-height: 1.4; overflow-wrap: anywhere; color: var(--demo-text); }
+  .exam-matching-row select,.exam-text-answer { width: 100%; box-sizing: border-box; padding: .65rem .75rem; border: 1px solid var(--demo-border); border-radius: 10px; font: inherit; background: var(--demo-surface-alt); color: var(--demo-text); }
+  .exam-text-answer { min-height: 52px; margin-bottom: 1rem; }
+  body.exam-take-page .demo-options { gap: .65rem; }
+  body.exam-take-page .demo-option { display: flex; align-items: center; gap: .75rem; padding: .8rem .95rem; min-height: 56px; border: 1px solid color-mix(in srgb, var(--demo-purple) 24%, var(--demo-border)); border-radius: 10px; background: var(--demo-surface-alt); color: var(--demo-text); cursor: pointer; transition: border-color .15s ease, background .15s ease, box-shadow .15s ease; }
+  body.exam-take-page .demo-option:hover { border-color: var(--demo-purple); box-shadow: 0 0 0 2px color-mix(in srgb, var(--demo-purple) 12%, transparent); }
+  body.exam-take-page .demo-option:has(input:checked) { border-color: var(--demo-purple); background: color-mix(in srgb, var(--demo-purple) 9%, var(--demo-surface)); }
+  body.exam-take-page .demo-option-letter { width: 30px; height: 30px; flex: 0 0 30px; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; background: var(--demo-purple); color: #fff; font-weight: 800; }
+  body.exam-take-page .demo-option-text { color: var(--demo-text); }
+  body.exam-take-page .demo-option.is-correct { border-color: var(--demo-accent); background: color-mix(in srgb, var(--demo-accent) 10%, var(--demo-surface)); }
+  body.exam-take-page .demo-option.is-wrong { border-color: #dc5265; background: color-mix(in srgb, #dc5265 9%, var(--demo-surface)); }
+  body.exam-take-page button.demo-btn-primary:disabled { opacity: 1; background: #e9ddff; color: #4c1d95; box-shadow: none; cursor: not-allowed; }
+  html[data-theme="dark"] body.exam-take-page button.demo-btn-primary:disabled { background: #39304e; color: #e8dcff; }
+  .exam-no-questions { max-width: 28rem; margin: 2rem auto; text-align: center; padding: 2rem 1.25rem; background: var(--demo-surface); border: 1px solid var(--demo-border); border-radius: 16px; }
+  @media (max-width: 640px) { .exam-matching-row { grid-template-columns: 1fr; } .exam-text-answer { font-size: 16px; } body.exam-take-page .demo-option { min-height: 52px; padding: .65rem .7rem; } }
+</style>
 {% endblock %}
 
 {% block content %}
+{% if no_questions %}
+  <div class="exam-no-questions">
+    <p style="margin:0 0 1rem;color:var(--demo-muted);">This exam has no questions yet.</p>
+    <a href="{% url 'core:exams_list' %}?student={{ student.uuid }}" class="demo-btn demo-btn-primary">Back to exams</a>
+  </div>
+{% else %}
+  {% if attempt and has_time_limit %}
+  <form method="post" id="timeout-form" style="display:none;">{% csrf_token %}<input type="hidden" name="action" value="time_up"></form>
+  {% endif %}
 <header class="demo-quiz-header">
   <div class="demo-quiz-header-inner">
     <div>
-      <h1 class="demo-quiz-title">Practice Exam</h1>
+      <h1 class="demo-quiz-title">{% if attempt %}{{ quiz.title }}{% else %}Practice Exam{% endif %}</h1>
       <p class="demo-quiz-meta">
         Question {{ question_number }} of {{ question_count }}
-        · {{ demo.subject_name }}
-        {% if demo.strand_name %}· {{ demo.strand_name }}{% endif %}
+        {% if attempt %}
+          · {{ student.first_name }}
+          {% if quiz.subject %}· {{ quiz.subject.name }}{% endif %}
+        {% else %}
+          · {{ demo.subject_name }}
+          {% if demo.strand_name %}· {{ demo.strand_name }}{% endif %}
+        {% endif %}
       </p>
     </div>
     <div class="demo-quiz-header-stats">
+      {% if attempt and has_time_limit %}
+      <span class="demo-quiz-pill demo-exam-timer" id="exam-timer" role="timer" aria-live="polite"><span style="font-weight:600;color:var(--demo-muted);margin-right:.35rem;">Time</span><span id="exam-timer-value">--:--</span></span>
+      {% endif %}
       <span class="demo-quiz-pill">{{ answered_count }}/{{ question_count }} answered</span>
-      <span class="demo-quiz-pill">{{ demo.grade_name }}</span>
+      {% if attempt %}
+        {% if quiz.subject.grade_level %}<span class="demo-quiz-pill">{{ quiz.subject.grade_level.name }}</span>{% endif %}
+      {% else %}<span class="demo-quiz-pill">{{ demo.grade_name }}</span>{% endif %}
     </div>
   </div>
   <div class="demo-quiz-progress" aria-hidden="true">
@@ -37,8 +80,8 @@
   <section class="demo-question-card">
     <div class="demo-q-badges">
       <span class="demo-q-badge demo-q-badge--num">Question {{ question_number }}</span>
-      <span class="demo-q-badge demo-q-badge--type">Multiple Choice</span>
-      <span class="demo-q-badge demo-q-badge--mark">1 mark</span>
+      <span class="demo-q-badge demo-q-badge--type">{% if attempt %}{{ question.quiz_type }}{% else %}Multiple Choice{% endif %}</span>
+      <span class="demo-q-badge demo-q-badge--mark">{% if attempt %}{{ question.max_marks }} mark{{ question.max_marks|pluralize }}{% else %}1 mark{% endif %}</span>
     </div>
 
     <div data-speech-region data-speech-auto-show="1" class="demo-q-listen" style="margin-bottom:0.75rem;"
@@ -57,15 +100,26 @@
     <div class="demo-q-text question-rich-body" data-math-content>{{ question.quiz|linebreaksbr }}</div>
     {% if question.prompt_svg %}<div class="question-svg-illustration">{{ question.prompt_svg|safe_question_svg }}</div>{% endif %}
 
-    {% if showing_feedback %}
+    {% if showing_feedback and feedback %}
+      {% if not attempt or question.quiz_type == 'Multiple Choice' or question.quiz_type == 'True or False' %}
       <div class="demo-options">
-        {% for opt in options %}
-        <label class="demo-option{% if feedback.selected_option_uuid == opt.uuid|stringformat:'s' %} {% if feedback.is_correct %}is-correct{% else %}is-wrong{% endif %}{% elif not feedback.is_correct and opt.is_correct %} is-correct{% endif %}">
-          <span class="demo-option-letter">{{ forloop.counter0|add:65|stringformat:"c" }}</span>
-          <span class="demo-option-text" data-math-content>{{ opt.option }}</span>
-        </label>
-        {% endfor %}
+        {% if attempt %}
+          {% for opt in choice_options %}
+          <label class="demo-option{% if allows_multiple_answers %}{% if opt.uuid|stringformat:'s' in feedback.selected_option_uuids %}{% if opt.is_correct %} is-correct{% else %} is-wrong{% endif %}{% elif not feedback.is_correct and opt.is_correct %} is-correct{% endif %}{% else %}{% if feedback.selected_option_uuid == opt.uuid|stringformat:'s' %}{% if feedback.is_correct %} is-correct{% else %} is-wrong{% endif %}{% elif not feedback.is_correct and opt.is_correct %} is-correct{% endif %}{% endif %}">
+            <span class="demo-option-letter">{{ forloop.counter0|add:65|stringformat:"c" }}</span>
+            <span class="demo-option-text" data-math-content>{% include 'core/partials/option_content.html' with text=opt.option image_url=opt.option_image_url %}</span>
+          </label>
+          {% endfor %}
+        {% else %}
+          {% for opt in options %}
+          <label class="demo-option{% if feedback.selected_option_uuid == opt.uuid|stringformat:'s' %}{% if feedback.is_correct %} is-correct{% else %} is-wrong{% endif %}{% elif not feedback.is_correct and opt.is_correct %} is-correct{% endif %}">
+            <span class="demo-option-letter">{{ forloop.counter0|add:65|stringformat:"c" }}</span>
+            <span class="demo-option-text" data-math-content>{{ opt.option }}</span>
+          </label>
+          {% endfor %}
+        {% endif %}
       </div>
+      {% endif %}
 
       <div class="demo-feedback {% if feedback.is_correct %}is-correct{% else %}is-wrong{% endif %}" id="demo-feedback-panel">
         {% if feedback.is_correct %}
@@ -107,27 +161,51 @@
       <form method="post" class="demo-q-actions" style="margin-top:1rem;">
         {% csrf_token %}
         <input type="hidden" name="action" value="continue">
-        <span></span>
+          {% if attempt %}<a href="{% url 'core:test_info' quiz.uuid student.uuid %}" class="demo-btn demo-btn-outline demo-q-quit">Quit</a>{% else %}<span></span>{% endif %}
         <button type="submit" class="demo-btn demo-btn-primary">
-          {% if is_last_question %}See results{% else %}Next question →{% endif %}
+          {% if is_last_question %}{% if attempt %}Finish exam →{% else %}See results{% endif %}{% else %}Next question →{% endif %}
         </button>
       </form>
 
     {% else %}
       <form method="post">
         {% csrf_token %}
-        <input type="hidden" name="action" value="submit">
-        <div class="demo-options">
-          {% for opt in options %}
-          <label class="demo-option">
-            <input type="radio" name="answer" value="{{ opt.uuid }}" required>
-            <span class="demo-option-letter">{{ forloop.counter0|add:65|stringformat:"c" }}</span>
-            <span class="demo-option-text" data-math-content>{{ opt.option }}</span>
-          </label>
-          {% endfor %}
-        </div>
+          {% if not attempt %}<input type="hidden" name="action" value="submit">{% endif %}
+          {% if attempt and question.quiz_type == 'Matching' and matching_ui_mode == 'rows' %}
+            <p class="exam-matching-hint">Match each item on the left to the correct option on the right.</p>
+            <div class="exam-matching-rows">
+              {% for row in matching_rows %}
+              <div class="exam-matching-row">
+                <span class="exam-matching-row-label">{{ row.left }}</span>
+                <select name="matching_{{ forloop.counter0 }}" aria-label="Match for {{ row.left }}" required>
+                  <option value="">Choose…</option>
+                  {% for choice in matching_choices %}<option value="{{ choice }}"{% if row.saved_right == choice %} selected{% endif %}>{{ choice }}</option>{% endfor %}
+                </select>
+                <input type="hidden" name="matching_left_{{ forloop.counter0 }}" value="{{ row.left }}">
+              </div>
+              {% endfor %}
+            </div>
+          {% elif attempt and question.quiz_type == 'Matching' and matching_ui_mode == 'pick_option' %}
+            <p class="exam-matching-hint">Choose the correct matching pair.</p>
+            <div class="demo-options">{% for option in matching_options %}<label class="demo-option"><input type="radio" name="answer" value="{{ option.uuid }}"{% if saved_answer == option.uuid|stringformat:'s' %} checked{% endif %} required><span class="demo-option-letter">{{ forloop.counter0|add:65|stringformat:'c' }}</span><span class="demo-option-text">{% include 'core/partials/option_content.html' with text=option.option image_url=option.option_image_url %}</span></label>{% endfor %}</div>
+          {% elif attempt and question.quiz_type == 'Matching' and matching_ui_mode == 'text' %}
+            <p class="exam-matching-hint">Type your matches (e.g. <code>1=A, 2=C</code>) or one answer per line.</p>
+            <textarea name="answer" class="exam-text-answer" rows="4" placeholder="Your matches" required>{{ saved_answer }}</textarea>
+          {% elif attempt and question.quiz_type == 'Multiple Choice' or attempt and question.quiz_type == 'True or False' %}
+            {% if allows_multiple_answers %}<p class="exam-matching-hint">Select all answers that apply.</p>{% endif %}
+            <div class="demo-options">
+              {% for option in choice_options %}<label class="demo-option">
+                {% if allows_multiple_answers %}<input type="checkbox" name="answer" value="{{ option.uuid }}"{% if option.uuid|stringformat:'s' in saved_answer_ids %} checked{% endif %}>{% else %}<input type="radio" name="answer" value="{{ option.uuid }}"{% if saved_answer == option.uuid|stringformat:'s' %} checked{% endif %} required>{% endif %}
+                <span class="demo-option-letter">{{ forloop.counter0|add:65|stringformat:'c' }}</span><span class="demo-option-text" data-math-content>{% include 'core/partials/option_content.html' with text=option.option image_url=option.option_image_url %}</span>
+              </label>{% endfor %}
+            </div>
+          {% elif attempt %}
+            <input type="text" name="answer" class="exam-text-answer" placeholder="Your answer" value="{{ saved_answer }}" required>
+          {% else %}
+            <div class="demo-options">{% for opt in options %}<label class="demo-option"><input type="radio" name="answer" value="{{ opt.uuid }}" required><span class="demo-option-letter">{{ forloop.counter0|add:65|stringformat:"c" }}</span><span class="demo-option-text" data-math-content>{{ opt.option }}</span></label>{% endfor %}</div>
+          {% endif %}
         <div class="demo-q-actions">
-          <a href="{% url 'core:exam_wizard' %}?restart=1" class="demo-btn demo-btn-outline demo-q-quit">Quit</a>
+            {% if attempt %}<a href="{% url 'core:test_info' quiz.uuid student.uuid %}" class="demo-btn demo-btn-outline demo-q-quit">Quit</a>{% else %}<a href="{% url 'core:exam_wizard' %}?restart=1" class="demo-btn demo-btn-outline demo-q-quit">Quit</a>{% endif %}
           <button type="submit" class="demo-btn demo-btn-primary">Submit answer ✓</button>
         </div>
       </form>
