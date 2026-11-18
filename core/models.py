@@ -98,6 +98,34 @@ class Question(models.Model):
             url = f'/{url.lstrip("/")}'
         return url
 
+    @property
+    def prompt_image_url(self):
+        if not self.prompt_image:
+            return ''
+        try:
+            return self.prompt_image.url
+        except (ValueError, AttributeError):
+            return ''
+
+    @property
+    def prompt_audio_url(self):
+        if not self.prompt_audio:
+            return ''
+        try:
+            return self.prompt_audio.url
+        except (ValueError, AttributeError):
+            return ''
+
+    @property
+    def explanation_audio_url(self):
+        if not self.explanation_audio:
+            return ''
+        try:
+            return self.explanation_audio.url
+        except (ValueError, AttributeError):
+            return ''
+
+
 class Option(models.Model):
     uuid=models.UUIDField(primary_key=True,default=uuid.uuid4,editable=False)
     question=models.ForeignKey(Question, on_delete=models.CASCADE, related_name='options')
@@ -127,6 +155,25 @@ class Option(models.Model):
 
     def __str__(self):
         return f"{self.option} ({self.question.quiz})"
+
+    @property
+    def option_image_url(self):
+        if not self.option_image:
+            return ''
+        try:
+            return self.option_image.url
+        except (ValueError, AttributeError):
+            return ''
+
+    @property
+    def option_audio_url(self):
+        if not self.option_audio:
+            return ''
+        try:
+            return self.option_audio.url
+        except (ValueError, AttributeError):
+            return ''
+
 
 class Quiz(models.Model):
     difficulty_choice=(
@@ -307,3 +354,46 @@ class AIExplanation(models.Model):
 
     def __str__(self):
         return f'AI explanation {self.uuid}'
+
+
+class ApplicationErrorLog(models.Model):
+    """Persisted request and application errors, with resolution tracking for staff."""
+
+    reference = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    status_code = models.PositiveSmallIntegerField(default=500, db_index=True)
+    method = models.CharField(max_length=10, blank=True)
+    path = models.CharField(max_length=512, blank=True, db_index=True)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='application_error_logs',
+    )
+    user_label = models.CharField(max_length=120, blank=True)
+    user_agent = models.CharField(max_length=512, blank=True)
+    source = models.CharField(max_length=160, blank=True)
+    exception_type = models.CharField(max_length=255, blank=True)
+    message = models.TextField(blank=True)
+    traceback = models.TextField(blank=True)
+    is_resolved = models.BooleanField(default=False, db_index=True)
+    resolution_note = models.TextField(blank=True)
+    resolved_at = models.DateTimeField(null=True, blank=True)
+    resolved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='resolved_application_errors',
+    )
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ('-created_at',)
+        indexes = [
+            models.Index(fields=['is_resolved', 'created_at']),
+            models.Index(fields=['status_code', 'created_at']),
+        ]
+
+    def __str__(self):
+        return f'{self.status_code} {self.path or "application"} · {self.created_at:%Y-%m-%d %H:%M:%S}'

@@ -1,0 +1,63 @@
+{% extends 'accounts/admin_base.html' %}
+{% block title %}Error logs — Admin — Soma Smart{% endblock %}
+{% block extra_head %}
+{% include 'accounts/partials/gd_metric_cards_styles.html' %}
+{% include 'accounts/partials/admin_list_styles.html' %}
+<style>
+  .errors-page{max-width:1440px;margin:0 auto;padding:1.5rem}.errors-head{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;margin-bottom:1.25rem}.errors-head h1{margin:.15rem 0;font-size:1.65rem}.errors-subtitle{color:var(--clr-text-muted,#64748b);margin:.3rem 0}.errors-eyebrow{font-size:.75rem;text-transform:uppercase;letter-spacing:.09em;color:#c2410c;font-weight:700}.errors-filter,.errors-table-wrap{background:var(--clr-surface,#fff);border:1px solid var(--clr-border,#e2e8f0);border-radius:8px}.errors-filter{padding:1rem;margin-bottom:1rem}.errors-filter form{display:grid;grid-template-columns:minmax(220px,2fr) repeat(4,minmax(120px,1fr)) auto;gap:.65rem;align-items:end}.errors-filter label{display:block;font-size:.76rem;font-weight:650;margin-bottom:.3rem}.errors-filter input,.errors-filter select{width:100%;min-height:40px;padding:.5rem .65rem;border:1px solid var(--clr-border,#cbd5e1);border-radius:5px;background:var(--clr-surface,#fff);color:inherit}.errors-btn{min-height:40px;padding:.5rem .85rem;border:1px solid #cbd5e1;border-radius:5px;background:#fff;color:#0f172a;font-weight:650;text-decoration:none;cursor:pointer;display:inline-flex;align-items:center;justify-content:center}.errors-btn-primary{background:#0f766e;border-color:#0f766e;color:#fff}.errors-btn-danger{color:#b91c1c}.errors-bulk{display:flex;gap:.45rem;align-items:center;margin:0 0 .65rem}.errors-table-wrap{overflow:auto}.errors-table{width:100%;border-collapse:collapse;min-width:980px}.errors-table th,.errors-table td{padding:.8rem .75rem;text-align:left;border-bottom:1px solid #e8edf2;vertical-align:top}.errors-table th{font-size:.72rem;color:#64748b;text-transform:uppercase;letter-spacing:.04em;background:#f8fafc}.errors-table tr:last-child td{border-bottom:0}.errors-row:hover{background:#f8fafc}.errors-table a{color:#0f766e;text-decoration:none;font-weight:650}.errors-table a:hover{text-decoration:underline}.errors-mono{font: .78rem ui-monospace,SFMono-Regular,Consolas,monospace;overflow-wrap:anywhere}.errors-summary{max-width:340px;color:#475569;overflow-wrap:anywhere}.errors-badge{display:inline-flex;padding:.2rem .45rem;border-radius:4px;font-size:.74rem;font-weight:700}.errors-5xx{color:#991b1b;background:#fee2e2}.errors-4xx{color:#854d0e;background:#fef3c7}.errors-open{color:#9a3412;background:#ffedd5}.errors-resolved{color:#166534;background:#dcfce7}.errors-pagination{display:flex;justify-content:space-between;align-items:center;padding:.8rem;color:#64748b}.errors-empty{padding:3rem 1rem;text-align:center;color:#64748b}.errors-select{width:16px;height:16px}@media(max-width:900px){.errors-filter form{grid-template-columns:repeat(2,minmax(0,1fr))}.errors-filter .search-field{grid-column:1/-1}}@media(max-width:560px){.errors-page{padding:1rem}.errors-head{display:block}.errors-filter form{grid-template-columns:1fr}.errors-filter .search-field{grid-column:auto}.errors-bulk{flex-wrap:wrap}}
+</style>
+{% endblock %}
+{% block admin_content %}
+<main class="errors-page">
+  <header class="errors-head">
+    <div><div class="errors-eyebrow">Platform health</div><h1>Error logs</h1><p class="errors-subtitle">Inspect failed requests and application errors, identify the affected user, and track follow-up.</p></div>
+    <a class="errors-btn" href="{% url 'accounts:admin_dashboard' %}">Back to dashboard</a>
+  </header>
+
+  <section class="gd-metrics-grid" aria-label="Error log summary">
+    <article class="gd-metric-card"><div class="gd-metric-label">All records</div><div class="gd-metric-value">{{ total_errors }}</div></article>
+    <article class="gd-metric-card"><div class="gd-metric-label">Open</div><div class="gd-metric-value">{{ open_errors }}</div></article>
+    <article class="gd-metric-card"><div class="gd-metric-label">Today</div><div class="gd-metric-value">{{ errors_today }}</div></article>
+    <article class="gd-metric-card"><div class="gd-metric-label">Server errors</div><div class="gd-metric-value">{{ server_errors }}</div></article>
+  </section>
+
+  <section class="errors-filter">
+    <form method="get">
+      <div class="search-field"><label for="error-q">Search</label><input id="error-q" name="q" value="{{ search }}" placeholder="URL, user, error text, reference"></div>
+      <div><label for="error-status">Response</label><select id="error-status" name="status"><option value="all"{% if status_filter == 'all' %} selected{% endif %}>All responses</option><option value="4xx"{% if status_filter == '4xx' %} selected{% endif %}>4xx requests</option><option value="5xx"{% if status_filter == '5xx' %} selected{% endif %}>5xx errors</option></select></div>
+      <div><label for="error-resolved">Resolution</label><select id="error-resolved" name="resolved"><option value="open"{% if resolved_filter == 'open' %} selected{% endif %}>Open</option><option value="resolved"{% if resolved_filter == 'resolved' %} selected{% endif %}>Resolved</option><option value="all"{% if resolved_filter == 'all' %} selected{% endif %}>All</option></select></div>
+      <div><label for="error-from">From</label><input id="error-from" type="date" name="date_from" value="{{ date_from }}"></div>
+      <div><label for="error-to">To</label><input id="error-to" type="date" name="date_to" value="{{ date_to }}"></div>
+      <button class="errors-btn errors-btn-primary" type="submit">Apply</button>
+    </form>
+  </section>
+
+  <form method="post" id="errors-bulk-form">
+    {% csrf_token %}
+    <div class="errors-bulk"><strong>Selected:</strong><button class="errors-btn" name="action" value="resolve">Mark resolved</button><button class="errors-btn" name="action" value="reopen">Reopen</button><button class="errors-btn errors-btn-danger" name="action" value="delete" onclick="return confirm('Delete the selected error logs?')">Delete</button></div>
+    <div class="errors-table-wrap">
+      <table class="errors-table"><thead><tr><th><input class="errors-select" type="checkbox" id="select-all" aria-label="Select all on page"></th><th>Time</th><th>Response</th><th>Request</th><th>User</th><th>What happened</th><th>Tracking</th></tr></thead>
+        <tbody>
+        {% for error in page_obj %}
+          <tr class="errors-row">
+            <td><input class="errors-select" type="checkbox" name="selected_errors" value="{{ error.reference }}" aria-label="Select error {{ error.reference }}"></td>
+            <td><a href="{% url 'accounts:admin_error_detail' error.reference %}">{{ error.created_at|date:'d M Y, H:i:s' }}</a></td>
+            <td><span class="errors-badge {% if error.status_code >= 500 %}errors-5xx{% else %}errors-4xx{% endif %}">{{ error.status_code }}</span></td>
+            <td><div class="errors-mono">{{ error.method|default:'—' }} {{ error.path|default:'(no request URL)' }}</div><div class="errors-summary">{{ error.source|default:'Application' }}{% if error.exception_type %} · {{ error.exception_type }}{% endif %}</div></td>
+            <td>{% if error.user %}{{ error.user_label|default:error.user.full_name }}<div class="errors-summary">{{ error.user.phone|default:error.user.email }}</div>{% else %}Guest / anonymous{% endif %}</td>
+            <td class="errors-summary">{{ error.message|default:'No error message recorded'|truncatechars:180 }}</td>
+            <td><span class="errors-badge {% if error.is_resolved %}errors-resolved{% else %}errors-open{% endif %}">{% if error.is_resolved %}Resolved{% else %}Open{% endif %}</span><div class="errors-mono" style="margin-top:.3rem">{{ error.reference|slice:':8' }}</div></td>
+          </tr>
+        {% empty %}<tr><td colspan="7" class="errors-empty">No error records match these filters.</td></tr>{% endfor %}
+        </tbody>
+      </table>
+      {% if page_obj.paginator.num_pages > 1 %}<div class="errors-pagination"><span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }} · {{ page_obj.paginator.count }} records</span><span>{% if page_obj.has_previous %}<a class="errors-btn" href="?{{ pagination_extra }}&page={{ page_obj.previous_page_number }}">Previous</a>{% endif %} {% if page_obj.has_next %}<a class="errors-btn" href="?{{ pagination_extra }}&page={{ page_obj.next_page_number }}">Next</a>{% endif %}</span></div>{% endif %}
+    </div>
+  </form>
+</main>
+<script>
+  document.getElementById('select-all')?.addEventListener('change', function () {
+    document.querySelectorAll('input[name="selected_errors"]').forEach((box) => { box.checked = this.checked; });
+  });
+</script>
+{% endblock %}

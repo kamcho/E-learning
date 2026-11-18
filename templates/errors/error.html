@@ -158,6 +158,7 @@
     <h1>{{ title }}</h1>
     <p>{{ message }}</p>
     <p class="hint">{{ hint }}</p>
+    {% if error_reference %}<p class="hint">Reference: <strong>{{ error_reference }}</strong></p>{% endif %}
     <div class="actions">
       <a class="primary" href="/">Back home</a>
       <a class="secondary" href="/accounts/signin/">Sign in</a>

@@ -2,6 +2,7 @@ import uuid
 
 from django.conf import settings
 from django.db import models
+from django.utils import timezone
 
 
 class SmsMessage(models.Model):
@@ -57,3 +58,68 @@ class SmsMessage(models.Model):
 
     def __str__(self):
         return f'SMS to {self.phone_number} ({self.get_status_display()})'
+
+
+class WhatsAppConversation(models.Model):
+    phone_number = models.CharField(max_length=20, unique=True)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='whatsapp_support_conversations',
+    )
+    needs_human = models.BooleanField(default=False, db_index=True)
+    opted_out_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    last_message_at = models.DateTimeField(default=timezone.now, db_index=True)
+
+    class Meta:
+        ordering = ('-last_message_at',)
+
+    def __str__(self):
+        return f'WhatsApp support · {self.phone_number}'
+
+
+class WhatsAppSupportMessage(models.Model):
+    class Direction(models.TextChoices):
+        INBOUND = 'inbound', 'Inbound'
+        OUTBOUND = 'outbound', 'Outbound'
+
+    class Status(models.TextChoices):
+        RECEIVED = 'received', 'Received'
+        SENT = 'sent', 'Sent'
+        DELIVERED = 'delivered', 'Delivered'
+        READ = 'read', 'Read'
+        FAILED = 'failed', 'Failed'
+
+    conversation = models.ForeignKey(
+        WhatsAppConversation,
+        on_delete=models.CASCADE,
+        related_name='messages',
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='whatsapp_support_messages',
+    )
+    direction = models.CharField(max_length=10, choices=Direction.choices)
+    body = models.TextField()
+    provider_message_id = models.CharField(max_length=160, unique=True, null=True, blank=True)
+    status = models.CharField(max_length=16, choices=Status.choices)
+    error_message = models.CharField(max_length=255, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+    sent_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ('created_at',)
+        indexes = [
+            models.Index(fields=['conversation', 'created_at']),
+            models.Index(fields=['direction', 'status', 'created_at']),
+        ]
+
+    def __str__(self):
+        return f'{self.get_direction_display()} WhatsApp message · {self.conversation.phone_number}'

@@ -468,11 +468,7 @@
                 {% if option.is_active %}
                 <div class="question-option{% if option.is_correct %} is-correct{% endif %}">
                   <span class="question-option-marker">{% if option.is_correct %}&#10003;{% else %}&#9675;{% endif %}</span>
-                  {% if option.option_image %}
-                    {% include 'core/partials/option_content.html' with text=option.option image_url=option.option_image.url %}
-                  {% else %}
-                    {% include 'core/partials/option_content.html' with text=option.option image_url='' %}
-                  {% endif %}
+                  {% include 'core/partials/option_content.html' with text=option.option image_url=option.option_image_url %}
                 </div>
                 {% endif %}
               {% endfor %}

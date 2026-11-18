@@ -494,8 +494,8 @@ def _build_attempt_breakdown(attempt):
             options_list.append({
                 'uuid': str(opt.uuid),
                 'option': opt.option,
-                'option_image_url': opt.option_image.url if opt.option_image else '',
-                'option_audio_url': opt.option_audio.url if opt.option_audio else '',
+                'option_image_url': opt.option_image_url,
+                'option_audio_url': opt.option_audio_url,
                 'is_correct': opt.is_correct,
                 'is_selected': str(opt.uuid) in selected_ids,
             })

@@ -407,6 +407,31 @@ systemctl restart elearning
 
 ---
 
+## WhatsApp customer support (Meta Cloud API)
+
+WhatsApp support is disabled until `WHATSAPP_SUPPORT_ENABLED=true` and all four
+credentials below are present in `.env`:
+
+- `WHATSAPP_VERIFY_TOKEN`: a random value you choose and enter in Meta's webhook setup.
+- `WHATSAPP_APP_SECRET`: the Meta app secret, used to validate signed webhook requests.
+- `WHATSAPP_ACCESS_TOKEN`: a server-side WhatsApp Cloud API access token.
+- `WHATSAPP_PHONE_NUMBER_ID`: the sending WhatsApp business phone-number ID.
+
+Set the Meta callback URL to
+`https://somasmartassesments.com/webhooks/whatsapp/webhook/`, use the same verify
+token, and subscribe the app to WhatsApp message events. Set
+`WHATSAPP_GRAPH_API_VERSION` to a Graph API version enabled for the Meta app.
+The assistant uses `OPENAI_API_KEY`; `WHATSAPP_SUPPORT_MODEL` and timeout settings
+can be set separately. Run `python manage.py migrate` after deploying.
+
+Incoming support conversations and delivery status are visible in Django Admin
+under **WhatsApp conversations** and **WhatsApp support messages**. Requests to
+talk with a person are marked for review there. Account-specific replies are
+only enabled when the sender's WhatsApp number matches exactly one active
+account; unlinked senders receive public information and a sign-up link.
+
+---
+
 ## Troubleshooting
 
 | Symptom | Command / Fix |

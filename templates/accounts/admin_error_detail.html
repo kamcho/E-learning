@@ -1,0 +1,27 @@
+{% extends 'accounts/admin_base.html' %}
+{% block title %}Error {{ error_log.reference|slice:':8' }} — Admin — Soma Smart{% endblock %}
+{% block extra_head %}
+<style>
+  .error-detail{max-width:1100px;margin:0 auto;padding:1.5rem}.error-detail-head{display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;margin-bottom:1.25rem}.error-detail h1{font-size:1.55rem;margin:.2rem 0}.error-detail-sub{color:#64748b}.error-panel{background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:1.1rem;margin-bottom:1rem}.error-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1rem}.error-label{font-size:.72rem;text-transform:uppercase;letter-spacing:.05em;color:#64748b;font-weight:700;margin-bottom:.25rem}.error-value{overflow-wrap:anywhere}.error-trace{background:#0f172a;color:#e2e8f0;padding:1rem;border-radius:5px;overflow:auto;max-height:560px;font: .78rem/1.55 ui-monospace,SFMono-Regular,Consolas,monospace;white-space:pre-wrap;overflow-wrap:anywhere}.error-detail-actions{display:flex;gap:.5rem;flex-wrap:wrap}.error-detail-btn{min-height:40px;padding:.5rem .85rem;border:1px solid #cbd5e1;border-radius:5px;background:#fff;color:#0f172a;font-weight:650;text-decoration:none;cursor:pointer}.error-detail-btn-primary{background:#0f766e;border-color:#0f766e;color:white}.error-detail-btn-danger{color:#b91c1c}.error-note{width:100%;min-height:88px;padding:.65rem;border:1px solid #cbd5e1;border-radius:5px;margin:.5rem 0 1rem}.error-msg{white-space:pre-wrap;overflow-wrap:anywhere}@media(max-width:700px){.error-detail{padding:1rem}.error-detail-head{display:block}.error-grid{grid-template-columns:1fr 1fr}}
+</style>
+{% endblock %}
+{% block admin_content %}
+<main class="error-detail">
+  <header class="error-detail-head"><div><a href="{% url 'accounts:admin_errors' %}">← Error logs</a><h1>{{ error_log.status_code }} · {{ error_log.exception_type|default:error_log.source|default:'Request error' }}</h1><p class="error-detail-sub">Recorded {{ error_log.created_at|date:'l, d F Y · H:i:s T' }} · Reference <code>{{ error_log.reference }}</code></p></div><div class="error-detail-actions"><a class="error-detail-btn" href="{% url 'accounts:admin_errors' %}">Back to list</a></div></header>
+  <section class="error-panel"><div class="error-grid">
+    <div><div class="error-label">URL</div><div class="error-value"><code>{{ error_log.method|default:'—' }} {{ error_log.path|default:'(no request URL)' }}</code></div></div>
+    <div><div class="error-label">Affected user</div><div class="error-value">{% if error_log.user %}{{ error_log.user_label|default:error_log.user.full_name }}<br>{{ error_log.user.phone|default:error_log.user.email }}{% else %}Guest / anonymous{% endif %}</div></div>
+    <div><div class="error-label">Status</div><div class="error-value">{{ error_log.status_code }} · {% if error_log.is_resolved %}Resolved{% else %}Open{% endif %}</div></div>
+    <div><div class="error-label">Source</div><div class="error-value">{{ error_log.source|default:'—' }}</div></div>
+    <div><div class="error-label">Browser</div><div class="error-value">{{ error_log.user_agent|default:'—' }}</div></div>
+    <div><div class="error-label">Resolved by</div><div class="error-value">{% if error_log.resolved_by %}{{ error_log.resolved_by.full_name }} · {{ error_log.resolved_at|date:'d M Y, H:i' }}{% else %}—{% endif %}</div></div>
+  </div></section>
+  <section class="error-panel"><h2>Error message</h2><div class="error-msg">{{ error_log.message|default:'No message recorded.' }}</div></section>
+  {% if error_log.resolution_note %}<section class="error-panel"><h2>Resolution note</h2><div class="error-msg">{{ error_log.resolution_note }}</div></section>{% endif %}
+  {% if error_log.traceback %}<section class="error-panel"><h2>Traceback</h2><pre class="error-trace">{{ error_log.traceback }}</pre></section>{% endif %}
+  <section class="error-panel"><h2>Manage record</h2><form method="post">{% csrf_token %}
+    {% if error_log.is_resolved %}<button class="error-detail-btn" name="action" value="reopen">Reopen error</button>{% else %}<label for="resolution-note">Resolution note (optional)</label><textarea id="resolution-note" class="error-note" name="resolution_note" placeholder="What fixed or explained this issue?"></textarea><button class="error-detail-btn error-detail-btn-primary" name="action" value="resolve">Mark resolved</button>{% endif %}
+    <button class="error-detail-btn error-detail-btn-danger" name="action" value="delete" onclick="return confirm('Permanently delete this error log?')">Delete record</button>
+  </form></section>
+</main>
+{% endblock %}

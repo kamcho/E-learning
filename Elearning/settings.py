@@ -89,6 +89,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'core.error_logging.ErrorLogMiddleware',
     'accounts.middleware.TwoFactorMiddleware',
     'accounts.middleware.CurrentRequestMiddleware',
     'accounts.middleware.GooglePhoneLinkMiddleware',
@@ -260,10 +261,43 @@ OPENAI_MODEL = os.environ.get('OPENAI_MODEL', 'gpt-4o-mini')
 OPENAI_TIMEOUT = float(os.environ.get('OPENAI_TIMEOUT', '60'))
 OPENAI_MAX_TOKENS = int(os.environ.get('OPENAI_MAX_TOKENS', '300'))
 OPENAI_MAX_RETRIES = int(os.environ.get('OPENAI_MAX_RETRIES', '1'))
+WHATSAPP_SUPPORT_ENABLED = _env_bool('WHATSAPP_SUPPORT_ENABLED', 'false')
+WHATSAPP_VERIFY_TOKEN = os.environ.get('WHATSAPP_VERIFY_TOKEN', '')
+WHATSAPP_APP_SECRET = os.environ.get('WHATSAPP_APP_SECRET', '')
+WHATSAPP_ACCESS_TOKEN = os.environ.get('WHATSAPP_ACCESS_TOKEN', '')
+WHATSAPP_PHONE_NUMBER_ID = os.environ.get('WHATSAPP_PHONE_NUMBER_ID', '')
+WHATSAPP_GRAPH_API_VERSION = os.environ.get('WHATSAPP_GRAPH_API_VERSION', 'v27.0')
+WHATSAPP_API_TIMEOUT = float(os.environ.get('WHATSAPP_API_TIMEOUT', '8'))
+WHATSAPP_SUPPORT_TIMEOUT = float(os.environ.get('WHATSAPP_SUPPORT_TIMEOUT', '12'))
+WHATSAPP_SUPPORT_MODEL = os.environ.get('WHATSAPP_SUPPORT_MODEL', '')
 OPENAI_TTS_MODEL = os.environ.get('OPENAI_TTS_MODEL', 'gpt-4o-mini-tts')
 OPENAI_TTS_VOICE = os.environ.get('OPENAI_TTS_VOICE', 'nova')
 # TTS pacing after punctuation: short | medium | long (default)
 OPENAI_TTS_PAUSE_LEVEL = os.environ.get('OPENAI_TTS_PAUSE_LEVEL', 'long')
+
+# Persist app exceptions and failed HTTP responses for staff review.
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {'class': 'logging.StreamHandler'},
+        'database_errors': {
+            'class': 'core.error_logging.DatabaseErrorHandler',
+            'level': 'ERROR',
+        },
+    },
+    'loggers': {
+        'django.request': {
+            'handlers': ['console', 'database_errors'],
+            'level': 'ERROR',
+            'propagate': False,
+        },
+    },
+    'root': {
+        'handlers': ['console', 'database_errors'],
+        'level': 'INFO',
+    },
+}
 
 # M-Pesa Daraja (Lipa na M-Pesa STK Push)
 MPESA_ENVIRONMENT = os.environ.get('MPESA_ENVIRONMENT', 'sandbox')

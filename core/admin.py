@@ -3,6 +3,7 @@ from django.urls import reverse
 from django.utils.html import format_html
 from .models import (
     AIExplanation,
+    ApplicationErrorLog,
     AttemptResponse,
     GuestDemoAttempt,
     Question,
@@ -10,6 +11,18 @@ from .models import (
     Quiz,
     UserAttempts,
 )
+
+
+@admin.register(ApplicationErrorLog)
+class ApplicationErrorLogAdmin(admin.ModelAdmin):
+    list_display = ('created_at', 'status_code', 'method', 'path', 'user_label', 'exception_type', 'is_resolved')
+    list_filter = ('status_code', 'is_resolved', 'created_at')
+    search_fields = ('path', 'user_label', 'user__phone', 'message', 'exception_type', 'reference')
+    readonly_fields = (
+        'reference', 'status_code', 'method', 'path', 'user', 'user_label', 'user_agent',
+        'source', 'exception_type', 'message', 'traceback', 'created_at',
+    )
+    ordering = ('-created_at',)
 
 
 class OptionInline(admin.TabularInline):

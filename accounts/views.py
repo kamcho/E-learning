@@ -1770,6 +1770,137 @@ def admin_site_visits_view(request):
 
 
 @login_required(login_url='accounts:signin')
+def admin_errors_view(request):
+    """Search, inspect, resolve, reopen, and remove persisted application errors."""
+    denied = _admin_access_or_redirect(request)
+    if denied:
+        return denied
+
+    from datetime import datetime, time
+    from django.utils.dateparse import parse_date
+    from core.models import ApplicationErrorLog
+
+    if request.method == 'POST':
+        action = request.POST.get('action', '')
+        ids = request.POST.getlist('selected_errors')[:100]
+        queryset = ApplicationErrorLog.objects.filter(reference__in=ids)
+        if action == 'resolve':
+            updated = queryset.update(is_resolved=True, resolved_at=timezone.now(), resolved_by=request.user)
+            messages.success(request, f'Marked {updated} error log(s) resolved.')
+        elif action == 'reopen':
+            updated = queryset.update(is_resolved=False, resolved_at=None, resolved_by=None)
+            messages.success(request, f'Reopened {updated} error log(s).')
+        elif action == 'delete':
+            deleted, _ = queryset.delete()
+            messages.success(request, f'Deleted {deleted} selected error log(s).')
+        else:
+            messages.error(request, 'Choose a valid action and at least one error log.')
+        query = request.GET.urlencode()
+        return redirect(f'{reverse("accounts:admin_errors")}?{query}' if query else 'accounts:admin_errors')
+
+    search = request.GET.get('q', '').strip()[:160]
+    status_filter = request.GET.get('status', 'all').strip()
+    resolved_filter = request.GET.get('resolved', 'open').strip()
+    date_from_str = request.GET.get('date_from', '').strip()
+    date_to_str = request.GET.get('date_to', '').strip()
+    logs = ApplicationErrorLog.objects.select_related('user', 'resolved_by')
+    if status_filter == '5xx':
+        logs = logs.filter(status_code__gte=500)
+    elif status_filter == '4xx':
+        logs = logs.filter(status_code__gte=400, status_code__lt=500)
+    else:
+        status_filter = 'all'
+    if resolved_filter == 'open':
+        logs = logs.filter(is_resolved=False)
+    elif resolved_filter == 'resolved':
+        logs = logs.filter(is_resolved=True)
+    else:
+        resolved_filter = 'all'
+    if search:
+        search_filter = (
+            Q(path__icontains=search)
+            | Q(source__icontains=search)
+            | Q(exception_type__icontains=search)
+            | Q(message__icontains=search)
+            | Q(user_label__icontains=search)
+            | Q(user__phone__icontains=search)
+            | Q(user__first_name__icontains=search)
+            | Q(user__last_name__icontains=search)
+        )
+        from uuid import UUID
+        try:
+            search_filter |= Q(reference=UUID(search))
+        except (ValueError, TypeError, AttributeError):
+            pass
+        logs = logs.filter(search_filter)
+    date_from = parse_date(date_from_str) if date_from_str else None
+    date_to = parse_date(date_to_str) if date_to_str else None
+    if date_from:
+        logs = logs.filter(created_at__gte=datetime.combine(
+            date_from, time.min, tzinfo=timezone.get_current_timezone(),
+        ))
+    if date_to:
+        logs = logs.filter(created_at__lte=datetime.combine(
+            date_to, time.max, tzinfo=timezone.get_current_timezone(),
+        ))
+
+    all_logs = ApplicationErrorLog.objects.all()
+    page_obj = Paginator(logs.order_by('-created_at'), 30).get_page(request.GET.get('page'))
+    today = timezone.localdate()
+    context = {
+        'page_obj': page_obj,
+        'search': search,
+        'status_filter': status_filter,
+        'resolved_filter': resolved_filter,
+        'date_from': date_from_str,
+        'date_to': date_to_str,
+        'pagination_extra': _pagination_extra_params(request, ['page']),
+        'total_errors': all_logs.count(),
+        'open_errors': all_logs.filter(is_resolved=False).count(),
+        'errors_today': all_logs.filter(created_at__date=today).count(),
+        'server_errors': all_logs.filter(status_code__gte=500).count(),
+    }
+    return render(request, 'accounts/admin_errors.html', context)
+
+
+@login_required(login_url='accounts:signin')
+def admin_error_detail_view(request, error_reference):
+    """View one error's diagnostic record and update its resolution state."""
+    denied = _admin_access_or_redirect(request)
+    if denied:
+        return denied
+
+    from core.models import ApplicationErrorLog
+    error_log = get_object_or_404(
+        ApplicationErrorLog.objects.select_related('user', 'resolved_by'),
+        reference=error_reference,
+    )
+    if request.method == 'POST':
+        action = request.POST.get('action', '')
+        if action == 'resolve':
+            error_log.is_resolved = True
+            error_log.resolved_at = timezone.now()
+            error_log.resolved_by = request.user
+            error_log.resolution_note = request.POST.get('resolution_note', '').strip()[:5000]
+            error_log.save(update_fields=[
+                'is_resolved', 'resolved_at', 'resolved_by', 'resolution_note',
+            ])
+            messages.success(request, 'Error marked as resolved.')
+        elif action == 'reopen':
+            error_log.is_resolved = False
+            error_log.resolved_at = None
+            error_log.resolved_by = None
+            error_log.save(update_fields=['is_resolved', 'resolved_at', 'resolved_by'])
+            messages.success(request, 'Error reopened.')
+        elif action == 'delete':
+            error_log.delete()
+            messages.success(request, 'Error log deleted.')
+            return redirect('accounts:admin_errors')
+        return redirect('accounts:admin_error_detail', error_reference=error_reference)
+    return render(request, 'accounts/admin_error_detail.html', {'error_log': error_log})
+
+
+@login_required(login_url='accounts:signin')
 def admin_finance_view(request):
     """Financial overview restricted to Django staff superusers."""
     if not (request.user.is_authenticated and request.user.is_staff and request.user.is_superuser):

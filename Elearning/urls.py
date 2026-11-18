@@ -26,6 +26,7 @@ urlpatterns = [
     path('accounts/', include('accounts.urls')),
     path('subscriptions/', include('subscriptions.urls')),
     path('achievements/', include('achievements.urls')),
+    path('webhooks/', include('messenger.urls')),
 ]
 
 if settings.DEBUG:

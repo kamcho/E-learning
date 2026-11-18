@@ -68,6 +68,7 @@ def server_error(request):
     cannot turn this page into another 500.
     """
     report = None
+    error_reference = getattr(request, '_application_error_log_reference', '')
     exc_info = sys.exc_info()
     user = getattr(request, '_cached_user', None)
     if user is None:
@@ -82,7 +83,7 @@ def server_error(request):
         and exc_info[0] is not None
     ):
         report = '\n'.join((
-            f'Soma Smart error report {uuid4()}',
+            f'Soma Smart error report {error_reference or uuid4()}',
             f'Time: {timezone.now().astimezone(datetime_timezone.utc).isoformat()}',
             f'Path: {request.path}',
             '',
@@ -96,5 +97,6 @@ def server_error(request):
         'message': 'We hit a problem on our side. Please try again in a moment.',
         'hint': 'If this keeps happening, go back home and try again.',
         'diagnostic_report': report,
+        'error_reference': error_reference,
     })
     return HttpResponseServerError(html)

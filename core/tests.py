@@ -1162,3 +1162,84 @@ class OpenAITtsTests(TestCase):
             content_type='application/json',
         )
         self.assertEqual(res.status_code, 400)
+
+
+class OptionImageUrlSafetyTests(TestCase):
+    def test_option_image_url_safe_when_empty(self):
+        user = User.objects.create_user(phone='0700112234', password='1234')
+        grade = GradeLevel.objects.create(name='Grade 1', slug='g1-safe-opt', level='Lower Primary')
+        discipline = Discipline.objects.create(name='Science', slug='sci-safe-opt')
+        subject = Subject.objects.create(name='Science', slug='sci-safe-subj', grade_level=grade, discipline=discipline)
+        strand = Strand.objects.create(name='Living Things', slug='lt-safe-strand', subject=subject)
+        sub_strand = SubStrand.objects.create(name='Plants', slug='plants-safe-sub', strand=strand)
+        quiz = Quiz.objects.create(title='Sample Quiz', strand=strand, sub_strand=sub_strand, created_by=user)
+        question = Question.objects.create(
+            quiz='What is a plant?',
+            sub_strand=sub_strand,
+            difficulty='Easy',
+            quiz_type='Multiple Choice',
+            created_by=user,
+        )
+        option = Option.objects.create(
+            question=question,
+            option='A living organism',
+            is_correct=True,
+        )
+
+        # Before fix, option.option_image.url raised ValueError
+        self.assertFalse(bool(option.option_image))
+        self.assertEqual(option.option_image_url, '')
+        self.assertEqual(option.option_audio_url, '')
+        self.assertEqual(question.prompt_image_url, '')
+        self.assertEqual(question.prompt_audio_url, '')
+        self.assertEqual(question.explanation_audio_url, '')
+
+    def test_take_template_renders_options_without_image(self):
+        from django.template.loader import render_to_string
+
+        user = User.objects.create_user(phone='0700112233', password='1234')
+        grade = GradeLevel.objects.create(name='Grade 2', slug='g2-safe-opt', level='Lower Primary')
+        discipline = Discipline.objects.create(name='Maths', slug='math-safe-opt')
+        subject = Subject.objects.create(name='Maths', slug='math-safe-subj', grade_level=grade, discipline=discipline)
+        strand = Strand.objects.create(name='Numbers', slug='numbers-safe-strand', subject=subject)
+        sub_strand = SubStrand.objects.create(name='Addition', slug='add-safe-sub', strand=strand)
+        quiz = Quiz.objects.create(title='Math Quiz', strand=strand, sub_strand=sub_strand, created_by=user)
+        question = Question.objects.create(
+            quiz='2 + 2 = ?',
+            sub_strand=sub_strand,
+            difficulty='Easy',
+            quiz_type='Multiple Choice',
+            created_by=user,
+        )
+        opt1 = Option.objects.create(question=question, option='3', is_correct=False)
+        opt2 = Option.objects.create(question=question, option='4', is_correct=True)
+
+        student = Student.objects.create(first_name='Leo', last_name='Test', grade_level=grade)
+        attempt = UserAttempts.objects.create(user=user, student=student, quiz=quiz)
+
+        context = {
+            'attempt': attempt,
+            'quiz': quiz,
+            'student': student,
+            'question': question,
+            'choice_options': [opt1, opt2],
+            'question_number': 1,
+            'question_count': 1,
+            'current_index': 0,
+            'progress_pct': 100,
+            'answered_count': 0,
+            'unanswered_count': 1,
+            'correct_count': 0,
+            'incorrect_count': 0,
+            'allows_multiple_answers': False,
+            'is_last_question': True,
+            'matching_ui_mode': '',
+            'showing_feedback': False,
+        }
+
+        # Rendering should succeed without raising ValueError
+        html = render_to_string('core/test_take.html', context)
+        self.assertIn('2 + 2 = ?', html)
+        self.assertIn('3', html)
+        self.assertIn('4', html)
+
