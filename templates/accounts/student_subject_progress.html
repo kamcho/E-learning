@@ -31,6 +31,19 @@
     box-shadow: var(--shadow-sm);
   }
 
+  .progress-header-title-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-md);
+  }
+
+  .progress-header-title-copy { min-width: 0; }
+
+  @media (max-width: 560px) {
+    .progress-header-title-row { flex-direction: column; }
+  }
+
   .progress-header h1 {
     font-family: var(--font-heading);
     font-size: 1.5rem;
@@ -212,11 +225,16 @@
   <a href="{{ back_url }}" class="progress-back">&larr; Back</a>
 
   <div class="progress-header">
-    <h1>{{ subject.name }}</h1>
-    <div class="progress-header-meta">
-      {{ student.first_name }} {{ student.last_name }}
-      &middot; {{ subject.grade_level.name }}
-      &middot; {{ subject.discipline.name }}
+    <div class="progress-header-title-row">
+      <div class="progress-header-title-copy">
+        <h1>{{ subject.name }}</h1>
+        <div class="progress-header-meta">
+          {{ student.first_name }} {{ student.last_name }}
+          &middot; {{ subject.grade_level.name }}
+          &middot; {{ subject.discipline.name }}
+        </div>
+      </div>
+      <a href="{% url 'core:exams_list' %}?student={{ student.uuid }}&amp;guide=1" class="btn btn-primary">Start exam</a>
     </div>
     <div class="progress-summary">
       <div class="progress-summary-ring" style="--pct: {{ progress.overall_pct }};">
