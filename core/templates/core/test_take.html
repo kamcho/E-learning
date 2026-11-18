@@ -93,6 +93,76 @@
     margin-bottom: 1rem;
   }
 
+  /* Keep answer choices and the disabled submit state legible across browsers.
+     These explicit exam-page rules also guard against native disabled/control styling. */
+  body.exam-take-page .demo-options {
+    gap: 0.65rem;
+  }
+
+  body.exam-take-page .demo-option {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.8rem 0.95rem;
+    min-height: 56px;
+    border: 1px solid color-mix(in srgb, var(--demo-purple) 24%, var(--demo-border));
+    border-radius: 10px;
+    background: var(--demo-surface-alt);
+    color: var(--demo-text);
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  body.exam-take-page .demo-option:hover {
+    border-color: var(--demo-purple);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--demo-purple) 12%, transparent);
+  }
+
+  body.exam-take-page .demo-option:has(input:checked) {
+    border-color: var(--demo-purple);
+    background: color-mix(in srgb, var(--demo-purple) 9%, var(--demo-surface));
+  }
+
+  body.exam-take-page .demo-option-letter {
+    width: 30px;
+    height: 30px;
+    flex: 0 0 30px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: var(--demo-purple);
+    color: #fff;
+    font-weight: 800;
+  }
+
+  body.exam-take-page .demo-option-text {
+    color: var(--demo-text);
+  }
+
+  body.exam-take-page .demo-option.is-correct {
+    border-color: var(--demo-accent);
+    background: color-mix(in srgb, var(--demo-accent) 10%, var(--demo-surface));
+  }
+
+  body.exam-take-page .demo-option.is-wrong {
+    border-color: #dc5265;
+    background: color-mix(in srgb, #dc5265 9%, var(--demo-surface));
+  }
+
+  body.exam-take-page button.demo-btn-primary:disabled {
+    opacity: 1;
+    background: #e9ddff;
+    color: #4c1d95;
+    box-shadow: none;
+    cursor: not-allowed;
+  }
+
+  html[data-theme="dark"] body.exam-take-page button.demo-btn-primary:disabled {
+    background: #39304e;
+    color: #e8dcff;
+  }
+
   @media (max-width: 640px) {
     .exam-matching-row {
       grid-template-columns: 1fr;
@@ -100,6 +170,11 @@
 
     .exam-text-answer {
       font-size: 16px;
+    }
+
+    body.exam-take-page .demo-option {
+      min-height: 52px;
+      padding: 0.65rem 0.7rem;
     }
   }
 
