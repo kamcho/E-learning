@@ -24,6 +24,10 @@
     max-width: 480px;
   }
 
+  .test-info-main .btn {
+    border-radius: var(--radius-sm);
+  }
+
   .test-info-wrap {
     width: 100%;
     max-width: 480px;
@@ -43,13 +47,13 @@
   .test-card {
     background: var(--clr-surface);
     border: 1px solid var(--clr-border);
-    border-radius: 8px;
+    border-radius: 14px;
     overflow: hidden;
-    box-shadow: 0 8px 28px rgba(15, 23, 42, 0.08);
+    box-shadow: 0 12px 32px rgba(15, 23, 42, 0.1);
   }
 
   .test-card-accent {
-    height: 4px;
+    height: 5px;
   }
 
   .test-card-accent.easy   { background: var(--clr-primary); }
@@ -57,12 +61,21 @@
   .test-card-accent.hard   { background: var(--clr-danger); }
 
   .test-card-body {
-    padding: var(--space-xl) var(--space-lg);
+    padding: 1.65rem;
+  }
+
+  .test-card-kicker {
+    margin: 0 0 0.55rem;
+    color: var(--clr-primary);
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
   }
 
   .test-title {
     font-family: var(--font-heading);
-    font-size: 1.4rem;
+    font-size: clamp(1.35rem, 4vw, 1.7rem);
     font-weight: 800;
     line-height: 1.3;
     letter-spacing: -0.02em;
@@ -89,10 +102,10 @@
   }
 
   .test-fact {
-    background: var(--clr-surface-alt);
+    background: color-mix(in srgb, var(--clr-surface-alt) 72%, var(--clr-surface));
     border: 1px solid var(--clr-border);
-    border-radius: 8px;
-    padding: var(--space-md);
+    border-radius: 10px;
+    padding: 0.9rem 0.8rem;
     text-align: left;
   }
 
@@ -121,13 +134,27 @@
     align-items: center;
     gap: var(--space-sm);
     padding: var(--space-md);
-    background: rgba(13, 138, 78, 0.08);
-    border-radius: 8px;
-    font-size: 0.88rem;
-    font-weight: 600;
+    background: color-mix(in srgb, var(--clr-primary) 8%, var(--clr-surface));
+    border: 1px solid color-mix(in srgb, var(--clr-primary) 18%, var(--clr-border));
+    border-radius: 10px;
+    font-size: 0.9rem;
     color: var(--clr-primary-dark);
     margin-bottom: var(--space-lg);
   }
+
+  .test-learner-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    display: grid;
+    place-items: center;
+    flex: 0 0 auto;
+    background: color-mix(in srgb, var(--clr-primary) 13%, var(--clr-surface));
+  }
+
+  .test-learner-copy { display: grid; gap: 0.1rem; }
+  .test-learner-label { color: var(--clr-text-muted); font-size: 0.68rem; font-weight: 750; letter-spacing: 0.06em; text-transform: uppercase; }
+  .test-learner-name { color: var(--clr-text); font-weight: 750; }
 
   .test-status {
     font-size: 0.85rem;
@@ -143,16 +170,17 @@
     display: flex;
     flex-direction: column;
     gap: var(--space-sm);
-    padding-top: var(--space-md);
+    padding-top: var(--space-lg);
     border-top: 1px solid var(--clr-border);
   }
 
   .btn-test-start {
     width: 100%;
     justify-content: center;
-    padding: 0.95rem 1rem;
+    padding: 0.85rem 1rem;
     font-size: 1rem;
     font-weight: 700;
+    border-radius: var(--radius-sm);
   }
 
   .btn-test-cancel {
@@ -163,6 +191,8 @@
     color: var(--clr-text-muted);
     box-shadow: none;
     font-size: 0.9rem;
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-sm);
   }
 
   /* ── Attempt history ── */
@@ -257,6 +287,7 @@
   <div class="test-card">
     <div class="test-card-accent {{ quiz.difficulty|lower }}"></div>
     <div class="test-card-body">
+      <p class="test-card-kicker">Exam details</p>
       <h1 class="test-title">{{ quiz.title }}</h1>
 
       {% if quiz.subject %}
@@ -282,7 +313,10 @@
 
       {% if student %}
         <div class="test-learner">
-          For {{ student.first_name }} {{ student.last_name }}
+          <span class="test-learner-icon" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.25"/><path d="M5.5 20a6.5 6.5 0 0 1 13 0"/></svg>
+          </span>
+          <span class="test-learner-copy"><span class="test-learner-label">Exam for</span><strong class="test-learner-name">{{ student.first_name|title }} {{ student.last_name|title }}</strong></span>
         </div>
       {% endif %}
 
@@ -329,7 +363,7 @@
         <form method="post" action="{% url 'core:test_info' quiz.uuid student.uuid %}">
           {% csrf_token %}
           <input type="hidden" name="action" value="start">
-          <button type="submit" class="btn btn-primary btn-test-start">
+          <button type="submit" class="btn btn-start-exam btn-test-start">
             {% if attempt_status == 'completed' %}
               Retake Exam{% if subscription_required and active_subscription and not active_subscription.is_unlimited %} (1 credit){% endif %}
             {% elif attempt_status == 'in_progress' %}
