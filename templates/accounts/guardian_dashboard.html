@@ -1710,13 +1710,11 @@
     width: 42px;
     height: 42px;
     border-radius: 50%;
-    background: linear-gradient(150deg, #8b1538, #3dd6c6);
-    color: #fff;
+    background: var(--dash-purple-bg, rgba(13, 138, 78, 0.1));
+    color: var(--dash-purple, var(--cs-accent, #0d8a4e));
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.8rem;
-    font-weight: 800;
     flex-shrink: 0;
   }
 
@@ -1758,16 +1756,6 @@
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
     position: relative;
     overflow: hidden;
-  }
-
-  .gd-user-dashboard-header::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 3px;
-    background: linear-gradient(90deg, var(--cs-crimson, #c1272d) 0%, var(--dash-purple, var(--cs-accent, #0d8a4e)) 100%);
   }
 
   .gd-user-header-inner {
@@ -1927,19 +1915,22 @@
     margin-bottom: 0.9rem;
   }
 
+  .gd-learner-card-identity {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    min-width: 0;
+  }
+
   .gd-learner-card-avatar {
     width: 44px;
     height: 44px;
     border-radius: 12px;
-    background: linear-gradient(135deg, #c1272d 0%, #3dd6c6 100%);
-    color: #fff;
+    background: var(--dash-purple-bg, rgba(13, 138, 78, 0.1));
+    color: var(--dash-purple, var(--cs-accent, #0d8a4e));
     display: flex;
     align-items: center;
     justify-content: center;
-    font-family: var(--font-heading);
-    font-size: 1rem;
-    font-weight: 800;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
   }
 
   .gd-learner-badge {
@@ -1980,12 +1971,13 @@
   }
 
   .gd-learner-card-name {
-    margin: 0 0 0.35rem;
+    margin: 0;
     font-family: var(--font-heading);
-    font-size: 1.05rem;
+    font-size: 1rem;
     font-weight: 800;
     color: var(--dash-text, var(--cs-text));
     line-height: 1.25;
+    overflow-wrap: anywhere;
   }
 
   .gd-learner-card-meta {
@@ -2530,14 +2522,19 @@
          id="learner-card-{{ s.uuid }}"
          title="View report for {{ s.first_name }} {{ s.last_name }}">
         <div class="gd-learner-card-top">
-          <div class="gd-learner-card-avatar" aria-hidden="true">
-            {{ s.first_name|first|upper }}{{ s.last_name|first|upper }}
+          <div class="gd-learner-card-identity">
+            <div class="gd-learner-card-avatar" aria-hidden="true">
+              <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="8" r="3.25"/>
+                <path d="M5.5 20a6.5 6.5 0 0 1 13 0"/>
+              </svg>
+            </div>
+            <h3 class="gd-learner-card-name">{{ s.first_name|title }} {{ s.last_name|title }}</h3>
           </div>
           <span class="gd-learner-badge">Active</span>
         </div>
 
         <div class="gd-learner-card-content">
-          <h3 class="gd-learner-card-name">{{ s.first_name }} {{ s.last_name }}</h3>
           <div class="gd-learner-card-meta">
             <span class="gd-learner-grade-pill">{{ s.grade_level.name|default:"Grade not set" }}</span>
             <span class="gd-learner-code-pill">STU-00{{ forloop.counter }}</span>
@@ -2674,9 +2671,14 @@
                 data-student-uuid="{{ s.uuid }}"
                 role="radio"
                 aria-checked="{% if active_student and active_student.uuid == s.uuid %}true{% else %}false{% endif %}">
-          <span class="gd-learner-option-avatar">{{ s.first_name|first|upper }}{{ s.last_name|first|upper }}</span>
+          <span class="gd-learner-option-avatar" aria-hidden="true">
+            <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="8" r="3.25"/>
+              <path d="M5.5 20a6.5 6.5 0 0 1 13 0"/>
+            </svg>
+          </span>
           <span class="gd-learner-option-body">
-            <div class="gd-learner-option-name">{{ s.first_name }} {{ s.last_name }}</div>
+            <div class="gd-learner-option-name">{{ s.first_name|title }} {{ s.last_name|title }}</div>
             {% if s.grade_level %}
               <div class="gd-learner-option-meta">{{ s.grade_level.name }}</div>
             {% endif %}
