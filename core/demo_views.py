@@ -567,14 +567,33 @@ def demo_explain_view(request):
     from core.ai.exceptions import AIServiceError
     from core.models import AIExplanation, Question
 
-    demo = get_demo_session(request)
-    if not demo:
-        return JsonResponse({'error': 'No active exam session.'}, status=400)
-
     try:
         payload = json.loads(request.body.decode('utf-8'))
     except (json.JSONDecodeError, UnicodeDecodeError):
         return JsonResponse({'error': 'Invalid JSON body.'}, status=400)
+
+    # If this request is for an authenticated assessment attempt, seamlessly forward
+    if payload.get('attempt_uuid'):
+        from core.views import ai_explain_answer_view
+        return ai_explain_answer_view(request)
+
+    demo = get_demo_session(request)
+    if not demo:
+        if request.user.is_authenticated:
+            from core.models import UserAttempts
+            active_attempt = (
+                UserAttempts.objects
+                .filter(user=request.user, is_complete=False)
+                .order_by('-started_at')
+                .first()
+            )
+            if active_attempt:
+                payload['attempt_uuid'] = str(active_attempt.uuid)
+                request._body = json.dumps(payload).encode('utf-8')
+                from core.views import ai_explain_answer_view
+                return ai_explain_answer_view(request)
+
+        return JsonResponse({'error': 'No active exam session.'}, status=400)
 
     question_uuid = str(payload.get('question_uuid', '')).strip()
     if not question_uuid or question_uuid not in demo.get('question_ids', []):

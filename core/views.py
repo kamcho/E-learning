@@ -756,6 +756,7 @@ def test_take_view(request, quiz_uuid, student_uuid):
             'quiz': quiz,
             'student': student,
             'question': current_question,
+            'question_uuid': current_question.uuid,
             'choice_options': choice_options,
             'question_number': display_index + 1,
             'question_count': question_count,
@@ -942,8 +943,9 @@ def ai_explain_answer_view(request):
         Question.objects.prefetch_related('options'),
         uuid=question_uuid,
         is_active=True,
-        quizzes=attempt.quiz,
     )
+    if not (attempt.quiz.questions.filter(pk=question.pk).exists() or attempt.responses.filter(question=question).exists()):
+        return JsonResponse({'error': 'Permission denied.'}, status=403)
 
     response = attempt.responses.filter(question=question).select_related('selected_option').first()
     selected_choice = ''

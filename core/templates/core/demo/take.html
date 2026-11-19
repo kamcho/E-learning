@@ -133,7 +133,7 @@
           <p style="margin:0;color:var(--demo-muted);font-size:0.88rem;">
             Correct answer: <strong style="color:var(--demo-accent);" data-math-content>{{ feedback.correct_text }}</strong>
           </p>
-          <div class="demo-ai-box" id="demo-ai-box" data-question-uuid="{{ question_uuid }}" data-speech-region data-speech-wait-complete="1"
+          <div class="demo-ai-box" id="demo-ai-box" data-question-uuid="{% if question.uuid %}{{ question.uuid }}{% else %}{{ question_uuid }}{% endif %}" data-speech-region data-speech-wait-complete="1"
             {% if question.explanation_audio %}data-speech-audio-url="{{ question.explanation_audio.url }}"{% endif %}>
             <div class="demo-ai-loading" id="demo-ai-loading" role="status" aria-live="polite">
               <span class="demo-ai-spinner" aria-hidden="true"></span>
@@ -268,8 +268,9 @@
   var textEl = document.getElementById('demo-ai-text');
   var errEl = document.getElementById('demo-ai-error');
   var retryBtn = document.getElementById('demo-ai-retry');
-  var qid = box.dataset.questionUuid;
-  var explainUrl = '{% url "core:exam_explain" %}';
+  var qid = box.dataset.questionUuid || '{% if question.uuid %}{{ question.uuid }}{% else %}{{ question_uuid }}{% endif %}';
+  var explainUrl = '{% if attempt %}{% url "core:ai_explain_answer" %}{% else %}{% url "core:exam_explain" %}{% endif %}';
+  var attemptId = '{{ attempt.uuid|default:"" }}';
   var csrfToken = '{{ csrf_token }}';
 
   function loadExplanation() {
@@ -279,13 +280,18 @@
     errEl.hidden = true;
     if (retryBtn) retryBtn.hidden = true;
 
+    var reqBody = { question_uuid: qid };
+    if (attemptId) {
+      reqBody.attempt_uuid = attemptId;
+    }
+
     fetch(explainUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'X-CSRFToken': csrfToken
       },
-      body: JSON.stringify({ question_uuid: qid })
+      body: JSON.stringify(reqBody)
     })
       .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
       .then(function (result) {

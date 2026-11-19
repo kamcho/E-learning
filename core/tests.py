@@ -1237,9 +1237,75 @@ class OptionImageUrlSafetyTests(TestCase):
             'showing_feedback': False,
         }
 
-        # Rendering should succeed without raising ValueError
+        # Rendering should succeed without raising ValueError or TemplateSyntaxError
         html = render_to_string('core/test_take.html', context)
         self.assertIn('2 + 2 = ?', html)
         self.assertIn('3', html)
         self.assertIn('4', html)
+
+        # Rendering unified demo/take.html
+        demo_html = render_to_string('core/demo/take.html', context)
+        self.assertIn('2 + 2 = ?', demo_html)
+        self.assertIn('3', demo_html)
+        self.assertIn('4', demo_html)
+
+    def test_take_template_feedback_uses_correct_explain_endpoint(self):
+        from django.template.loader import render_to_string
+
+        user = User.objects.create_user(phone='0700112239', password='1234')
+        grade = GradeLevel.objects.create(name='Grade 5', slug='g5-feedback', level='Upper Primary')
+        discipline = Discipline.objects.create(name='Maths', slug='math-feedback')
+        subject = Subject.objects.create(name='Maths', slug='math-fb-subj', grade_level=grade, discipline=discipline)
+        strand = Strand.objects.create(name='Numbers', slug='num-fb-strand', subject=subject)
+        sub_strand = SubStrand.objects.create(name='Inequalities', slug='ineq-fb-sub', strand=strand)
+        quiz = Quiz.objects.create(title='Inequalities Quiz', strand=strand, sub_strand=sub_strand, created_by=user)
+        question = Question.objects.create(
+            quiz='15 <= n <= 40',
+            sub_strand=sub_strand,
+            difficulty='Medium',
+            quiz_type='Multiple Choice',
+            created_by=user,
+        )
+        quiz.questions.add(question)
+        student = Student.objects.create(first_name='Amina', last_name='Test', grade_level=grade)
+        attempt = UserAttempts.objects.create(user=user, student=student, quiz=quiz)
+
+        context_attempt = {
+            'attempt': attempt,
+            'quiz': quiz,
+            'student': student,
+            'question': question,
+            'question_uuid': question.uuid,
+            'showing_feedback': True,
+            'feedback': {'is_correct': False, 'selected_text': '15 < n < 40', 'correct_text': '15 <= n <= 40'},
+            'correct_count': 0,
+            'incorrect_count': 1,
+            'unanswered_count': 0,
+            'question_number': 1,
+            'question_count': 1,
+            'progress_pct': 100,
+        }
+
+        # For an assessment attempt: explainUrl must be ai_explain_answer, data-question-uuid must be set
+        html_attempt = render_to_string('core/demo/take.html', context_attempt)
+        self.assertIn(reverse('core:ai_explain_answer'), html_attempt)
+        self.assertIn(str(question.uuid), html_attempt)
+
+        # For a guest demo session (no attempt in context): explainUrl must be exam_explain
+        context_demo = {
+            'demo': {'subject_name': 'Maths'},
+            'question': question,
+            'question_uuid': question.uuid,
+            'showing_feedback': True,
+            'feedback': {'is_correct': False, 'selected_text': '15 < n < 40', 'correct_text': '15 <= n <= 40'},
+            'correct_count': 0,
+            'incorrect_count': 1,
+            'unanswered_count': 0,
+            'question_number': 1,
+            'question_count': 1,
+            'progress_pct': 100,
+        }
+        html_demo = render_to_string('core/demo/take.html', context_demo)
+        self.assertIn(reverse('core:exam_explain'), html_demo)
+        self.assertNotIn(reverse('core:ai_explain_answer'), html_demo)
 
