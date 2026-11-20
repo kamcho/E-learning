@@ -134,7 +134,7 @@
           <p style="margin:0;color:var(--demo-muted);font-size:0.88rem;">
             Correct answer: <strong style="color:var(--demo-accent);" data-math-content>{{ feedback.correct_text }}</strong>
           </p>
-          <div class="demo-ai-box" id="demo-ai-box" data-question-uuid="{% if question.uuid %}{{ question.uuid }}{% else %}{{ question_uuid }}{% endif %}" data-speech-region data-speech-wait-complete="1"
+          <div class="demo-ai-box" id="demo-ai-box" tabindex="-1" aria-label="AI tutor explanation" data-question-uuid="{% if question.uuid %}{{ question.uuid }}{% else %}{{ question_uuid }}{% endif %}" data-speech-region data-speech-wait-complete="1"
             {% if question.explanation_audio %}data-speech-audio-url="{{ question.explanation_audio.url }}"{% endif %}>
             <div class="demo-ai-loading" id="demo-ai-loading" role="status" aria-live="polite">
               <span class="demo-ai-spinner" aria-hidden="true"></span>
@@ -265,6 +265,15 @@
 (function () {
   var box = document.getElementById('demo-ai-box');
   if (!box) return;
+
+  function scrollToAiExplanation() {
+    var header = document.querySelector('.app-header, .navbar, header');
+    var offset = header ? header.offsetHeight + 12 : 64;
+    var top = box.getBoundingClientRect().top + window.pageYOffset - offset;
+    window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+  }
+  requestAnimationFrame(function () { requestAnimationFrame(scrollToAiExplanation); });
+
   var loading = document.getElementById('demo-ai-loading');
   var textEl = document.getElementById('demo-ai-text');
   var errEl = document.getElementById('demo-ai-error');

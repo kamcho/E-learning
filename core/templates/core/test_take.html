@@ -294,7 +294,7 @@
             {% if feedback.marks_awarded is not None %}
             <p style="margin:0.5rem 0 0;color:var(--demo-muted);font-size:0.85rem;">Marks: {{ feedback.marks_awarded }}/{{ feedback.max_marks }}</p>
             {% endif %}
-            <div class="demo-ai-box" id="demo-ai-box" data-question-uuid="{{ question_uuid }}" data-speech-region data-speech-wait-complete="1"
+            <div class="demo-ai-box" id="demo-ai-box" tabindex="-1" aria-label="AI tutor explanation" data-question-uuid="{{ question_uuid }}" data-speech-region data-speech-wait-complete="1"
               {% if question.explanation_audio %}data-speech-audio-url="{{ question.explanation_audio.url }}"{% endif %}>
               <div class="demo-ai-loading" id="demo-ai-loading" role="status" aria-live="polite">
                 <span class="demo-ai-spinner" aria-hidden="true"></span>
@@ -489,6 +489,15 @@
 (function () {
   var box = document.getElementById('demo-ai-box');
   if (!box) return;
+
+  function scrollToAiExplanation() {
+    var header = document.querySelector('.app-header, .navbar, header');
+    var offset = header ? header.offsetHeight + 12 : 64;
+    var top = box.getBoundingClientRect().top + window.pageYOffset - offset;
+    window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+  }
+  requestAnimationFrame(function () { requestAnimationFrame(scrollToAiExplanation); });
+
   var loading = document.getElementById('demo-ai-loading');
   var textEl = document.getElementById('demo-ai-text');
   var errEl = document.getElementById('demo-ai-error');
