@@ -24,7 +24,8 @@
   body.exam-take-page .demo-options { gap: .65rem; }
   body.exam-take-page .demo-option { display: flex; align-items: center; gap: .75rem; padding: .8rem .95rem; min-height: 56px; border: 1px solid color-mix(in srgb, var(--demo-purple) 24%, var(--demo-border)); border-radius: 10px; background: var(--demo-surface-alt); color: var(--demo-text); cursor: pointer; transition: border-color .15s ease, background .15s ease, box-shadow .15s ease; }
   body.exam-take-page .demo-option:hover { border-color: var(--demo-purple); box-shadow: 0 0 0 2px color-mix(in srgb, var(--demo-purple) 12%, transparent); }
-  body.exam-take-page .demo-option:has(input:checked) { border-color: var(--demo-purple); background: color-mix(in srgb, var(--demo-purple) 9%, var(--demo-surface)); }
+  body.exam-take-page .demo-option:has(input:checked) { border-color: var(--demo-warm); background: color-mix(in srgb, var(--demo-warm) 10%, var(--demo-surface)); box-shadow: 0 0 0 2px color-mix(in srgb, var(--demo-warm) 22%, transparent); }
+  body.exam-take-page .demo-option:has(input:checked):hover { border-color: var(--demo-warm); box-shadow: 0 0 0 2px color-mix(in srgb, var(--demo-warm) 20%, transparent); }
   body.exam-take-page .demo-option-letter { width: 30px; height: 30px; flex: 0 0 30px; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; background: var(--demo-purple); color: #fff; font-weight: 800; }
   body.exam-take-page .demo-option-text { color: var(--demo-text); }
   body.exam-take-page .demo-option.is-correct { border-color: var(--demo-accent); background: color-mix(in srgb, var(--demo-accent) 10%, var(--demo-surface)); }

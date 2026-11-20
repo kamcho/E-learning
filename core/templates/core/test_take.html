@@ -119,8 +119,14 @@
   }
 
   body.exam-take-page .demo-option:has(input:checked) {
-    border-color: var(--demo-purple);
-    background: color-mix(in srgb, var(--demo-purple) 9%, var(--demo-surface));
+    border-color: var(--demo-warm);
+    background: color-mix(in srgb, var(--demo-warm) 10%, var(--demo-surface));
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--demo-warm) 22%, transparent);
+  }
+
+  body.exam-take-page .demo-option:has(input:checked):hover {
+    border-color: var(--demo-warm);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--demo-warm) 20%, transparent);
   }
 
   body.exam-take-page .demo-option-letter {
