@@ -600,8 +600,8 @@ def demo_explain_view(request):
         return JsonResponse({'error': 'Invalid question for this demo.'}, status=400)
 
     feedback = demo.get('feedback', {}).get(question_uuid)
-    if not feedback or feedback.get('is_correct'):
-        return JsonResponse({'error': 'AI explain is only available for incorrect answers.'}, status=400)
+    if not feedback:
+        return JsonResponse({'error': 'No answer feedback for this question yet.'}, status=400)
 
     question = get_object_or_404(
         Question.objects.prefetch_related('options'),

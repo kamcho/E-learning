@@ -1,4 +1,5 @@
 from ..client import OpenAIClient
+from ..text_sanitize import sanitize_tutor_plaintext
 
 EXPLAIN_ANSWER_TASK = 'explain_answer'
 
@@ -6,6 +7,7 @@ SYSTEM_PROMPT = """You are a friendly CBE (Competency-Based Education) tutor for
 Explain quiz answers clearly and briefly using simple language suited to the learner's level.
 Focus on why the correct answer is right. If the learner picked a wrong answer, gently explain
 their mistake without being discouraging. Keep responses under 150 words.
+Use plain text only: no markdown, no asterisks, no bold, no bullet lists with * or -.
 When you mention numbers, fractions, or equations, wrap them in LaTeX inline math using $...$
 (for example $\\frac{2}{3}$ or $8 \\div 4 = 2$). Do not use \\( ... \\) delimiters."""
 
@@ -50,9 +52,11 @@ class ExplainAnswerTask:
             grade_level=grade_level,
             subject=subject,
         )
-        explanation = self.client.chat(
-            system_prompt=SYSTEM_PROMPT,
-            user_prompt=user_prompt,
+        explanation = sanitize_tutor_plaintext(
+            self.client.chat(
+                system_prompt=SYSTEM_PROMPT,
+                user_prompt=user_prompt,
+            )
         )
         return {
             'task': self.task_name,
@@ -100,4 +104,5 @@ Learner's selected answer: {learner_line}
 Correct answer(s): {correct_line}
 
 Explain why the correct answer is right. If the learner was wrong, briefly say why their choice
-does not work and guide them toward the correct reasoning."""
+does not work and guide them toward the correct reasoning. If the learner was correct, still explain
+the reasoning clearly — they may have guessed."""

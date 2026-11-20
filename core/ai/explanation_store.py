@@ -5,6 +5,7 @@ import json
 
 from django.conf import settings
 
+from core.ai.text_sanitize import sanitize_tutor_plaintext
 from core.models import AIExplanation
 
 
@@ -46,7 +47,7 @@ def explanation_response(record):
         learner_was_correct = None
     return {
         'task': 'explain_answer',
-        'explanation': record.explanation,
+        'explanation': sanitize_tutor_plaintext(record.explanation or ''),
         'correct_answer': record.correct_answer,
         'learner_was_correct': learner_was_correct,
         'explanation_uuid': str(record.uuid),

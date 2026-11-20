@@ -45,6 +45,20 @@ class QuestionMathNormalizeTests(TestCase):
         self.assertIsNone(re.search(r'\x0crac|(?<!\\f)rac\{', out))
 
 
+class TutorPlaintextSanitizeTests(TestCase):
+    def test_strips_markdown_bold_asterisks(self):
+        from core.ai.text_sanitize import sanitize_tutor_plaintext
+
+        raw = (
+            'The correct answer is **A. Obeying parents and respecting siblings**. '
+            'Your choice, **D. Leaving all chores for others**, does not help.'
+        )
+        cleaned = sanitize_tutor_plaintext(raw)
+        self.assertNotIn('**', cleaned)
+        self.assertIn('A. Obeying parents and respecting siblings', cleaned)
+        self.assertIn('D. Leaving all chores for others', cleaned)
+
+
 class JsonPasteTests(TestCase):
     def test_normalize_removes_line_continuation_backslashes(self):
         # Chat UIs often insert "\" before line breaks — invalid JSON until stripped.
@@ -1352,4 +1366,20 @@ class OptionImageUrlSafetyTests(TestCase):
         html_demo = render_to_string('core/demo/take.html', context_demo)
         self.assertIn(reverse('core:exam_explain'), html_demo)
         self.assertNotIn(reverse('core:ai_explain_answer'), html_demo)
+
+        context_correct = {
+            **context_demo,
+            'feedback': {
+                'is_correct': True,
+                'selected_text': '15 <= n <= 40',
+                'correct_text': '15 <= n <= 40',
+                'marks_awarded': 1,
+                'max_marks': 1,
+            },
+            'correct_count': 1,
+            'incorrect_count': 0,
+        }
+        html_correct = render_to_string('core/demo/take.html', context_correct)
+        self.assertIn('Explain with AI tutor', html_correct)
+        self.assertIn('data-ai-auto-load="0"', html_correct)
 
