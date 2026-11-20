@@ -666,6 +666,50 @@ class QuestionBankTests(TestCase):
         )
 
 
+class LandingAssistantTests(TestCase):
+    def test_landing_includes_assistant_widget(self):
+        response = self.client.get(reverse('core:landing'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'landing-assistant')
+        self.assertContains(response, 'LANDING_ASSISTANT_CHAT_URL')
+        self.assertContains(response, 'data-landing-assistant-open')
+
+    def test_landing_assistant_api_requires_message(self):
+        url = reverse('core:landing_assistant_chat')
+        response = self.client.post(
+            url,
+            data='{}',
+            content_type='application/json',
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertJSONEqual(response.content, {'ok': False, 'error': 'Message is required.'})
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls._prior_key = getattr(__import__('django.conf', fromlist=['settings']).settings, 'OPENAI_API_KEY', '')
+        from django.conf import settings
+        settings.OPENAI_API_KEY = ''
+
+    @classmethod
+    def tearDownClass(cls):
+        from django.conf import settings
+        settings.OPENAI_API_KEY = cls._prior_key
+        super().tearDownClass()
+
+    def test_landing_assistant_api_without_openai_returns_fallback(self):
+        url = reverse('core:landing_assistant_chat')
+        response = self.client.post(
+            url,
+            data='{"message": "What is Soma Smart?"}',
+            content_type='application/json',
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data.get('ok'))
+        self.assertIn('AI assistant is not configured', data.get('reply', ''))
+
+
 class LandingPageNavbarTests(TestCase):
     def setUp(self):
         self.guardian = User.objects.create_user(

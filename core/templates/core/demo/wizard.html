@@ -48,11 +48,16 @@
 
     <div class="ew-step ew-step--current">
       <div class="ew-step-card">
-        <div class="ew-step-active-head">
+        <div class="ew-step-active-head{% if phase == 'ready' %} ew-step-active-head--ready{% endif %}">
+          {% if phase != 'ready' %}
           <div class="ew-step-active-icon" aria-hidden="true">
-            {% if phase == 'grade' %}🏫{% elif phase == 'subject' %}📚{% elif phase == 'scope' %}🎯{% elif phase == 'strand' or phase == 'sub_strand' %}🧵{% else %}✅{% endif %}
+            {% if phase == 'grade' %}🏫{% elif phase == 'subject' %}📚{% elif phase == 'scope' %}🎯{% elif phase == 'strand' or phase == 'sub_strand' %}🧵{% endif %}
           </div>
-          <div>
+          {% endif %}
+          <div class="ew-step-active-text">
+            {% if phase == 'ready' %}
+            <span class="ew-step-phase">Review</span>
+            {% endif %}
             <h2 class="ew-step-active-title">{{ demo_wizard.current_label }}</h2>
             <p class="ew-step-active-hint">{{ demo_wizard.current_hint }}</p>
           </div>
@@ -198,24 +203,56 @@
              class="ew-picker-footlink">← Back to strands</a>
 
           {% elif phase == 'ready' %}
-          <div class="demo-ready-card">
-            <div class="demo-ready-summary">
-              <div><span>Grade</span><strong>{{ active_grade.name|default:'All grades' }}</strong></div>
-              <div><span>Subject</span><strong>{{ active_subject.name }}</strong></div>
-              <div><span>Focus</span><strong>{% if active_scope == 'general' %}Whole subject{% elif active_scope == 'strand' %}Strand{% else %}Sub-strand{% endif %}</strong></div>
-              {% if active_strand %}<div><span>Strand</span><strong>{{ active_strand.name }}</strong></div>{% endif %}
-              {% if active_sub_strand %}<div><span>Sub-strand</span><strong>{{ active_sub_strand.name }}</strong></div>{% endif %}
-              <div><span>Questions</span><strong>Up to {{ demo_question_count_max }}; all available if fewer</strong></div>
+          <div class="demo-ready">
+            <dl class="demo-ready-dl">
+              <div class="demo-ready-row">
+                <dt>Grade</dt>
+                <dd>{{ active_grade.name|default:'All grades' }}</dd>
+              </div>
+              <div class="demo-ready-row demo-ready-row--emph">
+                <dt>Subject</dt>
+                <dd>{{ active_subject.name }}</dd>
+              </div>
+              {% if active_scope == 'strand' and active_strand %}
+              <div class="demo-ready-row demo-ready-row--emph">
+                <dt>Strand</dt>
+                <dd>{{ active_strand.name }}</dd>
+              </div>
+              {% elif active_scope == 'sub_strand' and active_sub_strand %}
+              <div class="demo-ready-row demo-ready-row--emph">
+                <dt>Sub-strand</dt>
+                <dd>{{ active_sub_strand.name }}</dd>
+              </div>
+              {% else %}
+              <div class="demo-ready-row">
+                <dt>Focus</dt>
+                <dd>Whole subject</dd>
+              </div>
+              {% endif %}
+              <div class="demo-ready-row">
+                <dt>Length</dt>
+                <dd>Up to {{ demo_question_count_max }} questions <span class="demo-ready-muted">— fewer if the bank is smaller</span></dd>
+              </div>
+            </dl>
+
+            <div class="demo-ready-foot">
+              <form method="post" action="{% url 'core:exam_start' %}" class="demo-ready-form">
+                {% csrf_token %}
+                <input type="hidden" name="grade" value="{% if active_grade %}{{ active_grade.slug }}{% endif %}">
+                <input type="hidden" name="subject" value="{{ active_subject.slug }}">
+                <input type="hidden" name="scope" value="{{ active_scope|default:'general' }}">
+                {% if active_strand %}<input type="hidden" name="strand" value="{{ active_strand.slug }}">{% endif %}
+                {% if active_sub_strand %}<input type="hidden" name="sub_strand" value="{{ active_sub_strand.slug }}">{% endif %}
+                <button type="submit" class="demo-btn demo-btn-primary demo-btn-lg">Start practice exam</button>
+              </form>
+              {% if active_sub_strand %}
+              <a href="{% url 'core:exam_wizard' %}?subject={{ active_subject.slug }}&scope=sub_strand{% if nav_grade %}&{{ nav_grade }}{% endif %}" class="ew-picker-footlink">Change sub-strand</a>
+              {% elif active_strand %}
+              <a href="{% url 'core:exam_wizard' %}?subject={{ active_subject.slug }}{% if nav_grade %}&{{ nav_grade }}{% endif %}" class="ew-picker-footlink">Change strand or focus</a>
+              {% else %}
+              <a href="{% url 'core:exam_wizard' %}?subject={{ active_subject.slug }}{% if nav_grade %}&{{ nav_grade }}{% endif %}" class="ew-picker-footlink">Change subject or focus</a>
+              {% endif %}
             </div>
-            <form method="post" action="{% url 'core:exam_start' %}">
-              {% csrf_token %}
-              <input type="hidden" name="grade" value="{% if active_grade %}{{ active_grade.slug }}{% endif %}">
-              <input type="hidden" name="subject" value="{{ active_subject.slug }}">
-              <input type="hidden" name="scope" value="{{ active_scope|default:'general' }}">
-              {% if active_strand %}<input type="hidden" name="strand" value="{{ active_strand.slug }}">{% endif %}
-              {% if active_sub_strand %}<input type="hidden" name="sub_strand" value="{{ active_sub_strand.slug }}">{% endif %}
-              <button type="submit" class="demo-btn demo-btn-primary demo-btn-lg">Start practice exam</button>
-            </form>
           </div>
           {% endif %}
 

@@ -56,13 +56,74 @@ def landing_page(request):
     if monthly_price is None and plans:
         monthly_price = plans[0].price_kes
 
+    from core.landing_assistant import assistant_is_enabled
+
     return render(request, 'core/landing.html', {
         'subscription_plans': plans,
         'active_subscription': active_subscription,
         'landing_monthly_price': monthly_price,
         'landing_weekly_price': weekly_price,
         'landing_exam_price': exam_price,
+        'landing_assistant_enabled': assistant_is_enabled(),
     })
+
+
+@require_POST
+@rate_limit(
+    key='landing_assistant_burst',
+    limit=12,
+    window=60,
+    by='ip',
+    methods=['POST'],
+    json_error='Too many messages. Please wait a moment and try again.',
+)
+@rate_limit(
+    key='landing_assistant_hour',
+    limit=80,
+    window=3600,
+    by='ip',
+    methods=['POST'],
+    json_error='Assistant limit reached for this hour. Try again later or use WhatsApp support.',
+)
+def landing_assistant_chat_api(request):
+    """JSON API for the public landing-page AI assistant."""
+    from core.ai.exceptions import AIConfigurationError, AITaskError
+    from core.landing_assistant import (
+        assistant_is_enabled,
+        fallback_reply_no_ai,
+        generate_landing_assistant_reply,
+    )
+
+    try:
+        payload = json.loads(request.body.decode('utf-8') or '{}')
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        return JsonResponse({'ok': False, 'error': 'Invalid JSON.'}, status=400)
+
+    message = (payload.get('message') or '').strip()
+    if not message:
+        return JsonResponse({'ok': False, 'error': 'Message is required.'}, status=400)
+
+    if not assistant_is_enabled():
+        return JsonResponse({
+            'ok': True,
+            'reply': fallback_reply_no_ai(),
+            'assistant_enabled': False,
+        })
+
+    try:
+        reply = generate_landing_assistant_reply(request, message)
+    except AIConfigurationError:
+        return JsonResponse({
+            'ok': True,
+            'reply': fallback_reply_no_ai(),
+            'assistant_enabled': False,
+        })
+    except AITaskError as exc:
+        return JsonResponse({'ok': False, 'error': str(exc)}, status=503)
+    except ValueError as exc:
+        return JsonResponse({'ok': False, 'error': str(exc)}, status=400)
+
+    return JsonResponse({'ok': True, 'reply': reply, 'assistant_enabled': True})
 
 
 def privacy_policy_view(request):

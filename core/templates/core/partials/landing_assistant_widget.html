@@ -1,0 +1,58 @@
+{% load static %}
+<div id="landing-assistant-root" class="landing-assistant" aria-hidden="true">
+  <div class="landing-assistant__backdrop" data-landing-assistant-close tabindex="-1"></div>
+  <div
+    class="landing-assistant__panel"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="landing-assistant-title"
+  >
+    <header class="landing-assistant__header">
+      <div>
+        <h2 id="landing-assistant-title" class="landing-assistant__title">Soma Smart Assistant</h2>
+        <p class="landing-assistant__subtitle">Ask about exams, pricing, CBC practice, and signing up</p>
+      </div>
+      <button type="button" class="landing-assistant__close" data-landing-assistant-close aria-label="Close chat">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M18 6 6 18M6 6l12 12"/>
+        </svg>
+      </button>
+    </header>
+
+    <div id="landing-assistant-messages" class="landing-assistant__messages" aria-live="polite">
+      <div class="landing-assistant-msg landing-assistant-msg--bot">
+        <div class="landing-assistant-msg__bubble">
+          Hi! I'm here to explain Soma Smart — free practice exams, subscriptions, AI tutor help, and how parents, teachers, and schools get started. What would you like to know?
+        </div>
+      </div>
+    </div>
+
+    {% if not landing_assistant_enabled %}
+    <p class="landing-assistant__notice">
+      Live AI replies need server configuration. You can still use
+      <a href="{% url 'core:exam_wizard' %}">Start Exam</a> or WhatsApp support below.
+    </p>
+    {% endif %}
+
+    <form id="landing-assistant-form" class="landing-assistant__form">
+      {% csrf_token %}
+      <label for="landing-assistant-input" class="visually-hidden">Your message</label>
+      <textarea
+        id="landing-assistant-input"
+        class="landing-assistant__input"
+        rows="2"
+        maxlength="2000"
+        placeholder="e.g. How much is weekly? Can my child try without signing up?"
+        {% if not landing_assistant_enabled %}disabled{% endif %}
+      ></textarea>
+      <button
+        type="submit"
+        class="landing-assistant__send"
+        id="landing-assistant-send"
+        {% if not landing_assistant_enabled %}disabled{% endif %}
+      >
+        Send
+      </button>
+    </form>
+  </div>
+</div>

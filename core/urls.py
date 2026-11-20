@@ -28,6 +28,11 @@ urlpatterns = [
         views.attempt_by_uuid_view,
         name='attempt_by_uuid',
     ),
+    path(
+        'api/landing-assistant/chat/',
+        views.landing_assistant_chat_api,
+        name='landing_assistant_chat',
+    ),
     path('api/ai/explain-answer/', views.ai_explain_answer_view, name='ai_explain_answer'),
     path('api/ai/tts/', views.openai_tts_view, name='openai_tts'),
     path('exams/', views.exams_list_view, name='exams_list'),

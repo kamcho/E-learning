@@ -5,6 +5,12 @@
     --fab-primary-glow: rgba(99, 102, 241, 0.25);
 }
 
+button.assistant-fab {
+    border: none;
+    font: inherit;
+    cursor: pointer;
+}
+
 .assistant-fab,
 .whatsapp-fab {
     position: fixed;
