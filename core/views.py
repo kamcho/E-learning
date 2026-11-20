@@ -44,9 +44,24 @@ def landing_page(request):
     if request.user.is_authenticated:
         active_subscription = get_active_subscription(request.user)
 
+    plans = list(SubscriptionPlan.objects.filter(is_active=True))
+    monthly_price = weekly_price = exam_price = None
+    for plan in plans:
+        if weekly_price is None and plan.duration_days == 7:
+            weekly_price = plan.price_kes
+        if exam_price is None and plan.plan_type == SubscriptionPlan.PlanType.SINGLE_TEST:
+            exam_price = plan.price_kes
+        if monthly_price is None and plan.duration_days >= 28:
+            monthly_price = plan.price_kes
+    if monthly_price is None and plans:
+        monthly_price = plans[0].price_kes
+
     return render(request, 'core/landing.html', {
-        'subscription_plans': SubscriptionPlan.objects.filter(is_active=True),
+        'subscription_plans': plans,
         'active_subscription': active_subscription,
+        'landing_monthly_price': monthly_price,
+        'landing_weekly_price': weekly_price,
+        'landing_exam_price': exam_price,
     })
 
 

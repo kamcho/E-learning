@@ -23,174 +23,41 @@
       }
     })();
   </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{% static 'css/styles.css' %}">
-  <link rel="preload" as="image" href="{% static 'images/hero-illustration.webp' %}" fetchpriority="high">
+  <link rel="stylesheet" href="{% static 'css/landing-ticket.css' %}?v=1">
+  <link rel="stylesheet" href="{% static 'css/floating-buttons.css' %}?v=1">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .landing-ticket-page, .landing-ticket-page * {
+      font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+    }
+  </style>
+  <link rel="preload" as="image" href="{% static 'images/family_using_tablet.png' %}" fetchpriority="high">
 </head>
-<body class="landing-ks">
+<body class="bg-white text-gray-800 landing-ticket-page">
 
-  <!-- ═══════════════ NAVBAR ═══════════════ -->
-  <nav class="navbar" id="navbar">
-    <div class="container">
-      <a href="#" class="navbar-brand">
-        <img class="brand-logo" src="{% static 'images/soma-smart-logo.png' %}" alt="Soma Smart Assessments">
-      </a>
+  {% include 'core/includes/landing_navbar_ticket.html' %}
+  {% include 'core/partials/landing_hero_ticket.html' %}
 
-      <div class="navbar-links">
-        <a href="#exam">Practice</a>
-        <a href="#how-it-works">How it works</a>
-        <a href="#pricing">Pricing</a>
-        {% if request.user.is_authenticated %}
-        <a href="{{ request.user.dashboard_url }}">Dashboard</a>
-        {% endif %}
-      </div>
+  <a href="{% url 'core:exam_wizard' %}" class="assistant-fab" aria-label="Open AI Assistant" title="AI Assistant">
+    <span class="assistant-fab__icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+      </svg>
+    </span>
+    <span class="assistant-fab__label">AI Assistant</span>
+  </a>
+  <a href="#get-started" class="whatsapp-fab" aria-label="Contact support" title="Support">
+    <svg class="whatsapp-fab__icon" viewBox="0 0 24 24" aria-hidden="true">
+      <path fill="currentColor" d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.435 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+    </svg>
+    <span class="whatsapp-fab__label">WhatsApp</span>
+  </a>
 
-      <div class="navbar-actions">
-        <button type="button" class="theme-toggle" data-theme-toggle aria-label="Switch theme" title="Switch theme">
-          <svg class="theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
-            <circle cx="12" cy="12" r="4"/>
-            <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
-          </svg>
-          <svg class="theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
-            <path d="M21 14.5A8.5 8.5 0 1 1 9.5 3a7 7 0 0 0 11.5 11.5z"/>
-          </svg>
-        </button>
-        {% if request.user.is_authenticated %}
-          <span class="navbar-greeting">Hi, {{ request.user.first_name }}!</span>
-          <a href="{% url 'accounts:signout' %}" class="btn-signup">Log Out</a>
-        {% else %}
-          <a href="{% url 'accounts:signin' %}" class="btn-login">Log In</a>
-          <details class="nav-signup">
-            <summary>Get started</summary>
-            <div class="nav-signup-menu">
-              <a href="{% url 'accounts:signup' %}?role=guardian">Parent</a>
-              <a href="{% url 'accounts:signup' %}?role=teacher">Teacher</a>
-              <a href="{% url 'accounts:signup' %}?role=partner">School</a>
-            </div>
-          </details>
-        {% endif %}
-      </div>
-
-      <button class="menu-toggle" id="menu-toggle" aria-label="Open navigation menu" aria-expanded="false" aria-controls="navbar-drawer">
-        <span></span>
-        <span></span>
-        <span></span>
-      </button>
-    </div>
-  </nav>
-
-  <div class="navbar-overlay" id="navbar-overlay" aria-hidden="true"></div>
-  <div class="navbar-drawer" id="navbar-drawer">
-    <div class="navbar-drawer-brand">
-      <img class="brand-logo" src="{% static 'images/soma-smart-logo.png' %}" alt="Soma Smart Assessments">
-    </div>
-    <div class="navbar-drawer-links">
-      <a href="#exam">Practice exams</a>
-      <a href="#features">Why Soma Smart</a>
-      <a href="#how-it-works">How it works</a>
-      <a href="#pricing">Pricing</a>
-      <a href="#about">About Soma Smart</a>
-      <a href="#levels">CBE levels</a>
-      {% if request.user.is_authenticated %}
-      <a href="{{ request.user.dashboard_url }}">Dashboard</a>
-      <a href="{% url 'core:exams_list' %}">Exam center</a>
-      <a href="{% url 'subscriptions:plans' %}">Subscriptions</a>
-      {% else %}
-      <a href="{% url 'accounts:signup' %}?role=guardian">Create a parent account</a>
-      <a href="{% url 'accounts:signup' %}?role=teacher">Create a teacher account</a>
-      <a href="{% url 'accounts:signup' %}?role=partner">Create a school account</a>
-      {% endif %}
-    </div>
-    <div class="navbar-drawer-actions">
-      <button type="button" class="theme-toggle" data-theme-toggle aria-label="Switch theme" title="Switch theme">
-        <svg class="theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
-          <circle cx="12" cy="12" r="4"/>
-          <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
-        </svg>
-        <svg class="theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
-          <path d="M21 14.5A8.5 8.5 0 1 1 9.5 3a7 7 0 0 0 11.5 11.5z"/>
-        </svg>
-      </button>
-      {% if request.user.is_authenticated %}
-        <p class="navbar-drawer-greeting">Hi, {{ request.user.first_name }}!</p>
-        <a href="{% url 'accounts:signout' %}" class="btn-signup" style="background: var(--clr-danger); color: white; box-shadow: none;">Log Out</a>
-      {% else %}
-        <a href="{% url 'accounts:signin' %}" class="btn-login">Log In</a>
-        <a href="{% url 'accounts:signup' %}" class="btn-signup">Get Started</a>
-      {% endif %}
-    </div>
-  </div>
-
-  <!-- ═══════════════ HERO ═══════════════ -->
-  <section class="hero" id="hero">
-    <div class="hero-grid"></div>
-    <div class="container">
-      <div class="hero-content">
-        <div class="hero-badge">
-          PP1 to Grade 9 · KPSEA, KJSEA &amp; KCBE ready
-        </div>
-
-        <h1>
-          Learning that inspires,<br>
-          never <span class="highlight">intimidates</span>
-        </h1>
-
-        <p class="hero-description">
-          Making revision fun, interactive, and accessible for every child from PP1 to Grade 9 —
-          with KPSEA, KJSEA, and KCBE practice, notes, and AI tutors that guide learners every step.
-        </p>
-
-        <div class="hero-cta">
-          {% if request.user.is_authenticated %}
-            {% if request.user.is_guardian %}
-            <a href="{% url 'subscriptions:plans' %}" class="btn btn-primary">
-              View Subscription Plans
-              <span class="btn-icon">→</span>
-            </a>
-            <a href="{% url 'core:exams_list' %}" class="btn btn-outline">
-              Exam Center
-            </a>
-            {% else %}
-            <a href="{% url 'core:exam_wizard' %}" class="btn btn-start-exam">Start Exam</a>
-            {% endif %}
-          {% else %}
-            <a href="{% url 'core:exam_wizard' %}" class="btn btn-start-exam">Start Exam</a>
-            <div class="hero-split-btn" role="group" aria-label="Create account or log in">
-              <a href="{% url 'accounts:signup' %}" class="hero-split-btn__main">Create account</a>
-              <span class="hero-split-btn__divider" aria-hidden="true"></span>
-              <a href="{% url 'accounts:signin' %}" class="hero-split-btn__side">Log In</a>
-            </div>
-          {% endif %}
-        </div>
-
-        {% if not request.user.is_authenticated and google_client_id %}
-        <div class="hero-google">
-          {% include 'accounts/partials/google_signin.html' with google_button_id='landingGoogleSignIn' google_button_text='continue_with' google_divider_before='or continue with Google' %}
-        </div>
-        {% endif %}
-
-        <div class="hero-stats">
-          <div class="stat-item">
-            <div class="stat-number" data-count="12000" data-suffix="+">0</div>
-            <div class="stat-label">Active Learners</div>
-          </div>
-          <div class="stat-item">
-            <div class="stat-number" data-count="850" data-suffix="+">0</div>
-            <div class="stat-label">Video Lessons</div>
-          </div>
-          <div class="stat-item">
-            <div class="stat-number" data-count="47" data-suffix="">0</div>
-            <div class="stat-label">Counties Reached</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="hero-visual">
-        <div class="hero-image-wrapper">
-          <img src="{% static 'images/hero-illustration.webp' %}" alt="Kenyan students learning with tablets and books in a vibrant classroom setting" width="1024" height="1024" loading="eager" fetchpriority="high" decoding="async">
-        </div>
-      </div>
-    </div>
-  </section>
+  <div class="landing-ks">
 
   <!-- ═══════════════ AUDIENCE CARDS ═══════════════ -->
   <section class="audience" id="audience">
@@ -699,6 +566,8 @@
     </div>
   </section>
 
+  </div><!-- .landing-ks below-fold -->
+
   <!-- ═══════════════ FOOTER ═══════════════ -->
   <footer class="footer">
     <div class="container">
@@ -761,5 +630,76 @@
 
   <script src="{% static 'js/theme.js' %}"></script>
   <script src="{% static 'js/main.js' %}"></script>
+  <script>
+    (function () {
+      var header = document.getElementById('navbar');
+      var panel = document.getElementById('landing-mobile-panel');
+      var toggle = document.getElementById('landing-menu-toggle');
+
+      function closeMobileMenu() {
+        if (!panel || !toggle) return;
+        panel.classList.remove('is-open');
+        panel.setAttribute('aria-hidden', 'true');
+        toggle.setAttribute('aria-expanded', 'false');
+        document.body.style.overflow = '';
+      }
+
+      function openMobileMenu() {
+        if (!panel || !toggle) return;
+        panel.classList.add('is-open');
+        panel.setAttribute('aria-hidden', 'false');
+        toggle.setAttribute('aria-expanded', 'true');
+        document.body.style.overflow = 'hidden';
+      }
+
+      function headerOffset() {
+        return header ? header.offsetHeight : 72;
+      }
+
+      function scrollToSection(target) {
+        var top = target.getBoundingClientRect().top + window.pageYOffset - headerOffset();
+        window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+      }
+
+      if (toggle && panel) {
+        toggle.addEventListener('click', function () {
+          if (panel.classList.contains('is-open')) {
+            closeMobileMenu();
+          } else {
+            openMobileMenu();
+          }
+        });
+        var backdrop = document.getElementById('landing-mobile-backdrop');
+        if (backdrop) {
+          backdrop.addEventListener('click', closeMobileMenu);
+        }
+      }
+
+      document.querySelectorAll(
+        '.landing-nav a[href^="#"], .landing-mobile-menu a[href^="#"]'
+      ).forEach(function (anchor) {
+        anchor.addEventListener('click', function (e) {
+          var href = anchor.getAttribute('href');
+          if (!href || href === '#') return;
+          var target = document.querySelector(href);
+          if (!target) return;
+          e.preventDefault();
+          closeMobileMenu();
+          requestAnimationFrame(function () {
+            scrollToSection(target);
+          });
+        });
+      });
+
+      window.addEventListener('scroll', function () {
+        if (!header) return;
+        header.classList.toggle('is-scrolled', window.scrollY > 24);
+      }, { passive: true });
+
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') closeMobileMenu();
+      });
+    })();
+  </script>
 </body>
 </html>

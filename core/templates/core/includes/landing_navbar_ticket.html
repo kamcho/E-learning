@@ -1,0 +1,74 @@
+{# Duplicate of TKT/ticket core/templates/core/includes/landing_navbar.html — Soma URLs + test hooks #}
+<header class="landing-header" id="navbar">
+  <div class="landing-header__inner">
+    <a href="{% url 'core:landing' %}#hero" class="landing-brand">
+      <div class="landing-brand__mark" aria-hidden="true">S</div>
+      <div class="landing-brand__text">
+        <span class="landing-brand__name">Soma <span style="color: var(--landing-gold, #ffeb3b);">Smart</span></span>
+        <span class="landing-brand__tagline">Assessments &amp; Learning</span>
+      </div>
+    </a>
+
+    <nav class="landing-nav" aria-label="Main navigation">
+      <a href="#hero" class="landing-nav__link">Home</a>
+      <a href="#exam" class="landing-nav__link">Practice</a>
+      <a href="#features" class="landing-nav__link">Why Soma Smart</a>
+      <a href="#pricing" class="landing-nav__link">Pricing</a>
+      <a href="#get-started" class="landing-nav__link">Contact</a>
+    </nav>
+
+    <div class="navbar-links">
+      {% if request.user.is_authenticated %}
+      <a href="{{ request.user.dashboard_url }}">Dashboard</a>
+      {% endif %}
+    </div>
+
+      <div class="navbar-actions">
+      <a href="{% url 'core:exam_wizard' %}" class="landing-link-btn">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+        </svg>
+        AI Tutor
+      </a>
+      {% if request.user.is_authenticated and request.user.is_guardian %}
+      <details class="nav-dropdown">
+        <summary class="landing-link-btn">Family</summary>
+      </details>
+      {% endif %}
+      <span class="landing-header__divider" aria-hidden="true"></span>
+      {% if request.user.is_authenticated %}
+      <a href="{% url 'accounts:signout' %}" class="landing-btn landing-btn--ghost">Log out</a>
+      {% else %}
+      <a href="{% url 'accounts:signin' %}" class="landing-btn landing-btn--ghost">Sign in</a>
+      <a href="{% url 'accounts:signup' %}" class="landing-btn landing-btn--primary">Get started</a>
+      {% endif %}
+      <button type="button" class="landing-menu-toggle" id="landing-menu-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="landing-mobile-panel">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<div class="landing-mobile-panel" id="landing-mobile-panel" aria-hidden="true">
+  <div class="landing-mobile-panel__backdrop" id="landing-mobile-backdrop" tabindex="-1" aria-hidden="true"></div>
+  <div class="landing-mobile-menu">
+    <div class="landing-mobile-menu__links">
+      <a href="#hero">Home</a>
+      <a href="#exam">Practice</a>
+      <a href="#features">Why Soma Smart</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#get-started">Contact</a>
+      <a href="{% url 'core:exam_wizard' %}">AI Tutor</a>
+    </div>
+    <div class="landing-mobile-menu__actions">
+      {% if request.user.is_authenticated %}
+      <a href="{% url 'accounts:signout' %}" class="landing-btn landing-btn--ghost">Log out</a>
+      {% else %}
+      <a href="{% url 'accounts:signin' %}" class="landing-btn landing-btn--ghost">Sign in</a>
+      <a href="{% url 'accounts:signup' %}" class="landing-btn landing-btn--primary">Get started</a>
+      {% endif %}
+    </div>
+  </div>
+</div>
