@@ -22,12 +22,12 @@ GRADE_LEVELS = [
     ('Grade 4', 'grade-4', 'Upper Primary'),
     ('Grade 5', 'grade-5', 'Upper Primary'),
     ('Grade 6', 'grade-6', 'Upper Primary'),
-    ('Grade 7', 'grade-7', 'Junior Secondary'),
-    ('Grade 8', 'grade-8', 'Junior Secondary'),
-    ('Grade 9', 'grade-9', 'Junior Secondary'),
-    ('Grade 10', 'grade-10', 'Senior Secondary'),
-    ('Grade 11', 'grade-11', 'Senior Secondary'),
-    ('Grade 12', 'grade-12', 'Senior Secondary'),
+    ('Grade 7', 'grade-7', 'Junior School'),
+    ('Grade 8', 'grade-8', 'Junior School'),
+    ('Grade 9', 'grade-9', 'Junior School'),
+    ('Grade 10', 'grade-10', 'Senior School'),
+    ('Grade 11', 'grade-11', 'Senior School'),
+    ('Grade 12', 'grade-12', 'Senior School'),
 ]
 
 # ── Courses (Discipline) — SMS "Course" column ───────────────────────────────

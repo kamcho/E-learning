@@ -63,7 +63,7 @@ class ReformatQuestionMathTask:
             context.append(f'Subject: {subject}')
         if quiz_type:
             context.append(f'Question type: {quiz_type}')
-        context_block = '\n'.join(context) if context else 'Grade: primary/junior secondary mathematics'
+        context_block = '\n'.join(context) if context else 'Grade: primary/junior school mathematics'
 
         user_prompt = f"""{context_block}
 

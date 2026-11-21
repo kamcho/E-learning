@@ -512,7 +512,7 @@ class DemoPracticeTests(TestCase):
         self.assertEqual(response.url, '/exam/?grade=grade-6')
 
     def test_exam_grade_choices_follow_curriculum_order(self):
-        GradeLevel.objects.create(name='Grade 10', slug='grade-10', level='Senior Secondary')
+        GradeLevel.objects.create(name='Grade 10', slug='grade-10', level='Senior School')
         GradeLevel.objects.create(name='Grade 1', slug='grade-1', level='Lower Primary')
         response = self.client.get(reverse('core:exam_wizard'))
         self.assertEqual(
@@ -673,7 +673,7 @@ class QuestionBankTests(TestCase):
         url = reverse('core:question_bank_list')
         self.assertEqual(self.client.get(url, {'grade': self.grade.slug}).status_code, 200)
         self.assertContains(self.client.get(url, {'grade': self.grade.slug}), 'What is area?')
-        other_grade = GradeLevel.objects.create(name='G7 Bank', slug='g7-bank', level='Junior Secondary')
+        other_grade = GradeLevel.objects.create(name='G7 Bank', slug='g7-bank', level='Junior School')
         self.assertNotContains(
             self.client.get(url, {'grade': other_grade.slug}),
             'What is area?',

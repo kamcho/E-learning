@@ -8,8 +8,8 @@ class GradeLevel(models.Model):
         ("ECDE","ECDE"),
         ("Lower Primary","Lower Primary"),
         ("Upper Primary","Upper Primary"),
-        ("Junior Secondary","Junior Secondary"),
-        ("Senior Secondary","Senior Secondary"),
+        ("Junior School", "Junior School"),
+        ("Senior School", "Senior School"),
     )
     name = models.CharField(max_length=50)
     slug = models.SlugField(unique=True)

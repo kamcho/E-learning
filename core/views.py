@@ -2642,6 +2642,7 @@ def exams_list_view(request):
     from subjects.grade_utils import (
         band_slug_for_level,
         eligible_grade_levels_for_student,
+        resolve_band_slug,
     )
 
     all_grade_levels = GradeLevel.objects.all().order_by('name')
@@ -2659,7 +2660,7 @@ def exams_list_view(request):
 
     # --- Filters from GET params ---
     grade_slug      = request.GET.get('grade', '').strip()
-    band_slug       = request.GET.get('band', '').strip()
+    band_slug       = resolve_band_slug(request.GET.get('band', '').strip())
     subject_slug    = request.GET.get('subject', '').strip()
     scope           = request.GET.get('scope', '').strip()
     strand_slug     = request.GET.get('strand', '').strip()

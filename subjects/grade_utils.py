@@ -15,8 +15,19 @@ BAND_SLUGS = {
     'ecde': 'ECDE',
     'lower-primary': 'Lower Primary',
     'upper-primary': 'Upper Primary',
-    'junior-secondary': 'Junior Secondary',
-    'senior-secondary': 'Senior Secondary',
+    'junior-school': 'Junior School',
+    'senior-school': 'Senior School',
+}
+
+# Legacy URL slugs and stored values (pre–Junior/Senior School rename).
+BAND_SLUG_ALIASES = {
+    'junior-secondary': 'Junior School',
+    'senior-secondary': 'Senior School',
+}
+
+LEVEL_ALIASES = {
+    'Junior Secondary': 'Junior School',
+    'Senior Secondary': 'Senior School',
 }
 
 
@@ -30,12 +41,33 @@ def grade_level_rank(grade_level):
         return None
 
 
+def normalize_level_name(level_name):
+    """Map legacy band names to current CBC school labels."""
+    if not level_name:
+        return level_name
+    return LEVEL_ALIASES.get(level_name, level_name)
+
+
 def band_slug_for_level(level_name):
     """Map GradeLevel.level display value to a URL-friendly slug."""
+    level_name = normalize_level_name(level_name)
     for slug, name in BAND_SLUGS.items():
         if name == level_name:
             return slug
     return None
+
+
+def resolve_band_slug(slug):
+    """Accept current and legacy ?band= slugs."""
+    if not slug:
+        return ''
+    if slug in BAND_SLUGS:
+        return slug
+    legacy = {
+        'junior-secondary': 'junior-school',
+        'senior-secondary': 'senior-school',
+    }
+    return legacy.get(slug, slug)
 
 
 def eligible_grade_levels_for_student(student):

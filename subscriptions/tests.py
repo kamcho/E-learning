@@ -128,12 +128,12 @@ class GradeBandPricingTests(TestCase):
         cls.grade_7 = GradeLevel.objects.create(
             name='Grade 7',
             slug='grade-7',
-            level='Junior Secondary',
+            level='Junior School',
         )
         cls.grade_12 = GradeLevel.objects.create(
             name='Grade 12',
             slug='grade-12',
-            level='Senior Secondary',
+            level='Senior School',
         )
 
     def test_grade_bands_match_per_exam_price_tiers(self):

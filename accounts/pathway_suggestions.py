@@ -14,9 +14,9 @@ def _grade_context_label(grade_level):
     if not grade_level:
         return 'CBC'
     level = grade_level.level or ''
-    if level == 'Senior Secondary':
+    if level in ('Senior School', 'Senior Secondary'):
         return 'Senior School pathway fit'
-    if level == 'Junior Secondary':
+    if level in ('Junior School', 'Junior Secondary'):
         return 'Junior School pathway indicators'
     return 'Early pathway indicators'
 

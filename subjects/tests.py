@@ -445,7 +445,7 @@ class QuestionActiveToggleTests(TestCase):
         from core.models import Question
         from subjects.models import Discipline, GradeLevel, Strand, SubStrand, Subject
 
-        grade = GradeLevel.objects.create(name='Grade 7', slug='grade-7', level='Junior Secondary')
+        grade = GradeLevel.objects.create(name='Grade 7', slug='grade-7', level='Junior School')
         discipline = Discipline.objects.create(name='Mathematics', slug='math-toggle')
         self.subject = Subject.objects.create(
             name='Math',
@@ -828,7 +828,7 @@ class SubjectImportTests(TestCase):
         self.grade = GradeLevel.objects.create(
             name='Grade 10',
             slug='grade-10',
-            level='Senior Secondary',
+            level='Senior School',
         )
         self.disciplines = {
             slug: Discipline.objects.create(name=name, slug=slug)
@@ -911,7 +911,7 @@ class SubjectImportTests(TestCase):
         another_grade = GradeLevel.objects.create(
             name='Grade 11',
             slug='grade-11',
-            level='Senior Secondary',
+            level='Senior School',
         )
 
         with self.assertRaises(SubjectImportError):
