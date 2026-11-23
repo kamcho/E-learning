@@ -1,4 +1,5 @@
 {% extends 'accounts/admin_base.html' %}
+{% load humanize %}
 
 {% block title %}{{ profile_user.full_name }} — User Detail{% endblock %}
 
@@ -237,6 +238,91 @@
       </div>
     </div>
   </div>
+
+  {% if referral_commission %}
+  <div class="admin-panel" style="margin-bottom:var(--space-xl);">
+    <div class="admin-panel-head-flex">
+      <div>
+        <h2>Referral commission</h2>
+        <p class="admin-panel-sub">Earned from referred subscriptions vs paid out</p>
+      </div>
+    </div>
+    <div class="gd-metrics-grid admin-list-metrics" style="margin:0 var(--space-xl) var(--space-lg);">
+      <div class="gd-metric-card gd-metric-card--amber">
+        <div class="gd-metric-label">Earned</div>
+        <div class="gd-metric-value" style="font-size:1.35rem;">KES {{ referral_commission.earned_kes|floatformat:0|intcomma }}</div>
+      </div>
+      <div class="gd-metric-card gd-metric-card--green">
+        <div class="gd-metric-label">Paid</div>
+        <div class="gd-metric-value" style="font-size:1.35rem;">KES {{ referral_commission.paid_kes|floatformat:0|intcomma }}</div>
+      </div>
+      <div class="gd-metric-card gd-metric-card--blue">
+        <div class="gd-metric-label">Balance due</div>
+        <div class="gd-metric-value" style="font-size:1.35rem;">KES {{ referral_commission.balance_kes|floatformat:0|intcomma }}</div>
+      </div>
+    </div>
+    <div class="admin-panel-body" style="border-top:1px solid var(--clr-border);">
+      <p style="margin:0 0 0.75rem;font-size:0.88rem;color:var(--clr-text-muted);">
+        Current rate:
+        <strong style="color:var(--clr-text);">{{ referral_commission.commission_rate_percent }}%</strong>
+        of each referred subscription
+        {% if referral_commission.uses_custom_rate %}
+          <span class="badge badge-gold" style="margin-left:0.35rem;">Custom</span>
+        {% else %}
+          (platform default {{ referral_commission.platform_default_percent }}%)
+        {% endif %}
+      </p>
+      <form method="post" action="{{ referral_commission.set_commission_url }}" style="display:flex;flex-wrap:wrap;gap:0.75rem;align-items:end;margin-bottom:1.25rem;max-width:520px;">
+        {% csrf_token %}
+        <label style="font-size:0.82rem;font-weight:600;flex:1;min-width:140px;">Commission % (max 75)
+          <input type="number" name="commission_percent" step="0.01" min="0" max="75"
+                 value="{{ referral_commission.commission_rate_percent }}"
+                 class="form-input" style="margin-top:0.25rem;width:100%;" required>
+        </label>
+        <button type="submit" class="btn btn-primary" style="height:42px;">Save rate</button>
+        <button type="submit" name="use_platform_default" value="1" class="btn btn-secondary" style="height:42px;">Use default</button>
+      </form>
+      <p style="margin:0 0 0.75rem;font-size:0.82rem;font-weight:700;color:var(--clr-text);">Record payout</p>
+      <form method="post" action="{{ referral_commission.record_payout_url }}" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:0.75rem;align-items:end;max-width:720px;">
+        {% csrf_token %}
+        <label style="font-size:0.82rem;font-weight:600;">Payout amount (KES)
+          <input type="number" name="amount_kes" step="0.01" min="0.01" required class="form-input" style="margin-top:0.25rem;width:100%;">
+        </label>
+        <label style="font-size:0.82rem;font-weight:600;">M-Pesa receipt
+          <input type="text" name="mpesa_receipt_number" maxlength="32" class="form-input" style="margin-top:0.25rem;width:100%;" placeholder="Optional">
+        </label>
+        <label style="font-size:0.82rem;font-weight:600;">Note
+          <input type="text" name="note" maxlength="255" class="form-input" style="margin-top:0.25rem;width:100%;" placeholder="Optional">
+        </label>
+        <button type="submit" class="btn btn-primary" style="height:42px;">Record payout</button>
+      </form>
+    </div>
+    {% if referral_commission.payouts %}
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Amount</th>
+          <th>Receipt</th>
+          <th>Recorded by</th>
+          <th>Note</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for payout in referral_commission.payouts %}
+        <tr>
+          <td>{{ payout.created_at|date:"d M Y, H:i" }}</td>
+          <td><strong>KES {{ payout.amount_kes|floatformat:0|intcomma }}</strong></td>
+          <td>{{ payout.mpesa_receipt_number|default:"—" }}</td>
+          <td>{% if payout.recorded_by %}{{ payout.recorded_by.full_name }}{% else %}—{% endif %}</td>
+          <td>{{ payout.note|default:"—" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+  </div>
+  {% endif %}
 
   <div class="admin-panel">
     <div class="admin-panel-head-flex">

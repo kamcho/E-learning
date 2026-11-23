@@ -1,6 +1,8 @@
 import uuid
+from decimal import Decimal
+
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
-from django.core.validators import RegexValidator
+from django.core.validators import MaxValueValidator, MinValueValidator, RegexValidator
 from django.db import models
 
 
@@ -114,6 +116,17 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
         default=0,
         help_text='Reward points earned from successful referral subscriptions.',
     )
+    referral_commission_percent = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        validators=[
+            MinValueValidator(Decimal('0')),
+            MaxValueValidator(Decimal('75')),
+        ],
+        help_text='Commission percentage (0–75). Empty uses platform default.',
+    )
     totp_enabled = models.BooleanField(
         default=False,
         help_text='Require an authenticator app code at sign-in.',
@@ -202,6 +215,8 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
             return reverse('accounts:teacher_dashboard')
         if self.is_referral:
             return reverse('accounts:referral_dashboard')
+        if self.is_partner:
+            return reverse('accounts:partner_dashboard')
         return reverse('accounts:guardian_dashboard')
 
     def linked_learners(self):
@@ -321,6 +336,12 @@ class ReferralPointLog(models.Model):
         related_name='referral_reward',
     )
     points = models.PositiveIntegerField()
+    commission_kes = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal('0'),
+        help_text='KES commission earned from this referred subscription payment.',
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -328,6 +349,37 @@ class ReferralPointLog(models.Model):
 
     def __str__(self):
         return f'{self.referrer} +{self.points} from {self.referred_user}'
+
+
+class ReferralPayout(models.Model):
+    """M-Pesa or manual payout recorded by admin for a partner/referral agent."""
+
+    referrer = models.ForeignKey(
+        MyUser,
+        on_delete=models.CASCADE,
+        related_name='referral_payouts',
+    )
+    amount_kes = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        validators=[MinValueValidator(Decimal('0.01'))],
+    )
+    mpesa_receipt_number = models.CharField(max_length=32, blank=True)
+    note = models.CharField(max_length=255, blank=True)
+    recorded_by = models.ForeignKey(
+        MyUser,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='referral_payouts_recorded',
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ('-created_at',)
+
+    def __str__(self):
+        return f'KES {self.amount_kes} → {self.referrer}'
 
 
 class SiteVisit(models.Model):

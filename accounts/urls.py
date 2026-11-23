@@ -91,6 +91,7 @@ urlpatterns = [
         name='teacher_ai_question_prompt_generate',
     ),
     path('referral-dashboard/', views.referral_dashboard_view, name='referral_dashboard'),
+    path('partner-dashboard/', views.partner_dashboard_view, name='partner_dashboard'),
     path('admin/', RedirectView.as_view(pattern_name='accounts:admin_dashboard', permanent=False)),
     path('admin-dashboard/', views.admin_dashboard_view, name='admin_dashboard'),
     path('admin/database-backup/', views.admin_database_backup_view, name='admin_database_backup'),
@@ -124,6 +125,16 @@ urlpatterns = [
     ),
     path('admin-profile/', views.admin_profile_view, name='admin_profile'),
     path('admin/users/<int:user_id>/', views.admin_user_detail_view, name='admin_user_detail'),
+    path(
+        'admin/users/<int:user_id>/record-referral-payout/',
+        views.admin_record_referral_payout_view,
+        name='admin_record_referral_payout',
+    ),
+    path(
+        'admin/users/<int:user_id>/set-referral-commission/',
+        views.admin_set_referral_commission_view,
+        name='admin_set_referral_commission',
+    ),
     path(
         'admin/users/<int:user_id>/lifecycle/',
         views.admin_user_lifecycle_view,

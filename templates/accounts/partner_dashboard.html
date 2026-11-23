@@ -1,0 +1,450 @@
+{% extends 'accounts/admin_base.html' %}
+{% load humanize %}
+
+{% block title %}Partner Dashboard — Soma Smart{% endblock %}
+
+{% block extra_head %}
+{% include 'accounts/partials/gd_metric_cards_styles.html' %}
+{% include 'accounts/partials/admin_list_styles.html' %}
+<style>
+  .ptn-hero {
+    background: linear-gradient(135deg, #0d8a4e 0%, #0a6e3e 45%, #065a32 100%);
+    border-radius: var(--radius-xl);
+    padding: var(--space-xl) var(--space-2xl);
+    color: #fff;
+    margin-bottom: var(--space-xl);
+    box-shadow: var(--shadow-lg);
+    display: grid;
+    grid-template-columns: minmax(0, 1.4fr) minmax(200px, 0.8fr);
+    gap: var(--space-xl);
+    align-items: center;
+  }
+
+  @media (max-width: 768px) {
+    .ptn-hero { grid-template-columns: 1fr; }
+  }
+
+  .ptn-hero-kicker {
+    margin: 0;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    opacity: 0.88;
+  }
+
+  .ptn-hero h1 {
+    font-family: var(--font-heading);
+    font-size: clamp(1.5rem, 3vw, 1.85rem);
+    font-weight: 800;
+    margin: 0.35rem 0 0;
+    line-height: 1.15;
+  }
+
+  .ptn-hero p {
+    margin: 0.5rem 0 0;
+    opacity: 0.92;
+    font-size: 0.92rem;
+    max-width: 36rem;
+    line-height: 1.55;
+  }
+
+  .ptn-hero-badge {
+    background: rgba(255, 255, 255, 0.14);
+    border: 1px dashed rgba(255, 255, 255, 0.35);
+    border-radius: var(--radius-lg);
+    padding: var(--space-lg);
+    text-align: center;
+  }
+
+  .ptn-hero-badge strong {
+    display: block;
+    font-family: monospace;
+    font-size: 1.15rem;
+    letter-spacing: 0.06em;
+    margin-top: 0.35rem;
+  }
+
+  .ptn-onboard-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-lg);
+    margin-bottom: var(--space-xl);
+  }
+
+  @media (max-width: 900px) {
+    .ptn-onboard-grid { grid-template-columns: 1fr; }
+  }
+
+  .ptn-onboard-card {
+    background: var(--clr-surface);
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-xl);
+    padding: var(--space-lg);
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+  }
+
+  .ptn-onboard-card--family { border-top: 3px solid #0d8a4e; }
+  .ptn-onboard-card--teacher { border-top: 3px solid #2563eb; }
+  .ptn-onboard-card--school { border-top: 3px solid #d97706; }
+
+  .ptn-onboard-icon {
+    font-size: 1.75rem;
+    line-height: 1;
+  }
+
+  .ptn-onboard-card h3 {
+    margin: 0;
+    font-family: var(--font-heading);
+    font-size: 1rem;
+    font-weight: 800;
+  }
+
+  .ptn-onboard-card p {
+    margin: 0;
+    font-size: 0.82rem;
+    color: var(--clr-text-muted);
+    line-height: 1.5;
+    flex: 1;
+  }
+
+  .ptn-link-input {
+    width: 100%;
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-md);
+    padding: 0.55rem 0.7rem;
+    font-size: 0.72rem;
+    background: var(--clr-surface-alt);
+    color: var(--clr-text-muted);
+    margin-top: 0.35rem;
+  }
+
+  .ptn-copy-btn {
+    margin-top: 0.45rem;
+    border: none;
+    border-radius: var(--radius-md);
+    padding: 0.55rem 0.85rem;
+    background: var(--clr-primary);
+    color: #fff;
+    font-weight: 600;
+    font-size: 0.8rem;
+    cursor: pointer;
+    width: 100%;
+  }
+
+  .ptn-copy-btn:hover { background: var(--clr-primary-dark); }
+
+  .ptn-mix {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: var(--space-xl);
+  }
+
+  .ptn-mix-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.45rem 0.75rem;
+    border-radius: var(--radius-full);
+    border: 1px solid var(--clr-border);
+    background: var(--clr-surface);
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+
+  .ptn-mix-pill b { color: var(--clr-primary); font-size: 1rem; }
+
+  .status-pill {
+    display: inline-block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 0.2rem 0.55rem;
+    border-radius: var(--radius-full);
+  }
+
+  .status-pill--active { background: #ecfdf3; color: #15803d; }
+  .status-pill--pending { background: #fff7ed; color: #c2410c; }
+
+  .role-pill--partner { background: #fff3e6; color: #c2410c; border: 1px solid #fed7aa; }
+  .role-pill--teacher { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+  .role-pill--guardian { background: #ecfdf3; color: #15803d; border: 1px solid #bbf7d0; }
+</style>
+{% endblock %}
+
+{% block admin_content %}
+<div class="ptn-hero">
+  <div>
+    <p class="ptn-hero-kicker">School &amp; community partner</p>
+    <h1>Welcome, {{ partner.first_name }}</h1>
+    <p>
+      Onboard families, teachers, and fellow schools with your partner link.
+      You earn <strong>{{ points_per_subscription }} points</strong> when someone you brought subscribes via M-Pesa.
+      {% if county_display != 'Not set' %}Based in <strong>{{ county_display }}</strong>.{% endif %}
+    </p>
+  </div>
+  <div class="ptn-hero-badge">
+    <span style="font-size:0.78rem;opacity:0.9;">Partner code</span>
+    <strong>{{ referral_code }}</strong>
+  </div>
+</div>
+
+<div class="gd-metrics-grid admin-list-metrics">
+  <div class="gd-metric-card gd-metric-card--green">
+    <div class="gd-metric-top">
+      <div class="gd-metric-icon" aria-hidden="true">&#11088;</div>
+      <div class="gd-metric-value">{{ referral_points }}</div>
+    </div>
+    <div class="gd-metric-label">Reward points</div>
+    <div class="gd-metric-footer">
+      <span>{{ total_points_earned }} earned all time</span>
+    </div>
+  </div>
+  <div class="gd-metric-card gd-metric-card--blue">
+    <div class="gd-metric-top">
+      <div class="gd-metric-icon" aria-hidden="true">&#128101;</div>
+      <div class="gd-metric-value">{{ referred_count }}</div>
+    </div>
+    <div class="gd-metric-label">People onboarded</div>
+    <div class="gd-metric-footer">
+      <span>{{ families_brought }} families &middot; {{ teachers_brought }} teachers</span>
+    </div>
+  </div>
+  <div class="gd-metric-card gd-metric-card--purple">
+    <div class="gd-metric-top">
+      <div class="gd-metric-icon" aria-hidden="true">&#127891;</div>
+      <div class="gd-metric-value">{{ learners_onboarded }}</div>
+    </div>
+    <div class="gd-metric-label">Learners linked</div>
+    <div class="gd-metric-footer">
+      <span>Children added by referred families</span>
+    </div>
+  </div>
+  <div class="gd-metric-card gd-metric-card--amber">
+    <div class="gd-metric-top">
+      <div class="gd-metric-icon" aria-hidden="true">&#128176;</div>
+      <div class="gd-metric-value">KES {{ commission_earned_kes|floatformat:0|intcomma }}</div>
+    </div>
+    <div class="gd-metric-label">Commission earned</div>
+    <div class="gd-metric-footer">
+      <span>{{ commission_rate_percent }}% of referred subscriptions{% if commission_rate_is_custom %} (your rate){% endif %}</span>
+    </div>
+  </div>
+</div>
+
+<div class="gd-metrics-grid admin-list-metrics" style="margin-top:0;margin-bottom:var(--space-xl);">
+  <div class="gd-metric-card gd-metric-card--green">
+    <div class="gd-metric-top">
+      <div class="gd-metric-icon" aria-hidden="true">&#9989;</div>
+      <div class="gd-metric-value">KES {{ commission_paid_kes|floatformat:0|intcomma }}</div>
+    </div>
+    <div class="gd-metric-label">Paid to you</div>
+    <div class="gd-metric-footer">
+      <span>M-Pesa / manual payouts recorded</span>
+    </div>
+  </div>
+  <div class="gd-metric-card gd-metric-card--blue">
+    <div class="gd-metric-top">
+      <div class="gd-metric-icon" aria-hidden="true">&#128336;</div>
+      <div class="gd-metric-value">KES {{ commission_balance_kes|floatformat:0|intcomma }}</div>
+    </div>
+    <div class="gd-metric-label">Balance due</div>
+    <div class="gd-metric-footer">
+      <span>Earned minus paid</span>
+    </div>
+  </div>
+  <div class="gd-metric-card gd-metric-card--purple">
+    <div class="gd-metric-top">
+      <div class="gd-metric-icon" aria-hidden="true">&#128179;</div>
+      <div class="gd-metric-value">{{ subscribed_count }}</div>
+    </div>
+    <div class="gd-metric-label">Paying customers</div>
+    <div class="gd-metric-footer">
+      <span>KES {{ payment_revenue_kes|floatformat:0|intcomma }} they paid in</span>
+    </div>
+  </div>
+</div>
+
+<div class="ptn-mix" aria-label="Onboarding mix">
+  <span class="ptn-mix-pill">&#128106; Families <b>{{ families_brought }}</b></span>
+  <span class="ptn-mix-pill">&#128100;&#127979; Teachers <b>{{ teachers_brought }}</b></span>
+  <span class="ptn-mix-pill">&#127979; School partners <b>{{ schools_brought }}</b></span>
+</div>
+
+<section class="ptn-onboard-grid" aria-labelledby="ptn-onboard-heading">
+  <h2 id="ptn-onboard-heading" class="sr-only">Onboarding links</h2>
+
+  <article class="ptn-onboard-card ptn-onboard-card--family">
+    <span class="ptn-onboard-icon" aria-hidden="true">&#128106;</span>
+    <h3>Families &amp; guardians</h3>
+    <p>Share with parents who want exam practice, AI tutor help, and progress tracking.</p>
+    <input type="text" class="ptn-link-input ptn-copy-src" readonly value="{{ onboarding_links.family }}" data-label="Family link">
+    <button type="button" class="ptn-copy-btn" data-copy>Copy family link</button>
+  </article>
+
+  <article class="ptn-onboard-card ptn-onboard-card--teacher">
+    <span class="ptn-onboard-icon" aria-hidden="true">&#127979;</span>
+    <h3>Teachers</h3>
+    <p>Invite educators to get a free class code and monitor learners in one place.</p>
+    <input type="text" class="ptn-link-input ptn-copy-src" readonly value="{{ onboarding_links.teacher }}" data-label="Teacher link">
+    <button type="button" class="ptn-copy-btn" data-copy>Copy teacher link</button>
+  </article>
+
+  <article class="ptn-onboard-card ptn-onboard-card--school">
+    <span class="ptn-onboard-icon" aria-hidden="true">&#127963;&#65039;</span>
+    <h3>Schools &amp; centres</h3>
+    <p>Bring other institutions that buy learner places and onboard their cohort.</p>
+    <input type="text" class="ptn-link-input ptn-copy-src" readonly value="{{ onboarding_links.school }}" data-label="School link">
+    <button type="button" class="ptn-copy-btn" data-copy>Copy school link</button>
+  </article>
+</section>
+
+<div class="admin-panel" style="margin-bottom:var(--space-xl);">
+  <div class="admin-panel-head-flex">
+    <div>
+      <h2>People you brought</h2>
+      <p class="admin-panel-sub">Accounts created with your partner code</p>
+    </div>
+    <span class="table-count">{{ referred_count }} total</span>
+  </div>
+  {% if referred_rows %}
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Role</th>
+        <th>Phone</th>
+        <th>Joined</th>
+        <th>Learners</th>
+        <th>Subscription</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in referred_rows %}
+      <tr>
+        <td><strong>{{ row.user.full_name }}</strong></td>
+        <td>
+          <span class="role-pill role-pill--{{ row.user.role }}">{{ row.role_label }}</span>
+        </td>
+        <td>{{ row.user.phone|default:"—" }}</td>
+        <td>{{ row.joined_at|date:"d M Y" }}</td>
+        <td>{% if row.user.is_guardian %}{{ row.learner_count }}{% else %}—{% endif %}</td>
+        <td>
+          {% if row.is_subscribed %}
+            <span class="status-pill status-pill--active">{{ row.subscription_plan }}</span>
+          {% else %}
+            <span class="status-pill status-pill--pending">Not subscribed</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="admin-panel-body">
+    <p style="color:var(--clr-text-muted);margin:0;">No signups yet. Share a link above to start earning.</p>
+  </div>
+  {% endif %}
+</div>
+
+<div class="admin-panel">
+  <div class="admin-panel-head-flex">
+    <div>
+      <h2>Commission from subscriptions</h2>
+      <p class="admin-panel-sub">{{ points_per_subscription }} points and {{ commission_rate_percent }}% commission per successful payment</p>
+    </div>
+  </div>
+  {% if point_logs %}
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Account</th>
+        <th>Plan</th>
+        <th>Points</th>
+        <th>Commission</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for log in point_logs %}
+      <tr>
+        <td>{{ log.created_at|date:"d M Y, H:i" }}</td>
+        <td>{{ log.referred_user.full_name }}</td>
+        <td>{{ log.payment.plan.name }}</td>
+        <td><strong>+{{ log.points }}</strong></td>
+        <td>KES {{ log.commission_kes|floatformat:0 }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="admin-panel-body">
+    <p style="color:var(--clr-text-muted);margin:0;">No rewards yet. Points appear when referred accounts complete a subscription payment.</p>
+  </div>
+  {% endif %}
+</div>
+
+<div class="admin-panel" style="margin-top:var(--space-xl);">
+  <div class="admin-panel-head-flex">
+    <div>
+      <h2>Payouts received</h2>
+      <p class="admin-panel-sub">What Soma Smart has paid you for referral commissions</p>
+    </div>
+  </div>
+  {% if referral_payouts %}
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Amount</th>
+        <th>M-Pesa receipt</th>
+        <th>Note</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for payout in referral_payouts %}
+      <tr>
+        <td>{{ payout.created_at|date:"d M Y, H:i" }}</td>
+        <td><strong>KES {{ payout.amount_kes|floatformat:0|intcomma }}</strong></td>
+        <td>{{ payout.mpesa_receipt_number|default:"—" }}</td>
+        <td>{{ payout.note|default:"—" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="admin-panel-body">
+    <p style="color:var(--clr-text-muted);margin:0;">No payouts recorded yet. Your balance due is KES {{ commission_balance_kes|floatformat:0|intcomma }}.</p>
+  </div>
+  {% endif %}
+</div>
+
+<script>
+  (function () {
+    document.querySelectorAll('[data-copy]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var card = btn.closest('.ptn-onboard-card');
+        var input = card && card.querySelector('.ptn-copy-src');
+        if (!input) return;
+        var label = btn.textContent;
+        input.select();
+        input.setSelectionRange(0, 99999);
+        var done = function () {
+          btn.textContent = 'Copied!';
+          setTimeout(function () { btn.textContent = label; }, 2000);
+        };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(input.value).then(done);
+        } else {
+          document.execCommand('copy');
+          done();
+        }
+      });
+    });
+  })();
+</script>
+{% include 'accounts/partials/county_location_modal.html' %}
+{% endblock %}

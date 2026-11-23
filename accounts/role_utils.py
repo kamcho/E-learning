@@ -21,6 +21,8 @@ def redirect_path_for_role(user):
         return reverse('accounts:teacher_dashboard')
     if user.is_referral:
         return reverse('accounts:referral_dashboard')
+    if user.is_partner:
+        return reverse('accounts:partner_dashboard')
     if user.is_platform_admin:
         return reverse('accounts:admin_dashboard')
     return reverse('core:landing')

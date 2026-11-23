@@ -974,6 +974,8 @@
             <a href="{% url 'accounts:guardian_dashboard' %}" role="menuitem">&#128100; My Learners</a>
             {% elif request.user.is_teacher %}
             <a href="{% url 'accounts:teacher_dashboard' %}" role="menuitem">&#128100; Teacher Dashboard</a>
+            {% elif request.user.is_partner %}
+            <a href="{% url 'accounts:partner_dashboard' %}" role="menuitem">&#127979; Partner Dashboard</a>
             {% elif request.user.is_referral %}
             <a href="{% url 'accounts:referral_dashboard' %}" role="menuitem">&#128100; Referral Dashboard</a>
             {% endif %}

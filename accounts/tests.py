@@ -1059,3 +1059,139 @@ class SiteVisitTrackingTests(TestCase):
         self.assertContains(response_ips, '192.168.1.1')
         self.assertContains(response_ips, '192.168.1.2')
 
+
+class PartnerDashboardTests(TestCase):
+    def test_partner_dashboard_renders_with_code_and_links(self):
+        partner = User.objects.create_user(
+            phone='0799887766',
+            password='1234',
+            role=Role.PARTNER,
+            first_name='Ada',
+            last_name='School',
+        )
+        self.client.force_login(partner)
+        response = self.client.get(reverse('accounts:partner_dashboard'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Partner Dashboard')
+        self.assertContains(response, 'Welcome, Ada')
+        self.assertTrue(response.context['referral_code'].startswith('PT'))
+        self.assertIn('ref=', response.context['onboarding_links']['family'])
+        self.assertIn('role=teacher', response.context['onboarding_links']['teacher'])
+
+    def test_guardian_cannot_access_partner_dashboard(self):
+        guardian = User.objects.create_user(
+            phone='0799887701',
+            password='1234',
+            role=Role.GUARDIAN,
+            first_name='G',
+            last_name='User',
+        )
+        self.client.force_login(guardian)
+        response = self.client.get(reverse('accounts:partner_dashboard'))
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse('core:landing'))
+
+    def test_partner_code_resolves_as_referrer(self):
+        from accounts.referrals import ensure_partner_code, resolve_referrer
+
+        partner = User.objects.create_user(
+            phone='0799887702',
+            password='1234',
+            role=Role.PARTNER,
+            first_name='P',
+            last_name='One',
+        )
+        ensure_partner_code(partner)
+        partner.refresh_from_db()
+        self.assertTrue(partner.referral_code.startswith('PT'))
+        self.assertEqual(resolve_referrer(partner.referral_code), partner)
+
+    def test_referral_commission_and_payout_balance(self):
+        from decimal import Decimal
+
+        from accounts.referrals import summarize_referral_commissions
+        from accounts.models import ReferralPayout
+        from subscriptions.models import Payment, SubscriptionPlan
+
+        partner = User.objects.create_user(
+            phone='0799887703',
+            password='1234',
+            role=Role.PARTNER,
+            first_name='Pay',
+            last_name='Partner',
+        )
+        guardian = User.objects.create_user(
+            phone='0799887704',
+            password='1234',
+            role=Role.GUARDIAN,
+            first_name='Ref',
+            last_name='Guardian',
+            referred_by=partner,
+        )
+        plan = SubscriptionPlan.objects.create(
+            name='Daily',
+            slug='test-daily-commission',
+            price_kes=Decimal('20'),
+            duration_days=1,
+        )
+        payment = Payment.objects.create(
+            user=guardian,
+            plan=plan,
+            amount_kes=Decimal('20'),
+            phone_number='0799887704',
+            status=Payment.Status.SUCCESS,
+        )
+        from accounts.referrals import award_referral_points_for_payment
+
+        award_referral_points_for_payment(payment)
+        earned, paid, balance = summarize_referral_commissions(partner)
+        self.assertEqual(earned, Decimal('2.00'))
+        self.assertEqual(paid, Decimal('0'))
+        ReferralPayout.objects.create(referrer=partner, amount_kes=Decimal('1.00'))
+        earned, paid, balance = summarize_referral_commissions(partner)
+        self.assertEqual(paid, Decimal('1.00'))
+        self.assertEqual(balance, Decimal('1.00'))
+
+    def test_custom_commission_rate_per_partner(self):
+        from decimal import Decimal
+
+        from accounts.referrals import award_referral_points_for_payment, commission_kes_for_payment
+        from subscriptions.models import Payment, SubscriptionPlan
+
+        partner = User.objects.create_user(
+            phone='0799887705',
+            password='1234',
+            role=Role.PARTNER,
+            first_name='Custom',
+            last_name='Rate',
+        )
+        MyUser = User
+        MyUser.objects.filter(pk=partner.pk).update(referral_commission_percent=Decimal('25'))
+        partner.refresh_from_db()
+
+        guardian = User.objects.create_user(
+            phone='0799887706',
+            password='1234',
+            role=Role.GUARDIAN,
+            first_name='G',
+            last_name='Two',
+            referred_by=partner,
+        )
+        plan = SubscriptionPlan.objects.create(
+            name='Weekly',
+            slug='test-weekly-commission',
+            price_kes=Decimal('80'),
+            duration_days=7,
+        )
+        payment = Payment.objects.create(
+            user=guardian,
+            plan=plan,
+            amount_kes=Decimal('80'),
+            phone_number='0799887706',
+            status=Payment.Status.SUCCESS,
+        )
+        self.assertEqual(commission_kes_for_payment(payment, referrer=partner), Decimal('20.00'))
+        award_referral_points_for_payment(payment)
+        log = partner.referral_point_logs.get()
+        self.assertEqual(log.commission_kes, Decimal('20.00'))
+

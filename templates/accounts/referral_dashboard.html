@@ -1,4 +1,5 @@
 {% extends 'accounts/admin_base.html' %}
+{% load humanize %}
 
 {% block title %}Referral Dashboard — Soma Smart{% endblock %}
 
@@ -159,6 +160,33 @@
   </div>
 </div>
 
+<div class="gd-metrics-grid admin-list-metrics" style="margin-top:0;margin-bottom:var(--space-xl);">
+  <div class="gd-metric-card gd-metric-card--amber">
+    <div class="gd-metric-top">
+      <div class="gd-metric-icon" aria-hidden="true">&#128176;</div>
+      <div class="gd-metric-value">KES {{ commission_earned_kes|floatformat:0|intcomma }}</div>
+    </div>
+    <div class="gd-metric-label">Commission earned</div>
+    <div class="gd-metric-footer">
+      <span>{{ commission_rate_percent }}% of referred payments</span>
+    </div>
+  </div>
+  <div class="gd-metric-card gd-metric-card--green">
+    <div class="gd-metric-top">
+      <div class="gd-metric-icon" aria-hidden="true">&#9989;</div>
+      <div class="gd-metric-value">KES {{ commission_paid_kes|floatformat:0|intcomma }}</div>
+    </div>
+    <div class="gd-metric-label">Paid to you</div>
+  </div>
+  <div class="gd-metric-card gd-metric-card--blue">
+    <div class="gd-metric-top">
+      <div class="gd-metric-icon" aria-hidden="true">&#128336;</div>
+      <div class="gd-metric-value">KES {{ commission_balance_kes|floatformat:0|intcomma }}</div>
+    </div>
+    <div class="gd-metric-label">Balance due</div>
+  </div>
+</div>
+
 <div class="ref-share-card">
   <h2>&#128279; Your referral link</h2>
   <div class="ref-code-pill">Code: {{ referral_code }}</div>
@@ -229,6 +257,7 @@
         <th>Referred user</th>
         <th>Plan</th>
         <th>Points</th>
+        <th>Commission</th>
       </tr>
     </thead>
     <tbody>
@@ -238,6 +267,7 @@
         <td>{{ log.referred_user.full_name }}</td>
         <td>{{ log.payment.plan.name }}</td>
         <td><strong>+{{ log.points }}</strong></td>
+        <td>KES {{ log.commission_kes|floatformat:0|intcomma }}</td>
       </tr>
       {% endfor %}
     </tbody>
@@ -245,6 +275,41 @@
   {% else %}
   <div class="admin-panel-body">
     <p style="color:var(--clr-text-muted);margin:0;">No points earned yet. You earn {{ points_per_subscription }} points per referred subscription.</p>
+  </div>
+  {% endif %}
+</div>
+
+<div class="admin-panel">
+  <div class="admin-panel-head-flex">
+    <div>
+      <h2>Payouts received</h2>
+      <p class="admin-panel-sub">Commission paid to you by Soma Smart</p>
+    </div>
+  </div>
+  {% if referral_payouts %}
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Amount</th>
+        <th>M-Pesa receipt</th>
+        <th>Note</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for payout in referral_payouts %}
+      <tr>
+        <td>{{ payout.created_at|date:"d M Y, H:i" }}</td>
+        <td><strong>KES {{ payout.amount_kes|floatformat:0|intcomma }}</strong></td>
+        <td>{{ payout.mpesa_receipt_number|default:"—" }}</td>
+        <td>{{ payout.note|default:"—" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="admin-panel-body">
+    <p style="color:var(--clr-text-muted);margin:0;">No payouts recorded yet.</p>
   </div>
   {% endif %}
 </div>

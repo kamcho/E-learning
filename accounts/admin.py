@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
-from .models import MyUser, Student, LinkedStudents, ReferralPointLog, UserActionLog, SiteVisit
+from .models import MyUser, Student, LinkedStudents, ReferralPointLog, ReferralPayout, UserActionLog, SiteVisit
 
 
 @admin.register(Student)
@@ -33,7 +33,7 @@ class MyUserAdmin(BaseUserAdmin):
     fieldsets = (
         (None, {'fields': ('phone', 'password', 'google_id')}),
         ('Personal Info', {'fields': ('first_name', 'last_name', 'email', 'county')}),
-        ('Referrals', {'fields': ('referral_code', 'referred_by', 'referral_points')}),
+        ('Referrals', {'fields': ('referral_code', 'referred_by', 'referral_points', 'referral_commission_percent')}),
         ('Role & Permissions', {
             'fields': ('role', 'is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions'),
         }),
@@ -73,7 +73,14 @@ class UserActionLogAdmin(admin.ModelAdmin):
 
 @admin.register(ReferralPointLog)
 class ReferralPointLogAdmin(admin.ModelAdmin):
-    list_display = ('referrer', 'referred_user', 'points', 'payment', 'created_at')
+    list_display = ('referrer', 'referred_user', 'points', 'commission_kes', 'payment', 'created_at')
+
+
+@admin.register(ReferralPayout)
+class ReferralPayoutAdmin(admin.ModelAdmin):
+    list_display = ('referrer', 'amount_kes', 'mpesa_receipt_number', 'recorded_by', 'created_at')
+    search_fields = ('referrer__phone', 'referrer__first_name', 'mpesa_receipt_number')
+    list_filter = ('created_at',)
     list_filter = ('created_at',)
     search_fields = (
         'referrer__first_name', 'referrer__last_name', 'referrer__phone',

@@ -62,6 +62,8 @@ def _resolve_post_login_redirect(request, user, next_url=None):
         return reverse('accounts:guardian_dashboard')
     if user.is_referral:
         return reverse('accounts:referral_dashboard')
+    if user.is_partner:
+        return reverse('accounts:partner_dashboard')
     if user.is_teacher:
         return reverse('accounts:teacher_dashboard')
     if user.is_staff:
@@ -824,6 +826,22 @@ def referral_dashboard_view(request):
     context = build_referral_dashboard_context(user, request)
     context['agent'] = user
     return render(request, 'accounts/referral_dashboard.html', context)
+
+
+@login_required(login_url='accounts:signin')
+def partner_dashboard_view(request):
+    """Dashboard for school/teacher partners — onboard families, track rewards."""
+    from .partners import build_partner_dashboard_context
+
+    if not request.user.is_partner:
+        messages.error(request, 'The partner dashboard is only available to partner accounts.')
+        return redirect('core:landing')
+
+    from .models import MyUser
+
+    user = MyUser.objects.get(pk=request.user.pk)
+    context = build_partner_dashboard_context(user, request)
+    return render(request, 'accounts/partner_dashboard.html', context)
 
 
 @login_required(login_url='accounts:signin')
@@ -2421,6 +2439,39 @@ def admin_user_detail_view(request, user_id):
     total = summary['total'] or 0
     completed = summary['completed'] or 0
 
+    referral_commission = None
+    if profile_user.is_referral or profile_user.is_partner:
+        from decimal import Decimal
+
+        from .referrals import REFERRAL_COMMISSION_RATE, commission_rate_for_referrer, summarize_referral_commissions
+
+        earned, paid, balance = summarize_referral_commissions(profile_user)
+        from .models import ReferralPayout
+
+        rate = commission_rate_for_referrer(profile_user)
+        referral_commission = {
+            'earned_kes': earned,
+            'paid_kes': paid,
+            'balance_kes': balance,
+            'commission_rate': rate,
+            'commission_rate_percent': (rate * 100).quantize(Decimal('0.01')),
+            'platform_default_percent': (REFERRAL_COMMISSION_RATE * 100).quantize(Decimal('0.01')),
+            'uses_custom_rate': profile_user.referral_commission_percent is not None,
+            'payouts': (
+                ReferralPayout.objects.filter(referrer=profile_user)
+                .select_related('recorded_by')
+                .order_by('-created_at')[:20]
+            ),
+            'record_payout_url': reverse(
+                'accounts:admin_record_referral_payout',
+                kwargs={'user_id': profile_user.pk},
+            ),
+            'set_commission_url': reverse(
+                'accounts:admin_set_referral_commission',
+                kwargs={'user_id': profile_user.pk},
+            ),
+        }
+
     context = {
         'profile_user': profile_user,
         'linked_students': linked_students,
@@ -2434,8 +2485,97 @@ def admin_user_detail_view(request, user_id):
         'lifecycle_url': reverse('accounts:admin_user_lifecycle', kwargs={'user_id': profile_user.pk}),
         'can_manage_lifecycle': profile_user.pk != request.user.pk,
         'user_inactive': not profile_user.is_active,
+        'referral_commission': referral_commission,
     }
     return render(request, 'accounts/admin_user_detail.html', context)
+
+
+@login_required(login_url='accounts:signin')
+@require_POST
+def admin_record_referral_payout_view(request, user_id):
+    from decimal import Decimal, InvalidOperation
+
+    from .models import ReferralPayout
+
+    denied = _admin_access_or_redirect(request)
+    if denied:
+        return denied
+
+    referrer = get_object_or_404(MyUser, pk=user_id)
+    if not (referrer.is_referral or referrer.is_partner):
+        messages.error(request, 'Payouts apply only to referral agents and partners.')
+        return redirect('accounts:admin_user_detail', user_id=referrer.pk)
+
+    raw_amount = (request.POST.get('amount_kes') or '').strip().replace(',', '')
+    try:
+        amount_kes = Decimal(raw_amount)
+        if amount_kes <= 0:
+            raise InvalidOperation
+        amount_kes = amount_kes.quantize(Decimal('0.01'))
+    except (InvalidOperation, ValueError):
+        messages.error(request, 'Enter a valid payout amount in KES.')
+        return redirect('accounts:admin_user_detail', user_id=referrer.pk)
+
+    receipt = (request.POST.get('mpesa_receipt_number') or '').strip()[:32]
+    note = (request.POST.get('note') or '').strip()[:255]
+
+    ReferralPayout.objects.create(
+        referrer=referrer,
+        amount_kes=amount_kes,
+        mpesa_receipt_number=receipt,
+        note=note,
+        recorded_by=request.user,
+    )
+    messages.success(
+        request,
+        f'Recorded KES {amount_kes:.2f} payout for {referrer.full_name}.',
+    )
+    return redirect('accounts:admin_user_detail', user_id=referrer.pk)
+
+
+@login_required(login_url='accounts:signin')
+@require_POST
+def admin_set_referral_commission_view(request, user_id):
+    from decimal import Decimal, InvalidOperation
+
+    denied = _admin_access_or_redirect(request)
+    if denied:
+        return denied
+
+    profile_user = get_object_or_404(MyUser, pk=user_id)
+    if not (profile_user.is_referral or profile_user.is_partner):
+        messages.error(request, 'Commission applies only to referral agents and partners.')
+        return redirect('accounts:admin_user_detail', user_id=profile_user.pk)
+
+    use_default = request.POST.get('use_platform_default') == '1'
+    if use_default:
+        profile_user.referral_commission_percent = None
+        profile_user.save(update_fields=['referral_commission_percent', 'updated_at'])
+        messages.success(request, 'Commission rate reset to platform default.')
+        return redirect('accounts:admin_user_detail', user_id=profile_user.pk)
+
+    raw = (request.POST.get('commission_percent') or '').strip().replace(',', '')
+    from .referrals import REFERRAL_COMMISSION_MAX_PERCENT
+
+    try:
+        percent = Decimal(raw)
+        if percent < 0 or percent > REFERRAL_COMMISSION_MAX_PERCENT:
+            raise InvalidOperation
+        percent = percent.quantize(Decimal('0.01'))
+    except (InvalidOperation, ValueError):
+        messages.error(
+            request,
+            f'Enter a commission percentage between 0 and {REFERRAL_COMMISSION_MAX_PERCENT}.',
+        )
+        return redirect('accounts:admin_user_detail', user_id=profile_user.pk)
+
+    profile_user.referral_commission_percent = percent
+    profile_user.save(update_fields=['referral_commission_percent', 'updated_at'])
+    messages.success(
+        request,
+        f'Commission rate for {profile_user.full_name} set to {percent:.2f}%.',
+    )
+    return redirect('accounts:admin_user_detail', user_id=profile_user.pk)
 
 
 @login_required(login_url='accounts:signin')
