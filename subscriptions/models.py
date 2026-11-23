@@ -80,6 +80,8 @@ class SubscriptionPlan(models.Model):
 
     @property
     def price_period_label(self):
+        if (self.duration_days or 0) == 1 and not self.grade_band:
+            return 'day'
         if self.grade_band:
             return 'exam'
         if self.plan_type == self.PlanType.SINGLE_TEST or self.max_tests == 1:

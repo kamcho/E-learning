@@ -479,8 +479,8 @@
         <span class="section-tag">💳 Pricing</span>
         <h2 class="section-title">Simple prices for every learner</h2>
         <p class="section-subtitle">
-          One practice exam costs KES 10 for Play Group–Grade 3, KES 15 for Grades 4–6,
-          or KES 20 for Grades 7–12. Pay securely with M-Pesa.
+          Daily access is a flat KES 20 for unlimited practice that day (all grades).
+          Weekly unlimited is KES 80; monthly unlimited is KES 299. Pay securely with M-Pesa.
         </p>
       </div>
 
@@ -515,9 +515,9 @@
             {% endfor %}
           </ul>
           <p class="pricing-mpesa">📱 Pay with M-Pesa</p>
-          <a href="{% if request.user.is_authenticated %}{% url 'core:exams_list' %}{% else %}{% url 'accounts:signup' %}?next={% url 'core:exams_list' %}{% endif %}"
+          <a href="{% if plan.grade_band %}{% if request.user.is_authenticated %}{% url 'core:exams_list' %}{% else %}{% url 'accounts:signup' %}?next={% url 'core:exams_list' %}{% endif %}{% elif request.user.is_authenticated %}{% url 'subscriptions:subscribe' plan.slug %}{% else %}{% url 'accounts:signup' %}?next={% url 'subscriptions:subscribe' plan.slug %}{% endif %}"
              class="btn btn-primary" style="width: 100%; justify-content: center;">
-            Choose learner &amp; exam
+            {% if plan.duration_days == 1 %}Get daily access{% else %}Subscribe with M-Pesa{% endif %}
           </a>
         </div>
         {% endfor %}

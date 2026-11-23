@@ -44,12 +44,16 @@ def landing_page(request):
     if request.user.is_authenticated:
         active_subscription = get_active_subscription(request.user)
 
-    plans = list(SubscriptionPlan.objects.filter(is_active=True))
+    plans = list(
+        SubscriptionPlan.objects.filter(is_active=True).order_by('sort_order', 'price_kes'),
+    )
     monthly_price = weekly_price = exam_price = None
     for plan in plans:
         if weekly_price is None and plan.duration_days == 7:
             weekly_price = plan.price_kes
-        if exam_price is None and plan.plan_type == SubscriptionPlan.PlanType.SINGLE_TEST:
+        if exam_price is None and plan.duration_days == 1 and not plan.grade_band:
+            exam_price = plan.price_kes
+        if exam_price is None and plan.slug == 'daily-pass':
             exam_price = plan.price_kes
         if monthly_price is None and plan.duration_days >= 28:
             monthly_price = plan.price_kes

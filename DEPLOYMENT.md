@@ -345,16 +345,15 @@ On every push to `main`, GitHub Actions SSHs into the droplet and runs
 `deploy/update.sh` (git pull → pip install → migrate → seed subscription prices → collectstatic →
 restart `elearning` → reload nginx).
 
-The deployment scripts seed the per-exam prices after migrations:
+The deployment scripts seed subscription prices after migrations:
 
-| Learner grade | Price per exam |
+| Plan | Price |
 |---|---:|
-| Play Group–Grade 3 | KES 10 |
-| Grades 4–6 | KES 15 |
-| Grades 7–12 | KES 20 |
+| Daily access (all grades, unlimited that day) | KES 20 |
+| Weekly unlimited (7 days) | KES 80 |
+| Monthly unlimited (30 days) | KES 299 |
 
-Each paid exam credit is attached to the learner selected at checkout and is
-valid for 30 days.
+Legacy per-exam grade-band plans are deactivated when the seed command runs.
 
 **One-time setup**
 

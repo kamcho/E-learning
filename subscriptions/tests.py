@@ -207,16 +207,16 @@ class GradeBandPricingTests(TestCase):
 
     def test_seed_command_sets_production_exam_prices(self):
         call_command('seed_subscription_plans', stdout=StringIO())
-        plans = SubscriptionPlan.objects.filter(is_active=True)
+        by_slug = {
+            plan.slug: plan.price_kes
+            for plan in SubscriptionPlan.objects.filter(is_active=True)
+        }
         self.assertEqual(
+            by_slug,
             {
-                plan.grade_band: plan.price_kes
-                for plan in plans
-            },
-            {
-                SubscriptionPlan.GradeBand.PLAY_GROUP_TO_GRADE_3: 10,
-                SubscriptionPlan.GradeBand.GRADE_4_TO_6: 15,
-                SubscriptionPlan.GradeBand.GRADE_7_TO_12: 20,
+                'daily-pass': 20,
+                'weekly-pack': 80,
+                'monthly-pack': 299,
             },
         )
 
@@ -229,18 +229,21 @@ class GuestDemoCheckoutTests(TestCase):
             level='Upper Primary',
         )
         self.plan = SubscriptionPlan.objects.create(
-            name='Grades 4–6 exam',
-            slug='guest-grade-4-6-exam',
-            plan_type=SubscriptionPlan.PlanType.SINGLE_TEST,
-            grade_band=SubscriptionPlan.GradeBand.GRADE_4_TO_6,
-            price_kes=15,
-            max_tests=1,
+            name='Daily access',
+            slug='daily-pass',
+            plan_type=SubscriptionPlan.PlanType.UNLIMITED,
+            grade_band='',
+            price_kes=20,
+            duration_days=1,
+            max_tests=None,
         )
+        question_ids = [f'q{i}' for i in range(1, 13)]
         session = self.client.session
         session['practice_demo'] = {
             'demo_id': 'e62a1ddc-241f-4b13-819e-7de8c78ba640',
             'grade_slug': self.grade.slug,
-            'answers': {'q1': 'a', 'q2': 'b', 'q3': 'c'},
+            'question_ids': question_ids,
+            'answers': {qid: 'a' for qid in question_ids[:10]},
             'completed': False,
         }
         session.save()
@@ -254,7 +257,7 @@ class GuestDemoCheckoutTests(TestCase):
 
         response = self.client.get(reverse('subscriptions:guest_demo_checkout'))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'KES 15')
+        self.assertContains(response, 'KES 20')
 
         response = self.client.post(
             reverse('subscriptions:guest_demo_checkout'),

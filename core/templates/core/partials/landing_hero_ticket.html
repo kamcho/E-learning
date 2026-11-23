@@ -27,14 +27,14 @@
           <div class="grid grid-cols-3 gap-3 md:gap-4 text-white relative">
             <div class="bg-black/20 border border-white/10 rounded-2xl p-3 md:p-4 text-center backdrop-blur-sm">
               <span class="text-xs uppercase tracking-wider text-white/70 font-semibold block mb-1">Monthly</span>
-              <div class="text-lg md:text-2xl font-black text-[#f5e36a]">KES {{ landing_monthly_price|default:499|floatformat:0 }}</div>
+              <div class="text-lg md:text-2xl font-black text-[#f5e36a]">KES {{ landing_monthly_price|default:299|floatformat:0 }}</div>
             </div>
             <div class="bg-black/20 border border-white/10 rounded-2xl p-3 md:p-4 text-center backdrop-blur-sm">
               <span class="text-xs uppercase tracking-wider text-white/70 font-semibold block mb-1">Weekly</span>
-              <div class="text-lg md:text-2xl font-black landing-hero-price-weekly">KES {{ landing_weekly_price|default:99|floatformat:0 }}</div>
+              <div class="text-lg md:text-2xl font-black landing-hero-price-weekly">KES {{ landing_weekly_price|default:80|floatformat:0 }}</div>
             </div>
             <div class="bg-black/20 border border-white/10 rounded-2xl p-3 md:p-4 text-center backdrop-blur-sm">
-              <span class="text-xs uppercase tracking-wider text-white/70 font-semibold block mb-1">Per exam</span>
+              <span class="text-xs uppercase tracking-wider text-white/70 font-semibold block mb-1">Per day</span>
               <div class="text-lg md:text-2xl font-black text-white">KES {{ landing_exam_price|default:20|floatformat:0 }}</div>
             </div>
 

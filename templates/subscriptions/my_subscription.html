@@ -418,9 +418,9 @@
   <section class="mysub-empty">
     <div>
       <h2>No active plan</h2>
-      <p>Pay per exam based on each learner’s grade: KES 10 for Play Group–Grade 3, KES 15 for Grades 4–6, or KES 20 for Grades 7–12.</p>
+      <p>Daily access is KES 20 (all grades). Weekly unlimited is KES 80; monthly unlimited is KES 299.</p>
     </div>
-    <a href="{% url 'core:exams_list' %}" class="mysub-btn mysub-btn-primary">Choose learner &amp; exam</a>
+    <a href="{% url 'subscriptions:plans' %}" class="mysub-btn mysub-btn-primary">View plans</a>
   </section>
   {% endif %}
 
@@ -471,12 +471,12 @@
   </div>
 
   {% if quick_plans %}
-  <h2 class="mysub-section">Exam prices</h2>
+  <h2 class="mysub-section">Plans</h2>
   <div class="mysub-plans">
     {% for plan in quick_plans %}
-    <a href="{% url 'core:exams_list' %}" class="mysub-plan-card">
+    <a href="{% url 'subscriptions:subscribe' plan.slug %}" class="mysub-plan-card">
       <strong>{{ plan.name }}</strong>
-      <span>{{ plan.tests_label }} · {{ plan.get_grade_band_display }}</span>
+      <span>{{ plan.tests_label }} · {{ plan.duration_label }}</span>
       <em>KES {{ plan.price_kes|floatformat:0 }}</em>
     </a>
     {% endfor %}

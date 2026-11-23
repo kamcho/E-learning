@@ -409,7 +409,7 @@ def _build_admin_subscription_stats():
 
 @login_required(login_url='accounts:signin')
 def plans_view(request):
-    plans = SubscriptionPlan.objects.filter(is_active=True)
+    plans = SubscriptionPlan.objects.filter(is_active=True).order_by('sort_order', 'price_kes')
     active_subscription = get_active_subscription(request.user)
     return render(request, 'subscriptions/plans.html', {
         'plans': plans,
@@ -527,13 +527,16 @@ def guest_demo_checkout_view(request):
 
     from subjects.models import GradeLevel
 
-    grade = GradeLevel.objects.filter(slug=demo.get('grade_slug', '')).first()
-    grade_band = grade_band_for_grade(grade)
     plan = SubscriptionPlan.objects.filter(
         is_active=True,
-        plan_type=SubscriptionPlan.PlanType.SINGLE_TEST,
-        grade_band=grade_band,
-    ).first() if grade_band else None
+        slug='daily-pass',
+    ).first()
+    if not plan:
+        plan = SubscriptionPlan.objects.filter(
+            is_active=True,
+            duration_days=1,
+            grade_band='',
+        ).order_by('sort_order').first()
     form = SubscribeForm(request.POST or None)
 
     if request.method == 'POST' and plan and form.is_valid():
