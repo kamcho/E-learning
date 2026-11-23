@@ -1,11 +1,12 @@
 /* Landing page header — Metrolinks marketing site */
 
 :root {
-    --landing-purple: #78288c;
-    --landing-purple-dark: #5c1672;
-    --landing-purple-deep: #3d0f4d;
-    --landing-gold: #ffeb3b;
-    --landing-cyan: #00e5ff;
+    /* Soma Smart green landing (ticket layout) */
+    --landing-purple: #0d8a4e;
+    --landing-purple-dark: #065f36;
+    --landing-purple-deep: #034425;
+    --landing-gold: #f5e36a;
+    --landing-cyan: #a7f3d0;
     --landing-header-h: 72px;
     --landing-font: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
 }
@@ -21,7 +22,7 @@ html {
     right: 0;
     z-index: 1000;
     height: var(--landing-header-h);
-    background: rgba(61, 15, 77, 0.72);
+    background: rgba(6, 95, 54, 0.82);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
@@ -29,7 +30,7 @@ html {
 }
 
 .landing-header.is-scrolled {
-    background: rgba(45, 10, 58, 0.94);
+    background: rgba(3, 68, 37, 0.96);
     border-bottom-color: rgba(255, 255, 255, 0.12);
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
 }
@@ -258,7 +259,7 @@ button.landing-link-btn {
 .landing-mobile-panel__backdrop {
     position: absolute;
     inset: 0;
-    background: rgba(8, 2, 12, 0.6);
+    background: rgba(3, 30, 18, 0.55);
     opacity: 0;
     transition: opacity 0.25s ease;
 }
@@ -374,8 +375,62 @@ button.landing-link-btn {
     border: 0;
 }
 
-.landing-ticket-hero .btn.btn-start-exam {
-    background: #ffeb3b !important;
-    color: #030712 !important;
+/* ── Hero (green ticket promo) ── */
+.landing-ticket-hero {
+    background: var(--landing-purple) !important;
+}
+
+.landing-hero-promo {
+    background: var(--landing-purple-dark) !important;
+    border-color: rgba(255, 255, 255, 0.14) !important;
+}
+
+.landing-hero-headline-accent {
+    color: var(--landing-gold) !important;
+}
+
+.landing-hero-price-weekly {
+    color: var(--landing-cyan) !important;
+}
+
+.landing-hero-visual-frame {
+    background: linear-gradient(145deg, rgba(167, 243, 208, 0.35) 0%, rgba(3, 68, 37, 0.75) 100%) !important;
+    border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+.landing-hero-badge-ai {
+    background: var(--landing-gold) !important;
+    color: #0f2918 !important;
+    border-color: rgba(255, 255, 255, 0.25) !important;
+}
+
+.landing-hero-hashtag {
+    color: var(--landing-cyan) !important;
+}
+
+.landing-ticket-hero .btn.btn-start-exam,
+.landing-ticket-hero .landing-hero-btn-primary {
+    background: var(--landing-gold) !important;
+    color: #0f2918 !important;
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2);
+}
+
+.landing-ticket-hero .landing-hero-btn-primary:hover {
+    filter: brightness(1.03);
+}
+
+.landing-hero-zigzag {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='16' viewBox='0 0 120 16'%3E%3Cpolygon points='0,0 10,16 20,0' fill='%23a7f3d0'/%3E%3Cpolygon points='20,0 30,16 40,0' fill='%23f5e36a'/%3E%3Cpolygon points='40,0 50,16 60,0' fill='%230d8a4e'/%3E%3Cpolygon points='60,0 70,16 80,0' fill='%23f5e36a'/%3E%3Cpolygon points='80,0 90,16 100,0' fill='%23065f36'/%3E%3Cpolygon points='100,0 110,16 120,0' fill='%23a7f3d0'/%3E%3C/svg%3E");
+    background-repeat: repeat-x;
+}
+
+/* FAB on landing — match green brand */
+.landing-ticket-page .assistant-fab {
+    background: linear-gradient(135deg, #0d8a4e 0%, #065f36 55%, #0a7a4a 100%);
+    border-color: rgba(167, 243, 208, 0.45);
+    box-shadow: 0 8px 28px rgba(13, 138, 78, 0.4), 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.landing-ticket-page .assistant-fab:hover {
+    box-shadow: 0 12px 36px rgba(13, 138, 78, 0.5), 0 4px 12px rgba(0, 0, 0, 0.25);
 }

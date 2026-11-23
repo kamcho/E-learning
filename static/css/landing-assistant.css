@@ -32,8 +32,8 @@
   flex-direction: column;
   background: #fff;
   border-radius: 1.25rem;
-  box-shadow: 0 24px 60px rgba(92, 22, 114, 0.35);
-  border: 1px solid rgba(120, 40, 140, 0.2);
+  box-shadow: 0 24px 60px rgba(6, 95, 54, 0.28);
+  border: 1px solid rgba(13, 138, 78, 0.22);
   overflow: hidden;
 }
 
@@ -43,7 +43,7 @@
   justify-content: space-between;
   gap: 0.75rem;
   padding: 1rem 1.1rem;
-  background: linear-gradient(135deg, #78288c 0%, #5c1672 100%);
+  background: linear-gradient(135deg, #0d8a4e 0%, #065f36 100%);
   color: #fff;
 }
 
@@ -120,7 +120,7 @@
 }
 
 .landing-assistant-msg--user .landing-assistant-msg__bubble {
-  background: #78288c;
+  background: #0d8a4e;
   color: #fff;
   border-bottom-right-radius: 0.25rem;
 }
@@ -138,7 +138,7 @@
 }
 
 .landing-assistant__notice a {
-  color: #78288c;
+  color: #0d8a4e;
   font-weight: 600;
 }
 
@@ -164,9 +164,9 @@
 }
 
 .landing-assistant__input:focus {
-  outline: 2px solid #c084fc;
+  outline: 2px solid #6ee7b7;
   outline-offset: 1px;
-  border-color: #78288c;
+  border-color: #0d8a4e;
 }
 
 .landing-assistant__send {

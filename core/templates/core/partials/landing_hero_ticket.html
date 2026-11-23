@@ -1,21 +1,21 @@
 {% load static %}
-{# Ticket layout — Soma Smart (CBE e-learning) copy #}
-<section id="hero" class="bg-[#78288C] pt-28 pb-8 flex flex-col items-center landing-ticket-hero">
+{# Ticket layout — Soma Smart green theme #}
+<section id="hero" class="pt-28 pb-8 flex flex-col items-center landing-ticket-hero">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
-    <div class="bg-[#5c1672] rounded-3xl p-6 lg:p-12 shadow-2xl relative overflow-hidden border border-purple-500/20">
+    <div class="landing-hero-promo rounded-3xl p-6 lg:p-12 shadow-2xl relative overflow-hidden border">
       <div class="absolute inset-0 opacity-10 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px]"></div>
 
       <div class="relative grid lg:grid-cols-12 gap-8 items-center">
         <div class="lg:col-span-7 space-y-8">
           <div class="inline-flex items-center space-x-2">
-            <div class="bg-[#FFEB3B] text-gray-950 font-bold px-4 py-1.5 rounded-full text-xs uppercase tracking-widest shadow-md">
+            <div class="bg-[#f5e36a] text-gray-950 font-bold px-4 py-1.5 rounded-full text-xs uppercase tracking-widest shadow-md">
               PP1–Grade 9 · KPSEA, KJSEA &amp; KCBE
             </div>
           </div>
 
           <h1 class="text-4xl md:text-5xl lg:text-6xl font-black text-white italic uppercase tracking-tight skew-x-[-4deg] leading-none">
             Learning That Inspires,<br>
-            <span class="text-[#00E5FF]">Never Intimidates!</span>
+            <span class="landing-hero-headline-accent">Never Intimidates!</span>
           </h1>
 
           <p class="text-white/85 text-sm md:text-base leading-relaxed max-w-xl skew-x-0 normal-case font-medium">
@@ -25,20 +25,20 @@
           <div class="border-t border-dashed border-white/30 my-4"></div>
 
           <div class="grid grid-cols-3 gap-3 md:gap-4 text-white relative">
-            <div class="bg-black/30 border border-white/10 rounded-2xl p-3 md:p-4 text-center backdrop-blur-sm">
-              <span class="text-xs uppercase tracking-wider text-gray-300 font-semibold block mb-1">Monthly</span>
-              <div class="text-lg md:text-2xl font-black text-[#FFEB3B]">KES {{ landing_monthly_price|default:499|floatformat:0 }}</div>
+            <div class="bg-black/20 border border-white/10 rounded-2xl p-3 md:p-4 text-center backdrop-blur-sm">
+              <span class="text-xs uppercase tracking-wider text-white/70 font-semibold block mb-1">Monthly</span>
+              <div class="text-lg md:text-2xl font-black text-[#f5e36a]">KES {{ landing_monthly_price|default:499|floatformat:0 }}</div>
             </div>
-            <div class="bg-black/30 border border-white/10 rounded-2xl p-3 md:p-4 text-center backdrop-blur-sm">
-              <span class="text-xs uppercase tracking-wider text-gray-300 font-semibold block mb-1">Weekly</span>
-              <div class="text-lg md:text-2xl font-black text-[#00E5FF]">KES {{ landing_weekly_price|default:99|floatformat:0 }}</div>
+            <div class="bg-black/20 border border-white/10 rounded-2xl p-3 md:p-4 text-center backdrop-blur-sm">
+              <span class="text-xs uppercase tracking-wider text-white/70 font-semibold block mb-1">Weekly</span>
+              <div class="text-lg md:text-2xl font-black landing-hero-price-weekly">KES {{ landing_weekly_price|default:99|floatformat:0 }}</div>
             </div>
-            <div class="bg-black/30 border border-white/10 rounded-2xl p-3 md:p-4 text-center backdrop-blur-sm">
-              <span class="text-xs uppercase tracking-wider text-gray-300 font-semibold block mb-1">Per exam</span>
+            <div class="bg-black/20 border border-white/10 rounded-2xl p-3 md:p-4 text-center backdrop-blur-sm">
+              <span class="text-xs uppercase tracking-wider text-white/70 font-semibold block mb-1">Per exam</span>
               <div class="text-lg md:text-2xl font-black text-white">KES {{ landing_exam_price|default:20|floatformat:0 }}</div>
             </div>
 
-            <div class="absolute -top-10 -right-4 md:-right-6 rotate-12 bg-[#FFEB3B] text-gray-950 p-3 w-20 h-20 md:w-24 md:h-24 rounded-full shadow-2xl flex flex-col items-center justify-center border-2 border-dashed border-gray-900 text-center animate-bounce">
+            <div class="absolute -top-10 -right-4 md:-right-6 rotate-12 bg-[#f5e36a] text-gray-950 p-3 w-20 h-20 md:w-24 md:h-24 rounded-full shadow-2xl flex flex-col items-center justify-center border-2 border-dashed border-gray-900 text-center animate-bounce">
               <span class="text-[9px] uppercase font-bold tracking-tighter leading-none">Free practice</span>
               <span class="text-xs md:text-sm font-black my-0.5">exam</span>
               <span class="text-[8px] leading-tight font-medium">no signup</span>
@@ -48,14 +48,14 @@
           <div class="flex flex-col sm:flex-row gap-4 pt-4">
             {% if request.user.is_authenticated %}
               {% if request.user.is_guardian %}
-                <a href="{% url 'subscriptions:plans' %}" class="bg-[#FFEB3B] hover:bg-[#ffeb3b]/90 text-gray-950 px-8 py-4 rounded-md font-extrabold text-lg text-center shadow-lg transition-all hover:brightness-105">
+                <a href="{% url 'subscriptions:plans' %}" class="landing-hero-btn-primary px-8 py-4 rounded-md font-extrabold text-lg text-center shadow-lg transition-all hover:brightness-105">
                   View Subscription Plans
                 </a>
                 <a href="{% url 'core:exams_list' %}" class="bg-transparent border-2 border-white hover:bg-white/10 text-white px-8 py-4 rounded-md font-bold text-lg text-center transition-all">
                   Exam Center
                 </a>
               {% else %}
-                <a href="{% url 'core:exam_wizard' %}" class="btn btn-start-exam bg-[#FFEB3B] hover:bg-[#ffeb3b]/90 text-gray-950 px-8 py-4 rounded-md font-extrabold text-lg text-center shadow-lg transition-all hover:brightness-105 border-0">
+                <a href="{% url 'core:exam_wizard' %}" class="btn btn-start-exam landing-hero-btn-primary px-8 py-4 rounded-md font-extrabold text-lg text-center shadow-lg transition-all hover:brightness-105 border-0">
                   Start Exam
                 </a>
                 <a href="{% url 'core:exams_list' %}" class="bg-transparent border-2 border-white hover:bg-white/10 text-white px-8 py-4 rounded-md font-bold text-lg text-center transition-all">
@@ -63,7 +63,7 @@
                 </a>
               {% endif %}
             {% else %}
-              <a href="{% url 'core:exam_wizard' %}" class="btn btn-start-exam bg-[#FFEB3B] hover:bg-[#ffeb3b]/90 text-gray-950 px-8 py-4 rounded-md font-extrabold text-lg text-center shadow-lg transition-all hover:brightness-105 border-0">
+              <a href="{% url 'core:exam_wizard' %}" class="btn btn-start-exam landing-hero-btn-primary px-8 py-4 rounded-md font-extrabold text-lg text-center shadow-lg transition-all hover:brightness-105 border-0">
                 Start Exam
               </a>
               <a href="#pricing" class="bg-transparent border-2 border-white hover:bg-white/10 text-white px-8 py-4 rounded-md font-bold text-lg text-center transition-all">
@@ -74,14 +74,14 @@
         </div>
 
         <div class="lg:col-span-5 flex flex-col items-center justify-center">
-          <div class="relative w-full max-w-md bg-gradient-to-br from-purple-600/40 to-indigo-900/60 p-2.5 rounded-3xl shadow-2xl border border-white/10">
+          <div class="landing-hero-visual-frame relative w-full max-w-md p-2.5 rounded-3xl shadow-2xl border">
             <img src="{% static 'images/family_using_tablet.png' %}" alt="Family learning with Soma Smart on a tablet" class="rounded-2xl w-full object-cover aspect-[4/3] shadow-inner">
-            <div class="absolute -top-3 -right-3 bg-[#00E5FF] text-gray-950 px-4 py-1.5 rounded-xl font-black text-sm uppercase shadow-lg border border-white/20">
+            <div class="landing-hero-badge-ai absolute -top-3 -right-3 px-4 py-1.5 rounded-xl font-black text-sm uppercase shadow-lg border">
               AI Tutor · CBE Ready
             </div>
           </div>
           <div class="mt-6 text-center space-y-1">
-            <span class="text-[#00E5FF] font-black text-xl tracking-wider block">#LearnSmart</span>
+            <span class="landing-hero-hashtag font-black text-xl tracking-wider block">#LearnSmart</span>
             <span class="text-white/60 text-sm font-medium">somasmartassesments.com</span>
           </div>
         </div>
@@ -89,5 +89,5 @@
     </div>
   </div>
 
-  <div class="w-full h-4 mt-8" style="background-image: url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='16' viewBox='0 0 120 16'%3E%3Cpolygon points='0,0 10,16 20,0' fill='%2300E5FF'/%3E%3Cpolygon points='20,0 30,16 40,0' fill='%23E91E63'/%3E%3Cpolygon points='40,0 50,16 60,0' fill='%23FFEB3B'/%3E%3Cpolygon points='60,0 70,16 80,0' fill='%23FF9800'/%3E%3Cpolygon points='80,0 90,16 100,0' fill='%234CAF50'/%3E%3Cpolygon points='100,0 110,16 120,0' fill='%232979FF'/%3E%3C/svg%3E&quot;); background-repeat: repeat-x;"></div>
+  <div class="w-full h-4 mt-8 landing-hero-zigzag" aria-hidden="true"></div>
 </section>
