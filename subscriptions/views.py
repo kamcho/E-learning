@@ -516,7 +516,9 @@ def guest_demo_checkout_view(request):
     demo = get_demo_session(request)
     if not demo or demo.get('completed'):
         return redirect('core:exam_wizard')
-    if request.user.is_authenticated:
+    from core.demo import user_has_paid_practice_demo_access
+
+    if user_has_paid_practice_demo_access(request, demo):
         return redirect('core:exam_take')
     if not guest_demo_requires_payment(demo):
         return redirect('core:exam_take')

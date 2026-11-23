@@ -342,22 +342,26 @@
 
       {% if needs_credit %}
         <div class="test-paywall">
-          <strong>Exam credit required for {{ student.first_name }}.</strong>
-          {% if single_test_plan %}
-            Pay <strong>KES {{ single_test_plan.price_kes|floatformat:0 }}</strong> for one exam for {{ student.first_name }}.
+          <strong>Daily access required for {{ student.first_name }}.</strong>
+          {% if checkout_plan or single_test_plan %}
+            {% with plan=checkout_plan|default:single_test_plan %}
+            Pay <strong>KES {{ plan.price_kes|floatformat:0 }}</strong> for unlimited exams that day (all grades).
+            {% endwith %}
           {% else %}
-            There is no price configured for this learner’s grade yet. Please contact support.
+            Daily access pricing is not configured yet. Please contact support.
           {% endif %}
         </div>
       {% endif %}
 
       <div class="test-actions">
         {% if needs_credit %}
-          {% if single_test_plan %}
-            <a href="{% url 'subscriptions:subscribe' single_test_plan.slug %}?student={{ student.uuid }}&amp;next={{ request.get_full_path|urlencode }}"
+          {% if checkout_plan or single_test_plan %}
+            {% with plan=checkout_plan|default:single_test_plan %}
+            <a href="{% url 'subscriptions:subscribe' plan.slug %}?student={{ student.uuid }}&amp;next={{ request.get_full_path|urlencode }}"
                class="btn btn-primary btn-test-start" style="text-align: center;">
-              Pay KES {{ single_test_plan.price_kes|floatformat:0 }} — 1 exam for {{ student.first_name }}
+              Pay KES {{ plan.price_kes|floatformat:0 }} — daily access for {{ student.first_name }}
             </a>
+            {% endwith %}
           {% endif %}
         {% else %}
         <form method="post" action="{% url 'core:test_info' quiz.uuid student.uuid %}">

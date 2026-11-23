@@ -12,16 +12,22 @@ from core.demo import (
     DEMO_QUESTION_COUNT,
     DEMO_QUESTION_COUNT_MAX,
     DEMO_QUESTION_COUNT_MIN,
+    GUEST_FREE_QUESTION_COUNT,
     build_demo_breakdown,
     clear_demo_session,
     finalize_demo,
     get_demo_session,
-    guest_demo_requires_payment,
     grade_demo_answer,
+    guest_demo_payment_succeeded,
     load_demo_questions,
+    mark_free_practice_attempt_used,
+    mark_practice_demo_paywall,
+    practice_demo_needs_payment,
+    redirect_if_blocked_practice_demo_start,
     save_demo_session,
     select_demo_questions,
     start_demo_session,
+    user_has_paid_practice_demo_access,
 )
 from core.exam_filters import (
     active_quizzes_queryset,
@@ -304,12 +310,29 @@ def demo_wizard_view(request):
         'demo_question_count': DEMO_QUESTION_COUNT,
         'demo_question_count_min': DEMO_QUESTION_COUNT_MIN,
         'demo_question_count_max': DEMO_QUESTION_COUNT_MAX,
+        'guest_free_question_count': GUEST_FREE_QUESTION_COUNT,
         'wizard_total_subject_count': wizard_total_subject_count,
+        'practice_demo_has_access': user_has_paid_practice_demo_access(request),
     })
+
+
+def _redirect_practice_demo_checkout(request, demo):
+    mark_practice_demo_paywall(request)
+    return redirect('subscriptions:guest_demo_checkout')
+
+
+def _finalize_and_save_demo(request, demo, questions):
+    finalize_demo(demo, questions)
+    save_demo_session(request, demo)
+    mark_free_practice_attempt_used(request)
 
 
 @require_POST
 def demo_start_view(request):
+    blocked = redirect_if_blocked_practice_demo_start(request)
+    if blocked:
+        return blocked
+
     grade_slug = request.POST.get('grade', '').strip()
     subject_slug = request.POST.get('subject', '').strip()
     scope = request.POST.get('scope', 'general').strip()
@@ -391,28 +414,18 @@ def demo_take_view(request):
         if action == 'continue':
             demo['feedback_index'] = None
             save_demo_session(request, demo)
-            if (
-                guest_demo_requires_payment(demo)
-                and not request.user.is_authenticated
-                and not _guest_demo_payment_succeeded(request, demo)
-            ):
-                return redirect('subscriptions:guest_demo_checkout')
+            if practice_demo_needs_payment(request, demo):
+                return _redirect_practice_demo_checkout(request, demo)
             if answered_count >= question_count:
-                finalize_demo(demo, questions)
-                save_demo_session(request, demo)
+                _finalize_and_save_demo(request, demo, questions)
                 return redirect('core:exam_results')
             return redirect('core:exam_take')
 
-        if (
-            guest_demo_requires_payment(demo)
-            and not request.user.is_authenticated
-            and not _guest_demo_payment_succeeded(request, demo)
-        ):
-            return redirect('subscriptions:guest_demo_checkout')
+        if practice_demo_needs_payment(request, demo):
+            return _redirect_practice_demo_checkout(request, demo)
 
         if answered_count >= question_count:
-            finalize_demo(demo, questions)
-            save_demo_session(request, demo)
+            _finalize_and_save_demo(request, demo, questions)
             return redirect('core:exam_results')
 
         current_question = questions[answered_count]
@@ -441,16 +454,11 @@ def demo_take_view(request):
     else:
         display_index = answered_count
 
-    if (
-        guest_demo_requires_payment(demo, answered_count=display_index)
-        and not request.user.is_authenticated
-        and not _guest_demo_payment_succeeded(request, demo)
-    ):
-        return redirect('subscriptions:guest_demo_checkout')
+    if practice_demo_needs_payment(request, demo, answered_count=display_index):
+        return _redirect_practice_demo_checkout(request, demo)
 
     if display_index >= question_count:
-        finalize_demo(demo, questions)
-        save_demo_session(request, demo)
+        _finalize_and_save_demo(request, demo, questions)
         return redirect('core:exam_results')
 
     current_question = questions[display_index]
@@ -498,6 +506,8 @@ def demo_take_view(request):
         'incorrect_count': incorrect_count,
         'unanswered_count': unanswered_count,
         'question_uuid': qid,
+        'practice_demo_has_access': user_has_paid_practice_demo_access(request, demo),
+        'guest_free_question_count': GUEST_FREE_QUESTION_COUNT,
     })
 
 
@@ -508,18 +518,14 @@ def demo_results_view(request):
         return redirect('core:exam_wizard')
 
     questions = load_demo_questions(demo)
-    if not request.user.is_authenticated and not demo.get('completed'):
-        if (
-            guest_demo_requires_payment(demo)
-            and not _guest_demo_payment_succeeded(request, demo)
-        ):
-            return redirect('subscriptions:guest_demo_checkout')
+    if not demo.get('completed'):
+        if practice_demo_needs_payment(request, demo):
+            return _redirect_practice_demo_checkout(request, demo)
         if len(demo.get('answers', {})) < len(questions):
             return redirect('core:exam_take')
 
     if not demo.get('completed'):
-        finalize_demo(demo, questions)
-        save_demo_session(request, demo)
+        _finalize_and_save_demo(request, demo, questions)
 
     breakdown = build_demo_breakdown(demo, questions)
     return render(request, 'core/demo/results.html', {
@@ -531,18 +537,8 @@ def demo_results_view(request):
 
 
 def _guest_demo_payment_succeeded(request, demo):
-    from subscriptions.models import GuestDemoPayment
-
-    token = request.session.get('guest_demo_payment_token')
-    if not token:
-        return False
-
-    token_hash = hashlib.sha256(token.encode()).hexdigest()
-    return GuestDemoPayment.objects.filter(
-        session_token_hash=token_hash,
-        demo_id=demo.get('demo_id', ''),
-        status=GuestDemoPayment.Status.SUCCESS,
-    ).exists()
+    """Backward-compatible alias for subscriptions views and tests."""
+    return guest_demo_payment_succeeded(request, demo)
 
 
 @require_POST

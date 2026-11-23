@@ -1,5 +1,6 @@
 """Session-based practice exam for anonymous visitors."""
 
+import hashlib
 import uuid as uuid_lib
 
 from django.db.models import Count, Prefetch, Q
@@ -13,6 +14,8 @@ DEMO_SESSION_KEY = 'practice_demo'
 DEMO_QUESTION_COUNT_MIN = 1
 DEMO_QUESTION_COUNT_MAX = 30
 GUEST_FREE_QUESTION_COUNT = 10
+PRACTICE_DEMO_PAYWALL_SESSION_KEY = 'practice_demo_paywall_reached'
+PRACTICE_DEMO_FREE_ATTEMPT_CONSUMED_KEY = 'practice_demo_free_attempt_consumed'
 # Backward-compatible label for templates that expect a single number (upper bound).
 DEMO_QUESTION_COUNT = DEMO_QUESTION_COUNT_MAX
 
@@ -45,6 +48,7 @@ def clear_demo_session(request):
     if DEMO_SESSION_KEY in request.session:
         del request.session[DEMO_SESSION_KEY]
         request.session.modified = True
+    clear_practice_demo_paywall(request)
 
 
 def persist_demo_attempt(demo, *, status=None):
@@ -136,7 +140,7 @@ def select_demo_questions(
 
 
 def guest_demo_requires_payment(demo, *, answered_count=None):
-    """Require payment only to continue beyond the first 10 guest questions."""
+    """Require payment only to continue beyond the free question allowance."""
     total_questions = len(demo.get('question_ids') or [])
     if answered_count is None:
         answered_count = len(demo.get('answers') or {})
@@ -290,3 +294,110 @@ def build_demo_breakdown(demo, questions):
             'correct_text': fb.get('correct_text', ''),
         })
     return rows
+
+
+def guest_demo_payment_succeeded(request, demo):
+    from subscriptions.models import GuestDemoPayment
+
+    token = request.session.get('guest_demo_payment_token')
+    if not token or not demo:
+        return False
+
+    token_hash = hashlib.sha256(token.encode()).hexdigest()
+    return GuestDemoPayment.objects.filter(
+        session_token_hash=token_hash,
+        demo_id=demo.get('demo_id', ''),
+        status=GuestDemoPayment.Status.SUCCESS,
+    ).exists()
+
+
+def user_has_paid_practice_demo_access(request, demo=None):
+    """Unlimited practice for this session (subscription or successful M-Pesa for this demo)."""
+    user = getattr(request, 'user', None)
+    if user is not None and getattr(user, 'is_authenticated', False):
+        from subscriptions.services import user_can_start_exam
+
+        if user_can_start_exam(user):
+            return True
+    demo = demo or get_demo_session(request)
+    if demo:
+        return guest_demo_payment_succeeded(request, demo)
+    return False
+
+
+def practice_demo_needs_payment(request, demo, *, answered_count=None):
+    if user_has_paid_practice_demo_access(request, demo):
+        return False
+    return guest_demo_requires_payment(demo, answered_count=answered_count)
+
+
+def mark_free_practice_attempt_used(request):
+    """One free practice test per browser session without a subscription."""
+    if user_has_paid_practice_demo_access(request):
+        return
+    request.session[PRACTICE_DEMO_FREE_ATTEMPT_CONSUMED_KEY] = True
+    request.session.modified = True
+
+
+def free_practice_attempt_consumed(request):
+    if user_has_paid_practice_demo_access(request):
+        return False
+    return bool(request.session.get(PRACTICE_DEMO_FREE_ATTEMPT_CONSUMED_KEY))
+
+
+def mark_practice_demo_paywall(request):
+    request.session[PRACTICE_DEMO_PAYWALL_SESSION_KEY] = True
+    request.session.modified = True
+    mark_free_practice_attempt_used(request)
+
+
+def practice_demo_paywall_reached(request):
+    return bool(request.session.get(PRACTICE_DEMO_PAYWALL_SESSION_KEY))
+
+
+def clear_practice_demo_paywall(request):
+    if PRACTICE_DEMO_PAYWALL_SESSION_KEY in request.session:
+        del request.session[PRACTICE_DEMO_PAYWALL_SESSION_KEY]
+        request.session.modified = True
+
+
+def redirect_if_blocked_practice_demo_start(request):
+    """Return redirect if a new practice exam must not be started; else None."""
+    from django.contrib import messages
+    from django.shortcuts import redirect
+
+    if user_has_paid_practice_demo_access(request):
+        return None
+
+    existing = get_demo_session(request)
+    if existing and not existing.get('completed'):
+        messages.info(request, 'Continue your current practice exam before starting a new one.')
+        return redirect('core:exam_take')
+
+    if practice_demo_paywall_reached(request):
+        messages.warning(
+            request,
+            'You’ve used the free practice questions for this browser session. '
+            'Pay for daily access to continue.',
+        )
+        if get_demo_session(request):
+            return redirect('subscriptions:guest_demo_checkout')
+        return redirect('core:exam_wizard')
+
+    if free_practice_attempt_consumed(request):
+        messages.warning(
+            request,
+            'You’ve already taken your free practice test (up to 10 questions). '
+            'Subscribe for unlimited retakes and full exams.',
+        )
+        return redirect('subscriptions:plans')
+
+    existing = get_demo_session(request)
+    if existing and existing.get('completed'):
+        messages.warning(
+            request,
+            'Your free practice test is complete. Subscribe to take more exams and retakes.',
+        )
+        return redirect('subscriptions:plans')
+
+    return None

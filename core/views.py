@@ -212,7 +212,6 @@ def test_info_view(request, quiz_uuid, student_uuid):
 
     from django.conf import settings as django_settings
     from subscriptions.models import SubscriptionPlan
-    from subscriptions.pricing import grade_band_for_student
     from subscriptions.services import (
         consume_test_credit,
         get_active_subscription,
@@ -224,17 +223,21 @@ def test_info_view(request, quiz_uuid, student_uuid):
     )
     active_subscription = None
     can_start_exam = True
-    single_test_plan = None
+    checkout_plan = None
     if subscription_required:
-        grade_band = grade_band_for_student(student)
         active_subscription = get_active_subscription(request.user, student)
         can_start_exam = user_can_start_exam(request.user, student)
-        if grade_band:
-            single_test_plan = SubscriptionPlan.objects.filter(
-                grade_band=grade_band,
+        if not can_start_exam:
+            checkout_plan = SubscriptionPlan.objects.filter(
                 is_active=True,
-                max_tests=1,
+                slug='daily-pass',
             ).first()
+            if not checkout_plan:
+                checkout_plan = SubscriptionPlan.objects.filter(
+                    is_active=True,
+                    duration_days=1,
+                    grade_band='',
+                ).order_by('sort_order').first()
 
     next_param = request.GET.get('next', '').strip()
     cancel_url = _resolve_next_url(next_param)
@@ -262,21 +265,28 @@ def test_info_view(request, quiz_uuid, student_uuid):
                     attempt.save(update_fields=['started_at'])
                 messages.info(request, f"Continuing for {student.first_name}: {quiz.title}")
             else:
+                can_start_exam = user_can_start_exam(request.user, student)
+                if subscription_required and all_count >= 1 and not can_start_exam:
+                    messages.warning(
+                        request,
+                        'An active subscription is required to retake this exam.',
+                    )
+                    return redirect('core:test_info', quiz_uuid=quiz.uuid, student_uuid=student.uuid)
                 if subscription_required and not can_start_exam:
-                    if not single_test_plan:
+                    if not checkout_plan:
                         messages.warning(
                             request,
-                            'A practice exam price is not configured for this learner’s grade yet. Please contact support.',
+                            'Daily access pricing is not configured yet. Please contact support.',
                         )
                         return redirect('core:test_info', quiz_uuid=quiz.uuid, student_uuid=student.uuid)
                     messages.warning(
                         request,
-                        f'You need an exam credit for {student.first_name}. '
-                        f'Pay KES {single_test_plan.price_kes:.0f} for one exam.',
+                        f'Get daily access for {student.first_name} — '
+                        f'KES {checkout_plan.price_kes:.0f} for unlimited exams that day.',
                     )
                     subscribe_url = reverse(
                         'subscriptions:subscribe',
-                        kwargs={'plan_slug': single_test_plan.slug},
+                        kwargs={'plan_slug': checkout_plan.slug},
                     )
                     return redirect(
                         f'{subscribe_url}?student={student.uuid}'
@@ -365,7 +375,8 @@ def test_info_view(request, quiz_uuid, student_uuid):
             'active_subscription': active_subscription,
             'can_start_exam': can_start_exam,
             'needs_credit': needs_credit,
-            'single_test_plan': single_test_plan,
+            'checkout_plan': checkout_plan,
+            'single_test_plan': checkout_plan,
             'subscription_required': subscription_required,
         },
     )

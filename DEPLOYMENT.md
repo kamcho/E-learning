@@ -342,10 +342,12 @@ systemctl restart elearning
 ### Automatic (GitHub Actions)
 
 On every push to `main`, GitHub Actions SSHs into the droplet and runs
-`deploy/update.sh` (git pull → pip install → migrate → seed subscription prices → collectstatic →
+`deploy/update.sh` (git pull → pip install → migrate → collectstatic →
 restart `elearning` → reload nginx).
 
-The deployment scripts seed subscription prices after migrations:
+**Subscription plan catalog** (`seed_subscription_plans`) is **not** run on each
+deploy — that would overwrite prices or names you change in Django admin. Run it
+manually when you intentionally update default plans in code:
 
 | Plan | Price |
 |---|---:|
@@ -353,7 +355,11 @@ The deployment scripts seed subscription prices after migrations:
 | Weekly unlimited (7 days) | KES 80 |
 | Monthly unlimited (30 days) | KES 299 |
 
-Legacy per-exam grade-band plans are deactivated when the seed command runs.
+```bash
+sudo -u elearning /srv/elearning/.venv/bin/python manage.py seed_subscription_plans
+```
+
+First-time server setup still runs the seed once via `deploy/bootstrap.sh`.
 
 **One-time setup**
 

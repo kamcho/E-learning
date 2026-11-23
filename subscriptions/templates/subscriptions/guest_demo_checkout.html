@@ -17,7 +17,7 @@
   </p>
 
   {% if plan %}
-    <p><strong>{{ plan.name }}</strong> · KES {{ plan.price_kes|floatformat:0 }} · one practice exam</p>
+    <p><strong>{{ plan.name }}</strong> · KES {{ plan.price_kes|floatformat:0 }} · continue this exam</p>
     <form method="post">
       {% csrf_token %}
       {% if form.non_field_errors %}
