@@ -486,6 +486,58 @@ class DemoPracticeTests(TestCase):
         self.assertEqual(response.url, reverse('core:exam_take'))
         self.assertEqual(len(self.client.session['practice_demo']['question_ids']), 3)
 
+    def test_exam_start_includes_open_ended_questions(self):
+        grade = GradeLevel.objects.create(
+            name='Grade 10',
+            slug='grade-10-open',
+            level='Senior School',
+        )
+        exam_subject = Subject.objects.create(
+            name='Agriculture',
+            slug='agriculture-g10-open',
+            grade_level=grade,
+            discipline=self.discipline,
+        )
+        strand = Strand.objects.create(
+            name='Crop production',
+            slug='crop-g10-open',
+            subject=exam_subject,
+        )
+        sub = SubStrand.objects.create(name='Soils', slug='soils-g10-open', strand=strand)
+        for index in range(5):
+            Question.objects.create(
+                quiz=f'Open question {index}?',
+                quiz_type='OpenEnded',
+                difficulty='Easy',
+                sub_strand=sub,
+                score=1,
+            )
+
+        response = self.client.post(reverse('core:exam_start'), {
+            'grade': grade.slug,
+            'subject': exam_subject.slug,
+            'scope': 'general',
+        })
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse('core:exam_take'))
+        self.assertEqual(len(self.client.session['practice_demo']['question_ids']), 5)
+
+    @patch('core.ai.ai_service.run', return_value={'is_correct': True, 'reason': 'Good.'})
+    @patch('core.ai.ai_service.client.is_configured', return_value=True)
+    def test_practice_open_ended_graded_by_ai(self, _mock_cfg, _mock_run):
+        from core.demo import grade_demo_submission
+
+        question = Question.objects.create(
+            quiz='Describe crop rotation.',
+            quiz_type='OpenEnded',
+            difficulty='Easy',
+            sub_strand=self.sub_strand,
+            score=1,
+        )
+        feedback = grade_demo_submission(question, 'It improves soil nutrients.')
+        self.assertTrue(feedback['is_correct'])
+        self.assertEqual(feedback['graded_by'], 'ai')
+
     def test_starting_second_practice_subject_resumes_first_with_notice(self):
         self.client.post(reverse('core:exam_start'), {
             'grade': self.grade.slug,
@@ -1107,7 +1159,8 @@ class OpenEndedGradingTests(TestCase):
         link = LinkedStudents.objects.create(user=cls.guardian)
         link.students.add(cls.student)
 
-    def test_open_ended_accepts_fraction_matching_reference(self):
+    @patch('core.ai.ai_service.client.is_configured', return_value=False)
+    def test_open_ended_falls_back_to_reference_when_ai_unavailable(self, _mock_cfg):
         question = Question.objects.create(
             quiz='1/2 + 1/4 = ?',
             difficulty='Hard',

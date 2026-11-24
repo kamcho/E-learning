@@ -8,7 +8,7 @@ from django.utils.dateparse import parse_datetime
 from django.utils import timezone
 
 from core.models import Option, Question
-from core.scoring import _grade_choice, question_max_marks
+from core.scoring import _grade_choice, _reference_answers, grade_text_question, question_max_marks
 
 DEMO_SESSION_KEY = 'practice_demo'
 DEMO_QUESTION_COUNT_MIN = 1
@@ -19,8 +19,13 @@ PRACTICE_DEMO_FREE_ATTEMPT_CONSUMED_KEY = 'practice_demo_free_attempt_consumed'
 PRACTICE_DEMO_RESUME_NOTICE_KEY = 'practice_demo_resume_notice'
 # Backward-compatible label for templates that expect a single number (upper bound).
 DEMO_QUESTION_COUNT = DEMO_QUESTION_COUNT_MAX
-# Guest practice exam supports option-based items only (demo take UI).
-DEMO_QUIZ_TYPES = ('Multiple Choice', 'True or False')
+DEMO_OPTION_QUIZ_TYPES = ('Multiple Choice', 'True or False')
+DEMO_TEXT_QUIZ_TYPES = ('OpenEnded', 'Fill in the Blank')
+DEMO_QUIZ_TYPES = DEMO_OPTION_QUIZ_TYPES + DEMO_TEXT_QUIZ_TYPES
+
+
+def demo_question_uses_text_answer(question):
+    return question.quiz_type in DEMO_TEXT_QUIZ_TYPES
 
 
 def get_demo_session(request):
@@ -123,7 +128,7 @@ def select_demo_questions(
     min_count=DEMO_QUESTION_COUNT_MIN,
     max_count=DEMO_QUESTION_COUNT_MAX,
 ):
-    """Pick up to max_count gradable option questions, or all when fewer are available."""
+    """Pick up to max_count gradable questions, or all when fewer are available."""
     qs = (
         Question.objects.filter(
             is_active=True,
@@ -152,7 +157,14 @@ def select_demo_questions(
                 distinct=True,
             ),
         )
-        .filter(active_option_count__gte=2, correct_option_count__gte=1)
+        .filter(
+            Q(
+                quiz_type__in=DEMO_OPTION_QUIZ_TYPES,
+                active_option_count__gte=2,
+                correct_option_count__gte=1,
+            )
+            | Q(quiz_type__in=DEMO_TEXT_QUIZ_TYPES)
+        )
     )
 
     pool_count = qs.count()
@@ -264,6 +276,28 @@ def grade_demo_answer(question, option_uuid):
         'marks_awarded': marks_awarded,
         'max_marks': max_marks,
     }
+
+
+def grade_demo_text_answer(question, answer_str):
+    max_marks = question_max_marks(question)
+    marks_awarded, is_correct, graded_by = grade_text_question(question, answer_str)
+    refs = _reference_answers(question)
+    correct_text = ', '.join(refs) if refs else ''
+    return {
+        'selected_option_uuid': '',
+        'selected_text': (answer_str or '').strip(),
+        'correct_text': correct_text,
+        'is_correct': is_correct,
+        'marks_awarded': marks_awarded,
+        'max_marks': max_marks,
+        'graded_by': graded_by,
+    }
+
+
+def grade_demo_submission(question, answer):
+    if demo_question_uses_text_answer(question):
+        return grade_demo_text_answer(question, answer)
+    return grade_demo_answer(question, answer)
 
 
 def finalize_demo(demo, questions):

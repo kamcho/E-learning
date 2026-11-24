@@ -17,7 +17,8 @@ from core.demo import (
     clear_demo_session,
     finalize_demo,
     get_demo_session,
-    grade_demo_answer,
+    demo_question_uses_text_answer,
+    grade_demo_submission,
     guest_demo_payment_succeeded,
     load_demo_questions,
     mark_free_practice_attempt_used,
@@ -434,13 +435,16 @@ def demo_take_view(request):
         if qid in answers:
             return redirect('core:exam_take')
 
-        option_uuid = request.POST.get('answer', '').strip()
-        if not option_uuid:
-            messages.error(request, 'Please select an answer before submitting.')
+        answer = request.POST.get('answer', '').strip()
+        if not answer:
+            if demo_question_uses_text_answer(current_question):
+                messages.error(request, 'Please type your answer before submitting.')
+            else:
+                messages.error(request, 'Please select an answer before submitting.')
             return redirect('core:exam_take')
 
-        feedback = grade_demo_answer(current_question, option_uuid)
-        answers[qid] = option_uuid
+        feedback = grade_demo_submission(current_question, answer)
+        answers[qid] = answer
         demo['answers'] = answers
         demo['feedback'] = demo.get('feedback', {})
         demo['feedback'][qid] = feedback
@@ -468,6 +472,8 @@ def demo_take_view(request):
     from core.presentation import options_for_demo
 
     options = options_for_demo(demo.get('demo_id', ''), current_question)
+    uses_text_answer = demo_question_uses_text_answer(current_question)
+    saved_text_answer = answers.get(qid, '') if uses_text_answer else ''
 
     nav_states = []
     for index, question in enumerate(questions):
@@ -510,6 +516,8 @@ def demo_take_view(request):
         'practice_demo_has_access': user_has_paid_practice_demo_access(request, demo),
         'guest_free_question_count': GUEST_FREE_QUESTION_COUNT,
         'resume_notice': pop_practice_resume_notice(request),
+        'uses_text_answer': uses_text_answer,
+        'saved_text_answer': saved_text_answer,
     })
 
 

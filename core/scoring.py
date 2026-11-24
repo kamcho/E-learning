@@ -190,6 +190,8 @@ def grade_text_question(question, answer_str):
     Grade free-text answers (OpenEnded, Fill in the Blank, Matching).
     Returns (marks_awarded, is_correct, graded_by).
     """
+    from core.ai.exceptions import AIConfigurationError, AIServiceError
+
     max_marks = question_max_marks(question)
     answer_str = (answer_str or '').strip()
     if not answer_str:
@@ -199,6 +201,18 @@ def grade_text_question(question, answer_str):
         structured = _grade_matching_submission(question, answer_str, max_marks)
         if structured is not None:
             return structured
+
+    if question.quiz_type == 'OpenEnded':
+        try:
+            return _grade_with_ai(question, answer_str, max_marks)
+        except (AIConfigurationError, AIServiceError) as exc:
+            logger.warning('AI open-ended grading unavailable: %s', exc)
+        except Exception:
+            logger.exception('AI open-ended grading failed for question %s', question.pk)
+        ref_match = _grade_against_reference_answers(question, answer_str, max_marks)
+        if ref_match is not None:
+            return ref_match[0], ref_match[1], 'auto'
+        return 0, None, 'auto'
 
     ref_match = _grade_against_reference_answers(question, answer_str, max_marks)
     if ref_match is not None:

@@ -82,7 +82,7 @@
   <section class="demo-question-card">
     <div class="demo-q-badges">
       <span class="demo-q-badge demo-q-badge--num">Question {{ question_number }}</span>
-      <span class="demo-q-badge demo-q-badge--type">{% if attempt %}{{ question.quiz_type }}{% else %}Multiple Choice{% endif %}</span>
+      <span class="demo-q-badge demo-q-badge--type">{{ question.quiz_type }}</span>
       <span class="demo-q-badge demo-q-badge--mark">{% if attempt %}{{ question.max_marks }} mark{{ question.max_marks|pluralize }}{% else %}1 mark{% endif %}</span>
     </div>
 
@@ -126,15 +126,29 @@
       <div class="demo-feedback {% if feedback.is_correct %}is-correct{% else %}is-wrong{% endif %}" id="demo-feedback-panel">
         {% if feedback.is_correct %}
           <div class="demo-feedback-title">Correct — well done!</div>
+          {% if feedback.graded_by == 'ai' and question.quiz_type == 'OpenEnded' %}
+          <p style="margin:0;color:var(--demo-muted);font-size:0.88rem;">Marked correct by AI review. You earned {{ feedback.marks_awarded }}/{{ feedback.max_marks }} mark{{ feedback.max_marks|pluralize }}.</p>
+          {% else %}
           <p style="margin:0;color:var(--demo-muted);font-size:0.88rem;">You earned {{ feedback.marks_awarded }}/{{ feedback.max_marks }} mark{{ feedback.max_marks|pluralize }}.</p>
-        {% else %}
-          <div class="demo-feedback-title">Not quite — let's learn from this</div>
+          {% endif %}
+        {% elif feedback.is_correct == None %}
+          <div class="demo-feedback-title">Answer recorded</div>
           <p style="margin:0 0 0.35rem;color:var(--demo-muted);font-size:0.88rem;">
             Your answer: <strong style="color:var(--demo-text);" data-math-content>{{ feedback.selected_text|default:"—" }}</strong>
           </p>
+          <p style="margin:0;color:var(--demo-muted);font-size:0.88rem;">We couldn't auto-mark this one — use the explanation below to check your work.</p>
+        {% else %}
+          <div class="demo-feedback-title">{% if feedback.graded_by == 'ai' and question.quiz_type == 'OpenEnded' %}AI review{% else %}Not quite — let's learn from this{% endif %}</div>
+          <p style="margin:0 0 0.35rem;color:var(--demo-muted);font-size:0.88rem;">
+            Your answer: <strong style="color:var(--demo-text);" data-math-content>{{ feedback.selected_text|default:"—" }}</strong>
+          </p>
+          {% if feedback.graded_by == 'ai' and question.quiz_type == 'OpenEnded' %}
+          <p style="margin:0;color:var(--demo-muted);font-size:0.88rem;">OpenAI checked your response against the question.</p>
+          {% elif feedback.correct_text %}
           <p style="margin:0;color:var(--demo-muted);font-size:0.88rem;">
             Correct answer: <strong style="color:var(--demo-accent);" data-math-content>{{ feedback.correct_text }}</strong>
           </p>
+          {% endif %}
         {% endif %}
         {% if feedback.is_correct %}
         {% include 'core/partials/demo_ai_explain_box.html' with question=question question_uuid=question_uuid auto_load=False %}
@@ -186,6 +200,12 @@
             </div>
           {% elif attempt %}
             <input type="text" name="answer" class="exam-text-answer" placeholder="Your answer" value="{{ saved_answer }}" required>
+          {% elif uses_text_answer %}
+            {% if question.quiz_type == 'OpenEnded' %}
+            <textarea name="answer" class="exam-text-answer" rows="4" placeholder="Type your answer" required>{{ saved_text_answer }}</textarea>
+            {% else %}
+            <input type="text" name="answer" class="exam-text-answer" placeholder="Your answer" value="{{ saved_text_answer }}" required>
+            {% endif %}
           {% else %}
             <div class="demo-options">{% for opt in options %}<label class="demo-option"><input type="radio" name="answer" value="{{ opt.uuid }}" required><span class="demo-option-letter">{{ forloop.counter0|add:65|stringformat:"c" }}</span><span class="demo-option-text" data-math-content>{{ opt.option }}</span></label>{% endfor %}</div>
           {% endif %}
