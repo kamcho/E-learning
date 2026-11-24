@@ -38,6 +38,9 @@
   }
   body.exam-take-page .exam-submit-btn-spinner { width: 1.1rem; height: 1.1rem; flex-shrink: 0; }
   body.exam-take-page .exam-submit-btn-label { font-weight: 700; }
+  body.exam-take-page form.is-exam-submitting .demo-options,
+  body.exam-take-page form.is-exam-submitting .exam-text-answer,
+  body.exam-take-page form.is-exam-submitting .exam-matching-rows { pointer-events: none; opacity: 0.72; }
   .exam-no-questions { max-width: 28rem; margin: 2rem auto; text-align: center; padding: 2rem 1.25rem; background: var(--demo-surface); border: 1px solid var(--demo-border); border-radius: 16px; }
   @media (max-width: 640px) { .exam-matching-row { grid-template-columns: 1fr; } .exam-text-answer { font-size: 16px; } body.exam-take-page .demo-option { min-height: 52px; padding: .65rem .7rem; } }
 </style>

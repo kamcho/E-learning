@@ -188,6 +188,13 @@
     font-weight: 700;
   }
 
+  body.exam-take-page form.is-exam-submitting .demo-options,
+  body.exam-take-page form.is-exam-submitting .exam-text-answer,
+  body.exam-take-page form.is-exam-submitting .exam-matching-rows {
+    pointer-events: none;
+    opacity: 0.72;
+  }
+
   @media (max-width: 640px) {
     .exam-matching-row {
       grid-template-columns: 1fr;

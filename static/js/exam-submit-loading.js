@@ -29,12 +29,8 @@
     submitBtn.disabled = true;
     submitBtn.setAttribute('aria-busy', 'true');
 
-    form.querySelectorAll('input, textarea, select, button').forEach(function (el) {
-      if (el.type === 'hidden' || el === submitBtn) {
-        return;
-      }
-      el.disabled = true;
-    });
+    // Do not disable inputs here — disabled fields are omitted from the POST body.
+    form.classList.add('is-exam-submitting');
 
     return true;
   }
