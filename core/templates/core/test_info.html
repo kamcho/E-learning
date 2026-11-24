@@ -10,6 +10,7 @@
 {% include 'accounts/partials/guardian_dashboard_crimson_theme.html' %}
 {% include 'core/partials/test_info_crimson_theme.html' %}
 {% endif %}
+{% include 'core/partials/demo_styles.html' %}
 <style>
   .test-info-main {
     padding: var(--space-lg);
@@ -380,6 +381,7 @@
         <form method="post" action="{% url 'core:test_info' quiz.uuid student.uuid %}">
           {% csrf_token %}
           <input type="hidden" name="action" value="start">
+          {% include 'core/partials/exam_strict_mode_choice.html' %}
           <button type="submit" class="btn btn-start-exam btn-test-start">
             {% if attempt_status == 'completed' %}
               Retake Exam{% if subscription_required and active_subscription and not active_subscription.is_unlimited %} (1 credit){% endif %}

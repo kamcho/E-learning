@@ -382,6 +382,14 @@ def test_info_view(request, quiz_uuid, student_uuid):
                 else:
                     messages.info(request, f"Retake #{attempt.attempt_number} started for {student.first_name}.")
 
+            from core.exam_strict_mode import activate_strict_mode, strict_mode_from_post
+
+            activate_strict_mode(
+                request,
+                scope_type='attempt',
+                scope_id=attempt.uuid,
+                enabled=strict_mode_from_post(request),
+            )
             return redirect('core:test_take', quiz_uuid=quiz.uuid, student_uuid=student.uuid)
 
         messages.error(request, "Invalid action.")
@@ -911,6 +919,14 @@ def test_take_view(request, quiz_uuid, student_uuid):
     incorrect_count = sum(1 for response in response_rows if response.is_correct is False)
     unanswered_count = max(0, question_count - answered_count)
 
+    from core.exam_strict_mode import strict_mode_template_context
+
+    strict_ctx = strict_mode_template_context(
+        request,
+        scope_type='attempt',
+        scope_id=attempt.uuid,
+    )
+
     return render(
         request,
         'core/demo/take.html',
@@ -945,6 +961,7 @@ def test_take_view(request, quiz_uuid, student_uuid):
             'unanswered_count': unanswered_count,
             'question_uuid': str(current_question.uuid),
             'resume_notice': _pop_exam_resume_notice(request),
+            **strict_ctx,
         },
     )
 

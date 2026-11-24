@@ -200,6 +200,7 @@ def start_demo_session(
     strand=None,
     sub_strand=None,
     questions,
+    strict_mode=False,
 ):
     from core.presentation import demo_questions_presentation_order
 
@@ -239,6 +240,7 @@ def start_demo_session(
         'marks_earned': 0,
         'marks_possible': 0,
         'correct_count': 0,
+        'strict_mode': bool(strict_mode),
     }
 
 

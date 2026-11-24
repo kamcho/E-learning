@@ -123,7 +123,19 @@
   </div>
 </header>
 
-<div class="demo-quiz-layout">
+{% if exam_strict_mode %}
+<div class="exam-strict-banner" id="exam-strict-banner" role="status" aria-live="polite">
+  Strict mode is on. You may leave this tab at most {{ exam_strict_max_tab_leaves }} times, and not longer than {{ exam_strict_max_away_seconds }} seconds each time.
+</div>
+{% endif %}
+
+<div class="demo-quiz-layout" id="exam-take-root"
+  {% if exam_strict_mode %}
+  data-exam-strict="1"
+  data-strict-max-leaves="{{ exam_strict_max_tab_leaves }}"
+  data-strict-max-away-ms="{{ exam_strict_max_away_seconds }}000"
+  data-strict-reset-url="{{ exam_strict_reset_url }}"
+  {% endif %}>
   <section class="demo-question-card js-exam-no-copy" data-exam-watermark="{% if attempt %}{{ student.first_name|escapejs }} · Soma Smart{% else %}Practice · Soma Smart{% endif %}">
     <div class="exam-obscure-notice" hidden role="status" aria-live="polite">
       <p class="exam-obscure-notice__title">Question hidden</p>
@@ -305,6 +317,7 @@
 {% load static %}
 {% include 'core/partials/openai_tts_config.html' %}
 <script src="{% static 'js/exam-submit-loading.js' %}" defer></script>
+<script src="{% static 'js/exam-strict-mode.js' %}" defer></script>
 <script src="{% static 'js/explanation-speech.js' %}" defer></script>
 {% if showing_feedback and feedback and feedback.is_correct %}
 <script src="{% static 'js/celebration-confetti.js' %}"></script>

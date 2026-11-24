@@ -182,6 +182,11 @@
     }
     attachExamWatermarks();
 
+    var strictRoot = document.getElementById('exam-take-root');
+    if (strictRoot && strictRoot.getAttribute('data-exam-strict') === '1') {
+      return;
+    }
+
     document.addEventListener('visibilitychange', function () {
       setQuestionCardsObscured(document.hidden);
     });

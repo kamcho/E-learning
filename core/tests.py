@@ -522,6 +522,20 @@ class DemoPracticeTests(TestCase):
         self.assertEqual(response.url, reverse('core:exam_take'))
         self.assertEqual(len(self.client.session['practice_demo']['question_ids']), 5)
 
+    def test_exam_start_stores_strict_mode_in_session(self):
+        session = self.client.session
+        session.save()
+        response = self.client.post(reverse('core:exam_start'), {
+            'grade': self.grade.slug,
+            'subject': self.subject.slug,
+            'scope': 'general',
+            'exam_strict_mode': '1',
+        })
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(self.client.session.get('exam_strict_mode'))
+        demo = self.client.session['practice_demo']
+        self.assertTrue(demo.get('strict_mode'))
+
     @patch('core.ai.ai_service.run', return_value={'is_correct': True, 'reason': 'Good.'})
     @patch('core.ai.ai_service.client.is_configured', return_value=True)
     def test_practice_open_ended_graded_by_ai(self, _mock_cfg, _mock_run):

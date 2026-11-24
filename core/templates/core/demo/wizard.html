@@ -238,6 +238,7 @@
             <div class="demo-ready-foot">
               <form method="post" action="{% url 'core:exam_start' %}" class="demo-ready-form">
                 {% csrf_token %}
+                {% include 'core/partials/exam_strict_mode_choice.html' %}
                 <input type="hidden" name="grade" value="{% if active_grade %}{{ active_grade.slug }}{% endif %}">
                 <input type="hidden" name="subject" value="{{ active_subject.slug }}">
                 <input type="hidden" name="scope" value="{{ active_scope|default:'general' }}">

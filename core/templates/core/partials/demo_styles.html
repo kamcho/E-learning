@@ -419,6 +419,78 @@
     border-radius: 999px;
   }
 
+  .exam-strict-choice {
+    margin: 0 0 1rem;
+    padding: 0.85rem 1rem;
+    border: 1px solid var(--demo-border);
+    border-radius: 12px;
+    background: var(--demo-surface-alt);
+    text-align: left;
+  }
+
+  .exam-strict-choice__legend {
+    font-size: 0.82rem;
+    font-weight: 800;
+    color: var(--demo-text);
+    padding: 0;
+    margin: 0 0 0.35rem;
+  }
+
+  .exam-strict-choice__intro {
+    margin: 0 0 0.65rem;
+    font-size: 0.82rem;
+    color: var(--demo-muted);
+    line-height: 1.45;
+  }
+
+  .exam-strict-choice__options {
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+  }
+
+  .exam-strict-choice__option {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.25rem 0.55rem;
+    align-items: start;
+    cursor: pointer;
+    padding: 0.5rem 0.55rem;
+    border-radius: 10px;
+    border: 1px solid color-mix(in srgb, var(--demo-border) 80%, transparent);
+  }
+
+  .exam-strict-choice__option:has(input:checked) {
+    border-color: var(--demo-purple);
+    background: color-mix(in srgb, var(--demo-purple) 8%, var(--demo-surface));
+  }
+
+  .exam-strict-choice__label {
+    font-weight: 700;
+    font-size: 0.86rem;
+    color: var(--demo-text);
+  }
+
+  .exam-strict-choice__hint {
+    grid-column: 2;
+    font-size: 0.78rem;
+    color: var(--demo-muted);
+    line-height: 1.4;
+  }
+
+  .exam-strict-banner {
+    margin: 0 auto var(--space-md);
+    max-width: 56rem;
+    padding: 0.65rem 0.9rem;
+    border-radius: 12px;
+    border: 1px solid color-mix(in srgb, var(--demo-warm) 45%, var(--demo-border));
+    background: color-mix(in srgb, var(--demo-warm) 10%, var(--demo-surface));
+    color: var(--demo-text);
+    font-size: 0.84rem;
+    font-weight: 600;
+    line-height: 1.45;
+  }
+
   .demo-q-badge--num { background: var(--demo-purple-soft); color: #c4b5fd; }
   .demo-q-badge--type { background: rgba(91, 141, 239, 0.15); color: #93c5fd; }
   .demo-q-badge--mark { background: rgba(255, 255, 255, 0.06); color: var(--demo-muted); }

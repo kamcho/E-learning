@@ -381,6 +381,9 @@ def demo_start_view(request):
             params += f'&sub_strand={sub_strand_slug}'
         return redirect(reverse('core:exam_wizard') + params)
 
+    from core.exam_strict_mode import activate_strict_mode, strict_mode_from_post
+
+    strict_mode = strict_mode_from_post(request)
     demo = start_demo_session(
         grade=grade,
         subject=subject,
@@ -388,6 +391,13 @@ def demo_start_view(request):
         strand=strand,
         sub_strand=sub_strand,
         questions=questions,
+        strict_mode=strict_mode,
+    )
+    activate_strict_mode(
+        request,
+        scope_type='demo',
+        scope_id=demo['demo_id'],
+        enabled=strict_mode,
     )
     save_demo_session(request, demo)
     return redirect('core:exam_take')
@@ -496,6 +506,24 @@ def demo_take_view(request):
     )
     unanswered_count = question_count - answered_count
 
+    from core.exam_strict_mode import (
+        activate_strict_mode,
+        strict_mode_template_context,
+    )
+
+    if demo.get('strict_mode'):
+        activate_strict_mode(
+            request,
+            scope_type='demo',
+            scope_id=demo.get('demo_id', ''),
+            enabled=True,
+        )
+    strict_ctx = strict_mode_template_context(
+        request,
+        scope_type='demo',
+        scope_id=demo.get('demo_id', ''),
+    )
+
     return render(request, 'core/demo/take.html', {
         'demo': demo,
         'question': current_question,
@@ -518,7 +546,33 @@ def demo_take_view(request):
         'resume_notice': pop_practice_resume_notice(request),
         'uses_text_answer': uses_text_answer,
         'saved_text_answer': saved_text_answer,
+        **strict_ctx,
     })
+
+
+@require_POST
+def exam_strict_reset_view(request):
+    from core.exam_strict_mode import (
+        EXAM_STRICT_MODE_KEY,
+        EXAM_STRICT_SCOPE_KEY,
+        clear_strict_mode,
+        reset_attempt_exam_strict,
+        reset_practice_exam_strict,
+    )
+
+    if not request.session.get(EXAM_STRICT_MODE_KEY):
+        return JsonResponse({'ok': False, 'error': 'not_strict'}, status=400)
+
+    scope = request.session.get(EXAM_STRICT_SCOPE_KEY) or {}
+    reason = (request.POST.get('reason') or 'tab_violation').strip()
+    redirect_url = reverse('core:exam_wizard')
+    if scope.get('type') == 'demo':
+        redirect_url = reset_practice_exam_strict(request, reason)
+    elif scope.get('type') == 'attempt':
+        redirect_url = reset_attempt_exam_strict(request, scope.get('id'), reason)
+
+    clear_strict_mode(request)
+    return JsonResponse({'ok': True, 'redirect': redirect_url})
 
 
 @require_GET

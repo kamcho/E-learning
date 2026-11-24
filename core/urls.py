@@ -67,6 +67,7 @@ urlpatterns = [
     path('exam/take/', demo_views.demo_take_view, name='exam_take'),
     path('exam/results/', demo_views.demo_results_view, name='exam_results'),
     path('exam/api/explain/', demo_views.demo_explain_view, name='exam_explain'),
+    path('exam/strict/reset/', demo_views.exam_strict_reset_view, name='exam_strict_reset'),
     path('demo/', RedirectView.as_view(pattern_name='core:exam_wizard', query_string=True, permanent=True)),
     path('demo/start/', demo_views.demo_start_view, name='demo_start'),
     path('demo/take/', demo_views.demo_take_view, name='demo_take'),
