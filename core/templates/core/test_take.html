@@ -169,30 +169,48 @@
     color: #e8dcff;
   }
 
-  body.exam-take-page button.demo-btn-primary.is-exam-submitting {
-    display: inline-flex;
+  body.exam-take-page .demo-question-card {
+    position: relative;
+  }
+
+  body.exam-take-page .demo-question-card.is-exam-submitting .exam-text-answer:disabled,
+  body.exam-take-page .demo-question-card.is-exam-submitting .demo-options {
+    opacity: 0.55;
+  }
+
+  .exam-question-submit-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 25;
+    display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 0.55rem;
-    min-width: 10.5rem;
-    cursor: wait;
+    gap: 0.85rem;
+    padding: 1.5rem;
+    text-align: center;
+    background: color-mix(in srgb, var(--demo-surface) 88%, transparent);
+    backdrop-filter: blur(3px);
+    border-radius: inherit;
   }
 
-  body.exam-take-page .exam-submit-btn-spinner {
-    width: 1.1rem;
-    height: 1.1rem;
-    flex-shrink: 0;
+  .exam-question-submit-spinner {
+    width: 2.25rem;
+    height: 2.25rem;
   }
 
-  body.exam-take-page .exam-submit-btn-label {
+  .exam-question-submit-text {
     font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--demo-text);
+    max-width: 16rem;
+    line-height: 1.4;
   }
 
-  body.exam-take-page form.is-exam-submitting .demo-options,
-  body.exam-take-page form.is-exam-submitting .exam-text-answer,
-  body.exam-take-page form.is-exam-submitting .exam-matching-rows {
-    pointer-events: none;
-    opacity: 0.72;
+  .exam-typed-hint {
+    font-size: 0.8rem;
+    color: var(--demo-muted);
+    margin: -0.35rem 0 0.75rem;
   }
 
   @media (max-width: 640px) {
@@ -332,7 +350,7 @@
           {% csrf_token %}
           <input type="hidden" name="action" value="continue">
           <a href="{% url 'core:exams_list' %}" class="demo-btn demo-btn-outline demo-q-quit">Quit</a>
-          <button type="submit" class="demo-btn demo-btn-primary is-exam-submitting" style="background:linear-gradient(135deg,#6d28d9,#9333ea);color:#fff;opacity:1;box-shadow:0 8px 24px rgba(124,58,237,.28);">
+          <button type="submit" class="demo-btn demo-btn-primary" style="background:linear-gradient(135deg,#6d28d9,#9333ea);color:#fff;opacity:1;box-shadow:0 8px 24px rgba(124,58,237,.28);">
             {% if is_last_question %}Finish exam →{% else %}Next question →{% endif %}
           </button>
         </form>
@@ -372,7 +390,7 @@
             </div>
           {% elif question.quiz_type == 'Matching' and matching_ui_mode == 'text' %}
             <p class="exam-matching-hint">Type your matches (e.g. <code>1=A, 2=C</code>) or one answer per line.</p>
-            <textarea name="answer" class="exam-text-answer" rows="4" placeholder="Your matches" required>{{ saved_answer }}</textarea>
+            <textarea name="answer" class="exam-text-answer js-exam-no-paste" rows="4" placeholder="Your matches" required>{{ saved_answer }}</textarea>
           {% elif question.quiz_type == 'Multiple Choice' or question.quiz_type == 'True or False' %}
             {% if allows_multiple_answers %}
             <p class="exam-matching-hint">Select all answers that apply.</p>
@@ -399,13 +417,14 @@
             </div>
             {% endif %}
           {% else %}
-            <input type="text" name="answer" class="exam-text-answer" placeholder="Your answer"
-              value="{{ saved_answer }}" required>
+            <p class="exam-typed-hint">Type your answer yourself — pasting is not allowed.</p>
+            <input type="text" name="answer" class="exam-text-answer js-exam-no-paste" placeholder="Your answer"
+              value="{{ saved_answer }}" autocomplete="off" required>
           {% endif %}
 
           <div class="demo-q-actions">
             <a href="{% url 'core:exams_list' %}" class="demo-btn demo-btn-outline demo-q-quit">Quit</a>
-            <button type="submit" class="demo-btn demo-btn-primary is-exam-submitting" style="background:linear-gradient(135deg,#6d28d9,#9333ea);color:#fff;opacity:1;box-shadow:0 8px 24px rgba(124,58,237,.28);">
+            <button type="submit" class="demo-btn demo-btn-primary" style="background:linear-gradient(135deg,#6d28d9,#9333ea);color:#fff;opacity:1;box-shadow:0 8px 24px rgba(124,58,237,.28);">
               {% if is_last_question %}Submit &amp; finish{% else %}Submit answer ✓{% endif %}
             </button>
           </div>
