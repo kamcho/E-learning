@@ -1,0 +1,52 @@
+name: Register M-Pesa Pull
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  register-pull:
+    name: Set Pull nominated number and register with Safaricom
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Update .env and run register_mpesa_pull
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.DROPLET_HOST }}
+          username: ${{ secrets.DROPLET_USER }}
+          password: ${{ secrets.DROPLET_SSH_PASSWORD }}
+          port: 22
+          script_stop: true
+          command_timeout: 5m
+          script: |
+            set -euo pipefail
+            ENV=/srv/elearning/.env
+            NOMINATED=254726550916
+            APP_DIR=/srv/elearning
+
+            if [[ ! -f "$ENV" ]]; then
+              echo "Missing $ENV"
+              exit 1
+            fi
+
+            if grep -q '^MPESA_PULL_NOMINATED_NUMBER=' "$ENV"; then
+              sed -i "s|^MPESA_PULL_NOMINATED_NUMBER=.*|MPESA_PULL_NOMINATED_NUMBER=${NOMINATED}|" "$ENV"
+            else
+              printf '\n# Daraja Pull Transactions\nMPESA_PULL_NOMINATED_NUMBER=%s\n' "$NOMINATED" >> "$ENV"
+            fi
+            chown elearning:www-data "$ENV"
+            chmod 640 "$ENV"
+            grep '^MPESA_PULL_NOMINATED_NUMBER=' "$ENV"
+
+            if [[ ! -f "$APP_DIR/subscriptions/management/commands/register_mpesa_pull.py" ]]; then
+              echo "ERROR: register_mpesa_pull not on server; push main and deploy first."
+              exit 1
+            fi
+
+            cd "$APP_DIR"
+            sudo -u elearning "$APP_DIR/.venv/bin/python" manage.py register_mpesa_pull
