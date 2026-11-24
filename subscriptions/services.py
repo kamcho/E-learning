@@ -568,6 +568,49 @@ def backfill_mpesa_receipt_via_pull(payment) -> bool:
     return True
 
 
+def backfill_missing_mpesa_receipts(*, limit_per_type=50) -> dict:
+    """Backfill M-Pesa receipt numbers for successful rows missing them."""
+    stats = {
+        'subscription_scanned': 0,
+        'subscription_updated': 0,
+        'guest_scanned': 0,
+        'guest_updated': 0,
+        'still_missing': 0,
+    }
+
+    subscription_qs = (
+        Payment.objects.filter(
+            status=Payment.Status.SUCCESS,
+            mpesa_receipt_number='',
+        )
+        .order_by('-created_at')[:limit_per_type]
+    )
+    for payment in subscription_qs:
+        stats['subscription_scanned'] += 1
+        if backfill_mpesa_receipt_via_pull(payment):
+            payment.save(update_fields=['mpesa_receipt_number', 'updated_at'])
+            stats['subscription_updated'] += 1
+        else:
+            stats['still_missing'] += 1
+
+    guest_qs = (
+        GuestDemoPayment.objects.filter(
+            status=GuestDemoPayment.Status.SUCCESS,
+            mpesa_receipt_number='',
+        )
+        .order_by('-created_at')[:limit_per_type]
+    )
+    for payment in guest_qs:
+        stats['guest_scanned'] += 1
+        if backfill_mpesa_receipt_via_pull(payment):
+            payment.save(update_fields=['mpesa_receipt_number', 'updated_at'])
+            stats['guest_updated'] += 1
+        else:
+            stats['still_missing'] += 1
+
+    return stats
+
+
 def enrich_stk_query_for_payment(payment, query_data: dict) -> dict:
     """Merge STK query fields and backfill receipt when the callback did not arrive."""
     parsed = parse_stk_query_response(query_data)

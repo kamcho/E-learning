@@ -13,7 +13,7 @@ from core.scoring import _grade_choice, question_max_marks
 DEMO_SESSION_KEY = 'practice_demo'
 DEMO_QUESTION_COUNT_MIN = 1
 DEMO_QUESTION_COUNT_MAX = 30
-GUEST_FREE_QUESTION_COUNT = 10
+GUEST_FREE_QUESTION_COUNT = 4
 PRACTICE_DEMO_PAYWALL_SESSION_KEY = 'practice_demo_paywall_reached'
 PRACTICE_DEMO_FREE_ATTEMPT_CONSUMED_KEY = 'practice_demo_free_attempt_consumed'
 PRACTICE_DEMO_RESUME_NOTICE_KEY = 'practice_demo_resume_notice'
@@ -440,7 +440,7 @@ def redirect_if_blocked_practice_demo_start(request):
     if free_practice_attempt_consumed(request):
         messages.warning(
             request,
-            'You’ve already taken your free practice test (up to 10 questions). '
+            f'You’ve already taken your free practice test (up to {GUEST_FREE_QUESTION_COUNT} questions). '
             'Subscribe for unlimited retakes and full exams.',
         )
         return redirect('subscriptions:plans')

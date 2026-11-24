@@ -38,6 +38,11 @@ urlpatterns = [
     ),
     path('my-subscription/', views.my_subscription_view, name='my_subscription'),
     path('admin/payments/', views.admin_payments_list_view, name='admin_payments_list'),
+    path(
+        'admin/payments/backfill-receipts/',
+        views.admin_backfill_mpesa_receipts_view,
+        name='admin_backfill_mpesa_receipts',
+    ),
     path('admin/payments/reconciliation/', views.admin_payment_reconciliation_view, name='admin_payment_reconciliation'),
     path('admin/subscriptions/', views.admin_subscriptions_list_view, name='admin_subscriptions_list'),
 ]

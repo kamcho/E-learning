@@ -604,12 +604,15 @@ def guest_demo_checkout_view(request):
     answered = len(demo.get('answers') or {})
     remaining_questions = max(0, total_questions - answered)
 
+    from core.demo import GUEST_FREE_QUESTION_COUNT
+
     return render(request, 'subscriptions/guest_demo_checkout.html', {
         'demo': demo,
         'plan': plan,
         'form': form,
         'total_questions': total_questions,
         'remaining_questions': remaining_questions,
+        'guest_free_question_count': GUEST_FREE_QUESTION_COUNT,
     })
 
 
@@ -957,6 +960,35 @@ def my_subscription_view(request):
         'tests_pool_total': tests_pool_total,
         'total_spent': total_spent,
     })
+
+
+@login_required(login_url='accounts:signin')
+@require_POST
+def admin_backfill_mpesa_receipts_view(request):
+    """Admin: fetch missing M-Pesa receipts from Pull Transactions."""
+    denied = _admin_access_or_redirect(request)
+    if denied:
+        return denied
+
+    from .services import backfill_missing_mpesa_receipts
+
+    stats = backfill_missing_mpesa_receipts()
+    updated = stats['subscription_updated'] + stats['guest_updated']
+    scanned = stats['subscription_scanned'] + stats['guest_scanned']
+    if updated:
+        messages.success(
+            request,
+            f'Backfilled {updated} receipt(s) from {scanned} successful payment(s) with no code. '
+            f'{stats["still_missing"]} still missing (Pull API may need time or registration).',
+        )
+    elif scanned:
+        messages.warning(
+            request,
+            f'Checked {scanned} payment(s) with no receipt; none could be matched via Pull Transactions yet.',
+        )
+    else:
+        messages.info(request, 'No successful payments are missing M-Pesa receipt numbers.')
+    return redirect('subscriptions:admin_payments_list')
 
 
 @login_required(login_url='accounts:signin')

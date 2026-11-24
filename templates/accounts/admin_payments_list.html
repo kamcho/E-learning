@@ -89,9 +89,13 @@
     <h1>Payments</h1>
     <p>Guardian subscriptions and logged-out guest exam payments (M-Pesa)</p>
   </div>
-  <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+  <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
     <a href="{% url 'subscriptions:admin_subscriptions_list' %}" class="btn-list-banner">View subscriptions</a>
     <a href="{% url 'subscriptions:admin_payment_reconciliation' %}" class="btn-list-banner">Reconcile transaction</a>
+    <form method="post" action="{% url 'subscriptions:admin_backfill_mpesa_receipts' %}" style="margin:0;">
+      {% csrf_token %}
+      <button type="submit" class="btn-list-banner" style="border:none;cursor:pointer;">Backfill missing receipts</button>
+    </form>
     <a href="{{ django_admin_url }}" class="btn-list-banner" target="_blank" rel="noopener">Django Admin</a>
   </div>
 </div>

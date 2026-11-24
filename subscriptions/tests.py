@@ -358,6 +358,30 @@ class AdminPaymentsLedgerTests(TestCase):
             mpesa_receipt_number='QATEST001',
         )
 
+    @patch('subscriptions.services.backfill_mpesa_receipt_via_pull')
+    def test_admin_backfill_missing_receipts(self, mock_backfill):
+        missing = GuestDemoPayment.objects.create(
+            demo_id='demo-ledger-missing-receipt',
+            session_token_hash='missinghash',
+            plan=self.plan,
+            amount_kes=15,
+            phone_number='254700000001',
+            status=GuestDemoPayment.Status.SUCCESS,
+            mpesa_receipt_number='',
+        )
+
+        def _set_receipt(payment):
+            payment.mpesa_receipt_number = 'BACKFILL01'
+            return True
+
+        mock_backfill.side_effect = _set_receipt
+
+        self.client.force_login(self.admin)
+        response = self.client.post(reverse('subscriptions:admin_backfill_mpesa_receipts'))
+        self.assertRedirects(response, reverse('subscriptions:admin_payments_list'))
+        missing.refresh_from_db()
+        self.assertEqual(missing.mpesa_receipt_number, 'BACKFILL01')
+
     def test_admin_payments_list_includes_guest_exam_payments(self):
         self.client.force_login(self.admin)
         response = self.client.get(reverse('subscriptions:admin_payments_list'))
