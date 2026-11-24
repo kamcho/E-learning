@@ -42,11 +42,8 @@ jobs:
               exit 1
             fi
 
-            if grep -q '^MPESA_PULL_NOMINATED_NUMBER=' "$ENV"; then
-              sed -i "s|^MPESA_PULL_NOMINATED_NUMBER=.*|MPESA_PULL_NOMINATED_NUMBER=${NOMINATED}|" "$ENV"
-            else
-              printf '\n# Daraja Pull Transactions\nMPESA_PULL_NOMINATED_NUMBER=%s\n' "$NOMINATED" >> "$ENV"
-            fi
+            sed -i '/^MPESA_PULL_NOMINATED_NUMBER=/d' "$ENV" 2>/dev/null || true
+            printf '\n# Daraja Pull Transactions\nMPESA_PULL_NOMINATED_NUMBER=%s\n' "$NOMINATED" >> "$ENV"
             chown elearning:www-data "$ENV"
             chmod 640 "$ENV"
             grep '^MPESA_PULL_NOMINATED_NUMBER=' "$ENV"

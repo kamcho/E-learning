@@ -22,11 +22,8 @@ if [[ ! -f {ENV_FILE} ]]; then
   echo "Missing {ENV_FILE}"
   exit 1
 fi
-if grep -q '^MPESA_PULL_NOMINATED_NUMBER=' {ENV_FILE}; then
-  sed -i 's|^MPESA_PULL_NOMINATED_NUMBER=.*|MPESA_PULL_NOMINATED_NUMBER={NOMINATED}|' {ENV_FILE}
-else
-  printf '\\n# Daraja Pull Transactions\\nMPESA_PULL_NOMINATED_NUMBER={NOMINATED}\\n' >> {ENV_FILE}
-fi
+sed -i '/^MPESA_PULL_NOMINATED_NUMBER=/d' {ENV_FILE} 2>/dev/null || true
+printf '\\n# Daraja Pull Transactions\\nMPESA_PULL_NOMINATED_NUMBER={NOMINATED}\\n' >> {ENV_FILE}
 chown elearning:www-data {ENV_FILE}
 chmod 640 {ENV_FILE}
 grep '^MPESA_PULL_NOMINATED_NUMBER=' {ENV_FILE}
