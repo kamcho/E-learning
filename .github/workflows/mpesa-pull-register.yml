@@ -23,11 +23,19 @@ jobs:
           port: 22
           script_stop: true
           command_timeout: 5m
+          debug: true
           script: |
-            set -euo pipefail
-            ENV=/srv/elearning/.env
-            NOMINATED=254726550916
+            set -euxo pipefail
+            git config --global --add safe.directory /srv/elearning
             APP_DIR=/srv/elearning
+            ENV="$APP_DIR/.env"
+            NOMINATED=254726550916
+
+            cd "$APP_DIR"
+            echo "==> Git HEAD before pull: $(git rev-parse --short HEAD 2>/dev/null || echo none)"
+            git fetch origin
+            git reset --hard origin/main
+            echo "==> Git HEAD after pull: $(git rev-parse --short HEAD)"
 
             if [[ ! -f "$ENV" ]]; then
               echo "Missing $ENV"
@@ -44,9 +52,13 @@ jobs:
             grep '^MPESA_PULL_NOMINATED_NUMBER=' "$ENV"
 
             if [[ ! -f "$APP_DIR/subscriptions/management/commands/register_mpesa_pull.py" ]]; then
-              echo "ERROR: register_mpesa_pull not on server; push main and deploy first."
+              echo "ERROR: register_mpesa_pull missing after git pull"
+              ls -la "$APP_DIR/subscriptions/management/commands/" || true
               exit 1
             fi
 
-            cd "$APP_DIR"
-            sudo -u elearning "$APP_DIR/.venv/bin/python" manage.py register_mpesa_pull
+            sudo -u elearning "$APP_DIR/.venv/bin/python" manage.py register_mpesa_pull || {
+              ec=$?
+              echo "register_mpesa_pull failed with exit $ec"
+              exit "$ec"
+            }
