@@ -27,6 +27,16 @@ class Command(BaseCommand):
         except (MpesaConfigError, MpesaAPIError) as exc:
             raise CommandError(str(exc)) from exc
 
-        code = str(data.get('ResponseCode') or data.get('responseCode') or '')
-        message = data.get('ResponseDescription') or data.get('responseMessage') or data
-        self.stdout.write(self.style.SUCCESS(f'Pull register response ({code}): {message}'))
+        code = str(
+            data.get('ResponseStatus')
+            or data.get('ResponseCode')
+            or data.get('responseCode')
+            or '',
+        )
+        message = (
+            data.get('ResponseDescription')
+            or data.get('responseMessage')
+            or data
+        )
+        style = self.style.SUCCESS if code in ('1000', '1001') else self.style.WARNING
+        self.stdout.write(style(f'Pull register response ({code}): {message}'))

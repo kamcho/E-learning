@@ -16,6 +16,7 @@ from .mpesa import (
     MpesaConfigError,
     _mpesa_settings,
     _parse_daraja_json,
+    daraja_bearer_headers,
     get_access_token,
     mpesa_base_url,
     normalize_mpesa_phone,
@@ -34,6 +35,50 @@ def _pull_callback_url() -> str:
         or 'http://127.0.0.1:8000'
     )
     return f'{str(callback_base).rstrip("/")}/subscriptions/mpesa/pull-register-callback/'
+
+
+def _validate_pull_register_response(data: dict, http_status: int) -> dict:
+    """
+    Daraja Pull register returns ResponseStatus 1000/1001 on success (not ResponseCode 0).
+    See https://developer.safaricom.co.ke/apis/PullTransaction
+    """
+    error_code = str(data.get('errorCode') or '').strip()
+    if error_code:
+        message = (
+            data.get('errorMessage')
+            or data.get('ResponseDescription')
+            or 'Pull register failed.'
+        )
+        hint = ''
+        if error_code == '401.001':
+            hint = (
+                ' Ensure MPESA_CONSUMER_KEY/SECRET match your live Daraja app, Pull Transactions '
+                'is enabled on that app, and the pay bill is on production with C2B registered.'
+            )
+        raise MpesaAPIError(f'{message} (errorCode {error_code}){hint}', data)
+
+    status = str(
+        data.get('ResponseStatus')
+        or data.get('Response Status')
+        or data.get('responseStatus')
+        or '',
+    ).strip()
+    if status in ('1000', '1001'):
+        return data
+
+    if http_status >= 400:
+        message = (
+            data.get('ResponseDescription')
+            or data.get('errorMessage')
+            or f'Pull register HTTP {http_status}'
+        )
+        raise MpesaAPIError(message, data)
+
+    if status and status not in ('1000', '1001'):
+        message = data.get('ResponseDescription') or data
+        raise MpesaAPIError(f'Unexpected Pull register status {status}: {message}', data)
+
+    return data
 
 
 def register_pull_transactions(*, nominated_number: str | None = None) -> dict:
@@ -59,13 +104,14 @@ def register_pull_transactions(*, nominated_number: str | None = None) -> dict:
         response = requests.post(
             url,
             json=payload,
-            headers={'Authorization': f'Bearer {token}'},
+            headers=daraja_bearer_headers(token),
             timeout=45,
         )
     except RequestException as exc:
         logger.exception('Pull register request failed')
         raise MpesaAPIError('Could not reach M-Pesa to register Pull Transactions.') from exc
-    return _parse_daraja_json(response, 'Pull register')
+    data = _parse_daraja_json(response, 'Pull register')
+    return _validate_pull_register_response(data, response.status_code)
 
 
 def _format_pull_datetime(dt: datetime) -> str:
@@ -94,7 +140,7 @@ def query_pull_transactions(
         response = requests.post(
             url,
             json=payload,
-            headers={'Authorization': f'Bearer {token}'},
+            headers=daraja_bearer_headers(token),
             timeout=45,
         )
     except RequestException as exc:

@@ -128,6 +128,15 @@ def get_access_token() -> str:
     return data['access_token']
 
 
+def daraja_bearer_headers(access_token: str) -> dict[str, str]:
+    """Headers required by Daraja APIs (STK, Pull, etc.)."""
+    return {
+        'Authorization': f'Bearer {access_token}',
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+    }
+
+
 def _build_password(shortcode: str, passkey: str, timestamp: str) -> str:
     raw = f'{shortcode}{passkey}{timestamp}'
     return base64.b64encode(raw.encode()).decode()
