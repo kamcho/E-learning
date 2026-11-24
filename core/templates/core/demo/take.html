@@ -132,6 +132,7 @@
 <div class="demo-quiz-layout" id="exam-take-root"
   {% if exam_strict_mode %}
   data-exam-strict="1"
+  data-strict-scope-id="{% if attempt %}{{ attempt.uuid }}{% else %}{{ demo.demo_id }}{% endif %}"
   data-strict-max-leaves="{{ exam_strict_max_tab_leaves }}"
   data-strict-max-away-ms="{{ exam_strict_max_away_seconds }}000"
   data-strict-reset-url="{{ exam_strict_reset_url }}"

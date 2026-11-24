@@ -14,6 +14,45 @@
     return document.getElementById('exam-take-root');
   }
 
+  function strictLeavesStorageKey(scopeId) {
+    return 'soma_exam_strict_tab_leaves_' + scopeId;
+  }
+
+  function loadTabLeaves(scopeId) {
+    if (!scopeId) {
+      return 0;
+    }
+    try {
+      var raw = window.sessionStorage.getItem(strictLeavesStorageKey(scopeId));
+      var parsed = parseInt(raw || '0', 10);
+      return Number.isFinite(parsed) ? Math.max(0, parsed) : 0;
+    } catch (err) {
+      return 0;
+    }
+  }
+
+  function saveTabLeaves(scopeId, count) {
+    if (!scopeId) {
+      return;
+    }
+    try {
+      window.sessionStorage.setItem(strictLeavesStorageKey(scopeId), String(count));
+    } catch (err) {
+      /* ignore */
+    }
+  }
+
+  function clearTabLeaves(scopeId) {
+    if (!scopeId) {
+      return;
+    }
+    try {
+      window.sessionStorage.removeItem(strictLeavesStorageKey(scopeId));
+    } catch (err) {
+      /* ignore */
+    }
+  }
+
   function updateStrictBanner(tabLeaves, maxLeaves, maxAwaySeconds) {
     var banner = document.getElementById('exam-strict-banner');
     if (!banner) {
@@ -44,12 +83,17 @@
       return;
     }
 
-    var tabLeaves = 0;
+    var scopeId = root.getAttribute('data-strict-scope-id') || '';
+    var tabLeaves = loadTabLeaves(scopeId);
     var hiddenAt = null;
     var awayTimer = null;
     var resetting = false;
 
     updateStrictBanner(tabLeaves, maxLeaves, maxAwaySeconds);
+    if (tabLeaves > maxLeaves) {
+      triggerReset('too_many_leaves');
+      return;
+    }
 
     function clearAwayTimer() {
       if (awayTimer !== null) {
@@ -74,6 +118,7 @@
       }
       resetting = true;
       clearAwayTimer();
+      clearTabLeaves(scopeId);
       root.classList.add('is-exam-strict-resetting');
 
       var body = 'reason=' + encodeURIComponent(reason || 'tab_violation');
@@ -135,6 +180,7 @@
       }
 
       tabLeaves += 1;
+      saveTabLeaves(scopeId, tabLeaves);
       updateStrictBanner(tabLeaves, maxLeaves, maxAwaySeconds);
       if (tabLeaves > maxLeaves) {
         triggerReset('too_many_leaves');
