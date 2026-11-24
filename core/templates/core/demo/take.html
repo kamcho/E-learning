@@ -56,6 +56,27 @@
     -webkit-user-drag: none; user-drag: none;
     pointer-events: none;
   }
+  .exam-anti-leak-watermark {
+    position: absolute; inset: 0; z-index: 4; pointer-events: none; overflow: hidden; border-radius: inherit;
+    display: flex; flex-direction: column; justify-content: space-evenly; opacity: 0.11;
+  }
+  .exam-anti-leak-watermark__line {
+    display: block; text-align: center; font-size: 0.72rem; font-weight: 800; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--demo-purple); transform: rotate(-18deg); user-select: none; white-space: nowrap;
+  }
+  .demo-question-card.is-exam-obscured .exam-protected-content,
+  .demo-question-card.is-exam-obscured .exam-anti-leak-watermark {
+    filter: blur(16px); opacity: 0.12;
+  }
+  .exam-obscure-notice {
+    display: none; position: absolute; inset: 0; z-index: 22; padding: 1.25rem;
+    flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 0.35rem;
+    background: color-mix(in srgb, var(--demo-surface) 94%, transparent);
+    border-radius: inherit;
+  }
+  .demo-question-card.is-exam-obscured .exam-obscure-notice { display: flex; }
+  .exam-obscure-notice__title { margin: 0; font-weight: 800; color: var(--demo-text); }
+  .exam-obscure-notice__text { margin: 0; font-size: 0.88rem; color: var(--demo-muted); max-width: 18rem; line-height: 1.45; }
   .exam-no-questions { max-width: 28rem; margin: 2rem auto; text-align: center; padding: 2rem 1.25rem; background: var(--demo-surface); border: 1px solid var(--demo-border); border-radius: 16px; }
   @media (max-width: 640px) { .exam-matching-row { grid-template-columns: 1fr; } .exam-text-answer { font-size: 16px; } body.exam-take-page .demo-option { min-height: 52px; padding: .65rem .7rem; } }
 </style>
@@ -103,7 +124,11 @@
 </header>
 
 <div class="demo-quiz-layout">
-  <section class="demo-question-card js-exam-no-copy">
+  <section class="demo-question-card js-exam-no-copy" data-exam-watermark="{% if attempt %}{{ student.first_name|escapejs }} · Soma Smart{% else %}Practice · Soma Smart{% endif %}">
+    <div class="exam-obscure-notice" hidden role="status" aria-live="polite">
+      <p class="exam-obscure-notice__title">Question hidden</p>
+      <p class="exam-obscure-notice__text">Return to this tab to continue your exam.</p>
+    </div>
     <div class="demo-q-badges">
       <span class="demo-q-badge demo-q-badge--num">Question {{ question_number }}</span>
       <span class="demo-q-badge demo-q-badge--type">{{ question.quiz_type }}</span>

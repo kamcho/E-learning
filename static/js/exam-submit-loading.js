@@ -136,8 +136,68 @@
     });
   }
 
+  function attachExamWatermarks() {
+    document.querySelectorAll('.js-exam-no-copy').forEach(function (card) {
+      if (card.querySelector('.exam-anti-leak-watermark')) {
+        return;
+      }
+      var label = (card.getAttribute('data-exam-watermark') || 'Soma Smart').trim();
+      var layer = document.createElement('div');
+      layer.className = 'exam-anti-leak-watermark';
+      layer.setAttribute('aria-hidden', 'true');
+      for (var i = 0; i < 6; i += 1) {
+        var line = document.createElement('span');
+        line.className = 'exam-anti-leak-watermark__line';
+        line.textContent = label + ' · Do not share';
+        layer.appendChild(line);
+      }
+      card.insertBefore(layer, card.firstChild);
+    });
+  }
+
+  function setQuestionCardsObscured(obscured) {
+    document.querySelectorAll('.js-exam-no-copy').forEach(function (card) {
+      card.classList.toggle('is-exam-obscured', obscured);
+      var notice = card.querySelector('.exam-obscure-notice');
+      if (notice) {
+        notice.hidden = !obscured;
+      }
+    });
+  }
+
+  var obscureFlashTimer;
+  function flashQuestionObscure(durationMs) {
+    setQuestionCardsObscured(true);
+    window.clearTimeout(obscureFlashTimer);
+    obscureFlashTimer = window.setTimeout(function () {
+      if (!document.hidden) {
+        setQuestionCardsObscured(false);
+      }
+    }, durationMs || 2000);
+  }
+
+  function wireScreenshotDeterrents() {
+    if (!document.body.classList.contains('exam-take-page')) {
+      return;
+    }
+    attachExamWatermarks();
+
+    document.addEventListener('visibilitychange', function () {
+      setQuestionCardsObscured(document.hidden);
+    });
+    setQuestionCardsObscured(document.hidden);
+
+    document.addEventListener('keyup', function (ev) {
+      var key = ev.key || '';
+      if (key === 'PrintScreen' || key === 'Snapshot') {
+        flashQuestionObscure(2500);
+      }
+    });
+  }
+
   preventPasteOnTypedAnswers(document);
   wireQuestionCopyProtection();
+  wireScreenshotDeterrents();
 
   document.querySelectorAll('form.js-exam-submit-form').forEach(function (form) {
     form.addEventListener('submit', function (ev) {
