@@ -431,6 +431,61 @@ class DemoPracticeTests(TestCase):
         self.assertGreaterEqual(large_pool_count, 7)
         self.assertLessEqual(large_pool_count, 10)
 
+    def test_exam_start_uses_questions_linked_via_subject_quizzes(self):
+        """Bank items on quizzes count even when sub_strand belongs to another subject."""
+        grade = GradeLevel.objects.create(
+            name='Grade 10',
+            slug='grade-10-quiz-pool',
+            level='Senior School',
+        )
+        exam_subject = Subject.objects.create(
+            name='Agriculture',
+            slug='agriculture-g10-quiz-pool',
+            grade_level=grade,
+            discipline=self.discipline,
+        )
+        other_strand = Strand.objects.create(
+            name='Shared bank',
+            slug='shared-bank-g10',
+            subject=self.subject,
+        )
+        other_sub = SubStrand.objects.create(
+            name='Shared sub',
+            slug='shared-sub-g10',
+            strand=other_strand,
+        )
+
+        quiz_questions = []
+        for index in range(3):
+            question = Question.objects.create(
+                quiz=f'Quiz-only question {index}?',
+                quiz_type='Multiple Choice',
+                difficulty='Easy',
+                sub_strand=other_sub,
+                score=1,
+            )
+            Option.objects.create(question=question, option='Wrong', is_correct=False)
+            Option.objects.create(question=question, option='Correct', is_correct=True)
+            quiz_questions.append(question)
+
+        teacher = User.objects.create_user(phone='0700000099', password='1234', role=Role.TEACHER)
+        quiz = Quiz.objects.create(
+            title='Agriculture G10 practice',
+            subject=exam_subject,
+            is_active=True,
+            created_by=teacher,
+        )
+        quiz.questions.set(quiz_questions)
+
+        response = self.client.post(reverse('core:exam_start'), {
+            'grade': grade.slug,
+            'subject': exam_subject.slug,
+            'scope': 'general',
+        })
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse('core:exam_take'))
+        self.assertEqual(len(self.client.session['practice_demo']['question_ids']), 3)
+
     def test_starting_second_practice_subject_resumes_first_with_notice(self):
         self.client.post(reverse('core:exam_start'), {
             'grade': self.grade.slug,

@@ -19,6 +19,8 @@ PRACTICE_DEMO_FREE_ATTEMPT_CONSUMED_KEY = 'practice_demo_free_attempt_consumed'
 PRACTICE_DEMO_RESUME_NOTICE_KEY = 'practice_demo_resume_notice'
 # Backward-compatible label for templates that expect a single number (upper bound).
 DEMO_QUESTION_COUNT = DEMO_QUESTION_COUNT_MAX
+# Guest practice exam supports option-based items only (demo take UI).
+DEMO_QUIZ_TYPES = ('Multiple Choice', 'True or False')
 
 
 def get_demo_session(request):
@@ -86,6 +88,32 @@ def persist_demo_attempt(demo, *, status=None):
     )
 
 
+def _demo_question_scope_q(*, subject, scope, strand=None, sub_strand=None):
+    """Questions tied to the curriculum subject or present on active subject quizzes."""
+    if scope == 'strand' and strand:
+        return (
+            Q(sub_strand__strand=strand)
+            | Q(
+                quizzes__is_active=True,
+                quizzes__subject=subject,
+                quizzes__strand=strand,
+            )
+        )
+    if scope == 'sub_strand' and sub_strand:
+        return (
+            Q(sub_strand=sub_strand)
+            | Q(
+                quizzes__is_active=True,
+                quizzes__subject=subject,
+                quizzes__sub_strand=sub_strand,
+            )
+        )
+    return (
+        Q(sub_strand__strand__subject=subject)
+        | Q(quizzes__is_active=True, quizzes__subject=subject)
+    )
+
+
 def select_demo_questions(
     *,
     subject,
@@ -95,13 +123,19 @@ def select_demo_questions(
     min_count=DEMO_QUESTION_COUNT_MIN,
     max_count=DEMO_QUESTION_COUNT_MAX,
 ):
-    """Pick up to 30 multiple-choice questions, or all when fewer are available."""
+    """Pick up to max_count gradable option questions, or all when fewer are available."""
     qs = (
         Question.objects.filter(
             is_active=True,
-            quiz_type='Multiple Choice',
-            sub_strand__strand__subject=subject,
+            quiz_type__in=DEMO_QUIZ_TYPES,
         )
+        .filter(_demo_question_scope_q(
+            subject=subject,
+            scope=scope,
+            strand=strand,
+            sub_strand=sub_strand,
+        ))
+        .distinct()
         .select_related(
             'sub_strand',
             'sub_strand__strand',
@@ -120,11 +154,6 @@ def select_demo_questions(
         )
         .filter(active_option_count__gte=2, correct_option_count__gte=1)
     )
-
-    if scope == 'strand' and strand:
-        qs = qs.filter(sub_strand__strand=strand)
-    elif scope == 'sub_strand' and sub_strand:
-        qs = qs.filter(sub_strand=sub_strand)
 
     pool_count = qs.count()
     if pool_count < min_count:
