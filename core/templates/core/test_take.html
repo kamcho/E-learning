@@ -169,6 +169,25 @@
     color: #e8dcff;
   }
 
+  body.exam-take-page button.demo-btn-primary.is-exam-submitting {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.55rem;
+    min-width: 10.5rem;
+    cursor: wait;
+  }
+
+  body.exam-take-page .exam-submit-btn-spinner {
+    width: 1.1rem;
+    height: 1.1rem;
+    flex-shrink: 0;
+  }
+
+  body.exam-take-page .exam-submit-btn-label {
+    font-weight: 700;
+  }
+
   @media (max-width: 640px) {
     .exam-matching-row {
       grid-template-columns: 1fr;
@@ -302,17 +321,17 @@
           {% endif %}
         </div>
 
-        <form method="post" class="demo-q-actions" style="margin-top:1rem;">
+        <form method="post" class="demo-q-actions js-exam-submit-form" style="margin-top:1rem;" data-submit-busy-text="Loading next question…">
           {% csrf_token %}
           <input type="hidden" name="action" value="continue">
           <a href="{% url 'core:exams_list' %}" class="demo-btn demo-btn-outline demo-q-quit">Quit</a>
-          <button type="submit" class="demo-btn demo-btn-primary" style="background:linear-gradient(135deg,#6d28d9,#9333ea);color:#fff;opacity:1;box-shadow:0 8px 24px rgba(124,58,237,.28);">
+          <button type="submit" class="demo-btn demo-btn-primary is-exam-submitting" style="background:linear-gradient(135deg,#6d28d9,#9333ea);color:#fff;opacity:1;box-shadow:0 8px 24px rgba(124,58,237,.28);">
             {% if is_last_question %}Finish exam →{% else %}Next question →{% endif %}
           </button>
         </form>
 
       {% else %}
-        <form method="post">
+        <form method="post" class="js-exam-submit-form" data-submit-busy-text="{% if question.quiz_type == 'OpenEnded' or question.quiz_type == 'Fill in the Blank' %}Checking with AI…{% else %}Checking answer…{% endif %}">
           {% csrf_token %}
 
           {% if question.quiz_type == 'Matching' and matching_ui_mode == 'rows' %}
@@ -379,7 +398,7 @@
 
           <div class="demo-q-actions">
             <a href="{% url 'core:exams_list' %}" class="demo-btn demo-btn-outline demo-q-quit">Quit</a>
-            <button type="submit" class="demo-btn demo-btn-primary" style="background:linear-gradient(135deg,#6d28d9,#9333ea);color:#fff;opacity:1;box-shadow:0 8px 24px rgba(124,58,237,.28);">
+            <button type="submit" class="demo-btn demo-btn-primary is-exam-submitting" style="background:linear-gradient(135deg,#6d28d9,#9333ea);color:#fff;opacity:1;box-shadow:0 8px 24px rgba(124,58,237,.28);">
               {% if is_last_question %}Submit &amp; finish{% else %}Submit answer ✓{% endif %}
             </button>
           </div>
@@ -409,6 +428,7 @@
 {% block extra_js %}
 {% load static %}
 {% include 'core/partials/openai_tts_config.html' %}
+<script src="{% static 'js/exam-submit-loading.js' %}" defer></script>
 <script src="{% static 'js/explanation-speech.js' %}" defer></script>
 
 {% if has_time_limit and time_remaining_seconds is not None %}

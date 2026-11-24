@@ -32,6 +32,12 @@
   body.exam-take-page .demo-option.is-wrong { border-color: #dc5265; background: color-mix(in srgb, #dc5265 9%, var(--demo-surface)); }
   body.exam-take-page button.demo-btn-primary:disabled { opacity: 1; background: #e9ddff; color: #4c1d95; box-shadow: none; cursor: not-allowed; }
   html[data-theme="dark"] body.exam-take-page button.demo-btn-primary:disabled { background: #39304e; color: #e8dcff; }
+  body.exam-take-page button.demo-btn-primary.is-exam-submitting {
+    display: inline-flex; align-items: center; justify-content: center; gap: 0.55rem;
+    min-width: 10.5rem; cursor: wait;
+  }
+  body.exam-take-page .exam-submit-btn-spinner { width: 1.1rem; height: 1.1rem; flex-shrink: 0; }
+  body.exam-take-page .exam-submit-btn-label { font-weight: 700; }
   .exam-no-questions { max-width: 28rem; margin: 2rem auto; text-align: center; padding: 2rem 1.25rem; background: var(--demo-surface); border: 1px solid var(--demo-border); border-radius: 16px; }
   @media (max-width: 640px) { .exam-matching-row { grid-template-columns: 1fr; } .exam-text-answer { font-size: 16px; } body.exam-take-page .demo-option { min-height: 52px; padding: .65rem .7rem; } }
 </style>
@@ -157,17 +163,17 @@
         {% endif %}
       </div>
 
-      <form method="post" class="demo-q-actions" style="margin-top:1rem;">
+      <form method="post" class="demo-q-actions js-exam-submit-form" style="margin-top:1rem;" data-submit-busy-text="Loading next question…">
         {% csrf_token %}
         <input type="hidden" name="action" value="continue">
           {% if attempt %}<a href="{% url 'core:test_info' quiz.uuid student.uuid %}" class="demo-btn demo-btn-outline demo-q-quit">Quit</a>{% else %}<span></span>{% endif %}
-        <button type="submit" class="demo-btn demo-btn-primary">
+        <button type="submit" class="demo-btn demo-btn-primary is-exam-submitting">
           {% if is_last_question %}{% if attempt %}Finish exam →{% else %}See results{% endif %}{% else %}Next question →{% endif %}
         </button>
       </form>
 
     {% else %}
-      <form method="post">
+      <form method="post" class="js-exam-submit-form" data-submit-busy-text="{% if attempt %}{% if question.quiz_type == 'OpenEnded' or question.quiz_type == 'Fill in the Blank' %}Checking with AI…{% else %}Checking answer…{% endif %}{% elif uses_text_answer %}Checking with AI…{% else %}Checking answer…{% endif %}">
         {% csrf_token %}
           {% if not attempt %}<input type="hidden" name="action" value="submit">{% endif %}
           {% if attempt and question.quiz_type == 'Matching' and matching_ui_mode == 'rows' %}
@@ -211,7 +217,7 @@
           {% endif %}
         <div class="demo-q-actions">
             {% if attempt %}<a href="{% url 'core:test_info' quiz.uuid student.uuid %}" class="demo-btn demo-btn-outline demo-q-quit">Quit</a>{% else %}<a href="{% url 'core:exam_wizard' %}?restart=1" class="demo-btn demo-btn-outline demo-q-quit">Quit</a>{% endif %}
-          <button type="submit" class="demo-btn demo-btn-primary">Submit answer ✓</button>
+          <button type="submit" class="demo-btn demo-btn-primary is-exam-submitting">Submit answer ✓</button>
         </div>
       </form>
     {% endif %}
@@ -251,6 +257,7 @@
 {% block extra_js %}
 {% load static %}
 {% include 'core/partials/openai_tts_config.html' %}
+<script src="{% static 'js/exam-submit-loading.js' %}" defer></script>
 <script src="{% static 'js/explanation-speech.js' %}" defer></script>
 {% if showing_feedback and feedback and feedback.is_correct %}
 <script src="{% static 'js/celebration-confetti.js' %}"></script>
