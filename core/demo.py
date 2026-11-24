@@ -16,6 +16,7 @@ DEMO_QUESTION_COUNT_MAX = 30
 GUEST_FREE_QUESTION_COUNT = 10
 PRACTICE_DEMO_PAYWALL_SESSION_KEY = 'practice_demo_paywall_reached'
 PRACTICE_DEMO_FREE_ATTEMPT_CONSUMED_KEY = 'practice_demo_free_attempt_consumed'
+PRACTICE_DEMO_RESUME_NOTICE_KEY = 'practice_demo_resume_notice'
 # Backward-compatible label for templates that expect a single number (upper bound).
 DEMO_QUESTION_COUNT = DEMO_QUESTION_COUNT_MAX
 
@@ -361,17 +362,69 @@ def clear_practice_demo_paywall(request):
         request.session.modified = True
 
 
+def describe_practice_exam(demo):
+    """Human label for an in-progress practice session."""
+    subject = (demo.get('subject_name') or '').strip() or 'Practice exam'
+    topic = (demo.get('topic_label') or demo.get('scope_label') or '').strip()
+    if topic:
+        return f'{subject} ({topic})'
+    return subject
+
+
+def pop_practice_resume_notice(request):
+    notice = request.session.pop(PRACTICE_DEMO_RESUME_NOTICE_KEY, None)
+    if notice is not None:
+        request.session.modified = True
+    return notice
+
+
 def redirect_if_blocked_practice_demo_start(request):
     """Return redirect if a new practice exam must not be started; else None."""
     from django.contrib import messages
     from django.shortcuts import redirect
+    from django.urls import reverse
 
     if user_has_paid_practice_demo_access(request):
         return None
 
     existing = get_demo_session(request)
     if existing and not existing.get('completed'):
-        messages.info(request, 'Continue your current practice exam before starting a new one.')
+        in_progress_label = describe_practice_exam(existing)
+        requested_subject = ''
+        subject_slug = (request.POST.get('subject') or '').strip()
+        if subject_slug:
+            from subjects.models import Subject
+
+            requested_subject = (
+                Subject.objects.filter(slug=subject_slug)
+                .values_list('name', flat=True)
+                .first()
+                or subject_slug.replace('-', ' ').title()
+            )
+        existing_subject = (existing.get('subject_name') or '').strip()
+        if (
+            requested_subject
+            and existing_subject
+            and requested_subject.lower() != existing_subject.lower()
+        ):
+            messages.warning(
+                request,
+                f'You still have «{in_progress_label}» in progress. '
+                f'We opened that exam instead of starting {requested_subject}. '
+                f'Use «Start over» on the practice wizard when you want a fresh test.',
+            )
+        else:
+            messages.warning(
+                request,
+                f'You still have «{in_progress_label}» in progress. '
+                f'Continue where you left off, or use «Start over» on the practice wizard.',
+            )
+        request.session[PRACTICE_DEMO_RESUME_NOTICE_KEY] = {
+            'in_progress_label': in_progress_label,
+            'requested_subject': requested_subject,
+            'wizard_restart_url': reverse('core:exam_wizard') + '?restart=1',
+        }
+        request.session.modified = True
         return redirect('core:exam_take')
 
     if practice_demo_paywall_reached(request):

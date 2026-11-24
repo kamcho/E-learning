@@ -283,7 +283,15 @@ class GuestDemoCheckoutTests(TestCase):
 
         with patch(
             'subscriptions.views.query_stk_status',
-            return_value={'ResultCode': '0', 'ResultDesc': 'Payment successful'},
+            return_value={
+                'ResultCode': '0',
+                'ResultDesc': 'Payment successful',
+                'CallbackMetadata': {
+                    'Item': [
+                        {'Name': 'MpesaReceiptNumber', 'Value': 'TH78X9K2L1'},
+                    ],
+                },
+            },
         ):
             status_response = self.client.get(
                 reverse(
@@ -292,7 +300,35 @@ class GuestDemoCheckoutTests(TestCase):
                 ),
             )
         self.assertEqual(status_response.json()['status'], GuestDemoPayment.Status.SUCCESS)
-        self.assertEqual(GuestDemoPayment.objects.get().status, GuestDemoPayment.Status.SUCCESS)
+        payment.refresh_from_db()
+        self.assertEqual(payment.status, GuestDemoPayment.Status.SUCCESS)
+        self.assertEqual(payment.mpesa_receipt_number, 'TH78X9K2L1')
+
+    @patch('subscriptions.views.query_stk_status')
+    @patch('subscriptions.mpesa_pull.find_pull_transaction_for_stk_payment')
+    def test_guest_stk_poll_backfills_receipt_via_pull(self, mock_pull, mock_query):
+        mock_query.return_value = {'ResultCode': '0', 'ResultDesc': 'Payment successful'}
+        mock_pull.return_value = {'transaction_id': 'PJ12AB34CD', 'amount': '20'}
+
+        with patch('subscriptions.views.initiate_stk_push', return_value={
+            'MerchantRequestID': 'merchant-guest-2',
+            'CheckoutRequestID': 'checkout-guest-2',
+        }):
+            self.client.post(
+                reverse('subscriptions:guest_demo_checkout'),
+                {'phone_number': '0712345678'},
+            )
+        payment = GuestDemoPayment.objects.get()
+
+        response = self.client.get(
+            reverse(
+                'subscriptions:guest_demo_payment_status',
+                kwargs={'payment_uuid': payment.uuid},
+            ),
+        )
+        self.assertEqual(response.json()['status'], GuestDemoPayment.Status.SUCCESS)
+        payment.refresh_from_db()
+        self.assertEqual(payment.mpesa_receipt_number, 'PJ12AB34CD')
 
 
 class AdminPaymentsLedgerTests(TestCase):

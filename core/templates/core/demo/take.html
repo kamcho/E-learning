@@ -38,6 +38,7 @@
 {% endblock %}
 
 {% block content %}
+{% include 'core/partials/exam_resume_notice.html' %}
 {% if no_questions %}
   <div class="exam-no-questions">
     <p style="margin:0 0 1rem;color:var(--demo-muted);">This exam has no questions yet.</p>

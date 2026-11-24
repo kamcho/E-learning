@@ -491,6 +491,95 @@ def reconcile_guest_demo_payment(payment: GuestDemoPayment, *, sms_text: str, re
     return payment
 
 
+def _metadata_items_to_dict(items) -> dict:
+    metadata = {}
+    for item in items or []:
+        if not isinstance(item, dict):
+            continue
+        name = item.get('Name') or item.get('name')
+        if name and 'Value' in item:
+            metadata[name] = item['Value']
+        elif name and 'value' in item:
+            metadata[name] = item['value']
+    return metadata
+
+
+def parse_stk_query_response(query_data: dict) -> dict:
+    """Normalize Daraja STK Push Query (`stkpushquery`) response."""
+    metadata = {}
+    raw_meta = query_data.get('CallbackMetadata') or query_data.get('callbackMetadata')
+    if isinstance(raw_meta, dict):
+        metadata = _metadata_items_to_dict(raw_meta.get('Item') or raw_meta.get('item'))
+    elif isinstance(raw_meta, list):
+        metadata = _metadata_items_to_dict(raw_meta)
+
+    receipt = (
+        metadata.get('MpesaReceiptNumber')
+        or query_data.get('MpesaReceiptNumber')
+        or query_data.get('mpesa_receipt_number')
+        or ''
+    )
+    phone = metadata.get('PhoneNumber') or query_data.get('PhoneNumber') or ''
+
+    raw_result_code = query_data.get('ResultCode')
+    try:
+        result_code = int(raw_result_code) if raw_result_code is not None else None
+    except (TypeError, ValueError):
+        result_code = None
+
+    return {
+        'result_code': result_code,
+        'result_description': (
+            query_data.get('ResultDesc')
+            or query_data.get('ResultDescription')
+            or ''
+        )[:255],
+        'mpesa_receipt_number': str(receipt).strip(),
+        'phone_number': phone,
+    }
+
+
+def backfill_mpesa_receipt_via_pull(payment) -> bool:
+    """
+  Fill mpesa_receipt_number from Pull Transactions when STK callback was missed.
+
+  Works for Payment and GuestDemoPayment rows (needs uuid, phone, amount, created_at).
+    """
+    if (getattr(payment, 'mpesa_receipt_number', '') or '').strip():
+        return False
+    from .mpesa import MpesaAPIError, MpesaConfigError
+    from .mpesa_pull import find_pull_transaction_for_stk_payment
+
+    bill_reference = str(payment.uuid).replace('-', '')[:12]
+    try:
+        row = find_pull_transaction_for_stk_payment(
+            phone_number=payment.phone_number,
+            amount_kes=payment.amount_kes,
+            payment_created_at=payment.created_at,
+            bill_reference=bill_reference,
+        )
+    except (MpesaAPIError, MpesaConfigError) as exc:
+        logger.warning('Pull receipt backfill failed for payment %s: %s', payment.uuid, exc)
+        return False
+    transaction_id = (row or {}).get('transaction_id', '').strip()
+    if not transaction_id:
+        return False
+    payment.mpesa_receipt_number = transaction_id[:32]
+    return True
+
+
+def enrich_stk_query_for_payment(payment, query_data: dict) -> dict:
+    """Merge STK query fields and backfill receipt when the callback did not arrive."""
+    parsed = parse_stk_query_response(query_data)
+    if not parsed.get('mpesa_receipt_number'):
+        if not (payment.mpesa_receipt_number or '').strip():
+            if backfill_mpesa_receipt_via_pull(payment):
+                parsed['mpesa_receipt_number'] = payment.mpesa_receipt_number
+        elif payment.mpesa_receipt_number:
+            parsed['mpesa_receipt_number'] = payment.mpesa_receipt_number
+    return parsed
+
+
 def parse_stk_callback(payload: dict):
     """Extract STK callback fields from Safaricom JSON body."""
     callback = payload.get('Body', {}).get('stkCallback', {})

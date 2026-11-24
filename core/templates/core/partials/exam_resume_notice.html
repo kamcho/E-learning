@@ -1,0 +1,20 @@
+{% if resume_notice %}
+<div class="demo-resume-banner exam-resume-notice" role="status" style="max-width: 42rem; margin: 0 auto var(--space-md);">
+  <div>
+    <strong>Continuing your earlier exam</strong>
+    <span>
+      {% if resume_notice.requested_label %}
+        You opened <em>{{ resume_notice.requested_label }}</em>, but
+      {% elif resume_notice.requested_subject %}
+        You picked <em>{{ resume_notice.requested_subject }}</em>, but
+      {% endif %}
+      <em>{{ resume_notice.in_progress_label }}</em> is still in progress — you're on that exam now.
+    </span>
+  </div>
+  {% if resume_notice.wizard_restart_url %}
+  <div class="demo-resume-actions">
+    <a href="{{ resume_notice.wizard_restart_url }}" class="demo-btn demo-btn-outline">Start a new practice exam</a>
+  </div>
+  {% endif %}
+</div>
+{% endif %}

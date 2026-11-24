@@ -431,6 +431,43 @@ class DemoPracticeTests(TestCase):
         self.assertGreaterEqual(large_pool_count, 7)
         self.assertLessEqual(large_pool_count, 10)
 
+    def test_starting_second_practice_subject_resumes_first_with_notice(self):
+        self.client.post(reverse('core:exam_start'), {
+            'grade': self.grade.slug,
+            'subject': self.subject.slug,
+            'scope': 'general',
+        })
+        science_subject = Subject.objects.create(
+            name='Science',
+            slug='science-g6',
+            grade_level=self.grade,
+            discipline=self.discipline,
+        )
+        strand = Strand.objects.create(name='Matter', slug='matter-g6', subject=science_subject)
+        sub = SubStrand.objects.create(name='States', slug='states-g6', strand=strand)
+        for index in range(8):
+            question = Question.objects.create(
+                quiz=f'Science question {index}?',
+                quiz_type='Multiple Choice',
+                difficulty='Easy',
+                sub_strand=sub,
+                score=1,
+            )
+            Option.objects.create(question=question, option='Wrong', is_correct=False)
+            Option.objects.create(question=question, option='Correct', is_correct=True)
+
+        response = self.client.post(reverse('core:exam_start'), {
+            'grade': self.grade.slug,
+            'subject': science_subject.slug,
+            'scope': 'general',
+        })
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse('core:exam_take'))
+        take_response = self.client.get(reverse('core:exam_take'))
+        self.assertContains(take_response, 'Continuing your earlier exam')
+        self.assertContains(take_response, 'Science')
+        self.assertContains(take_response, self.subject.name)
+
     def test_exam_take_grades_answer_and_shows_feedback(self):
         self.client.post(reverse('core:exam_start'), {
             'grade': self.grade.slug,
@@ -702,6 +739,57 @@ class AutoCustomQuizTests(TestCase):
         self.assertEqual(response.status_code, 302)
         quiz = Quiz.objects.get(title__startswith='Custom', subject=self.subject)
         self.assertGreaterEqual(quiz.questions.filter(is_active=True).count(), 1)
+
+    def test_starting_second_quiz_redirects_to_in_progress_with_notice(self):
+        self.client.force_login(self.guardian)
+        quiz_english = Quiz.objects.create(
+            title='English practice',
+            subject=self.subject,
+            difficulty='Easy',
+            is_active=True,
+            test_size=5,
+            created_by=self.guardian,
+        )
+        science_subject = Subject.objects.create(
+            name='Science',
+            slug='science',
+            grade_level=self.grade,
+            discipline=self.discipline,
+        )
+        quiz_science = Quiz.objects.create(
+            title='Science practice',
+            subject=science_subject,
+            difficulty='Easy',
+            is_active=True,
+            test_size=5,
+            created_by=self.guardian,
+        )
+        UserAttempts.objects.create(
+            student=self.student,
+            quiz=quiz_english,
+            user=self.guardian,
+            attempt_number=1,
+            is_active=True,
+            is_complete=False,
+        )
+        info_url = reverse(
+            'core:test_info',
+            kwargs={'quiz_uuid': quiz_science.uuid, 'student_uuid': self.student.uuid},
+        )
+        response = self.client.post(info_url, {'action': 'start'})
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(
+            response.url,
+            reverse(
+                'core:test_take',
+                kwargs={'quiz_uuid': quiz_english.uuid, 'student_uuid': self.student.uuid},
+            ),
+        )
+        take_response = self.client.get(response.url)
+        self.assertContains(take_response, 'still has')
+        self.assertContains(take_response, 'We opened that exam')
+        self.assertContains(take_response, 'Science')
+        self.assertContains(take_response, 'English')
 
 
 class PrivacyPolicyTests(TestCase):

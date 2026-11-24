@@ -216,3 +216,107 @@ def verify_receipt_via_pull_transactions(
         offset += len(rows)
 
     return None
+
+
+def _normalize_pull_phone(value: str) -> str:
+    try:
+        return normalize_mpesa_phone(value)
+    except ValueError:
+        return ''.join(ch for ch in (value or '') if ch.isdigit())
+
+
+def find_pull_transaction_for_stk_payment(
+    *,
+    phone_number: str,
+    amount_kes,
+    payment_created_at: datetime,
+    bill_reference: str = '',
+) -> dict | None:
+    """
+    Match a successful STK pay-bill row by payer phone, amount, and time window.
+
+    Used when the STK callback did not reach the server and stkpushquery omits
+    MpesaReceiptNumber.
+    """
+    expected_amount = Decimal(str(amount_kes)).quantize(Decimal('0.01'))
+    expected_phone = _normalize_pull_phone(phone_number)
+    bill_reference = (bill_reference or '').strip().upper()
+
+    now = timezone.now()
+    window_start = max(
+        payment_created_at - timedelta(minutes=20),
+        now - timedelta(hours=47),
+    )
+    window_end = now + timedelta(minutes=10)
+
+    def _matches(row: dict, *, require_bill_ref: bool) -> bool:
+        if not row.get('transaction_id'):
+            return False
+        pulled_amount = _parse_pull_amount(row['amount'])
+        if pulled_amount is None or pulled_amount != expected_amount:
+            return False
+        row_phone = _normalize_pull_phone(row.get('msisdn') or '')
+        if row_phone and expected_phone and row_phone != expected_phone:
+            return False
+        if require_bill_ref and bill_reference:
+            bill = str(row.get('bill_reference') or '').strip().upper()
+            if bill_reference not in bill and bill not in bill_reference:
+                return False
+        return True
+
+    def _scan(require_bill_ref: bool) -> dict | None:
+        offset = 0
+        candidates = []
+        for _ in range(MAX_PULL_PAGES):
+            data = query_pull_transactions(window_start, window_end, offset=offset)
+            response_code = str(
+                data.get('ResponseCode') or data.get('responseCode') or data.get('ResponseStatus') or '',
+            )
+            if response_code not in ('', '0', '1000'):
+                message = (
+                    data.get('ResponseDescription')
+                    or data.get('responseMessage')
+                    or data.get('errorMessage')
+                    or 'Pull query failed.'
+                )
+                raise MpesaAPIError(message, data)
+
+            rows = normalize_pull_rows(data)
+            if not rows:
+                break
+
+            for row in rows:
+                if _matches(row, require_bill_ref=require_bill_ref):
+                    candidates.append(row)
+
+            if len(rows) < PULL_PAGE_SIZE_HINT:
+                break
+            offset += len(rows)
+
+        if not candidates:
+            return None
+        if len(candidates) == 1:
+            return candidates[0]
+        payment_ts = (
+            timezone.localtime(payment_created_at)
+            if timezone.is_aware(payment_created_at)
+            else payment_created_at
+        )
+
+        def sort_key(row):
+            trx = str(row.get('trx_date') or '')
+            try:
+                trx_dt = datetime.strptime(trx[:19], '%Y-%m-%d %H:%M:%S')
+                delta = abs((trx_dt - payment_ts.replace(tzinfo=None)).total_seconds())
+            except (ValueError, TypeError):
+                delta = 999999
+            return delta
+
+        candidates.sort(key=sort_key)
+        return candidates[0]
+
+    if bill_reference:
+        row = _scan(require_bill_ref=True)
+        if row:
+            return row
+    return _scan(require_bill_ref=False)

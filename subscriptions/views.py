@@ -26,6 +26,7 @@ from .services import (
     fail_payment,
     get_active_subscription,
     parse_stk_callback,
+    enrich_stk_query_for_payment,
     reconcile_guest_demo_payment,
     reconcile_subscription_payment,
     user_has_active_subscription,
@@ -72,6 +73,10 @@ def _update_guest_demo_payment(payment, parsed, *, callback_payload=None):
     payment.result_description = (parsed.get('result_description') or '')[:255]
     if parsed.get('mpesa_receipt_number'):
         payment.mpesa_receipt_number = parsed['mpesa_receipt_number']
+    elif payment.status == GuestDemoPayment.Status.PENDING and parsed.get('result_code') == 0:
+        from .services import backfill_mpesa_receipt_via_pull
+
+        backfill_mpesa_receipt_via_pull(payment)
     if parsed.get('phone_number'):
         payment.phone_number = str(parsed['phone_number'])
     if callback_payload is not None:
@@ -629,10 +634,12 @@ def guest_demo_payment_status_view(request, payment_uuid):
             query_data = query_stk_status(payment.checkout_request_id)
             result_code = query_data.get('ResultCode')
             if str(result_code) == '0':
-                _update_guest_demo_payment(payment, {
-                    'result_code': 0,
-                    'result_description': query_data.get('ResultDesc', 'Payment successful.'),
-                })
+                parsed = enrich_stk_query_for_payment(payment, query_data)
+                _update_guest_demo_payment(
+                    payment,
+                    parsed,
+                    callback_payload={'stk_query': query_data},
+                )
                 payment.refresh_from_db()
             elif str(result_code) == '1032':
                 _update_guest_demo_payment(payment, {
@@ -684,6 +691,24 @@ def payment_status_view(request, payment_uuid):
             query_data = query_stk_status(payment.checkout_request_id)
             result_code = query_data.get('ResultCode')
             if result_code == '0':
+                parsed = enrich_stk_query_for_payment(payment, query_data)
+                payment.result_code = parsed.get('result_code')
+                payment.result_description = parsed.get('result_description') or payment.result_description
+                if parsed.get('mpesa_receipt_number'):
+                    payment.mpesa_receipt_number = parsed['mpesa_receipt_number']
+                if parsed.get('phone_number'):
+                    payment.phone_number = str(parsed['phone_number'])
+                payload = dict(payment.callback_payload or {})
+                payload['stk_query'] = query_data
+                payment.callback_payload = payload
+                payment.save(update_fields=[
+                    'result_code',
+                    'result_description',
+                    'mpesa_receipt_number',
+                    'phone_number',
+                    'callback_payload',
+                    'updated_at',
+                ])
                 activate_subscription_from_payment(payment)
                 payment.refresh_from_db()
             elif str(result_code) == '1032':
@@ -852,6 +877,11 @@ def mpesa_callback_view(request):
     ])
 
     if parsed.get('result_code') == 0:
+        if not payment.mpesa_receipt_number:
+            from .services import backfill_mpesa_receipt_via_pull
+
+            if backfill_mpesa_receipt_via_pull(payment):
+                payment.save(update_fields=['mpesa_receipt_number', 'updated_at'])
         activate_subscription_from_payment(payment)
     elif parsed.get('result_code') == 1032:
         cancel_payment(

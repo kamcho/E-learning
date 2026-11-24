@@ -181,6 +181,55 @@ def _get_learner_or_redirect(request, student_uuid):
     return student
 
 
+EXAM_RESUME_NOTICE_KEY = 'exam_resume_notice'
+
+
+def _quiz_exam_label(quiz):
+    if quiz.subject_id:
+        return f'{quiz.subject.name} — {quiz.title}'
+    return quiz.title
+
+
+def _other_in_progress_attempt(student, quiz):
+    from core.models import UserAttempts
+
+    return (
+        UserAttempts.objects
+        .filter(student=student, is_active=True, is_complete=False)
+        .exclude(quiz=quiz)
+        .select_related('quiz', 'quiz__subject')
+        .order_by('-started_at', '-created_at')
+        .first()
+    )
+
+
+def _redirect_to_other_in_progress(request, student, other_attempt, *, quiz):
+    in_progress_label = _quiz_exam_label(other_attempt.quiz)
+    requested_label = _quiz_exam_label(quiz)
+    messages.warning(
+        request,
+        f'{student.first_name} still has «{in_progress_label}» in progress. '
+        f'We opened that exam instead of starting «{requested_label}».',
+    )
+    request.session[EXAM_RESUME_NOTICE_KEY] = {
+        'in_progress_label': in_progress_label,
+        'requested_label': requested_label,
+    }
+    request.session.modified = True
+    return redirect(
+        'core:test_take',
+        quiz_uuid=other_attempt.quiz.uuid,
+        student_uuid=student.uuid,
+    )
+
+
+def _pop_exam_resume_notice(request):
+    notice = request.session.pop(EXAM_RESUME_NOTICE_KEY, None)
+    if notice is not None:
+        request.session.modified = True
+    return notice
+
+
 def _celebrate_new_achievements(request, student):
     from achievements.services import evaluate_student_achievements
 
@@ -263,8 +312,16 @@ def test_info_view(request, quiz_uuid, student_uuid):
                 if not attempt.started_at:
                     attempt.started_at = attempt.created_at or timezone.now()
                     attempt.save(update_fields=['started_at'])
-                messages.info(request, f"Continuing for {student.first_name}: {quiz.title}")
+                messages.info(
+                    request,
+                    f"Continuing {student.first_name}'s «{quiz.title}» — pick up where they left off.",
+                )
             else:
+                other_attempt = _other_in_progress_attempt(student, quiz)
+                if other_attempt:
+                    return _redirect_to_other_in_progress(
+                        request, student, other_attempt, quiz=quiz,
+                    )
                 can_start_exam = user_can_start_exam(request.user, student)
                 if subscription_required and all_count >= 1 and not can_start_exam:
                     messages.warning(
@@ -355,6 +412,19 @@ def test_info_view(request, quiz_uuid, student_uuid):
     else:
         attempt_status = 'ready'
 
+    other_in_progress = None
+    if not (existing_attempt and not existing_attempt.is_complete):
+        other = _other_in_progress_attempt(student, quiz)
+        if other:
+            other_in_progress = {
+                'attempt': other,
+                'label': _quiz_exam_label(other.quiz),
+                'continue_url': reverse(
+                    'core:test_take',
+                    kwargs={'quiz_uuid': other.quiz.uuid, 'student_uuid': student.uuid},
+                ),
+            }
+
     needs_credit = (
         subscription_required
         and attempt_status != 'in_progress'
@@ -378,6 +448,7 @@ def test_info_view(request, quiz_uuid, student_uuid):
             'checkout_plan': checkout_plan,
             'single_test_plan': checkout_plan,
             'subscription_required': subscription_required,
+            'other_in_progress': other_in_progress,
         },
     )
 
@@ -764,6 +835,7 @@ def test_take_view(request, quiz_uuid, student_uuid):
                 'student': student,
                 'question_count': 0,
                 'no_questions': True,
+                'resume_notice': _pop_exam_resume_notice(request),
             },
         )
 
@@ -872,6 +944,7 @@ def test_take_view(request, quiz_uuid, student_uuid):
             'incorrect_count': incorrect_count,
             'unanswered_count': unanswered_count,
             'question_uuid': str(current_question.uuid),
+            'resume_notice': _pop_exam_resume_notice(request),
         },
     )
 

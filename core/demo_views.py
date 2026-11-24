@@ -23,6 +23,7 @@ from core.demo import (
     mark_free_practice_attempt_used,
     mark_practice_demo_paywall,
     practice_demo_needs_payment,
+    pop_practice_resume_notice,
     redirect_if_blocked_practice_demo_start,
     save_demo_session,
     select_demo_questions,
@@ -508,6 +509,7 @@ def demo_take_view(request):
         'question_uuid': qid,
         'practice_demo_has_access': user_has_paid_practice_demo_access(request, demo),
         'guest_free_question_count': GUEST_FREE_QUESTION_COUNT,
+        'resume_notice': pop_practice_resume_notice(request),
     })
 
 
