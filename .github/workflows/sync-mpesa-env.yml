@@ -1,0 +1,74 @@
+name: Sync MPESA env on production
+
+on:
+  workflow_dispatch:
+    inputs:
+      env_b64:
+        description: Base64 of MPESA_* lines from local .env (run deploy/mpesa_env_b64.ps1)
+        required: true
+        type: string
+
+jobs:
+  sync:
+    name: Apply MPESA settings to /srv/elearning/.env
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Update production .env and restart elearning
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.DROPLET_HOST }}
+          username: ${{ secrets.DROPLET_USER }}
+          password: ${{ secrets.DROPLET_SSH_PASSWORD }}
+          port: 22
+          script_stop: true
+          envs: ENV_B64
+          script: |
+            set -euo pipefail
+            ENV=/srv/elearning/.env
+            test -f "$ENV"
+            echo "$ENV_B64" | base64 -d > /tmp/mpesa_sync.env
+            python3 - <<'PY'
+            import re
+            from pathlib import Path
+
+            sync_keys = {
+                "MPESA_ENVIRONMENT",
+                "MPESA_CONSUMER_KEY",
+                "MPESA_CONSUMER_SECRET",
+                "MPESA_SHORTCODE",
+                "MPESA_PASSKEY",
+                "MPESA_CALLBACK_BASE_URL",
+                "MPESA_PULL_NOMINATED_NUMBER",
+            }
+            patch = {}
+            for line in Path("/tmp/mpesa_sync.env").read_text().splitlines():
+                line = line.strip()
+                if not line or line.startswith("#") or "=" not in line:
+                    continue
+                k, _, v = line.partition("=")
+                k, v = k.strip(), v.strip().strip('"').strip("'")
+                if k in sync_keys and v:
+                    patch[k] = v
+            path = Path("/srv/elearning/.env")
+            text = path.read_text(encoding="utf-8", errors="replace")
+            for key, val in patch.items():
+                line = f"{key}={val}"
+                pattern = re.compile(rf"^{re.escape(key)}=.*$", re.MULTILINE)
+                if pattern.search(text):
+                    text = pattern.sub(line, text, count=1)
+                else:
+                    if text and not text.endswith("\n"):
+                        text += "\n"
+                    text += line + "\n"
+            text = re.sub(r"^MPESA_CALLBACK_URL=.*\n?", "", text, flags=re.MULTILINE)
+            path.write_text(text, encoding="utf-8")
+            path.chmod(0o640)
+            print("Patched:", ", ".join(sorted(patch)))
+            PY
+            chown elearning:www-data "$ENV"
+            systemctl restart elearning
+            rm -f /tmp/mpesa_sync.env
+        env:
+          ENV_B64: ${{ inputs.env_b64 }}

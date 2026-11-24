@@ -1,0 +1,49 @@
+name: Verify production MPESA env
+
+on:
+  workflow_dispatch:
+
+jobs:
+  compare:
+    name: Fingerprint production MPESA .env
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: SSH fingerprint /srv/elearning/.env
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.DROPLET_HOST }}
+          username: ${{ secrets.DROPLET_USER }}
+          password: ${{ secrets.DROPLET_SSH_PASSWORD }}
+          port: 22
+          script_stop: true
+          script: |
+            set -euo pipefail
+            ENV=/srv/elearning/.env
+            test -f "$ENV"
+            python3 - <<'PY'
+            import hashlib
+            from pathlib import Path
+
+            def fp(value: str) -> str:
+                if not value:
+                    return "(empty)"
+                digest = hashlib.sha256(value.encode()).hexdigest()[:12]
+                return f"sha256:{digest} len={len(value)}"
+
+            env = {}
+            for line in Path("/srv/elearning/.env").read_text().splitlines():
+                line = line.strip()
+                if not line or line.startswith("#") or "=" not in line:
+                    continue
+                k, _, v = line.partition("=")
+                k, v = k.strip(), v.strip().strip('"').strip("'")
+                if k.startswith("MPESA_"):
+                    env[k] = v
+            for k in sorted(env):
+                if "SECRET" in k or "PASSKEY" in k:
+                    print(f"{k}={fp(env[k])}")
+                else:
+                    print(f"{k}={env[k]}")
+            PY
