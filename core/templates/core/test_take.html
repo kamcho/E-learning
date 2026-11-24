@@ -213,6 +213,20 @@
     margin: -0.35rem 0 0.75rem;
   }
 
+  body.exam-take-page .exam-protected-content,
+  body.exam-take-page .exam-protected-content .demo-q-text,
+  body.exam-take-page .exam-protected-content .demo-option-text,
+  body.exam-take-page .exam-protected-content .question-svg-illustration {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  body.exam-take-page .exam-protected-content img {
+    -webkit-user-drag: none;
+    user-drag: none;
+    pointer-events: none;
+  }
+
   @media (max-width: 640px) {
     .exam-matching-row {
       grid-template-columns: 1fr;
@@ -279,13 +293,14 @@
   </header>
 
   <div class="demo-quiz-layout">
-    <section class="demo-question-card">
+    <section class="demo-question-card js-exam-no-copy">
       <div class="demo-q-badges">
         <span class="demo-q-badge demo-q-badge--num">Question {{ question_number }}</span>
         <span class="demo-q-badge demo-q-badge--type">{{ question.quiz_type }}</span>
         <span class="demo-q-badge demo-q-badge--mark">{{ question.max_marks }} mark{{ question.max_marks|pluralize }}</span>
       </div>
 
+      <div class="exam-protected-content">
       <div data-speech-region data-speech-auto-show="1" class="demo-q-listen" style="margin-bottom:0.75rem;"
         data-speech-question-uuid="{{ question.uuid }}"
         data-speech-audio-available="{{ question.tts_prompt_audio|yesno:'true,false' }}"
@@ -302,10 +317,11 @@
 
       <div class="demo-q-text question-rich-body" data-math-content>{{ question.quiz|linebreaksbr }}</div>
       {% if question.prompt_svg %}<div class="question-svg-illustration">{{ question.prompt_svg|safe_question_svg }}</div>{% endif %}
+      </div>
 
       {% if showing_feedback and feedback %}
         {% if question.quiz_type == 'Multiple Choice' or question.quiz_type == 'True or False' %}
-          <div class="demo-options">
+          <div class="demo-options exam-protected-content">
             {% for opt in choice_options %}
             <label class="demo-option
               {% if allows_multiple_answers %}
@@ -378,7 +394,7 @@
             </div>
           {% elif question.quiz_type == 'Matching' and matching_ui_mode == 'pick_option' %}
             <p class="exam-matching-hint">Choose the correct matching pair.</p>
-            <div class="demo-options">
+            <div class="demo-options exam-protected-content">
               {% for option in matching_options %}
               <label class="demo-option" style="display:flex;align-items:center;gap:.75rem;min-height:54px;padding:.75rem .9rem;border:1px solid #d8ccf5;border-radius:10px;background:#f6f2ff;color:#1e1b4b;cursor:pointer;">
                 <input type="radio" name="answer" value="{{ option.uuid }}"
@@ -394,7 +410,7 @@
           {% elif question.quiz_type == 'Multiple Choice' or question.quiz_type == 'True or False' %}
             {% if allows_multiple_answers %}
             <p class="exam-matching-hint">Select all answers that apply.</p>
-            <div class="demo-options">
+            <div class="demo-options exam-protected-content">
               {% for option in choice_options %}
               <label class="demo-option" style="display:flex;align-items:center;gap:.75rem;min-height:54px;padding:.75rem .9rem;border:1px solid #d8ccf5;border-radius:10px;background:#f6f2ff;color:#1e1b4b;cursor:pointer;">
                 <input type="checkbox" name="answer" value="{{ option.uuid }}"
@@ -405,7 +421,7 @@
               {% endfor %}
             </div>
             {% else %}
-            <div class="demo-options">
+            <div class="demo-options exam-protected-content">
               {% for option in choice_options %}
               <label class="demo-option" style="display:flex;align-items:center;gap:.75rem;min-height:54px;padding:.75rem .9rem;border:1px solid #d8ccf5;border-radius:10px;background:#f6f2ff;color:#1e1b4b;cursor:pointer;">
                 <input type="radio" name="answer" value="{{ option.uuid }}"

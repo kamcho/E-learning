@@ -102,7 +102,42 @@
     return true;
   }
 
+  function copyAllowedTarget(target) {
+    if (!target || !target.closest) {
+      return false;
+    }
+    return !!target.closest(
+      'input, textarea, select, button, .exam-text-answer, ' +
+      '.demo-ai-box, .demo-feedback, #demo-feedback-panel'
+    );
+  }
+
+  function wireQuestionCopyProtection() {
+    document.querySelectorAll('.js-exam-no-copy').forEach(function (card) {
+      ['copy', 'cut', 'contextmenu'].forEach(function (type) {
+        card.addEventListener(type, function (ev) {
+          if (copyAllowedTarget(ev.target)) {
+            return;
+          }
+          if (!ev.target.closest('.exam-protected-content')) {
+            return;
+          }
+          ev.preventDefault();
+        });
+      });
+      card.addEventListener('dragstart', function (ev) {
+        if (copyAllowedTarget(ev.target)) {
+          return;
+        }
+        if (ev.target.closest('.exam-protected-content img, .exam-protected-content .demo-q-text')) {
+          ev.preventDefault();
+        }
+      });
+    });
+  }
+
   preventPasteOnTypedAnswers(document);
+  wireQuestionCopyProtection();
 
   document.querySelectorAll('form.js-exam-submit-form').forEach(function (form) {
     form.addEventListener('submit', function (ev) {
