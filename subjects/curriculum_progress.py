@@ -91,3 +91,44 @@ def build_curriculum_progress_by_subject(subject_ids):
             'exams_ready_min_questions': SUBSTRAND_EXAMS_READY_MIN,
         }
     return result
+
+
+def subject_meets_exams_ready_rule(stats):
+    """True when every active sub-strand has at least SUBSTRAND_EXAMS_READY_MIN questions."""
+    substrand_count = stats.get('substrand_count') or 0
+    if substrand_count == 0:
+        return False
+    return stats.get('ready_substrands_at_exams_min') == substrand_count
+
+
+def build_subjects_exams_ready_summary(subject_ids):
+    """
+    Share of subjects (with at least one active sub-strand) where every
+    sub-strand has SUBSTRAND_EXAMS_READY_MIN or more active questions.
+    """
+    subject_ids = [sid for sid in subject_ids if sid]
+    if not subject_ids:
+        return {
+            'subjects_exams_ready_pct': 0,
+            'subjects_exams_ready_count': 0,
+            'subjects_exams_ready_total': 0,
+            'exams_ready_min_questions': SUBSTRAND_EXAMS_READY_MIN,
+        }
+
+    progress = build_curriculum_progress_by_subject(subject_ids)
+    eligible = 0
+    ready = 0
+    for subject_id in subject_ids:
+        stats = progress.get(subject_id, {})
+        if not stats.get('substrand_count'):
+            continue
+        eligible += 1
+        if subject_meets_exams_ready_rule(stats):
+            ready += 1
+
+    return {
+        'subjects_exams_ready_pct': round(100 * ready / eligible) if eligible else 0,
+        'subjects_exams_ready_count': ready,
+        'subjects_exams_ready_total': eligible,
+        'exams_ready_min_questions': SUBSTRAND_EXAMS_READY_MIN,
+    }

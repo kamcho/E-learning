@@ -988,6 +988,42 @@ class CurriculumProgressTests(TestCase):
         # 100% + ~14% → ~57%
         self.assertEqual(stats['progress_pct'], 57)
 
+    def test_subjects_exams_ready_summary_counts_fully_ready_subjects(self):
+        from core.models import Question
+        from subjects.curriculum_progress import build_subjects_exams_ready_summary
+
+        for index in range(10):
+            Question.objects.create(
+                quiz=f'Q ten {index}',
+                difficulty='Easy',
+                quiz_type='Multiple Choice',
+                sub_strand=self.sub_a,
+                score=1,
+            )
+        Question.objects.create(
+            quiz='Q one',
+            difficulty='Easy',
+            quiz_type='Multiple Choice',
+            sub_strand=self.sub_b,
+            score=1,
+        )
+        summary = build_subjects_exams_ready_summary([self.subject.pk])
+        self.assertEqual(summary['subjects_exams_ready_total'], 1)
+        self.assertEqual(summary['subjects_exams_ready_count'], 0)
+        self.assertEqual(summary['subjects_exams_ready_pct'], 0)
+
+        for index in range(9):
+            Question.objects.create(
+                quiz=f'Q ten b {index}',
+                difficulty='Easy',
+                quiz_type='Multiple Choice',
+                sub_strand=self.sub_b,
+                score=1,
+            )
+        summary = build_subjects_exams_ready_summary([self.subject.pk])
+        self.assertEqual(summary['subjects_exams_ready_count'], 1)
+        self.assertEqual(summary['subjects_exams_ready_pct'], 100)
+
     def test_coverage_pct_counts_substrands_at_ten_questions(self):
         from core.models import Question
         from subjects.curriculum_progress import build_curriculum_progress_by_subject

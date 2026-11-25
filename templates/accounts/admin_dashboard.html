@@ -260,7 +260,7 @@
 
   {% include 'components/stat_card.html' with icon='book' icon_color='amber' value=curriculum_counts.subjects label='Active subjects' footer_val=curriculum_counts.grade_levels footer_unit='grades' footer_note='Curriculum' %}
 
-  {% include 'components/stat_card.html' with icon='quiz' icon_color='emerald' value=content_counts.quizzes label='Active quizzes' footer_val=content_counts.completed_attempts footer_unit='completed' footer_note='Learner attempts' %}
+  {% include 'components/stat_card.html' with icon='check' icon_color='emerald' value=content_counts.subjects_exams_ready_display label='Subjects at 10+ rule' footer_val=content_counts.subjects_exams_ready_count footer_unit=content_counts.subjects_exams_ready_footer_unit footer_note='All sub-strands bank-ready' href=curriculum_urls.subjects %}
 </div>
 
 {% include 'accounts/partials/attempt_score_chart.html' with attempt_chart=attempt_chart chart_canvas_id='attemptScoreChart' chart_data_id='attempt-chart-data' %}
@@ -332,9 +332,9 @@
           <span>{{ student_stats.total }}</span>
         </div>
         <div class="curriculum-bar-row">
-          <span>Quizzes</span>
-          <div class="curriculum-bar-track"><div class="curriculum-bar-fill" style="width: {% if max_val %}{% widthratio content_counts.quizzes max_val 100 %}{% else %}0{% endif %}%;"></div></div>
-          <span>{{ content_counts.quizzes }}</span>
+          <span>Subjects 10+ ready</span>
+          <div class="curriculum-bar-track"><div class="curriculum-bar-fill" style="width: {{ content_counts.subjects_exams_ready_pct }}%;"></div></div>
+          <span>{{ content_counts.subjects_exams_ready_count }}/{{ content_counts.subjects_exams_ready_total }}</span>
         </div>
         <div class="curriculum-bar-row">
           <span>Attempts</span>

@@ -1423,11 +1423,23 @@ def admin_dashboard_view(request):
         'sub_strand_objectives': SubStrandObjective.objects.filter(is_active=True).count(),
     }
 
+    from subjects.curriculum_progress import build_subjects_exams_ready_summary
+
+    active_subject_ids = list(
+        Subject.objects.filter(is_active=True).values_list('pk', flat=True)
+    )
+    exams_ready_summary = build_subjects_exams_ready_summary(active_subject_ids)
+    ready_total = exams_ready_summary['subjects_exams_ready_total']
+    ready_count = exams_ready_summary['subjects_exams_ready_count']
+
     content_counts = {
         'quizzes': Quiz.objects.filter(is_active=True).count(),
         'questions': Question.objects.filter(is_active=True).count(),
         'attempts': UserAttempts.objects.filter(is_active=True).count(),
         'completed_attempts': UserAttempts.objects.filter(is_active=True, is_complete=True).count(),
+        **exams_ready_summary,
+        'subjects_exams_ready_display': f"{exams_ready_summary['subjects_exams_ready_pct']}%",
+        'subjects_exams_ready_footer_unit': f'of {ready_total} subjects',
     }
 
     users_paginator = Paginator(
@@ -1470,7 +1482,7 @@ def admin_dashboard_view(request):
             total_users,
             active_users,
             total_students,
-            content_counts['quizzes'],
+            content_counts['subjects_exams_ready_total'],
             content_counts['attempts'],
             1,
         ),
