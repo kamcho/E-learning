@@ -145,6 +145,47 @@
     --card-accent-glow: rgba(91, 141, 239, 0.22);
   }
 
+  .subject-bank-progress {
+    margin: 0.65rem 0 0.85rem;
+  }
+
+  .subject-bank-progress-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.78rem;
+    color: var(--clr-text-muted);
+    margin-bottom: 0.35rem;
+  }
+
+  .subject-bank-progress-pct {
+    font-weight: 800;
+    color: var(--card-accent, var(--clr-primary));
+    font-size: 0.85rem;
+  }
+
+  .subject-bank-progress-track {
+    height: 7px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.06);
+    overflow: hidden;
+  }
+
+  .subject-bank-progress-fill {
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, var(--card-accent, var(--clr-primary)), color-mix(in srgb, var(--card-accent, var(--clr-primary)) 55%, white));
+    transition: width 0.25s ease;
+  }
+
+  .subject-bank-progress-hint {
+    margin: 0.4rem 0 0;
+    font-size: 0.72rem;
+    line-height: 1.4;
+    color: var(--clr-text-muted);
+  }
+
   .subject-course-visual {
     display: flex;
     align-items: center;
@@ -1605,6 +1646,18 @@
               <span class="ew-choice-tag ew-choice-tag--{{ item.status_key }}">{{ item.status_label }}</span>
             {% endif %}
           </span>
+          {% if item.bank_substrand_count %}
+          <span class="subject-bank-progress" style="display:block;width:100%;margin-top:0.55rem;">
+            <span class="subject-bank-progress-head">
+              <span>Bank readiness</span>
+              <span class="subject-bank-progress-pct">{{ item.bank_coverage_pct }}%</span>
+            </span>
+            <span class="subject-bank-progress-track" role="progressbar" aria-valuenow="{{ item.bank_coverage_pct }}" aria-valuemin="0" aria-valuemax="100" aria-label="Sub-strands with {{ item.bank_exams_ready_min }} or more questions for {{ item.subject.name }}">
+              <span class="subject-bank-progress-fill" style="width: {{ item.bank_coverage_pct }}%;"></span>
+            </span>
+            <span class="subject-bank-progress-hint">{{ item.bank_ready_substrands }}/{{ item.bank_substrand_count }} sub-strands at {{ item.bank_exams_ready_min }}+ questions</span>
+          </span>
+          {% endif %}
         </span>
         <span class="ew-choice-arrow" aria-hidden="true">›</span>
       </a>
@@ -1632,6 +1685,19 @@
           Practice questions and exercises
           {% if browse_subjects_by_grade|length == 1 and not browse_all_grades %} · {{ item.subject.grade_level.name }}{% endif %}
         </p>
+
+        {% if item.bank_substrand_count %}
+        <div class="subject-bank-progress">
+          <div class="subject-bank-progress-head">
+            <span>Question bank</span>
+            <span class="subject-bank-progress-pct">{{ item.bank_coverage_pct }}%</span>
+          </div>
+          <div class="subject-bank-progress-track" role="progressbar" aria-valuenow="{{ item.bank_coverage_pct }}" aria-valuemin="0" aria-valuemax="100" aria-label="Sub-strands with {{ item.bank_exams_ready_min }} or more questions for {{ item.subject.name }}">
+            <div class="subject-bank-progress-fill" style="width: {{ item.bank_coverage_pct }}%;"></div>
+          </div>
+          <p class="subject-bank-progress-hint">{{ item.bank_ready_substrands }}/{{ item.bank_substrand_count }} sub-strands at {{ item.bank_exams_ready_min }}+ questions</p>
+        </div>
+        {% endif %}
 
         <div class="subject-course-performance">
           <div class="subject-course-perf-head">

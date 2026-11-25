@@ -2918,6 +2918,24 @@ def exams_list_view(request):
             })
         for item in browse_subjects:
             _enrich_browse_subject_item(item, selected_student, base_quizzes)
+        if browse_subjects:
+            from subjects.curriculum_progress import build_curriculum_progress_by_subject
+
+            bank_progress = build_curriculum_progress_by_subject(
+                [entry['subject'].pk for entry in browse_subjects],
+            )
+            empty_bank = {
+                'coverage_pct': 0,
+                'substrand_count': 0,
+                'ready_substrands_at_exams_min': 0,
+                'exams_ready_min_questions': 10,
+            }
+            for entry in browse_subjects:
+                stats = bank_progress.get(entry['subject'].pk, empty_bank)
+                entry['bank_coverage_pct'] = stats['coverage_pct']
+                entry['bank_substrand_count'] = stats['substrand_count']
+                entry['bank_ready_substrands'] = stats['ready_substrands_at_exams_min']
+                entry['bank_exams_ready_min'] = stats['exams_ready_min_questions']
 
     if subject_slug:
         active_subject = Subject.objects.filter(

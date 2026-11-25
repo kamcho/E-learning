@@ -988,6 +988,30 @@ class CurriculumProgressTests(TestCase):
         # 100% + ~14% → ~57%
         self.assertEqual(stats['progress_pct'], 57)
 
+    def test_coverage_pct_counts_substrands_at_ten_questions(self):
+        from core.models import Question
+        from subjects.curriculum_progress import build_curriculum_progress_by_subject
+
+        for index in range(10):
+            Question.objects.create(
+                quiz=f'Q ten {index}',
+                difficulty='Easy',
+                quiz_type='Multiple Choice',
+                sub_strand=self.sub_a,
+                score=1,
+            )
+        Question.objects.create(
+            quiz='Q one',
+            difficulty='Easy',
+            quiz_type='Multiple Choice',
+            sub_strand=self.sub_b,
+            score=1,
+        )
+        stats = build_curriculum_progress_by_subject([self.subject.pk])[self.subject.pk]
+        self.assertEqual(stats['ready_substrands_at_exams_min'], 1)
+        self.assertEqual(stats['substrand_count'], 2)
+        self.assertEqual(stats['coverage_pct'], 50)
+
     def test_subject_list_shows_progress_pct(self):
         from core.models import Question
 

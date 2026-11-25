@@ -1,4 +1,4 @@
-"""Question-bank progress against the 7-questions-per-sub-strand target."""
+"""Question-bank progress against per-sub-strand question targets."""
 
 from collections import defaultdict
 
@@ -9,6 +9,8 @@ from core.models import Question
 from .models import SubStrand
 
 SUBSTRAND_QUESTION_TARGET = 7
+# Exam Center subject cards: share of sub-strands with at least this many bank questions.
+SUBSTRAND_EXAMS_READY_MIN = 10
 
 
 def substrand_question_progress_pct(question_count, target=SUBSTRAND_QUESTION_TARGET):
@@ -32,6 +34,9 @@ def build_curriculum_progress_by_subject(subject_ids):
         'substrand_count': 0,
         'ready_count': 0,
         'question_count': 0,
+        'coverage_pct': 0,
+        'ready_substrands_at_exams_min': 0,
+        'exams_ready_min_questions': SUBSTRAND_EXAMS_READY_MIN,
     }
     if not subject_ids:
         return {}
@@ -64,12 +69,25 @@ def build_curriculum_progress_by_subject(subject_ids):
         questions_by_subject[subject_id] += q_count
         pct_by_subject[subject_id].append(substrand_question_progress_pct(q_count))
 
+    subs_by_subject = defaultdict(list)
+    for row in sub_strands:
+        subs_by_subject[row['strand__subject_id']].append(row)
+
     for subject_id, pcts in pct_by_subject.items():
         ready = sum(1 for pct in pcts if pct >= 100)
+        subject_subs = subs_by_subject.get(subject_id, [])
+        ready_at_exams_min = sum(
+            1 for row in subject_subs
+            if question_counts.get(row['pk'], 0) >= SUBSTRAND_EXAMS_READY_MIN
+        )
+        sub_count = len(subject_subs)
         result[subject_id] = {
             'progress_pct': round(sum(pcts) / len(pcts)) if pcts else 0,
-            'substrand_count': len(pcts),
+            'substrand_count': sub_count,
             'ready_count': ready,
             'question_count': questions_by_subject[subject_id],
+            'coverage_pct': round(100 * ready_at_exams_min / sub_count) if sub_count else 0,
+            'ready_substrands_at_exams_min': ready_at_exams_min,
+            'exams_ready_min_questions': SUBSTRAND_EXAMS_READY_MIN,
         }
     return result
