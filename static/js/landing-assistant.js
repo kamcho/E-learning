@@ -34,6 +34,7 @@
         '/accounts/signin': 'Sign in',
         '/subscriptions/plans': 'View pricing',
         '/exams': 'Browse exams',
+        '/exam': 'Try a free practice exam',
       };
       if (byPath[path]) {
         return byPath[path];
