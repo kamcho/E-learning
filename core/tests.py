@@ -1015,6 +1015,25 @@ class LandingAssistantTests(TestCase):
         self.assertTrue(data.get('ok'))
         self.assertIn('AI assistant is not configured', data.get('reply', ''))
 
+    def test_build_facts_payload_uses_full_name_when_signed_in(self):
+        from django.test import RequestFactory
+
+        from core.landing_assistant import build_facts_payload
+
+        user = User.objects.create_user(
+            phone='0742134431',
+            password='1234',
+            role=Role.GUARDIAN,
+            first_name='Kevin',
+            last_name='Gitundu',
+        )
+        request = RequestFactory().get('/')
+        request.user = user
+        request.session = self.client.session
+        facts = build_facts_payload(request)
+        self.assertTrue(facts['visitor']['signed_in'])
+        self.assertEqual(facts['visitor']['display_name'], 'Kevin Gitundu')
+
 
 class LandingPageNavbarTests(TestCase):
     def setUp(self):

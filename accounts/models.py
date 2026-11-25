@@ -172,6 +172,13 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
     def full_name(self):
         return f'{self.first_name} {self.last_name}'.strip()
 
+    def get_full_name(self):
+        """Django auth / template compatibility (AbstractUser API)."""
+        return self.full_name
+
+    def get_short_name(self):
+        return (self.first_name or '').strip()
+
     @property
     def is_guardian(self):
         return self.role == Role.GUARDIAN
