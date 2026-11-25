@@ -25,34 +25,81 @@
     return url.replace(/[.,;:!?)}\]'"]+$/g, '');
   }
 
-  /** Bot replies may include plain https:// URLs — render as safe clickable links. */
+  function linkButtonLabel(href) {
+    try {
+      var parsed = new URL(href);
+      var path = (parsed.pathname || '/').replace(/\/+$/, '').toLowerCase() || '/';
+      var byPath = {
+        '/accounts/signup': 'Sign up',
+        '/accounts/signin': 'Sign in',
+        '/subscriptions/plans': 'View pricing',
+        '/exams': 'Browse exams',
+      };
+      if (byPath[path]) {
+        return byPath[path];
+      }
+      if (path.indexOf('exam') !== -1) {
+        return 'Try a practice exam';
+      }
+      if (path.indexOf('subscription') !== -1 || path.indexOf('plan') !== -1) {
+        return 'View pricing';
+      }
+      if (path.indexOf('signin') !== -1 || path.indexOf('login') !== -1) {
+        return 'Sign in';
+      }
+      if (path.indexOf('signup') !== -1 || path.indexOf('register') !== -1) {
+        return 'Sign up';
+      }
+      var host = parsed.hostname.replace(/^www\./i, '');
+      return 'Open on ' + host;
+    } catch (err) {
+      return 'Open link';
+    }
+  }
+
+  function createLinkButton(href) {
+    var link = document.createElement('a');
+    link.href = href;
+    link.className = 'landing-assistant-link-btn';
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    link.textContent = linkButtonLabel(href);
+    return link;
+  }
+
+  /** Bot replies may include plain https:// URLs — render as action buttons. */
   function fillBubbleWithLinkifiedText(bubble, text) {
     bubble.textContent = '';
-    var input = text || '';
+    var body = text || '';
     var lastIndex = 0;
     var match;
     URL_PATTERN.lastIndex = 0;
-    while ((match = URL_PATTERN.exec(input)) !== null) {
+    while ((match = URL_PATTERN.exec(body)) !== null) {
       var raw = match[0];
       var href = trimUrlTrailingPunctuation(raw);
       var suffix = raw.slice(href.length);
       if (match.index > lastIndex) {
-        bubble.appendChild(document.createTextNode(input.slice(lastIndex, match.index)));
+        bubble.appendChild(document.createTextNode(body.slice(lastIndex, match.index)));
       }
-      var link = document.createElement('a');
-      link.href = href;
-      link.target = '_blank';
-      link.rel = 'noopener noreferrer';
-      link.textContent = href;
-      bubble.appendChild(link);
+      bubble.appendChild(createLinkButton(href));
       if (suffix) {
         bubble.appendChild(document.createTextNode(suffix));
       }
       lastIndex = match.index + raw.length;
     }
-    if (lastIndex < input.length) {
-      bubble.appendChild(document.createTextNode(input.slice(lastIndex)));
+    if (lastIndex < body.length) {
+      bubble.appendChild(document.createTextNode(body.slice(lastIndex)));
     }
+  }
+
+  var INPUT_MAX_HEIGHT_PX = 128;
+
+  function resizeChatInput() {
+    if (!input) return;
+    input.style.height = 'auto';
+    var next = Math.min(input.scrollHeight, INPUT_MAX_HEIGHT_PX);
+    input.style.height = next + 'px';
+    input.style.overflowY = input.scrollHeight > INPUT_MAX_HEIGHT_PX ? 'auto' : 'hidden';
   }
 
   function appendMessage(role, text, extraClass) {
@@ -119,6 +166,11 @@
 
   if (!form || !chatUrl) return;
 
+  if (input) {
+    input.addEventListener('input', resizeChatInput);
+    resizeChatInput();
+  }
+
   form.addEventListener('submit', function (e) {
     e.preventDefault();
     var text = (input.value || '').trim();
@@ -126,6 +178,7 @@
 
     appendMessage('user', text);
     input.value = '';
+    resizeChatInput();
     input.disabled = true;
     if (sendBtn) sendBtn.disabled = true;
 
@@ -162,6 +215,7 @@
       .finally(function () {
         input.disabled = false;
         if (sendBtn) sendBtn.disabled = false;
+        resizeChatInput();
         input.focus();
       });
   });

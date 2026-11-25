@@ -119,15 +119,36 @@
   border-bottom-left-radius: 0.25rem;
 }
 
-.landing-assistant-msg--bot .landing-assistant-msg__bubble a {
-  color: #0d8a4e;
-  font-weight: 600;
-  text-decoration: underline;
-  text-underline-offset: 2px;
+.landing-assistant-link-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0.45rem 0.25rem 0.15rem 0;
+  padding: 0.5rem 0.95rem;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.25;
+  text-decoration: none;
+  background: #ffeb3b;
+  color: #1a1a1a;
+  border: 1px solid rgba(0, 0, 0, 0.07);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.35) inset;
+  max-width: 100%;
+  text-align: center;
+  word-break: break-word;
+  white-space: normal;
+  cursor: pointer;
+  transition: filter 0.15s ease, transform 0.15s ease;
 }
 
-.landing-assistant-msg--bot .landing-assistant-msg__bubble a:hover {
-  color: #0a6d3d;
+.landing-assistant-link-btn:hover {
+  filter: brightness(0.96);
+  transform: translateY(-1px);
+}
+
+.landing-assistant-link-btn:active {
+  transform: translateY(0);
 }
 
 .landing-assistant-msg--user .landing-assistant-msg__bubble {
@@ -165,13 +186,16 @@
 .landing-assistant__input {
   flex: 1;
   resize: none;
+  overflow-y: hidden;
   border: 1px solid #d8cfe3;
   border-radius: 0.75rem;
   padding: 0.55rem 0.75rem;
   font: inherit;
   font-size: 0.9rem;
+  line-height: 1.4;
   min-height: 2.75rem;
   max-height: 8rem;
+  box-sizing: border-box;
 }
 
 .landing-assistant__input:focus {
