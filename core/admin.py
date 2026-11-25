@@ -6,6 +6,8 @@ from .models import (
     ApplicationErrorLog,
     AttemptResponse,
     GuestDemoAttempt,
+    LandingAssistantMessage,
+    LandingAssistantThread,
     Question,
     Option,
     Quiz,
@@ -133,6 +135,56 @@ class GuestDemoAttemptAdmin(admin.ModelAdmin):
         return False
 
     def has_delete_permission(self, request, obj=None):
+        return False
+
+
+class LandingAssistantMessageInline(admin.TabularInline):
+    model = LandingAssistantMessage
+    extra = 0
+    fields = ('created_at', 'role', 'content', 'ai_enabled')
+    readonly_fields = fields
+    ordering = ('created_at',)
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(LandingAssistantThread)
+class LandingAssistantThreadAdmin(admin.ModelAdmin):
+    list_display = ('updated_at', 'user', 'message_count', 'django_session_key', 'created_at')
+    list_filter = ('created_at', 'updated_at')
+    search_fields = ('uuid', 'django_session_key', 'user__phone', 'user__first_name', 'user__last_name')
+    readonly_fields = (
+        'uuid', 'django_session_key', 'user', 'ip_hash', 'user_agent', 'created_at', 'updated_at',
+    )
+    inlines = [LandingAssistantMessageInline]
+    ordering = ('-updated_at',)
+
+    @admin.display(description='Messages')
+    def message_count(self, obj):
+        return obj.messages.count()
+
+    def has_add_permission(self, request):
+        return False
+
+
+@admin.register(LandingAssistantMessage)
+class LandingAssistantMessageAdmin(admin.ModelAdmin):
+    list_display = ('created_at', 'thread', 'role', 'content_preview', 'ai_enabled')
+    list_filter = ('role', 'ai_enabled', 'created_at')
+    search_fields = ('content', 'thread__uuid', 'thread__user__phone')
+    readonly_fields = ('uuid', 'thread', 'role', 'content', 'ai_enabled', 'created_at')
+    ordering = ('-created_at',)
+
+    @admin.display(description='Content')
+    def content_preview(self, obj):
+        text = (obj.content or '').replace('\n', ' ')
+        return text[:80] + ('…' if len(text) > 80 else '')
+
+    def has_add_permission(self, request):
         return False
 
 

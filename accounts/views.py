@@ -14,7 +14,7 @@ from django.http import FileResponse, Http404, JsonResponse
 from django.views.decorators.http import require_http_methods, require_POST
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.db import connections
-from django.db.models import Avg, Count, Max, Prefetch, Q, Sum
+from django.db.models import Avg, Count, Max, Min, Prefetch, Q, Sum
 from django.db.models.functions import TruncDate, TruncMonth
 from django.urls import reverse
 from django.core.paginator import Paginator
@@ -2316,6 +2316,139 @@ def admin_students_list_view(request):
         'pagination_extra': _pagination_extra_params(request, ['page']),
         'django_admin_url': reverse('admin:accounts_student_changelist'),
         'page_size': ADMIN_STUDENTS_LIST_PAGE_SIZE,
+    })
+
+
+@login_required(login_url='accounts:signin')
+def admin_assistant_chats_view(request):
+    """Landing assistant conversations grouped by signed-in user or anonymous visitor."""
+    denied = _admin_access_or_redirect(request)
+    if denied:
+        return denied
+
+    from core.models import LandingAssistantThread
+
+    search = request.GET.get('q', '').strip()
+    groups_qs = (
+        LandingAssistantThread.objects.values('user_id')
+        .annotate(
+            thread_count=Count('uuid', distinct=True),
+            message_count=Count('messages'),
+            last_activity=Max('updated_at'),
+            first_activity=Min('created_at'),
+        )
+        .order_by('-last_activity')
+    )
+    if search:
+        matched_user_ids = list(
+            MyUser.objects.filter(
+                Q(phone__icontains=search)
+                | Q(first_name__icontains=search)
+                | Q(last_name__icontains=search)
+                | Q(email__icontains=search)
+            ).values_list('pk', flat=True)
+        )
+        anonymous_match = 'anonymous' in search.lower()
+        filter_q = Q()
+        if matched_user_ids:
+            filter_q |= Q(user_id__in=matched_user_ids)
+        if anonymous_match:
+            filter_q |= Q(user_id__isnull=True)
+        if filter_q:
+            groups_qs = groups_qs.filter(filter_q)
+        else:
+            groups_qs = groups_qs.none()
+
+    page_obj = Paginator(groups_qs, 25).get_page(request.GET.get('page'))
+    user_ids = [row['user_id'] for row in page_obj.object_list if row['user_id']]
+    users_by_id = {user.pk: user for user in MyUser.objects.filter(pk__in=user_ids)}
+
+    visitor_groups = []
+    for row in page_obj.object_list:
+        user = users_by_id.get(row['user_id']) if row['user_id'] else None
+        if user:
+            label = user.get_full_name() or user.phone or f'User #{user.pk}'
+            sublabel = user.phone or user.email or user.get_role_display()
+        else:
+            label = 'Anonymous visitors'
+            sublabel = 'Not signed in during chat'
+        visitor_groups.append({
+            **row,
+            'user': user,
+            'label': label,
+            'sublabel': sublabel,
+        })
+
+    return render(request, 'accounts/admin_assistant_chats.html', {
+        'page_obj': page_obj,
+        'visitor_groups': visitor_groups,
+        'search': search,
+        'pagination_extra': _pagination_extra_params(request, ['page']),
+    })
+
+
+@login_required(login_url='accounts:signin')
+def admin_assistant_chats_user_view(request, user_id):
+    """All assistant chat sessions for one registered user."""
+    denied = _admin_access_or_redirect(request)
+    if denied:
+        return denied
+
+    from core.models import LandingAssistantThread
+
+    profile_user = get_object_or_404(MyUser, pk=user_id)
+    threads = (
+        LandingAssistantThread.objects.filter(user_id=user_id)
+        .annotate(message_count=Count('messages'))
+        .order_by('-updated_at')
+    )
+    page_obj = Paginator(threads, 25).get_page(request.GET.get('page'))
+    return render(request, 'accounts/admin_assistant_chats_user.html', {
+        'profile_user': profile_user,
+        'page_obj': page_obj,
+        'pagination_extra': _pagination_extra_params(request, ['page']),
+    })
+
+
+@login_required(login_url='accounts:signin')
+def admin_assistant_chats_anonymous_view(request):
+    """All assistant chat sessions from visitors who were not signed in."""
+    denied = _admin_access_or_redirect(request)
+    if denied:
+        return denied
+
+    from core.models import LandingAssistantThread
+
+    threads = (
+        LandingAssistantThread.objects.filter(user__isnull=True)
+        .annotate(message_count=Count('messages'))
+        .order_by('-updated_at')
+    )
+    page_obj = Paginator(threads, 25).get_page(request.GET.get('page'))
+    return render(request, 'accounts/admin_assistant_chats_user.html', {
+        'profile_user': None,
+        'page_obj': page_obj,
+        'pagination_extra': _pagination_extra_params(request, ['page']),
+    })
+
+
+@login_required(login_url='accounts:signin')
+def admin_assistant_chat_detail_view(request, thread_uuid):
+    """Full transcript for one landing assistant chat session."""
+    denied = _admin_access_or_redirect(request)
+    if denied:
+        return denied
+
+    from core.models import LandingAssistantThread
+
+    thread = get_object_or_404(
+        LandingAssistantThread.objects.select_related('user'),
+        uuid=thread_uuid,
+    )
+    messages = list(thread.messages.order_by('created_at'))
+    return render(request, 'accounts/admin_assistant_chat_detail.html', {
+        'thread': thread,
+        'chat_messages': messages,
     })
 
 

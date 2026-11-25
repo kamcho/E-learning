@@ -1,0 +1,74 @@
+{% extends 'accounts/admin_base.html' %}
+
+{% block title %}Assistant sessions — Admin — Soma Smart{% endblock %}
+
+{% block extra_head %}
+{% include 'accounts/partials/admin_list_styles.html' %}
+{% endblock %}
+
+{% block admin_content %}
+<div class="admin-list-banner">
+  <div>
+    <a href="{% url 'accounts:admin_assistant_chats' %}" class="admin-list-back admin-list-back--light">&larr; All visitors</a>
+    <h1>{% if profile_user %}{{ profile_user.get_full_name|default:profile_user.phone }}{% else %}Anonymous visitors{% endif %}</h1>
+    <p>
+      {% if profile_user %}
+      {{ profile_user.phone|default:profile_user.email }} · {{ profile_user.get_role_display }}
+      {% else %}
+      Chat sessions without a signed-in account
+      {% endif %}
+    </p>
+  </div>
+  {% if profile_user %}
+  <a href="{% url 'accounts:admin_user_detail' profile_user.pk %}" class="btn-list-banner">User profile</a>
+  {% endif %}
+</div>
+
+<div class="admin-panel">
+  <div class="admin-panel-head-flex">
+    <div>
+      <h2>Chat sessions</h2>
+      <p class="admin-panel-sub">Each session is one browser visit to the landing assistant.</p>
+    </div>
+    <span class="table-count">{{ page_obj.paginator.count }} session{{ page_obj.paginator.count|pluralize }}</span>
+  </div>
+
+  {% if page_obj.object_list %}
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Last active</th>
+        <th>Started</th>
+        <th>Messages</th>
+        <th>Session</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for thread in page_obj %}
+      <tr>
+        <td>
+          <div class="list-row-name">{{ thread.updated_at|date:'d M Y' }}</div>
+          <div class="list-row-meta">{{ thread.updated_at|date:'H:i' }}</div>
+        </td>
+        <td>
+          <div class="list-row-meta">{{ thread.created_at|date:'d M Y, H:i' }}</div>
+        </td>
+        <td>{{ thread.message_count }}</td>
+        <td><span class="list-row-meta">{{ thread.uuid }}</span></td>
+        <td>
+          <a class="admin-page-btn" href="{% url 'accounts:admin_assistant_chat_detail' thread.uuid %}">Open chat</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% include 'accounts/partials/admin_pagination.html' with page_obj=page_obj page_param='page' pagination_extra=pagination_extra %}
+  {% else %}
+  <div class="admin-list-empty">
+    <div class="admin-list-empty-icon" aria-hidden="true">&#128172;</div>
+    <p>No chat sessions for this visitor.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

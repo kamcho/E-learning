@@ -1,0 +1,81 @@
+{% extends 'accounts/admin_base.html' %}
+
+{% block title %}AI Assistant Chats — Admin — Soma Smart{% endblock %}
+
+{% block extra_head %}
+{% include 'accounts/partials/admin_list_styles.html' %}
+{% endblock %}
+
+{% block admin_content %}
+<div class="admin-list-banner">
+  <div>
+    <a href="{% url 'accounts:admin_dashboard' %}" class="admin-list-back admin-list-back--light">&larr; Back to dashboard</a>
+    <h1>AI assistant chats</h1>
+    <p>Conversations grouped by signed-in user or anonymous visitors</p>
+  </div>
+</div>
+
+<div class="admin-panel">
+  <div class="admin-panel-head-flex">
+    <div>
+      <h2>Visitors</h2>
+      <p class="admin-panel-sub">Search by name, phone, email, or “anonymous”.</p>
+    </div>
+    <span class="table-count">{{ page_obj.paginator.count }} group{{ page_obj.paginator.count|pluralize }}</span>
+  </div>
+
+  <form method="get" style="display:flex; gap:.65rem; align-items:center; flex-wrap:wrap; padding:1rem var(--space-xl);">
+    <input type="search" name="q" value="{{ search }}" placeholder="Search visitor" aria-label="Search visitors" style="min-height:40px; padding:.5rem .75rem; border:1px solid var(--clr-border); border-radius:var(--radius-md); background:var(--clr-surface); color:var(--clr-text); min-width:min(100%, 280px);">
+    <button type="submit">Search</button>
+    {% if search %}<a href="{% url 'accounts:admin_assistant_chats' %}" class="admin-page-btn">Clear</a>{% endif %}
+  </form>
+
+  {% if visitor_groups %}
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Visitor</th>
+        <th>Sessions</th>
+        <th>Messages</th>
+        <th>First seen</th>
+        <th>Last activity</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in visitor_groups %}
+      <tr>
+        <td>
+          <div class="list-row-name">{{ row.label }}</div>
+          <div class="list-row-meta">{{ row.sublabel }}</div>
+        </td>
+        <td>{{ row.thread_count }}</td>
+        <td>{{ row.message_count }}</td>
+        <td>
+          <div class="list-row-meta">{{ row.first_activity|date:'d M Y' }}</div>
+          <div class="list-row-meta">{{ row.first_activity|date:'H:i' }}</div>
+        </td>
+        <td>
+          <div class="list-row-name">{{ row.last_activity|date:'d M Y' }}</div>
+          <div class="list-row-meta">{{ row.last_activity|date:'H:i' }}</div>
+        </td>
+        <td>
+          {% if row.user %}
+          <a class="admin-page-btn" href="{% url 'accounts:admin_assistant_chats_user' row.user.pk %}">View sessions</a>
+          {% else %}
+          <a class="admin-page-btn" href="{% url 'accounts:admin_assistant_chats_anonymous' %}">View sessions</a>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% include 'accounts/partials/admin_pagination.html' with page_obj=page_obj page_param='page' pagination_extra=pagination_extra %}
+  {% else %}
+  <div class="admin-list-empty">
+    <div class="admin-list-empty-icon" aria-hidden="true">&#128172;</div>
+    <p>{% if search %}No visitors match that search.{% else %}No assistant chats recorded yet.{% endif %}</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

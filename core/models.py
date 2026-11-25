@@ -397,3 +397,63 @@ class ApplicationErrorLog(models.Model):
 
     def __str__(self):
         return f'{self.status_code} {self.path or "application"} · {self.created_at:%Y-%m-%d %H:%M:%S}'
+
+
+class LandingAssistantThread(models.Model):
+    """One landing-page AI chat session (signed-in or anonymous visitor)."""
+
+    uuid = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    django_session_key = models.CharField(max_length=64, blank=True, db_index=True)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='landing_assistant_threads',
+    )
+    ip_hash = models.CharField(max_length=64, blank=True, db_index=True)
+    user_agent = models.CharField(max_length=512, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ('-updated_at',)
+        verbose_name = 'Landing assistant chat'
+        verbose_name_plural = 'Landing assistant chats'
+
+    def __str__(self):
+        who = self.user.get_full_name() if self.user_id else 'Anonymous'
+        return f'Assistant chat {self.uuid} — {who}'
+
+
+class LandingAssistantMessage(models.Model):
+    class Role(models.TextChoices):
+        USER = 'user', 'User'
+        ASSISTANT = 'assistant', 'Assistant'
+
+    uuid = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    thread = models.ForeignKey(
+        LandingAssistantThread,
+        on_delete=models.CASCADE,
+        related_name='messages',
+    )
+    role = models.CharField(max_length=16, choices=Role.choices, db_index=True)
+    content = models.TextField()
+    ai_enabled = models.BooleanField(
+        null=True,
+        blank=True,
+        help_text='For assistant messages: whether OpenAI produced the reply.',
+    )
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ('created_at',)
+        verbose_name = 'Landing assistant message'
+        verbose_name_plural = 'Landing assistant messages'
+        indexes = [
+            models.Index(fields=['thread', 'created_at']),
+        ]
+
+    def __str__(self):
+        preview = (self.content or '')[:48]
+        return f'{self.get_role_display()}: {preview}'

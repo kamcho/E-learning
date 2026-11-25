@@ -94,8 +94,10 @@ def landing_assistant_chat_api(request):
     from core.ai.exceptions import AIConfigurationError, AITaskError
     from core.landing_assistant import (
         assistant_is_enabled,
+        ensure_assistant_thread,
         fallback_reply_no_ai,
         generate_landing_assistant_reply,
+        record_assistant_exchange,
     )
 
     try:
@@ -107,26 +109,35 @@ def landing_assistant_chat_api(request):
     if not message:
         return JsonResponse({'ok': False, 'error': 'Message is required.'}, status=400)
 
+    thread = ensure_assistant_thread(request)
+
     if not assistant_is_enabled():
+        reply = fallback_reply_no_ai()
+        record_assistant_exchange(thread, message, reply, ai_enabled=False)
         return JsonResponse({
             'ok': True,
-            'reply': fallback_reply_no_ai(),
+            'reply': reply,
             'assistant_enabled': False,
         })
 
     try:
         reply = generate_landing_assistant_reply(request, message)
     except AIConfigurationError:
+        reply = fallback_reply_no_ai()
+        record_assistant_exchange(thread, message, reply, ai_enabled=False)
         return JsonResponse({
             'ok': True,
-            'reply': fallback_reply_no_ai(),
+            'reply': reply,
             'assistant_enabled': False,
         })
     except AITaskError as exc:
-        return JsonResponse({'ok': False, 'error': str(exc)}, status=503)
+        err_text = str(exc)
+        record_assistant_exchange(thread, message, err_text, ai_enabled=False)
+        return JsonResponse({'ok': False, 'error': err_text}, status=503)
     except ValueError as exc:
         return JsonResponse({'ok': False, 'error': str(exc)}, status=400)
 
+    record_assistant_exchange(thread, message, reply, ai_enabled=True)
     return JsonResponse({'ok': True, 'reply': reply, 'assistant_enabled': True})
 
 

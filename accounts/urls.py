@@ -117,6 +117,22 @@ urlpatterns = [
     ),
     path('admin/users/', views.admin_users_list_view, name='admin_users_list'),
     path('admin/students/', views.admin_students_list_view, name='admin_students_list'),
+    path('admin/assistant-chats/', views.admin_assistant_chats_view, name='admin_assistant_chats'),
+    path(
+        'admin/assistant-chats/user/<int:user_id>/',
+        views.admin_assistant_chats_user_view,
+        name='admin_assistant_chats_user',
+    ),
+    path(
+        'admin/assistant-chats/anonymous/',
+        views.admin_assistant_chats_anonymous_view,
+        name='admin_assistant_chats_anonymous',
+    ),
+    path(
+        'admin/assistant-chats/thread/<uuid:thread_uuid>/',
+        views.admin_assistant_chat_detail_view,
+        name='admin_assistant_chat_detail',
+    ),
     path('admin/guest-attempts/', views.admin_guest_attempts_view, name='admin_guest_attempts'),
     path(
         'admin/guest-attempts/<uuid:attempt_uuid>/',

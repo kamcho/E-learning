@@ -1196,3 +1196,49 @@ class PartnerDashboardTests(TestCase):
         log = partner.referral_point_logs.get()
         self.assertEqual(log.commission_kes, Decimal('20.00'))
 
+
+class AdminAssistantChatsViewTests(TestCase):
+    def setUp(self):
+        self.admin = MyUser.objects.create_user(
+            phone='0712000099',
+            password='1234',
+            role=Role.ADMIN,
+            first_name='Chat',
+            last_name='Admin',
+        )
+        self.guardian = MyUser.objects.create_user(
+            phone='0722000099',
+            password='1234',
+            role=Role.GUARDIAN,
+            first_name='Parent',
+            last_name='User',
+        )
+        self.client = Client()
+
+    def test_admin_can_open_grouped_chat_list(self):
+        from core.models import LandingAssistantThread
+
+        anon = self.client.post(
+            reverse('core:landing_assistant_chat'),
+            data='{"message": "Hello"}',
+            content_type='application/json',
+        )
+        self.assertEqual(anon.status_code, 200)
+
+        self.client.force_login(self.admin)
+        response = self.client.get(reverse('accounts:admin_assistant_chats'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Anonymous visitors')
+
+        thread = LandingAssistantThread.objects.get()
+        response = self.client.get(
+            reverse('accounts:admin_assistant_chat_detail', kwargs={'thread_uuid': thread.uuid}),
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Hello')
+
+    def test_guardian_cannot_access_assistant_chat_admin(self):
+        self.client.force_login(self.guardian)
+        response = self.client.get(reverse('accounts:admin_assistant_chats'))
+        self.assertEqual(response.status_code, 302)
+

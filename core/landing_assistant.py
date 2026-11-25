@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 
 from django.conf import settings
 from django.urls import reverse
+from django.utils import timezone
 
+from accounts.auth_utils import get_client_ip
 from core.ai.client import OpenAIClient
 from core.ai.exceptions import AIConfigurationError, AITaskError
 from subscriptions.models import SubscriptionPlan
@@ -15,6 +18,7 @@ from subscriptions.models import SubscriptionPlan
 logger = logging.getLogger(__name__)
 
 SESSION_KEY = 'landing_assistant_history'
+THREAD_SESSION_KEY = 'landing_assistant_thread_uuid'
 MAX_HISTORY_MESSAGES = 20
 MAX_MESSAGE_CHARS = 2000
 
@@ -110,6 +114,68 @@ def build_facts_payload(request) -> dict:
 
 def assistant_is_enabled():
     return bool(getattr(settings, 'OPENAI_API_KEY', ''))
+
+
+def _hash_client_ip(request) -> str:
+    raw = (get_client_ip(request) or 'unknown').encode('utf-8', errors='replace')
+    return hashlib.sha256(raw).hexdigest()
+
+
+def ensure_assistant_thread(request):
+    """Get or create a durable chat thread for this browser session / visitor."""
+    from core.models import LandingAssistantThread
+
+    if not request.session.session_key:
+        request.session.create()
+
+    thread_uuid = request.session.get(THREAD_SESSION_KEY)
+    if thread_uuid:
+        thread = LandingAssistantThread.objects.filter(uuid=thread_uuid).first()
+        if thread:
+            _maybe_attach_user_to_thread(thread, request)
+            return thread
+
+    thread = LandingAssistantThread.objects.create(
+        django_session_key=request.session.session_key or '',
+        user=request.user if getattr(request.user, 'is_authenticated', False) else None,
+        ip_hash=_hash_client_ip(request),
+        user_agent=(request.META.get('HTTP_USER_AGENT') or '')[:512],
+    )
+    request.session[THREAD_SESSION_KEY] = str(thread.uuid)
+    request.session.modified = True
+    return thread
+
+
+def _maybe_attach_user_to_thread(thread, request):
+    if not getattr(request.user, 'is_authenticated', False):
+        return
+    if thread.user_id == request.user.pk:
+        return
+    thread.user = request.user
+    thread.save(update_fields=['user', 'updated_at'])
+
+
+def record_assistant_exchange(thread, user_message: str, assistant_message: str, *, ai_enabled: bool):
+    """Persist one user question and assistant reply."""
+    from core.models import LandingAssistantMessage, LandingAssistantThread
+
+    user_text = (user_message or '').strip()[:MAX_MESSAGE_CHARS]
+    assistant_text = (assistant_message or '').strip()[:MAX_MESSAGE_CHARS]
+    if not user_text:
+        return
+
+    LandingAssistantMessage.objects.create(
+        thread=thread,
+        role=LandingAssistantMessage.Role.USER,
+        content=user_text,
+    )
+    LandingAssistantMessage.objects.create(
+        thread=thread,
+        role=LandingAssistantMessage.Role.ASSISTANT,
+        content=assistant_text,
+        ai_enabled=ai_enabled,
+    )
+    LandingAssistantThread.objects.filter(pk=thread.pk).update(updated_at=timezone.now())
 
 
 def generate_landing_assistant_reply(request, user_message: str) -> str:

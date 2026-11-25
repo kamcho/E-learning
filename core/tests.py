@@ -1015,6 +1015,27 @@ class LandingAssistantTests(TestCase):
         self.assertTrue(data.get('ok'))
         self.assertIn('AI assistant is not configured', data.get('reply', ''))
 
+    def test_landing_assistant_persists_anonymous_chat(self):
+        from core.models import LandingAssistantMessage, LandingAssistantThread
+
+        url = reverse('core:landing_assistant_chat')
+        response = self.client.post(
+            url,
+            data='{"message": "How much is weekly?"}',
+            content_type='application/json',
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(LandingAssistantThread.objects.count(), 1)
+        thread = LandingAssistantThread.objects.get()
+        self.assertIsNone(thread.user_id)
+        self.assertEqual(thread.messages.count(), 2)
+        roles = list(thread.messages.order_by('created_at').values_list('role', flat=True))
+        self.assertEqual(roles, ['user', 'assistant'])
+        self.assertEqual(
+            LandingAssistantMessage.objects.filter(role='user').first().content,
+            'How much is weekly?',
+        )
+
     def test_build_facts_payload_uses_full_name_when_signed_in(self):
         from django.test import RequestFactory
 
