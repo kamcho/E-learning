@@ -19,6 +19,42 @@
     if (messagesEl) messagesEl.scrollTop = messagesEl.scrollHeight;
   }
 
+  var URL_PATTERN = /https?:\/\/[^\s<]+/gi;
+
+  function trimUrlTrailingPunctuation(url) {
+    return url.replace(/[.,;:!?)}\]'"]+$/g, '');
+  }
+
+  /** Bot replies may include plain https:// URLs — render as safe clickable links. */
+  function fillBubbleWithLinkifiedText(bubble, text) {
+    bubble.textContent = '';
+    var input = text || '';
+    var lastIndex = 0;
+    var match;
+    URL_PATTERN.lastIndex = 0;
+    while ((match = URL_PATTERN.exec(input)) !== null) {
+      var raw = match[0];
+      var href = trimUrlTrailingPunctuation(raw);
+      var suffix = raw.slice(href.length);
+      if (match.index > lastIndex) {
+        bubble.appendChild(document.createTextNode(input.slice(lastIndex, match.index)));
+      }
+      var link = document.createElement('a');
+      link.href = href;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      link.textContent = href;
+      bubble.appendChild(link);
+      if (suffix) {
+        bubble.appendChild(document.createTextNode(suffix));
+      }
+      lastIndex = match.index + raw.length;
+    }
+    if (lastIndex < input.length) {
+      bubble.appendChild(document.createTextNode(input.slice(lastIndex)));
+    }
+  }
+
   function appendMessage(role, text, extraClass) {
     var wrap = document.createElement('div');
     wrap.className =
@@ -27,7 +63,11 @@
       (extraClass ? ' ' + extraClass : '');
     var bubble = document.createElement('div');
     bubble.className = 'landing-assistant-msg__bubble';
-    bubble.textContent = text;
+    if (role === 'user') {
+      bubble.textContent = text;
+    } else {
+      fillBubbleWithLinkifiedText(bubble, text);
+    }
     wrap.appendChild(bubble);
     messagesEl.appendChild(wrap);
     scrollMessages();

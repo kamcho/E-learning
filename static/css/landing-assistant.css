@@ -119,6 +119,17 @@
   border-bottom-left-radius: 0.25rem;
 }
 
+.landing-assistant-msg--bot .landing-assistant-msg__bubble a {
+  color: #0d8a4e;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.landing-assistant-msg--bot .landing-assistant-msg__bubble a:hover {
+  color: #0a6d3d;
+}
+
 .landing-assistant-msg--user .landing-assistant-msg__bubble {
   background: #0d8a4e;
   color: #fff;
