@@ -19,31 +19,12 @@ jobs:
     steps:
       - name: Create Django staff user
         uses: appleboy/ssh-action@v1.2.0
-        env:
-          STAFF_USER: ${{ github.event.inputs.username }}
-          STAFF_PASS: ${{ github.event.inputs.password }}
         with:
           host: ${{ secrets.DROPLET_HOST }}
           username: ${{ secrets.DROPLET_USER }}
           password: ${{ secrets.DROPLET_SSH_PASSWORD }}
-          envs: STAFF_USER,STAFF_PASS
           script_stop: true
           script: |
             set -euo pipefail
             cd /srv/stanthony
-            sudo -u stanthony env STAFF_USER="$STAFF_USER" STAFF_PASS="$STAFF_PASS" \
-              /srv/stanthony/.venv/bin/python -c "
-            import os, django
-            os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
-            django.setup()
-            from django.contrib.auth import get_user_model
-            User = get_user_model()
-            username = os.environ['STAFF_USER']
-            password = os.environ['STAFF_PASS']
-            u, created = User.objects.get_or_create(username=username, defaults={'is_staff': True, 'is_superuser': True})
-            u.set_password(password)
-            u.is_staff = True
-            u.is_superuser = True
-            u.save()
-            print(('created' if created else 'updated'), username)
-            "
+            sudo -u stanthony /srv/stanthony/.venv/bin/python manage.py shell -c "from django.contrib.auth import get_user_model; U=get_user_model(); u,_=U.objects.get_or_create(username='${{ github.event.inputs.username }}', defaults={'is_staff': True, 'is_superuser': True}); u.set_password('${{ github.event.inputs.password }}'); u.is_staff=True; u.is_superuser=True; u.save(); print(u.username)"
