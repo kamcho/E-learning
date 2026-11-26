@@ -1,0 +1,26 @@
+name: St Anthony enable domain
+
+on:
+  workflow_dispatch:
+
+jobs:
+  enable:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Pull + enable stanthonyhcabossi.org
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.DROPLET_HOST }}
+          username: ${{ secrets.DROPLET_USER }}
+          password: ${{ secrets.DROPLET_SSH_PASSWORD }}
+          script_stop: true
+          command_timeout: 12m
+          script: |
+            set -euo pipefail
+            APP=/srv/stanthony
+            cd "$APP"
+            git fetch origin
+            git reset --hard origin/main
+            chmod +x deploy/enable-domain.sh
+            bash deploy/enable-domain.sh
