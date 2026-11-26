@@ -26,44 +26,7 @@ jobs:
             git fetch origin
             git reset --hard origin/main
             chmod +x deploy.sh deploy/*.sh || true
-
-            python3 - <<'PY'
-            import os
-            from pathlib import Path
-            env_path = Path('/srv/stanthony/.env')
-            text = env_path.read_text() if env_path.exists() else ''
-            password = os.environ.get('EMAIL_PASS', '')
-            if not password:
-                raise SystemExit('EMAIL_PASS missing')
-            updates = {
-                'EMAIL_HOST': 'mail.privateemail.com',
-                'EMAIL_PORT': '587',
-                'EMAIL_USE_TLS': 'True',
-                'EMAIL_USE_SSL': 'False',
-                'EMAIL_HOST_USER': 'info@stanthonyhcabossi.org',
-                'EMAIL_HOST_PASSWORD': password,
-                'DEFAULT_FROM_EMAIL': 'St. Anthony Health Centre <info@stanthonyhcabossi.org>',
-                'CONTACT_NOTIFY_EMAIL': 'info@stanthonyhcabossi.org',
-            }
-            lines = []
-            seen = set()
-            for line in text.splitlines():
-                if not line.strip() or line.lstrip().startswith('#') or '=' not in line:
-                    lines.append(line)
-                    continue
-                key = line.split('=', 1)[0].strip()
-                if key in updates:
-                    lines.append(f'{key}={updates[key]}')
-                    seen.add(key)
-                else:
-                    lines.append(line)
-            for key, val in updates.items():
-                if key not in seen:
-                    lines.append(f'{key}={val}')
-            env_path.write_text('\n'.join(lines) + '\n')
-            print('Updated email settings in .env (password redacted)')
-            PY
-
+            python3 "$APP/deploy/configure_email.py"
             chown stanthony:www-data "$APP/.env"
             chmod 640 "$APP/.env"
             bash deploy.sh
