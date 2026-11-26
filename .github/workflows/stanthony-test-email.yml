@@ -1,0 +1,62 @@
+name: St Anthony test email
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Diagnose SMTP and send test
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.DROPLET_HOST }}
+          username: ${{ secrets.DROPLET_USER }}
+          password: ${{ secrets.DROPLET_SSH_PASSWORD }}
+          script_stop: false
+          command_timeout: 8m
+          script: |
+            set -euo pipefail
+            APP=/srv/stanthony
+            cd "$APP"
+            echo "==> Recent gunicorn errors"
+            journalctl -u stanthony-gunicorn -n 80 --no-pager | tail -n 60 || true
+
+            echo "==> Email keys present in .env (values redacted)"
+            grep -E '^EMAIL_|^CONTACT_|^DEFAULT_FROM' "$APP/.env" | sed -E 's/(PASSWORD=).*/\1***/'
+
+            echo "==> Test SMTP auth/send"
+            sudo -u stanthony "$APP/.venv/bin/python" - <<'PY'
+            import os, traceback
+            os.chdir('/srv/stanthony')
+            os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
+            import django
+            django.setup()
+            from django.conf import settings
+            from django.core.mail import EmailMessage, get_connection
+            print('HOST', settings.EMAIL_HOST)
+            print('PORT', settings.EMAIL_PORT)
+            print('TLS', settings.EMAIL_USE_TLS, 'SSL', settings.EMAIL_USE_SSL)
+            print('USER', settings.EMAIL_HOST_USER)
+            print('PASS set', bool(settings.EMAIL_HOST_PASSWORD))
+            print('FROM', settings.DEFAULT_FROM_EMAIL)
+            print('TO', settings.CONTACT_NOTIFY_EMAIL)
+            try:
+                conn = get_connection(timeout=30)
+                conn.open()
+                print('SMTP open: OK')
+                msg = EmailMessage(
+                    subject='St Anthony SMTP test',
+                    body='Test message from VPS SMTP diagnostics.',
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    to=[settings.CONTACT_NOTIFY_EMAIL],
+                    connection=conn,
+                )
+                sent = msg.send(fail_silently=False)
+                print('send result:', sent)
+                conn.close()
+            except Exception as e:
+                print('SMTP FAILED:', type(e).__name__, e)
+                traceback.print_exc()
+            PY
