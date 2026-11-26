@@ -2,21 +2,27 @@ name: St Anthony setup email
 
 on:
   workflow_dispatch:
+    inputs:
+      mode:
+        description: 'ssl (465) or tls (587)'
+        required: true
+        default: 'ssl'
 
 jobs:
   setup:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - name: Deploy form + configure Namecheap SMTP
+      - name: Configure SMTP and test
         uses: appleboy/ssh-action@v1.2.0
         env:
           EMAIL_PASS_B64: ${{ secrets.STANTHONY_EMAIL_PASSWORD_B64 }}
+          EMAIL_MODE: ${{ github.event.inputs.mode }}
         with:
           host: ${{ secrets.DROPLET_HOST }}
           username: ${{ secrets.DROPLET_USER }}
           password: ${{ secrets.DROPLET_SSH_PASSWORD }}
-          envs: EMAIL_PASS_B64
+          envs: EMAIL_PASS_B64,EMAIL_MODE
           script_stop: true
           command_timeout: 12m
           script: |
@@ -25,37 +31,9 @@ jobs:
             cd "$APP"
             git fetch origin
             git reset --hard origin/main
-            chmod +x deploy.sh deploy/*.sh || true
             python3 "$APP/deploy/configure_email.py"
             chown stanthony:www-data "$APP/.env"
             chmod 640 "$APP/.env"
             bash deploy.sh
-
-            echo "==> SMTP test after config"
-            sudo -u stanthony "$APP/.venv/bin/python" - <<'PY'
-            import os, traceback
-            os.chdir('/srv/stanthony')
-            os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
-            import django
-            django.setup()
-            from django.conf import settings
-            from django.core.mail import EmailMessage, get_connection
-            print('USER', settings.EMAIL_HOST_USER, 'PASS len', len(settings.EMAIL_HOST_PASSWORD or ''))
-            try:
-                conn = get_connection(timeout=30)
-                conn.open()
-                EmailMessage(
-                    subject='St Anthony SMTP OK',
-                    body='SMTP authentication works from the VPS.',
-                    from_email=settings.DEFAULT_FROM_EMAIL,
-                    to=[settings.CONTACT_NOTIFY_EMAIL],
-                    connection=conn,
-                ).send(fail_silently=False)
-                conn.close()
-                print('SMTP SEND OK')
-            except Exception as e:
-                print('SMTP FAILED', type(e).__name__, e)
-                traceback.print_exc()
-                raise
-            PY
+            sudo -u stanthony "$APP/.venv/bin/python" "$APP/deploy/test_smtp.py"
             echo "==> Email setup done"
