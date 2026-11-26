@@ -1,0 +1,70 @@
+name: St Anthony setup email
+
+on:
+  workflow_dispatch:
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Deploy form + configure Namecheap SMTP
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          EMAIL_PASS: ${{ secrets.STANTHONY_EMAIL_PASSWORD }}
+        with:
+          host: ${{ secrets.DROPLET_HOST }}
+          username: ${{ secrets.DROPLET_USER }}
+          password: ${{ secrets.DROPLET_SSH_PASSWORD }}
+          envs: EMAIL_PASS
+          script_stop: true
+          command_timeout: 12m
+          script: |
+            set -euo pipefail
+            APP=/srv/stanthony
+            cd "$APP"
+            git fetch origin
+            git reset --hard origin/main
+            chmod +x deploy.sh deploy/*.sh || true
+
+            python3 - <<'PY'
+            import os
+            from pathlib import Path
+            env_path = Path('/srv/stanthony/.env')
+            text = env_path.read_text() if env_path.exists() else ''
+            password = os.environ.get('EMAIL_PASS', '')
+            if not password:
+                raise SystemExit('EMAIL_PASS missing')
+            updates = {
+                'EMAIL_HOST': 'mail.privateemail.com',
+                'EMAIL_PORT': '587',
+                'EMAIL_USE_TLS': 'True',
+                'EMAIL_USE_SSL': 'False',
+                'EMAIL_HOST_USER': 'info@stanthonyhcabossi.org',
+                'EMAIL_HOST_PASSWORD': password,
+                'DEFAULT_FROM_EMAIL': 'St. Anthony Health Centre <info@stanthonyhcabossi.org>',
+                'CONTACT_NOTIFY_EMAIL': 'info@stanthonyhcabossi.org',
+            }
+            lines = []
+            seen = set()
+            for line in text.splitlines():
+                if not line.strip() or line.lstrip().startswith('#') or '=' not in line:
+                    lines.append(line)
+                    continue
+                key = line.split('=', 1)[0].strip()
+                if key in updates:
+                    lines.append(f'{key}={updates[key]}')
+                    seen.add(key)
+                else:
+                    lines.append(line)
+            for key, val in updates.items():
+                if key not in seen:
+                    lines.append(f'{key}={val}')
+            env_path.write_text('\n'.join(lines) + '\n')
+            print('Updated email settings in .env (password redacted)')
+            PY
+
+            chown stanthony:www-data "$APP/.env"
+            chmod 640 "$APP/.env"
+            bash deploy.sh
+            echo "==> Email setup done"
