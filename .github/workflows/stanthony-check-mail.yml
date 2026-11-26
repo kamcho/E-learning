@@ -1,0 +1,63 @@
+name: St Anthony check mail logs
+
+on:
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Inspect book form + mail logs
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.DROPLET_HOST }}
+          username: ${{ secrets.DROPLET_USER }}
+          password: ${{ secrets.DROPLET_SSH_PASSWORD }}
+          script_stop: false
+          command_timeout: 8m
+          script: |
+            set -euo pipefail
+            APP=/srv/stanthony
+            echo "==> HEAD"
+            cd "$APP" && git log -1 --oneline
+            echo "==> book view present?"
+            grep -n "book_appointment\|AppointmentRequestForm\|email.send" "$APP/home/views.py" | head -n 20
+            echo "==> Email env"
+            grep -E '^EMAIL_|^CONTACT_|^DEFAULT_FROM' "$APP/.env" | sed -E 's/(PASSWORD=).*/\1***/'
+            echo "==> Recent gunicorn for /book/ and mail"
+            journalctl -u stanthony-gunicorn --since "2 hours ago" --no-pager | grep -E "book/|appointment|SMTP|Failed to send|ERROR|Traceback|POST /book" | tail -n 80 || true
+            echo "==> Simulate form email send"
+            sudo -u stanthony "$APP/.venv/bin/python" - <<'PY'
+            import os
+            os.chdir('/srv/stanthony')
+            os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
+            import django
+            django.setup()
+            from django.conf import settings
+            from django.core.mail import EmailMessage, get_connection
+            print('FROM', settings.DEFAULT_FROM_EMAIL)
+            print('TO', settings.CONTACT_NOTIFY_EMAIL)
+            print('PASS len', len(settings.EMAIL_HOST_PASSWORD or ''))
+            body = (
+                "New appointment request from the website\n"
+                "========================================\n\n"
+                "Name:    Test Visitor\n"
+                "Phone:   0700000000\n"
+                "Email:   visitor@example.com\n"
+                "Service: Out-patient\n\n"
+                "Notes:\nSimulated form submission from diagnostics.\n"
+            )
+            conn = get_connection(timeout=30)
+            conn.open()
+            n = EmailMessage(
+                subject='Appointment request — Test Visitor (Out-patient)',
+                body=body,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                to=[settings.CONTACT_NOTIFY_EMAIL],
+                reply_to=['visitor@example.com'],
+                connection=conn,
+            ).send(fail_silently=False)
+            conn.close()
+            print('SIMULATED FORM EMAIL SENT', n)
+            PY
