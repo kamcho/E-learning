@@ -1,0 +1,73 @@
+name: Deploy St Anthony cutover
+
+# One-shot / repeatable cutover: puts St. Anthony on the public front door.
+# Keeps /srv/metrolinks (TKT) on disk. Uses existing DROPLET_* secrets.
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-stanthony-cutover
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Install + cutover St. Anthony
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.DROPLET_HOST }}
+          username: ${{ secrets.DROPLET_USER }}
+          password: ${{ secrets.DROPLET_SSH_PASSWORD }}
+          port: 22
+          script_stop: true
+          command_timeout: 20m
+          script: |
+            set -euo pipefail
+            echo "==> Connected to $(hostname) ($(curl -s -m 3 ifconfig.me 2>/dev/null || echo unknown-ip))"
+
+            APP=/srv/stanthony
+            REPO=https://github.com/kamcho/stanthony.git
+
+            git config --global --add safe.directory "$APP" || true
+
+            if [[ ! -d "$APP/.git" ]]; then
+              mkdir -p /srv
+              if [[ -d "$APP" && ! -d "$APP/.git" ]]; then
+                rm -rf "$APP"
+              fi
+              git clone "$REPO" "$APP"
+            else
+              cd "$APP"
+              git fetch origin
+              git reset --hard origin/main
+            fi
+
+            cd "$APP"
+            echo "    HEAD: $(git rev-parse --short HEAD) — $(git log -1 --pretty=%s)"
+
+            chmod +x deploy.sh deploy/*.sh || true
+
+            if ! systemctl cat stanthony-gunicorn.service &>/dev/null; then
+              echo "==> First-time install"
+              bash deploy/install-beside-somasmart.sh
+            else
+              echo "==> Redeploy"
+              bash deploy.sh
+            fi
+
+            echo "==> Cutover from Metrolinks (TKT files kept)"
+            bash deploy/cutover-from-metrolinks.sh
+
+            echo "==> Smoke checks"
+            systemctl is-active stanthony-gunicorn
+            systemctl is-active elearning || echo "WARN: elearning not active"
+            if [[ -d /srv/metrolinks ]]; then
+              echo "TKT preserved at /srv/metrolinks"
+              du -sh /srv/metrolinks || true
+            fi
+            curl -sI -m 8 -H "Host: 185.170.196.219" http://127.0.0.1/ | head -n 8 || true
+            echo "==> Done"
