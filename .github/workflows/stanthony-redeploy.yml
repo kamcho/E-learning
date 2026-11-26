@@ -1,0 +1,33 @@
+name: St Anthony redeploy
+
+on:
+  workflow_dispatch:
+
+jobs:
+  redeploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Pull, build assets, collectstatic, restart
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.DROPLET_HOST }}
+          username: ${{ secrets.DROPLET_USER }}
+          password: ${{ secrets.DROPLET_SSH_PASSWORD }}
+          script_stop: true
+          command_timeout: 12m
+          script: |
+            set -euo pipefail
+            APP=/srv/stanthony
+            cd "$APP"
+            git fetch origin
+            git reset --hard origin/main
+            chmod +x deploy.sh deploy/*.sh scripts/*.py || true
+            bash deploy.sh
+            # Refresh nginx configs without breaking TLS (certbot-managed file)
+            if [[ -f deploy/nginx/stanthony-ip.conf ]]; then
+              cp deploy/nginx/stanthony-ip.conf /etc/nginx/sites-available/stanthony-ip
+            fi
+            nginx -t && systemctl reload nginx
+            curl -sI -m 5 https://www.stanthonyhcabossi.org/static/css/site.css | head -n 5 || true
+            echo "==> Redeploy done"
