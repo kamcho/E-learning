@@ -22,5 +22,6 @@ jobs:
             cd "$APP"
             git fetch origin
             git reset --hard origin/main
-            chmod +x deploy/enable-domain.sh
+            chmod +x deploy.sh deploy/*.sh || true
+            bash deploy.sh
             bash deploy/enable-domain.sh
