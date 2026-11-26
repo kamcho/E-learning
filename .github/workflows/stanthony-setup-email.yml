@@ -11,12 +11,12 @@ jobs:
       - name: Deploy form + configure Namecheap SMTP
         uses: appleboy/ssh-action@v1.2.0
         env:
-          EMAIL_PASS: ${{ secrets.STANTHONY_EMAIL_PASSWORD }}
+          EMAIL_PASS_B64: ${{ secrets.STANTHONY_EMAIL_PASSWORD_B64 }}
         with:
           host: ${{ secrets.DROPLET_HOST }}
           username: ${{ secrets.DROPLET_USER }}
           password: ${{ secrets.DROPLET_SSH_PASSWORD }}
-          envs: EMAIL_PASS
+          envs: EMAIL_PASS_B64
           script_stop: true
           command_timeout: 12m
           script: |
@@ -30,4 +30,32 @@ jobs:
             chown stanthony:www-data "$APP/.env"
             chmod 640 "$APP/.env"
             bash deploy.sh
+
+            echo "==> SMTP test after config"
+            sudo -u stanthony "$APP/.venv/bin/python" - <<'PY'
+            import os, traceback
+            os.chdir('/srv/stanthony')
+            os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
+            import django
+            django.setup()
+            from django.conf import settings
+            from django.core.mail import EmailMessage, get_connection
+            print('USER', settings.EMAIL_HOST_USER, 'PASS len', len(settings.EMAIL_HOST_PASSWORD or ''))
+            try:
+                conn = get_connection(timeout=30)
+                conn.open()
+                EmailMessage(
+                    subject='St Anthony SMTP OK',
+                    body='SMTP authentication works from the VPS.',
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    to=[settings.CONTACT_NOTIFY_EMAIL],
+                    connection=conn,
+                ).send(fail_silently=False)
+                conn.close()
+                print('SMTP SEND OK')
+            except Exception as e:
+                print('SMTP FAILED', type(e).__name__, e)
+                traceback.print_exc()
+                raise
+            PY
             echo "==> Email setup done"
